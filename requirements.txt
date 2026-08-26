@@ -1,0 +1,7 @@
+# Dependências de runtime do app desktop (ui/app_desktop.py).
+# tkinter é biblioteca padrão do Python (no Windows, já vem com o instalador
+# oficial) — não listado aqui.
+#
+# calc_core/ não tem NENHUMA dependência externa, de propósito (mantém o
+# .exe pequeno e evita risco de supply chain no núcleo de cálculo).
+pyinstaller>=6.0

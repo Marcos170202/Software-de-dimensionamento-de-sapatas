@@ -1,0 +1,50 @@
+name: Build Sapata7.exe
+
+# Roda num runner Windows de verdade — um .exe não pode ser cross-compilado
+# de forma confiável a partir de Linux/macOS com PyInstaller.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "calc_core/**"
+      - "ui/**"
+      - "sapata7.spec"
+      - "requirements.txt"
+      - ".github/workflows/build-exe.yml"
+  workflow_dispatch: {}
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instala dependências de teste
+        run: pip install -r requirements-dev.txt
+      - name: ruff
+        run: ruff check calc_core/
+      - name: mypy --strict
+        run: mypy --strict calc_core/
+      - name: pytest com cobertura
+        run: pytest tests/ --cov=calc_core --cov-report=term-missing
+
+  build-windows:
+    needs: testes
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instala PyInstaller
+        run: pip install -r requirements.txt
+      - name: Gera o .exe
+        run: pyinstaller sapata7.spec
+      - name: Publica o artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sapata7-windows
+          path: dist/Sapata7.exe
+          if-no-files-found: error

@@ -1,0 +1,89 @@
+# ruleset.yaml — produzido pelo a2-verificador. Não editar à mão fora do
+# processo de auditoria descrito em .claude/agents/a2-verificador.md.
+#
+# Escopo congelado (GATE 1): sapata isolada, carga centrada, solo homogêneo,
+# sigma_adm fornecido como dado de entrada (não deduzido de SPT/CPT).
+#
+# Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
+# relatorios/ — nova rodada de revisão e validação é obrigatória.
+
+versao: 1
+escopo: "sapata isolada, carga centrada, solo homogêneo"
+data_congelamento: "2026-08-26"
+
+regras:
+
+  - id: NBR6122-7.6.1-area-carga-centrada
+    norma: "NBR 6122:2022"
+    item: "7.6.1"
+    pagina: 23
+    metodo: ambos  # a fórmula (sigma = N/A <= sigma_adm) vale tanto para
+                    # valores admissíveis (característico + FSg) quanto para
+                    # valores de cálculo (tensão resistente de cálculo) —
+                    # a norma usa a mesma estrutura para os dois métodos em
+                    # 7.1; o chamador decide qual tensão-limite está passando.
+    status: APROVADA
+    implementacao: "geotecnico.dimensionar_sapata_carga_centrada"
+    checagem_dimensional: "N [kN] / A [m²] = sigma [kPa]; sigma <= sigma_adm [kPa]. Homogêneo."
+    checagem_numerica: "N_k=1200 kN, sigma_adm=250 kPa, pilar 0,30x0,50 m -> A_nec=4,8 m², B~2,10 L~2,30 m (ver relatorios/conformidade.md). Dentro da faixa plausível declarada em a2-verificador.md (50-600 kPa)."
+    observacao: "Cláusula não define COMO obter B e L a partir da área — apenas exige tensão uniforme <= limite. O método de manter a mesma folga 'c' nas quatro bordas do pilar (B=b_pilar+2c, L=l_pilar+2c) é prática consagrada de escritório (Alonso, Bowles), NÃO é texto da norma. Registrado como decisão de implementação, não como regra normativa — rotulado em código como tal."
+
+  - id: NBR6122-5.6-peso-proprio-minimo
+    norma: "NBR 6122:2022"
+    item: "5.6"
+    pagina: 14
+    metodo: ambos
+    status: APROVADA
+    implementacao: "geotecnico.dimensionar_sapata_carga_centrada (parâmetro percentual_peso_proprio)"
+    checagem_dimensional: "adimensional (percentual da carga permanente); aplicado como N_total = N_k * (1 + percentual)."
+    checagem_numerica: "5% é o MÍNIMO normativo, não uma estimativa universal — para sapatas muito grandes ou muito profundas o peso próprio real pode superar 5% da carga permanente. Software usa 5% como valor default explícito e sobrescrevível, nunca oculto."
+    observacao: "Norma diz 'no mínimo 5%' — não é peso próprio real, é piso normativo para quando o peso próprio real ainda não foi calculado (situação típica no pré-dimensionamento). Memorial deve deixar claro que é uma estimativa, não o peso próprio real da peça final."
+
+  - id: NBR6122-7.7.1-dimensao-minima
+    norma: "NBR 6122:2022"
+    item: "7.7.1"
+    pagina: 24
+    metodo: ambos
+    status: APROVADA
+    implementacao: "geotecnico.verificar_dimensao_minima"
+    checagem_dimensional: "comprimento [m] >= 0,60 m. Trivial."
+    checagem_numerica: "N/A — comparação direta, sem propagação de erro possível."
+    observacao: "Regra clara, sem ambiguidade, sem exceção declarada no texto."
+
+  - id: NBR6122-7.6.2-area-comprimida
+    norma: "NBR 6122:2022"
+    item: "7.6.2"
+    pagina: 23
+    metodo: ambos
+    status: PENDENTE_HUMANO
+    motivo_pendencia: "Fora do escopo mínimo (carga excêntrica). Extraído em kb/clausulas.jsonl para quando o escopo for ampliado; ninguém decidiu ainda a estratégia de busca de B×L sob excentricidade dupla nem como tratar o núcleo central. NÃO implementar em calc_core até esta linha virar APROVADA."
+
+  - id: NBR6122-7.6.3-deslizamento
+    norma: "NBR 6122:2022"
+    item: "7.6.3"
+    pagina: 24
+    metodo: ambos
+    status: PENDENTE_HUMANO
+    motivo_pendencia: "Fora do escopo mínimo (carga horizontal). Depende de dados de solo (ângulo de atrito, empuxo passivo) não coletados na entrada atual."
+
+  - id: NBR6122-6.2.1.1.1-fatores-seguranca-tabela1
+    norma: "NBR 6122:2022"
+    item: "6.2.1.1.1"
+    pagina: 28
+    metodo: ambos
+    status: PENDENTE_HUMANO
+    motivo_pendencia: "Necessária apenas se o software vier a DEDUZIR sigma_adm a partir de SPT/CPT/prova de carga — fora do escopo atual (sigma_adm é entrada direta). Além disso o extrator de texto lineariza a Tabela 1 (células mescladas); os valores em kb/clausulas.jsonl foram lidos do texto corrido, não conferidos contra a tabela renderizada — exigir conferência visual antes de aprovar."
+
+# Colisão de símbolo (a2-verificador.md, item 3): não há colisão de 'd' ou
+# 'sigma' entre domínios neste escopo porque nenhuma regra estrutural (NBR
+# 6118) foi aprovada ainda. Revisitar quando A5 começar.
+#
+# Colisão de método de segurança: nenhuma regra aprovada mistura 'admissivel'
+# e 'calculo' — todas usam metodo: ambos porque a fórmula em si (sigma=N/A)
+# é neutra ao método; a diferença fica no valor de sigma_adm que o chamador
+# fornece (característico+FSg OU já ponderado). calc_core não pondera nada
+# sozinho — quem chama decide e passa o valor já pronto. Isso evita a mistura
+# que a norma proíbe implicitamente.
+#
+# Majoração por vento (§6.3.2/§6.3.3): NÃO aprovada — fora do escopo (carga
+# centrada permanente/acidental apenas, sem combinação de vento).
