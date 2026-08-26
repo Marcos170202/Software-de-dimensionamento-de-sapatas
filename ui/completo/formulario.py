@@ -1,0 +1,492 @@
+"""
+formulario.py
+-------------
+Coluna esquerda: coleta de entrada.
+
+Restrição de a3-interface.md: esta tela não calcula nada. Cada método
+`ler_*` só instancia os objetos de entrada de `calc_core.sapata_isolada`
+(`Pilar`, `Solo`, `Concreto`, `Aco`, `CasoCarga`, `OpcoesProjeto`) a partir do
+texto digitado — quem soma, multiplica ou converte unidade de projeto é
+sempre o núcleo.
+"""
+from __future__ import annotations
+
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+from calc_core.sapata_isolada.acoes import CasoCarga, Esforcos, Pilar
+from calc_core.sapata_isolada.geotecnia import (
+    Camada,
+    PerfilGeotecnico,
+    Solo,
+    TipoSubstrato,
+)
+from calc_core.sapata_isolada.materiais import BITOLAS_COMERCIAIS, Aco, Concreto
+from calc_core.sapata_isolada.sapata import (
+    ArmaduraImposta,
+    GeometriaImposta,
+    OpcoesProjeto,
+    ResultadoSapata,
+)
+
+from . import tema
+
+AGREGADOS = ["basalto", "diabasio", "granito", "gnaisse", "calcario", "arenito"]
+CATEGORIAS_FYK = ["250", "500", "600"]
+TIPOS_SUBSTRATO = [t.value for t in TipoSubstrato]
+BITOLAS_TXT = [f"{b:g}" for b in BITOLAS_COMERCIAIS]
+MODELOS_REACAO = ["rigido", "elastico", "grelha", "envoltoria"]
+MODELOS_ARMADURA = ["bielas", "flexao", "envoltoria"]
+
+
+def _float(valor: str, padrao: float = 0.0) -> float:
+    valor = (valor or "").strip().replace(",", ".")
+    return float(valor) if valor else padrao
+
+
+def _float_opt(valor: str) -> float | None:
+    valor = (valor or "").strip().replace(",", ".")
+    return float(valor) if valor else None
+
+
+def _int_opt(valor: str) -> int | None:
+    valor = (valor or "").strip()
+    return int(valor) if valor else None
+
+
+class DialogoCamada(tk.Toplevel):
+    """Coleta os parâmetros de uma camada do perfil geotécnico (`Camada`)."""
+
+    def __init__(self, master: tk.Misc) -> None:
+        super().__init__(master)
+        self.title("Nova camada do perfil")
+        self.configure(bg=tema.FUNDO_PAINEL)
+        self.resultado: Camada | None = None
+        self.transient(master)
+        self.grab_set()
+
+        campos = [
+            ("nome", "Nome", "Camada"),
+            ("espessura", "Espessura [m]", "2.0"),
+            ("gamma_nat", "γ natural [kN/m³]", "18"),
+            ("gamma_sat", "γ saturado [kN/m³]", "20"),
+            ("phi", "φ' [graus]", "28"),
+            ("coesao", "c' [kPa]", "0"),
+            ("nspt", "N_SPT médio (opcional)", ""),
+        ]
+        self._vars: dict[str, tk.StringVar] = {}
+        linha = 0
+        for chave, rotulo, padrao in campos:
+            ttk.Label(self, text=rotulo, style="PainelFraco.TLabel").grid(
+                row=linha, column=0, sticky="w", padx=8, pady=3)
+            var = tk.StringVar(value=padrao)
+            ttk.Entry(self, textvariable=var, width=16).grid(
+                row=linha, column=1, sticky="w", padx=8, pady=3)
+            self._vars[chave] = var
+            linha += 1
+
+        ttk.Label(self, text="Tipo de substrato", style="PainelFraco.TLabel").grid(
+            row=linha, column=0, sticky="w", padx=8, pady=3)
+        self.v_tipo = tk.StringVar(value=TIPOS_SUBSTRATO[0])
+        ttk.Combobox(self, textvariable=self.v_tipo, state="readonly", width=13,
+                     values=TIPOS_SUBSTRATO).grid(row=linha, column=1, sticky="w",
+                                                   padx=8, pady=3)
+        linha += 1
+
+        botoes = ttk.Frame(self)
+        botoes.grid(row=linha, column=0, columnspan=2, pady=8)
+        ttk.Button(botoes, text="Adicionar", style="Acento.TButton",
+                   command=self._ok).pack(side="left", padx=4)
+        ttk.Button(botoes, text="Cancelar", command=self.destroy).pack(
+            side="left", padx=4)
+
+    def _ok(self) -> None:
+        try:
+            camada = Camada(
+                nome=self._vars["nome"].get() or "Camada",
+                espessura=_float(self._vars["espessura"].get(), 1.0),
+                tipo=TipoSubstrato(self.v_tipo.get()),
+                gamma_nat=_float(self._vars["gamma_nat"].get(), 18.0),
+                gamma_sat=_float(self._vars["gamma_sat"].get(), 20.0),
+                phi=_float(self._vars["phi"].get(), 28.0),
+                coesao=_float(self._vars["coesao"].get(), 0.0),
+                nspt=_float_opt(self._vars["nspt"].get()),
+            )
+        except ValueError as erro:
+            messagebox.showerror("Camada inválida", str(erro), parent=self)
+            return
+        if camada.espessura <= 0:
+            messagebox.showerror("Camada inválida", "Espessura deve ser > 0.",
+                                  parent=self)
+            return
+        self.resultado = camada
+        self.destroy()
+
+
+class PainelEntrada(ttk.Frame):
+    """Coluna esquerda: formulário derivado dos objetos de entrada do núcleo."""
+
+    def __init__(self, master: tk.Misc) -> None:
+        super().__init__(master, style="Painel.TFrame")
+        self._camadas: list[Camada] = []
+        self._arm: dict[str, dict] = {}
+        self._montar_scroll()
+
+    # ------------------------------------------------------------- estrutura
+    def _montar_scroll(self) -> None:
+        canvas = tk.Canvas(self, bg=tema.FUNDO_PAINEL, highlightthickness=0)
+        barra = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.interior = ttk.Frame(canvas, style="Painel.TFrame")
+
+        janela = canvas.create_window((0, 0), window=self.interior, anchor="nw")
+        self.interior.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfigure(janela, width=e.width))
+        canvas.configure(yscrollcommand=barra.set)
+
+        def _roda(evento):
+            canvas.yview_scroll(-1 if evento.delta > 0 else 1, "units")
+
+        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _roda))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+
+        canvas.pack(side="left", fill="both", expand=True)
+        barra.pack(side="right", fill="y")
+
+        self._montar_secoes(self.interior)
+
+    def _montar_secoes(self, pai: ttk.Frame) -> None:
+        pai.columnconfigure(0, weight=1)
+        construtores = (self._secao_pilar, self._secao_materiais,
+                        self._secao_acoes, self._secao_solo,
+                        self._secao_geometria, self._secao_armaduras,
+                        self._secao_opcoes)
+        for linha, construtor in enumerate(construtores):
+            construtor(pai, linha)
+
+    # ------------------------------------------------------------- utilidades
+    def _campo(self, parent: ttk.Frame, row: int, rotulo: str, padrao: str = "",
+               largura: int = 10) -> tk.StringVar:
+        var, _ = self._campo_widget(parent, row, rotulo, padrao, largura)
+        return var
+
+    def _campo_widget(self, parent: ttk.Frame, row: int, rotulo: str,
+                       padrao: str = "", largura: int = 10
+                       ) -> tuple[tk.StringVar, ttk.Entry]:
+        ttk.Label(parent, text=rotulo, style="PainelFraco.TLabel").grid(
+            row=row, column=0, sticky="w", padx=(8, 4), pady=2)
+        var = tk.StringVar(value=padrao)
+        entrada = ttk.Entry(parent, textvariable=var, width=largura)
+        entrada.grid(row=row, column=1, sticky="w", padx=(0, 8), pady=2)
+        return var, entrada
+
+    def _combo(self, parent: ttk.Frame, row: int, rotulo: str, valores, padrao: str,
+               largura: int = 10) -> tk.StringVar:
+        ttk.Label(parent, text=rotulo, style="PainelFraco.TLabel").grid(
+            row=row, column=0, sticky="w", padx=(8, 4), pady=2)
+        var = tk.StringVar(value=padrao)
+        ttk.Combobox(parent, textvariable=var, state="readonly", width=largura - 2,
+                     values=list(valores)).grid(row=row, column=1, sticky="w",
+                                                 padx=(0, 8), pady=2)
+        return var
+
+    # ------------------------------------------------------------------ pilar
+    def _secao_pilar(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Pilar")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=(8, 4))
+        self.v_ap = self._campo(f, 0, "a_p — direção X [m]", "0.20")
+        self.v_bp = self._campo(f, 1, "b_p — direção Y [m]", "0.50")
+        self.v_phi_arranque = self._campo(f, 2, "Ø arranque [mm]", "16")
+
+    # -------------------------------------------------------------- materiais
+    def _secao_materiais(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Materiais")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
+        self.v_fck = self._campo(f, 0, "f_ck [MPa]", "30")
+        self.v_fyk = self._combo(f, 1, "f_yk [MPa]", CATEGORIAS_FYK, "500")
+        self.v_agregado = self._combo(f, 2, "Agregado graúdo", AGREGADOS, "granito")
+        self.v_cobrimento = self._campo(f, 3, "Cobrimento [cm]", "4.5")
+
+    # ------------------------------------------------------------------ ações
+    def _grupo_esforcos(self, pai: ttk.Frame, row: int, prefixo: str) -> dict:
+        vs = {}
+        rotulos = (("N", "kN"), ("Mx", "kN·m"), ("My", "kN·m"),
+                   ("Hx", "kN"), ("Hy", "kN"))
+        for i, (chave, unid) in enumerate(rotulos):
+            vs[chave] = self._campo(pai, row + i, f"{chave} [{unid}]", "0")
+        return vs
+
+    def _secao_acoes(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Ações (por caso de carga)")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
+
+        ttk.Label(f, text="Permanente (G) — sempre incluída",
+                  style="Secao.TLabel").grid(row=0, column=0, columnspan=2,
+                                              sticky="w", padx=8, pady=(4, 2))
+        self.v_G = self._grupo_esforcos(f, 1, "G")
+        self.v_G["N"].set("600")
+        self.v_G["Mx"].set("15")
+        self.v_G["My"].set("8")
+
+        r = 6
+        self.usar_q = tk.BooleanVar(value=True)
+        ttk.Checkbutton(f, text="Acidental (Q)", variable=self.usar_q).grid(
+            row=r, column=0, columnspan=2, sticky="w", padx=8, pady=(8, 2))
+        self.v_Q = self._grupo_esforcos(f, r + 1, "Q")
+        self.v_Q["N"].set("180")
+        self.v_Q["Mx"].set("6")
+
+        r = r + 6
+        self.usar_w = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Vento (W, reversível)", variable=self.usar_w).grid(
+            row=r, column=0, columnspan=2, sticky="w", padx=8, pady=(8, 2))
+        self.v_W = self._grupo_esforcos(f, r + 1, "W")
+        self.v_W["My"].set("45")
+        self.v_W["Hx"].set("18")
+
+    # -------------------------------------------------------------------- solo
+    def _secao_solo(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Solo de apoio")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
+        self.v_sigma_adm = self._campo(f, 0, "σ_adm [kPa]", "250")
+        self.v_hf = self._campo(f, 1, "Cota da base h_f [m]", "1.5")
+        self.v_gamma_solo = self._campo(f, 2, "γ_solo [kN/m³]", "18")
+        self.v_phi_solo = self._campo(f, 3, "φ' na base [graus]", "30")
+        self.v_coesao = self._campo(f, 4, "c' na base [kPa]", "0")
+        self.v_nivel_agua = self._campo(f, 5, "Nível d'água [m] (vazio = ausente)", "")
+
+        ttk.Label(f, text="σ_adm sempre admite sobreposição manual pelo "
+                          "engenheiro (NBR 6122 §7.2).", style="PainelFraco.TLabel",
+                  wraplength=260, justify="left").grid(
+            row=6, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 6))
+
+        cam = ttk.LabelFrame(f, text="Perfil em camadas (opcional — recalques)")
+        cam.grid(row=7, column=0, columnspan=2, sticky="ew", padx=6, pady=(0, 6))
+        cam.columnconfigure(0, weight=1)
+        cols = ("nome", "espessura", "tipo")
+        self.tree_camadas = ttk.Treeview(cam, columns=cols, show="headings",
+                                          height=4)
+        for c, rot, larg in zip(cols, ("Nome", "e [m]", "Tipo"), (90, 55, 78)):
+            self.tree_camadas.heading(c, text=rot)
+            self.tree_camadas.column(c, width=larg, anchor="w")
+        self.tree_camadas.grid(row=0, column=0, sticky="ew", padx=6, pady=(6, 2))
+        botoes = ttk.Frame(cam)
+        botoes.grid(row=1, column=0, sticky="w", padx=6, pady=(0, 6))
+        ttk.Button(botoes, text="+ camada", command=self._adicionar_camada).pack(
+            side="left", padx=(0, 4))
+        ttk.Button(botoes, text="- remover", command=self._remover_camada).pack(
+            side="left")
+
+        expansivo_colapsivel = ttk.Frame(f)
+        expansivo_colapsivel.grid(row=8, column=0, columnspan=2, sticky="w",
+                                   padx=8, pady=(2, 8))
+        self.solo_expansivo = tk.BooleanVar(value=False)
+        self.solo_colapsivel = tk.BooleanVar(value=False)
+        ttk.Checkbutton(expansivo_colapsivel, text="Solo expansivo (§7.5.2)",
+                        variable=self.solo_expansivo,
+                        command=self._aviso_solo_especial).pack(anchor="w")
+        ttk.Checkbutton(expansivo_colapsivel, text="Solo colapsível (§7.5.3)",
+                        variable=self.solo_colapsivel,
+                        command=self._aviso_solo_especial).pack(anchor="w")
+
+    def _aviso_solo_especial(self) -> None:
+        if self.solo_expansivo.get() or self.solo_colapsivel.get():
+            messagebox.showwarning(
+                "Solo especial — alerta bloqueante",
+                "Solo expansivo ou colapsível foi marcado. A NBR 6122 §7.5.2/"
+                "§7.5.3 exige tratamento específico de fundação (ex.: alívio de "
+                "pressão, controle de umidade, radier ou estaca) — nenhum dos "
+                "dois motores deste software dimensiona esse caso. Não use o "
+                "resultado deste cálculo como fundação final.")
+
+    def _adicionar_camada(self) -> None:
+        dialogo = DialogoCamada(self)
+        self.wait_window(dialogo)
+        if dialogo.resultado is not None:
+            self._camadas.append(dialogo.resultado)
+            self._atualizar_tree_camadas()
+
+    def _remover_camada(self) -> None:
+        selecao = self.tree_camadas.selection()
+        if not selecao:
+            return
+        indice = self.tree_camadas.index(selecao[0])
+        del self._camadas[indice]
+        self._atualizar_tree_camadas()
+
+    def _atualizar_tree_camadas(self) -> None:
+        self.tree_camadas.delete(*self.tree_camadas.get_children())
+        for c in self._camadas:
+            self.tree_camadas.insert(
+                "", "end", values=(c.nome, f"{c.espessura:.2f}", c.tipo.value))
+
+    # -------------------------------------------------------------- geometria
+    def _secao_geometria(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Geometria da sapata")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
+        self.modo_verificacao = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Definir eu mesmo (modo verificação)",
+                        variable=self.modo_verificacao,
+                        command=self._alternar_geometria).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=8, pady=(6, 2))
+
+        self.v_geo_a, e_a = self._campo_widget(f, 1, "a — direção X [m]", "")
+        self.v_geo_b, e_b = self._campo_widget(f, 2, "b — direção Y [m]", "")
+        self.v_geo_h, e_h = self._campo_widget(f, 3, "h — altura total [m]", "")
+        self.v_geo_h0, e_h0 = self._campo_widget(
+            f, 4, "h0 — altura da aba [m] (vazio = auto)", "")
+        self._entradas_geometria = (e_a, e_b, e_h, e_h0)
+
+        self.btn_copiar_geometria = ttk.Button(
+            f, text="Copiar do cálculo automático",
+            command=self._on_copiar_geometria)
+        self.btn_copiar_geometria.grid(row=5, column=0, columnspan=2, padx=8,
+                                        pady=(2, 8), sticky="ew")
+        self._alternar_geometria()
+
+    def _alternar_geometria(self) -> None:
+        """Os campos a/b/h/h0 só valem quando o modo verificação está ativo —
+        desabilitá-los no modo automático deixa isso visível na hora."""
+        estado = "normal" if self.modo_verificacao.get() else "disabled"
+        for entrada in self._entradas_geometria:
+            entrada.configure(state=estado)
+
+    def _on_copiar_geometria(self) -> None:
+        if self._ultimo_automatico is None:
+            messagebox.showinfo(
+                "Sem resultado automático",
+                "Rode primeiro um dimensionamento automático (checkbox de "
+                "geometria desmarcado) para ter o que copiar.")
+            return
+        self.preencher_geometria_automatica(self._ultimo_automatico)
+
+    # -------------------------------------------------------------- armaduras
+    def _secao_direcao_armadura(self, pai: ttk.Frame, coluna: int,
+                                 direcao: str) -> None:
+        f = ttk.LabelFrame(pai, text=f"Direção {direcao}")
+        f.grid(row=0, column=coluna, sticky="new", padx=4, pady=2)
+        impor = tk.BooleanVar(value=False)
+        ttk.Checkbutton(f, text="Impor arranjo", variable=impor).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=6, pady=(4, 2))
+        phi = self._combo(f, 1, "Ø [mm]", BITOLAS_TXT, "12.5", largura=8)
+        n = self._campo(f, 2, "Nº de barras", "", largura=6)
+        esp = self._campo(f, 3, "Espaçamento [m]", "", largura=6)
+        botao = ttk.Button(f, text="Copiar do automático",
+                           command=lambda d=direcao: self._on_copiar_armadura(d))
+        botao.grid(row=4, column=0, columnspan=2, padx=6, pady=(2, 6), sticky="ew")
+        self._arm[direcao] = {"impor": impor, "phi": phi, "n": n,
+                              "espacamento": esp}
+
+    def _secao_armaduras(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Arranjo de armaduras")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
+        f.columnconfigure(0, weight=1)
+        interno = ttk.Frame(f)
+        interno.grid(row=0, column=0, sticky="ew")
+        interno.columnconfigure(0, weight=1)
+        interno.columnconfigure(1, weight=1)
+        self._secao_direcao_armadura(interno, 0, "X")
+        self._secao_direcao_armadura(interno, 1, "Y")
+
+    def _on_copiar_armadura(self, direcao: str) -> None:
+        if self._ultimo_automatico is None:
+            messagebox.showinfo(
+                "Sem resultado automático",
+                "Rode primeiro um dimensionamento automático para ter o que "
+                "copiar.")
+            return
+        self.preencher_armadura_automatica(self._ultimo_automatico, direcao)
+
+    # ---------------------------------------------------------------- opções
+    def _secao_opcoes(self, pai: ttk.Frame, row: int) -> None:
+        f = ttk.LabelFrame(pai, text="Opções do modelo (avançado)")
+        f.grid(row=row, column=0, sticky="ew", padx=8, pady=(4, 12))
+        self.v_modelo_reacao = self._combo(f, 0, "Reação do solo", MODELOS_REACAO,
+                                           "rigido")
+        self.v_modelo_armadura = self._combo(f, 1, "Armadura (sapata rígida)",
+                                             MODELOS_ARMADURA, "bielas")
+
+    # ------------------------------------------------------------------------
+    # Estado do último dimensionamento automático (para os botões "Copiar")
+    # ------------------------------------------------------------------------
+    _ultimo_automatico: ResultadoSapata | None = None
+
+    def registrar_resultado_automatico(self, res: ResultadoSapata) -> None:
+        self._ultimo_automatico = res
+
+    def preencher_geometria_automatica(self, res: ResultadoSapata) -> None:
+        self.v_geo_a.set(f"{res.a:.3f}")
+        self.v_geo_b.set(f"{res.b:.3f}")
+        self.v_geo_h.set(f"{res.h:.3f}")
+        self.v_geo_h0.set(f"{res.h0:.3f}")
+
+    def preencher_armadura_automatica(self, res: ResultadoSapata, direcao: str) -> None:
+        ar = next((a for a in res.armaduras if a.direcao == direcao), None)
+        if ar is None:
+            return
+        w = self._arm[direcao]
+        w["phi"].set(f"{ar.phi_mm:g}")
+        w["n"].set(str(ar.n_barras))
+        w["espacamento"].set("")
+
+    # ------------------------------------------------------------------ leitura
+    def ler_pilar(self) -> Pilar:
+        return Pilar(ap=_float(self.v_ap.get(), 0.20), bp=_float(self.v_bp.get(), 0.50),
+                     phi_arranque_mm=_float(self.v_phi_arranque.get(), 16.0))
+
+    def ler_materiais(self) -> tuple[Concreto, Aco, float]:
+        concreto = Concreto(fck=_float(self.v_fck.get(), 25.0),
+                            agregado=self.v_agregado.get())
+        aco = Aco(fyk=_float(self.v_fyk.get(), 500.0))
+        cobrimento = _float(self.v_cobrimento.get(), 4.5) / 100.0
+        return concreto, aco, cobrimento
+
+    def ler_perfil(self) -> PerfilGeotecnico | None:
+        if not self._camadas:
+            return None
+        return PerfilGeotecnico(camadas=list(self._camadas),
+                                nivel_agua=_float_opt(self.v_nivel_agua.get()))
+
+    def ler_solo(self) -> Solo:
+        return Solo(sigma_adm=_float(self.v_sigma_adm.get(), 250.0),
+                    gamma_solo=_float(self.v_gamma_solo.get(), 18.0),
+                    hf=_float(self.v_hf.get(), 1.5),
+                    phi=_float(self.v_phi_solo.get(), 30.0),
+                    coesao=_float(self.v_coesao.get(), 0.0),
+                    perfil=self.ler_perfil())
+
+    def solo_marcado_especial(self) -> bool:
+        return bool(self.solo_expansivo.get() or self.solo_colapsivel.get())
+
+    def ler_casos(self) -> list[CasoCarga]:
+        def esf(vs: dict) -> Esforcos:
+            return Esforcos(N=_float(vs["N"].get()), Mx=_float(vs["Mx"].get()),
+                            My=_float(vs["My"].get()), Hx=_float(vs["Hx"].get()),
+                            Hy=_float(vs["Hy"].get()))
+
+        casos = [CasoCarga("G", esf(self.v_G))]
+        if self.usar_q.get():
+            casos.append(CasoCarga.acidental("Q", esf(self.v_Q)))
+        if self.usar_w.get():
+            casos.append(CasoCarga.vento("W", esf(self.v_W)))
+        return casos
+
+    def ler_opcoes(self) -> OpcoesProjeto:
+        kwargs: dict = {
+            "modelo_reacao": self.v_modelo_reacao.get(),
+            "modelo_armadura_rigida": self.v_modelo_armadura.get(),
+        }
+        if self.modo_verificacao.get():
+            kwargs["geometria_imposta"] = GeometriaImposta(
+                a=_float(self.v_geo_a.get()), b=_float(self.v_geo_b.get()),
+                h=_float(self.v_geo_h.get()), h0=_float_opt(self.v_geo_h0.get()))
+
+        impostas = {}
+        for direcao, w in self._arm.items():
+            if w["impor"].get():
+                impostas[direcao] = ArmaduraImposta(
+                    phi_mm=_float(w["phi"].get(), 12.5),
+                    n_barras=_int_opt(w["n"].get()),
+                    espacamento=_float_opt(w["espacamento"].get()))
+        kwargs["armaduras_impostas"] = impostas
+        return OpcoesProjeto(**kwargs)

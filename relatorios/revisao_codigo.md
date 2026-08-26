@@ -127,3 +127,40 @@ segunda instância independente revisando. A cobertura desta rodada (Seções
 por ser exaustiva; o volume de fórmulas restante (Seções 12, 14, 17, 20, 22
 completas) é grande o bastante para não caber em uma sessão — ver
 `kb/pendencias.md`.
+
+## Adendo — 2026-08-26: interface do escopo amplo (ui/completo/)
+
+Delegado ao **a3-interface** (conforme pedido explícito do usuário, com um
+screenshot de referência) a reconstrução da tela do escopo amplo, para
+reproduzir um layout de três colunas com modelo 3D interativo, mapas de
+momentos, reação do solo, perfil geológico e exportação de PDF.
+
+O agente reaproveitou integralmente os desenhos e o exportador que já
+existiam no pacote portado (`visual2d.py`, `visual3d.py`,
+`visual3d_momentos.py`, `projecao.py`, `pintura.py`, `pdf.py`, `pranchas.py`)
+— não escreveu nenhuma rotina de cálculo nova. `ui/app_completo.py` virou um
+lançador fino para o novo pacote `ui/completo/` (app, formulário,
+visualização, resultado, tema, empacotamento do modelo visual).
+
+**Revisão independente feita pela sessão principal** (não só aceito o
+relatório do subagente):
+- Leitura completa dos 5 arquivos novos (`app.py`, `formulario.py`,
+  `visualizacao.py`, `resultado.py`, `modelo.py`) — nenhuma conta encontrada
+  fora de `calc_core.sapata_isolada`; `resultado.py` só faz `max`/`min` sobre
+  listas que o núcleo já produziu (mesma técnica de `relatorio.memorial`).
+- Teste headless próprio (Xvfb) que achou e depois **descartou** um falso
+  positivo: a aba "Mapa 2D" de Momentos aparentava não desenhar nada
+  (0 itens no canvas) — investigado e confirmado como artefato do teste (a
+  aba nunca tinha sido selecionada, então o Tkinter não deu tamanho real ao
+  canvas). Selecionando a aba de verdade antes de medir, ela desenha 954
+  itens normalmente — as quatro abas de visualização, exportação de PDF
+  (`%PDF-` válido, ~100 KB), modo verificação e os botões "copiar do
+  automático" foram confirmados funcionando de ponta a ponta.
+- `ruff` (padrão completo) tinha 17 avisos de estilo (import não ordenado,
+  `Optional[X]` em vez de `X | None`, um loop por índice em vez de
+  `enumerate`, concatenação implícita de string numa tupla) — corrigidos
+  (`--fix` + 2 ajustes manuais) e reconferidos com o mesmo teste headless
+  para garantir que a limpeza de estilo não mudou comportamento.
+
+Nenhum defeito de cálculo encontrado nesta revisão — esperado, já que a
+interface não calcula por construção (a3-interface.md).

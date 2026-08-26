@@ -21,8 +21,13 @@ encontrados e corrigidos, 2 deles do lado inseguro (ver
 `relatorios/revisao_codigo.md`, adendo de 2026-08-26). O resto (geotecnia
 excêntrica, bielas de Blévot, rigidez/Winkler, recalques, MEF do solo) está
 `PENDENTE_HUMANO` em `ruleset.yaml` — portado e testado numericamente, mas
-não auditado fórmula a fórmula. Interface: `ui/app_completo.py`, que exibe
-esse aviso de forma permanente.
+não auditado fórmula a fórmula. Interface: `ui/completo/` (lançada por
+`ui/app_completo.py`) — modelo 3D interativo (arrastar para girar), mapas de
+momentos 2D/3D, reação do solo, perfil geológico com bulbo de tensões, e
+exportação de memorial em PDF (`Exportar PDF`) — todos reaproveitando os
+desenhos e o exportador que já existem em `calc_core/sapata_isolada/`, sem
+cálculo na camada de interface. O aviso de escopo fica num banner fixo,
+nunca só num popup de abertura.
 
 **NÃO implementado em nenhum dos dois:** determinação de σ_adm a partir de
 SPT/CPT, majoração por vento na tensão admissível, pilar de borda/canto na
@@ -107,7 +112,8 @@ kb/                         extrações normativas (a1-bibliotecario) e fila hum
 calc_core/geotecnico/       núcleo mínimo, 100% auditado (carga centrada)
 calc_core/sapata_isolada/   núcleo amplo, parcialmente auditado (ver ruleset.yaml)
 ui/app_desktop.py           interface do núcleo mínimo — não calcula nada (a3)
-ui/app_completo.py          interface do núcleo amplo — idem, com aviso de escopo
+ui/completo/                interface do núcleo amplo (3D, momentos, PDF) — idem
+ui/app_completo.py          ponto de entrada de compatibilidade para ui/completo/
 tests/                      conformidade, equilíbrio, invariância, contorno, regressão das correções
 relatorios/                 revisão de código e validação (a6/a7), com adendo de 2026-08-26
 tools/decodificar_nbr.py    decodificador de PDFs da ABNT com CMap deslocado
