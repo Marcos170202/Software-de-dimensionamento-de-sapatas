@@ -78,3 +78,52 @@ lacunas do escopo — ver `kb/pendencias.md` e `CLAUDE.md`):
 4. Nenhum dimensionamento estrutural (armadura, punção) — apenas geometria
    geotécnica. Sapata "aprovada" por este software ainda precisa de projeto
    estrutural completo (NBR 6118) antes de execução.
+
+## Adendo — 2026-08-26: auditoria de calc_core/sapata_isolada/
+
+O usuário forneceu um pacote maior (19 arquivos, ~6.760 linhas), cobrindo
+carga excêntrica, punção, bielas e tirantes, recalques por substrato,
+rigidez/grelha sobre base elástica e MEF do solo. Tratado como fonte
+EXTERNA a auditar, não como verdade aceita — ao contrário do restante deste
+repositório, não passou pelo pipeline A1→A2 completo antes de existir.
+
+**Processo seguido:** leitura visual (imagem da página em 300dpi) da NBR
+6118:2023, Seções 8 (materiais), 9.3-9.4 (ancoragem), 19.4 (cisalhamento) e
+19.5 (punção), conferindo cada fórmula usada em
+`calc_core/sapata_isolada/materiais.py` e `sapata.py` linha a linha contra o
+texto normativo — não contra memória de treinamento.
+
+**Resultado: 6 defeitos confirmados, todos corrigidos.** Dois do lado
+inseguro (subestimavam exigência ou superestimavam resistência):
+
+1. `fct,m` (fck>50MPa): constante errada (`0,11*fck` em vez de `0,1*(fck+8)`).
+2. `Eci`: faltava o parâmetro α_E do agregado (fixava granito=1,0 sempre).
+3. `l_b` básico: faltava o piso `>=25φ` exigido pela norma.
+4. **`η1` (Tabela 8.2): CA-60 herdava 2,25 de CA-50 em vez de 1,00 — LADO
+   INSEGURO** (subestima comprimento de ancoragem necessário para CA-60).
+5. `τRd1` (punção, contorno C'): "d" do fator ke em milímetros em vez de
+   centímetros — subestimava a resistência (conservador, não inseguro).
+6. **`τRd1`: faltava o teto ρ≤0,02 — LADO INSEGURO** em sapata muito armada
+   (superestima a resistência à punção reportada).
+
+Ver `ruleset.yaml` (regras `NBR6118-*`) para o detalhe de cada correção, e
+`tests/test_sapata_isolada_correcoes.py` para a regressão de cada uma.
+
+**O que NÃO foi auditado nesta rodada** (portado, testado numericamente, mas
+sem verificação formula-a-fórmula contra a norma): geotecnia sob carga
+excêntrica (núcleo central, diagramas trapezoidal/triangular, FS de
+deslizamento/tombamento), recalques (Schmertmann, adensamento de Terzaghi),
+bielas e tirantes de Blévot, classificação de rigidez e o modelo de grelha
+sobre base elástica de Winkler, MEF do solo, e toda a camada de
+exportação/visualização (`pdf.py`, `pranchas.py`, `projecao.py`, `pintura.py`,
+`visual2d.py`, `visual3d*.py`). Todos marcados `PENDENTE_HUMANO` em
+`ruleset.yaml`, seção `escopo_amplo_em_conferencia` — **nenhum destes é
+"aprovado"**, e a interface (`ui/app_completo.py`) exibe esse aviso de forma
+permanente, não só na primeira tela.
+
+**Nota de processo:** esta continua sendo uma autoavaliação — não houve
+segunda instância independente revisando. A cobertura desta rodada (Seções
+8, 9, 19.4, 19.5) foi escolhida por consequência (ruptura frágil/ELU), não
+por ser exaustiva; o volume de fórmulas restante (Seções 12, 14, 17, 20, 22
+completas) é grande o bastante para não caber em uma sessão — ver
+`kb/pendencias.md`.

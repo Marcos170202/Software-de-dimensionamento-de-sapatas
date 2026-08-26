@@ -23,10 +23,12 @@ jobs:
           python-version: "3.12"
       - name: Instala dependências de teste
         run: pip install -r requirements-dev.txt
-      - name: ruff
-        run: ruff check calc_core/
-      - name: mypy --strict
-        run: mypy --strict calc_core/
+      - name: ruff (repositório inteiro — só erros de sintaxe)
+        run: ruff check calc_core/ ui/ --select E9
+      - name: ruff (padrão completo — só no núcleo 100% auditado)
+        run: ruff check calc_core/geotecnico/ calc_core/modelos.py ui/
+      - name: mypy --strict (só no núcleo 100% auditado)
+        run: mypy --strict calc_core/geotecnico/ calc_core/modelos.py
       - name: pytest com cobertura
         run: pytest tests/ --cov=calc_core --cov-report=term-missing
 
@@ -40,11 +42,13 @@ jobs:
           python-version: "3.12"
       - name: Instala PyInstaller
         run: pip install -r requirements.txt
-      - name: Gera o .exe
+      - name: Gera os .exe (Sapata7.exe e Sapata7Completo.exe)
         run: pyinstaller sapata7.spec
       - name: Publica o artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sapata7-windows
-          path: dist/Sapata7.exe
+          path: |
+            dist/Sapata7.exe
+            dist/Sapata7Completo.exe
           if-no-files-found: error

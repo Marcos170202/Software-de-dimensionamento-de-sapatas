@@ -54,16 +54,29 @@ texto em qualquer dos dois casos: só saem por leitura visual da página.
 
 ## Estado do pipeline
 
-- **GATE 1 (congelado):** `ruleset.yaml` — sapata isolada, carga centrada, solo
-  homogêneo, a partir da NBR 6122 §5.6, §7.1, §7.6.1, §7.7.1. Ver
-  `relatorios/`.
-- **Implementado (A4):** `calc_core/geotecnico/geometria.py` (busca de B×L para
-  carga centrada) e `restricoes.py` (dimensão mínima em planta).
-- **Pendente:** carga excêntrica (§7.6.2), deslizamento/tombamento (§7.6.3),
-  recalques (§7.4), determinação de σ_adm a partir de SPT/CPT (§7.3.3), e todo
-  o dimensionamento estrutural (A5, depende de extrair as fórmulas da NBR 6118
-  por visão — ainda não feito). Não use este software para nada além da
-  geometria da sapata sob carga centrada até esses itens serem implementados.
+Dois motores coexistem neste repositório — não confundir o grau de confiança de um com o outro:
+
+- **`calc_core/geotecnico/`** — escopo MÍNIMO, 100% auditado por este
+  pipeline (A1→A2→A4→A6→A7 completos). Sapata isolada, carga centrada, solo
+  homogêneo, a partir da NBR 6122 §5.6, §7.1, §7.6.1, §7.7.1. Interface:
+  `ui/app_desktop.py`. Ver `relatorios/` (sem o adendo de 2026-08-26).
+- **`calc_core/sapata_isolada/`** — escopo AMPLO (carga excêntrica, punção,
+  bielas e tirantes, recalques, rigidez/grelha, MEF do solo), fornecido pelo
+  usuário como pacote externo em 2026-08-26 e **parcialmente** auditado
+  contra a NBR 6118: materiais (§8), ancoragem (§9.3-9.4), cisalhamento
+  (§19.4) e punção (§19.5) foram conferidos item a item por leitura visual e
+  tiveram 6 defeitos corrigidos (2 do lado inseguro — ver
+  `relatorios/revisao_codigo.md`, adendo). Geotecnia sob excentricidade,
+  bielas de Blévot, rigidez/Winkler, recalques e MEF do solo **ainda não
+  foram auditados** — ver `ruleset.yaml`, seção
+  `escopo_amplo_em_conferencia`. Interface: `ui/app_completo.py`, que exibe
+  esse aviso permanentemente na tela e no memorial.
+
+**Pendente em ambos os motores:** determinação de σ_adm a partir de SPT/CPT
+(§7.3.3), majoração por vento na tensão admissível (§6.3.2/§6.3.3), pilar de
+borda/canto na punção (§19.5.2.3/§19.5.2.4). Não use nenhum dos dois motores
+como memorial final sem revisão de um engenheiro — o amplo em particular tem
+partes de status `PENDENTE_HUMANO`, que é diferente de `APROVADA`.
 
 ## Limites
 

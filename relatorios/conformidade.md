@@ -74,3 +74,24 @@ cobertura de linhas 100% em `calc_core/`.
 
 Aprovado **para o escopo mínimo declarado em `ruleset.yaml`**, com a ressalva
 de processo registrada no topo deste documento.
+
+## Adendo — 2026-08-26: calc_core/sapata_isolada/ (escopo amplo)
+
+- Suíte de sanidade do próprio autor do pacote (7 casos, ver
+  `tests/test_sapata_isolada_sanidade.py`) — **passa** após as 6 correções.
+- Regressão dos 6 defeitos corrigidos (`tests/test_sapata_isolada_correcoes.py`)
+  — **passa**, incluindo os 2 casos do lado inseguro (η1 de CA-60; teto de ρ
+  na punção).
+- Caso de ponta a ponta com perfil de solo em 2 camadas, vento e momento
+  biaxial: roda sem exceção, gera memorial completo, e **reprova
+  corretamente** uma sapata por recalque excessivo (104,2 mm contra limite de
+  25 mm) — sinal de que as verificações estão de fato conectadas.
+- **45/45 testes do repositório passam** após a integração.
+
+**Limitação explícita:** não há exemplo de livro-texto (Alonso ou outro)
+disponível neste ambiente para os casos excêntricos/punção/bielas — a
+"conformidade" aqui é contra a própria norma (leitura visual) e contra
+verificações físicas (equilíbrio, invariância testados no escopo mínimo),
+não contra uma segunda fonte independente para o escopo amplo. Ver
+`ruleset.yaml`, seção `escopo_amplo_em_conferencia`, para o que ainda não
+foi auditado item a item.

@@ -3,24 +3,31 @@
 Regras extraídas mas com `status: PENDENTE_HUMANO` em `ruleset.yaml`. Não
 implementar em `calc_core/` até virarem `APROVADA`.
 
-## NBR6122-7.6.2-area-comprimida (carga excêntrica)
+## NBR6122-7.6.2-area-comprimida (carga excêntrica) — ATUALIZADO
 
-**Pergunta objetiva:** qual estratégia de busca usar para B×L quando há
-excentricidade em uma ou duas direções, respeitando a área comprimida mínima
-(2/3 característica / 50% cálculo) e o núcleo central?
+**Não está mais "não implementado".** `calc_core/sapata_isolada/sapata.py`
+(portado do pacote do usuário em 2026-08-26) implementa diagrama
+trapezoidal/triangular/área efetiva de Meyerhof para carga excêntrica —
+mas isso ainda é `PENDENTE_HUMANO` no ruleset porque NINGUÉM conferiu essas
+fórmulas contra o texto literal da 7.6.2 nesta rodada (a auditoria desta
+sessão cobriu só materiais/ancoragem/punção/cisalhamento da NBR 6118).
 
-**Trecho literal:** ver `kb/clausulas.jsonl`, item `7.6.2`.
+**Achado concreto que precisa de decisão:** a norma exige área comprimida
+`>= 2/3 da área total` para solicitações CARACTERÍSTICAS ou `>= 50%` para
+solicitações de CÁLCULO — dois limiares, um por método. O código portado tem
+um único parâmetro `area_comprimida_minima` (default 2/3) aplicado somente às
+combinações ELS (`self.combs_els`); as combinações ELU nunca são checadas
+contra o limiar de 50%. Ou seja, a verificação de área comprimida sob carga
+de cálculo (ELU) está ausente, não só "usando o valor errado".
 
-**Leitura proposta:** implementar em duas etapas — (1) diagrama trapezoidal
-enquanto a resultante cai dentro do núcleo central (e ≤ B/6), (2) diagrama
-triangular com redistribuição de área quando e > B/6, limitando pela área
-comprimida mínima. É o método padrão de livros-texto de fundações (não é
-texto da norma, é prática consagrada — precisa virar decisão explícita, não
-suposição do agente).
+**Pergunta objetiva:** confirmar se a intenção é aplicar 2/3 às combinações
+ELS-rara (parece ser o caso, dado que a verificação de tensão do solo já é
+feita em ELS) e adicionar uma checagem de 50% às combinações ELU, ou se o
+código deveria unificar num único critério mais conservador.
 
-**Impacto se a leitura estiver errada:** subdimensionamento da sapata sob
-momento — o tipo de erro que a norma trata como estado limite último (ruptura
-por esgotamento de resistência do terreno, 6.2.1 g).
+**Impacto se não for corrigido:** uma sapata poderia passar no
+dimensionamento em planta (ELS) e nunca ser checada quanto à área comprimida
+sob a combinação de cálculo mais desfavorável — undertesting silencioso.
 
 ## NBR6122-7.6.3-deslizamento (carga horizontal)
 
@@ -47,3 +54,27 @@ conferidas visualmente)?
 de aprovar. Só é necessário quando o software passar a deduzir σ_adm de
 SPT/CPT — o escopo atual recebe σ_adm como entrada direta do engenheiro, então
 isto não bloqueia o GATE 1 do escopo mínimo.
+
+## NBR6118-9.4.2.5-lb-necessario — α parcial (2 de 4 casos)
+
+**Trecho literal:** ver `kb/clausulas.jsonl`, item `9.4.2.5` (lido por visão,
+p. 37-38).
+
+**O que falta:** a norma dá α=1,0 (sem gancho), 0,7 (com gancho e cobrimento
+≥3φ), 0,7 (barra transversal soldada) e 0,5 (os dois juntos). O código só
+implementa os dois primeiros (`sapata_isolada/sapata.py::_ancoragem`,
+parâmetro booleano `com_gancho`). Os dois casos com barra transversal soldada
+não têm como ser selecionados.
+
+**Impacto:** nenhum — ausência é conservadora (nunca usa um α menor que o
+correto), só limita a economia de armadura em detalhamentos que usem barra
+transversal soldada como reforço de ancoragem. Baixa prioridade.
+
+## Módulos portados ainda não auditados (escopo amplo)
+
+Ver `ruleset.yaml`, seção `escopo_amplo_em_conferencia`, para a lista
+completa (geotecnia/Boussinesq, bielas de Blévot, rigidez/grelha de Winkler,
+recalques, MEF do solo, exportação PDF/visualização). Nenhum desses módulos
+é `APROVADA` — todos passaram no teste de sanidade do próprio pacote e num
+caso de ponta a ponta, mas não tiveram fórmula alguma conferida contra o
+texto da norma nesta rodada.

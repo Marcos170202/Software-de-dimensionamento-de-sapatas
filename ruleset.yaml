@@ -7,9 +7,40 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 1
+versao: 2
 escopo: "sapata isolada, carga centrada, solo homogêneo"
 data_congelamento: "2026-08-26"
+
+# --- Versão 2: adição do escopo AMPLO ---------------------------------------
+#
+# calc_core/sapata_isolada/ é um pacote maior, fornecido pelo usuário (não
+# gerado pelo pipeline A1->A2 deste projeto), cobrindo carga excêntrica,
+# recalques, punção, bielas e tirantes, rigidez/grelha sobre base elástica e
+# MEF do solo. Ele foi tratado como fonte a AUDITAR, não como verdade aceita:
+# cada fórmula abaixo com status APROVADA foi conferida por leitura VISUAL
+# (imagem da página em 300dpi, não do texto extraído) contra a NBR 6118:2023,
+# porque as equações da 6118 não têm camada de texto (ver CLAUDE.md).
+#
+# Da auditoria da Seção 8 (materiais), 9 (ancoragem) e 19.4/19.5 (cisalhamento
+# e punção) — a única parte coberta até agora — saíram 6 defeitos confirmados,
+# todos corrigidos em calc_core/sapata_isolada/materiais.py e sapata.py:
+#   1. fct,m (fck>50MPa): constante errada na fórmula.
+#   2. Eci: faltava o parâmetro alpha_E do agregado (assumia granito=1,0 sempre).
+#   3. l_b básico: faltava o piso >=25*phi exigido pela norma.
+#   4. eta_1: CA-60 herdava o valor de CA-50 (2,25 em vez de 1,00) — ERRO DO
+#      LADO INSEGURO (subestima comprimento de ancoragem para CA-60).
+#   5. tau_Rd1 (punção, contorno C'): "d" usado em milímetros em vez de
+#      centímetros no fator ke — subestimava a resistência (conservador).
+#   6. tau_Rd1: faltava o teto rho<=0,02 — ERRO DO LADO INSEGURO em sapata
+#      muito armada (superestima a resistência à punção).
+#
+# As demais partes do pacote (geotecnia com Boussinesq/Newmark, recalques —
+# Schmertmann/Perloff/Terzaghi, bielas e tirantes de Blévot além dos limites
+# de nó já conferidos, rigidez/grelha sobre base elástica de Winkler, MEF do
+# solo axissimétrico, e a geometria/estabilidade sob carga excêntrica em
+# sapata.py) foram PORTADAS mas AINDA NÃO auditadas item a item contra a
+# fonte — ver a seção "escopo_amplo_em_conferencia" abaixo. A interface e o
+# memorial devem deixar isso visível: "em conferência" não é "aprovado".
 
 regras:
 
@@ -74,6 +105,109 @@ regras:
     status: PENDENTE_HUMANO
     motivo_pendencia: "Necessária apenas se o software vier a DEDUZIR sigma_adm a partir de SPT/CPT/prova de carga — fora do escopo atual (sigma_adm é entrada direta). Além disso o extrator de texto lineariza a Tabela 1 (células mescladas); os valores em kb/clausulas.jsonl foram lidos do texto corrido, não conferidos contra a tabela renderizada — exigir conferência visual antes de aprovar."
 
+  # --- Seção 8 (materiais) e 9 (ancoragem) — auditadas e corrigidas -------
+
+  - id: NBR6118-8.2.5-fctm
+    norma: "NBR 6118:2023"
+    item: "8.2.5"
+    pagina: 23
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.materiais.Concreto.fctm"
+    checagem_dimensional: "fck [MPa] -> fctm [MPa]. Homogêneo (log de adimensional)."
+    checagem_numerica: "fck=25 -> fctm=2,565 MPa (fck<=50, fórmula polinomial); fck=90 -> fctm=5,043 MPa (fórmula log corrigida)."
+    observacao: "Corrigido: constante do termo log era 0,11*fck; a norma pede 0,1*(fck+8)."
+
+  - id: NBR6118-8.2.8-Eci
+    norma: "NBR 6118:2023"
+    item: "8.2.8"
+    pagina: 24
+    metodo: ambos
+    status: APROVADA
+    implementacao: "sapata_isolada.materiais.Concreto.Eci / .Ecs (alpha_i já estava correto)"
+    checagem_dimensional: "fck [MPa] -> Eci [MPa]."
+    checagem_numerica: "fck=25, agregado granito (alpha_E=1,0) -> Eci=28000 MPa, valor de catálogo usual."
+    observacao: "Corrigido: faltava o parâmetro alpha_E (agregado). Agora é campo explícito de Concreto, default 'granito' documentado como escolha do software, não da norma."
+
+  - id: NBR6118-Tab8.2-eta1
+    norma: "NBR 6118:2023"
+    item: "Tabela 8.2"
+    pagina: 29
+    metodo: ambos
+    status: APROVADA
+    implementacao: "sapata_isolada.materiais.Aco.eta1 (via campo 'categoria')"
+    checagem_dimensional: "adimensional."
+    checagem_numerica: "CA-25->1,00 CA-50->2,25 CA-60->1,00 (testado em tests/)."
+    observacao: "Corrigido: erro do lado inseguro (ver nota da versão 2 acima). Aco agora tem campo 'categoria', inferido de fyk (250/500/600) quando não informado."
+
+  - id: NBR6118-9.4.2.4-lb-basico
+    norma: "NBR 6118:2023"
+    item: "9.4.2.4"
+    pagina: 37
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.materiais.comprimento_ancoragem_basico"
+    checagem_dimensional: "phi [mm] -> l_b [m]."
+    checagem_numerica: "phi=10mm, C20, CA-50, boa aderência -> l_b/phi ~44 (valor clássico de tabela de escritório, teste em tests/)."
+    observacao: "Corrigido: faltava o piso >=25*phi."
+
+  - id: NBR6118-9.4.2.5-lb-necessario
+    norma: "NBR 6118:2023"
+    item: "9.4.2.5"
+    pagina: 37
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.sapata.Sapata._ancoragem"
+    checagem_dimensional: "adimensional (alpha) * m (l_b) -> m."
+    checagem_numerica: "l_b,mín = max(0,3*l_b, 10*phi, 100mm) conferido, bate exatamente."
+    observacao: "SIMPLIFICAÇÃO DOCUMENTADA, não corrigida nesta rodada: a norma tem 4 valores de alfa (1,0/0,7/0,7/0,5) conforme gancho e/ou barra transversal soldada; o código só implementa 2 (sem gancho=1,0 / com gancho=0,7). Cada um dos 2 casos implementados está correto; os 2 que faltam (barra transversal soldada) tornariam a ancoragem mais curta em certas configurações — ausência é conservadora, não insegura. Registrado em kb/pendencias.md."
+
+  # --- Seção 19.4/19.5 (cisalhamento e punção) — auditadas e corrigidas ---
+
+  - id: NBR6118-19.4.1-cisalhamento-VRd1
+    norma: "NBR 6118:2023"
+    item: "19.4.1"
+    pagina: 161
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.sapata.Sapata._verificar_cisalhamento"
+    checagem_dimensional: "kPa * (adimensional) * m = kN/m (força por largura). Consistente."
+    checagem_numerica: "Conferido termo a termo contra a imagem da p. 161 — nenhuma correção necessária."
+    observacao: "Termo 0,15*sigma_cp omitido (sapata sem protensão, sigma_cp=0) — simplificação correta para este domínio, não é defeito."
+
+  - id: NBR6118-19.5.3.1-tauRd2
+    norma: "NBR 6118:2023"
+    item: "19.5.3.1"
+    pagina: 167
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.sapata.Sapata._verificar_puncao (contorno C)"
+    checagem_dimensional: "MPa * kPa-por-MPa = kPa. Consistente."
+    checagem_numerica: "Conferido termo a termo contra a imagem da p. 167 — nenhuma correção necessária."
+    observacao: "Ampliação opcional de 20% (estado múltiplo de tensões, pilar interno) não implementada — é uma permissão da norma, não uma exigência; ausência não é defeito, é conservadora."
+
+  - id: NBR6118-19.5.3.2-tauRd1
+    norma: "NBR 6118:2023"
+    item: "19.5.3.2"
+    pagina: 168
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.sapata.Sapata._verificar_puncao (contorno C')"
+    checagem_dimensional: "d agora em cm no fator ke, conforme a norma; kPa resultante consistente."
+    checagem_numerica: "d=0,60m -> ke=1,577 (antes da correção dava 1,183 com d em mm)."
+    observacao: "DOIS defeitos corrigidos: unidade de d no ke (mm->cm) e tetos ke<=2 / rho<=0,02 ausentes. O teto de rho é o único dos dois do lado inseguro."
+
+  - id: NBR6118-19.5.2.2-K-Wp
+    norma: "NBR 6118:2023"
+    item: "19.5.2.2"
+    pagina: 163
+    metodo: calculo
+    status: APROVADA
+    implementacao: "sapata_isolada.sapata.Sapata._coef_K, _verificar_puncao (Wp)"
+    checagem_dimensional: "Wp [m²] (C1² tem m², termos em d*C1 e d² também m²); K*M_Sd/(Wp*d) = kN·m / (m²·m) = kN/m² = kPa, consistente com o primeiro termo F_Sd/(u*d) [kN/(m·m)=kPa]."
+    checagem_numerica: "Tabela K conferida célula a célula contra a imagem da p. 163 — idêntica. Fórmula de Wp idêntica."
+    observacao: "Só o caso 'pilar interno' está implementado; pilar de borda/canto (19.5.2.3/19.5.2.4, com u* e MSd1=MSd-M*Sd) não estão. Para sapata isolada isto é adequado sempre que (a-ap)/2>=2d e (b-bp)/2>=2d — quando não é (sapata muito justa), o código já cai para o cisalhamento como laje em vez de aplicar a fórmula errada de pilar interno fora do domínio. Comportamento correto, não é pendência."
+
 # Colisão de símbolo (a2-verificador.md, item 3): não há colisão de 'd' ou
 # 'sigma' entre domínios neste escopo porque nenhuma regra estrutural (NBR
 # 6118) foi aprovada ainda. Revisitar quando A5 começar.
@@ -87,3 +221,40 @@ regras:
 #
 # Majoração por vento (§6.3.2/§6.3.3): NÃO aprovada — fora do escopo (carga
 # centrada permanente/acidental apenas, sem combinação de vento).
+
+# =============================================================================
+# escopo_amplo_em_conferencia — módulos portados de calc_core/sapata_isolada/
+# que passaram no teste de sanidade do próprio pacote e num caso completo de
+# ponta a ponta (ver relatorios/conformidade.md), mas cujas fórmulas NÃO
+# foram, uma a uma, conferidas por leitura visual da norma nesta rodada.
+# NENHUMA entrada abaixo é APROVADA — a interface e o memorial devem exibir
+# aviso "em conferência" para os resultados que dependem delas.
+# =============================================================================
+escopo_amplo_em_conferencia:
+  - modulo: "sapata_isolada.acoes"
+    cobre: "Combinações ELU/ELS automáticas conforme NBR 8681 e NBR 6118 §11"
+    status: PENDENTE_HUMANO
+  - modulo: "sapata_isolada.geotecnia"
+    cobre: "Perfil estratigráfico, tensão geostática, propagação de Boussinesq/Newmark, correlação SPT->sigma_adm"
+    status: PENDENTE_HUMANO
+  - modulo: "sapata_isolada.sapata (geometria/estabilidade sob carga excêntrica)"
+    cobre: "Núcleo central, diagrama trapezoidal/triangular, área efetiva de Meyerhof, FS deslizamento/tombamento (NBR 6122 §6.2.1.2/§7.6.2/§7.6.3)"
+    status: PENDENTE_HUMANO
+    observacao: "Testado numericamente (equilíbrio, casos de contorno) mas os coeficientes/fórmulas ainda não foram lidos da norma nesta rodada."
+  - modulo: "sapata_isolada.bielas"
+    cobre: "Modelo de bielas e tirantes de Blévot generalizado (NBR 6118 §22.6.4.1); limites de nó CCC/CCT já conferidos via alpha_v/fcd (ver regras de punção acima)"
+    status: PENDENTE_HUMANO
+  - modulo: "sapata_isolada.rigidez, sapata_isolada.grelha"
+    cobre: "Classificação rígida/flexível (NBR 6118 §22.6.1) e discretização em base elástica de Winkler (Hetényi, Hambly) — método numérico consagrado, não é texto literal da norma"
+    status: PENDENTE_HUMANO
+    observacao: "O critério geométrico h>=(a-ap)/3 (§22.6.1) precisa ser conferido; o método de Winkler em si não é 'aprovável' contra um texto normativo — é engenharia consagrada, deve ser documentado como tal, não rotulado com [rule: ...] de norma."
+  - modulo: "sapata_isolada.recalques"
+    cobre: "Recalque imediato, Schmertmann (1978), adensamento de Terzaghi, evolução no tempo (NBR 6122 §6.2, §7.4)"
+    status: PENDENTE_HUMANO
+  - modulo: "sapata_isolada.solo_mef"
+    cobre: "MEF axissimétrico do maciço — método numérico, não texto normativo"
+    status: PENDENTE_HUMANO
+  - modulo: "sapata_isolada.{pdf,pranchas,projecao,pintura,visual2d,visual3d,visual3d_momentos}"
+    cobre: "Exportação de memorial em PDF e visualização 2D/3D"
+    status: PENDENTE_HUMANO
+    observacao: "Camada de apresentação sobre números já calculados — risco normativo baixo, mas não testada nesta rodada (nenhum teste automatizado cobre estes módulos)."
