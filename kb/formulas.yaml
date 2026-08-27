@@ -1,0 +1,52 @@
+# kb/formulas.yaml — produzido pelo a1-bibliotecario.
+#
+# Só entram fórmulas lidas VISUALMENTE da página renderizada (as equações da
+# NBR 6118 não têm camada de texto). Cada fórmula registra as DUAS passadas de
+# leitura independentes; se divergirem, status: DIVERGENCIA e as duas ficam.
+#
+# Esta rodada (2026-08-27) foi disparada por uma consulta pontual sobre
+# classificação unidirecional/bidirecional de sapata isolada. Só uma equação
+# entrou no escopo da consulta — o arquivo nasce com ela e deve ser ampliado
+# nas próximas rodadas. NÃO tratar a cobertura deste arquivo como completa.
+
+formulas:
+  - id: NBR6118-22.6.1-rigidez
+    norma: "NBR 6118:2023"
+    item: "22.6.1"
+    pagina: 191
+    clausula_ref: NBR6118-22.6.1-rigidez   # kb/clausulas.jsonl
+    titulo: "Critério de classificação rígida x flexível de sapata"
+    latex: "h \\ge \\frac{a - a_p}{3}"
+    sympy: "Ge(h, (a - a_p)/3)"
+    variaveis:
+      h:
+        descricao: "altura da sapata"
+        unidade: "m"
+        valor: null
+      a:
+        descricao: "dimensão da sapata em uma determinada direção"
+        unidade: "m"
+        valor: null
+      a_p:
+        descricao: "dimensão do pilar na mesma direção"
+        unidade: "m"
+        valor: null
+    dominio_validade: >-
+      Sapatas de concreto armado em fundação direta. A expressão é avaliada POR
+      DIREÇÃO e a sapata só é RÍGIDA se a condição for satisfeita NAS DUAS
+      DIREÇÕES; basta falhar em uma para a sapata ser FLEXÍVEL. Se rígida,
+      pode-se admitir plana a distribuição de tensões normais no contato
+      sapata-terreno "caso não se disponha de informações mais detalhadas a
+      respeito"; para sapata flexível, ou em casos extremos de fundação em
+      rocha mesmo com sapata rígida, essa hipótese deve ser revista.
+      NÃO é um critério de direcionalidade de armadura: a classificação
+      resultante é rígida/flexível, não unidirecional/bidirecional.
+    consequencias_normativas:
+      rigida: "22.6.2.2 (flexão e cisalhamento nas duas direções; sem punção — verificar compressão diagonal por 19.5.3.1) e detalhamento 22.6.4.1."
+      flexivel: "22.6.2.3 (flexão nas duas direções sem tração uniformemente distribuída; cisalhamento por punção, 19.5) e detalhamento 22.6.4.1.3, que remete às Seções 19 e 20."
+    leitura_visual:
+      passada_1: "h ≥ (a − ap)/3   [render 200 dpi da página PDF 209]"
+      passada_2: "h ≥ (a − ap)/3   [recorte da região da equação a 450 dpi]"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver clausula NBR6118-Em1-secao22-nada
