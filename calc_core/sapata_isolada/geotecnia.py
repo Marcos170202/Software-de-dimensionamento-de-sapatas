@@ -418,18 +418,33 @@ def largura_equivalente(q_liquida: float, a: float, b: float,
 
     [pratica: PC-ESPRAIAMENTO-2V1H]
 
+    a_eq e b_eq são os símbolos do croqui (REQ-PROP-03 (B)): grandeza de
+    PONTO, uma por INTERFACE, na mesma cota do q_i correspondente. NÃO usar
+    "L" nem "B_eq" para nomeá-las — REQ-PROP-03 (C).
+
     Definição, por equivalência de carga total: a_eq·b_eq = q_líq·a·b / Δσ,
     com alargamento igual nas duas direções (a_eq − a = b_eq − b), que é a
     convenção geométrica do 2V:1H.
 
-    Para a fonte 2V:1H o resultado é EXATO por construção (devolve a+z e b+z,
-    pois o equilíbrio vertical é exato). Para Boussinesq/Newmark é apenas uma
-    LEITURA GEOMÉTRICA ILUSTRATIVA do Δσ sob o centro — a solução elástica não
-    tem tronco de espraiamento nem largura carregada, e a tensão real varia ao
-    longo do plano horizontal. Não usar como largura de "área espraiada" em
-    conta nenhuma.
+    RESSALVA, e ela muda o estatuto do número conforme o método:
 
-    Devolve None quando não há largura definida (q_líq = 0 ou Δσ <= 0).
+      * Sob 2V:1H a largura é EXATA POR CONSTRUÇÃO DO MÉTODO: devolve a+z e
+        b+z, porque o método é definido pelo tronco e o equilíbrio vertical é
+        exato. Aqui a_eq é de fato a largura carregada do modelo.
+      * Sob Boussinesq/Newmark é apenas uma LEITURA GEOMÉTRICA ILUSTRATIVA do
+        Δσ sob o centro. A solução elástica NÃO tem tronco de espraiamento e
+        NÃO tem largura carregada real: a tensão varia continuamente no plano
+        horizontal, sem bordas. O valor serve para desenhar e para dar ordem
+        de grandeza — NUNCA como área de cálculo (recalque, verificação de
+        camada subjacente, tensão em cota alguma). O rótulo no desenho carrega
+        essa ressalva (REQ-UI-07 (d)).
+
+    Em ambos os métodos, a_eq(z=0) = a e b_eq(z=0) = b exatamente, e a_eq
+    cresce estritamente com z.
+
+    Devolve None quando não há largura definida (q_líq = 0 ou Δσ <= 0) — e,
+    nessa situação, devolve None em todos os pontos do perfil. None é ausência
+    de largura, não zero e não a dimensão da sapata (REQ-PROP-03 (E)).
     """
     _validar_dominio_propagacao(q_liquida, a, b, 0.0)
     if q_liquida <= 0.0 or delta_sigma <= 0.0:
@@ -446,16 +461,32 @@ def largura_equivalente(q_liquida: float, a: float, b: float,
 class PontoPropagacao:
     """Δσ em UMA profundidade — valor informativo, sem veredito (REQ-PROP-03).
 
+    Grandezas de PONTO, por INTERFACE (REQ-PROP-03 (B), ruleset v7), indexadas
+    i = 0..n com i = 0 na BASE da sapata. São estas — e só estas — que rotulam
+    o croqui de espraiamento:
+
     z                  : profundidade abaixo da BASE da sapata [m]
     profundidade       : profundidade absoluta, a partir da superfície [m]
-    delta_sigma        : Δσ_z [kPa]
-    largura_equivalente_a / _b : dimensões da área equivalente [m] (None se
-                         indefinida); ilustrativas em Boussinesq — ver
-                         `largura_equivalente`
+    delta_sigma        : q_i — Δσ_z [kPa] na cota da interface. Estritamente
+                         decrescente com z, nos dois métodos.
+    largura_equivalente_a : a_eq,i [m] — dimensão da área equivalente no eixo
+                         'a' (corte X), na MESMA interface do q_i.
+    largura_equivalente_b : b_eq,i [m] — idem no eixo 'b' (corte Y).
+                         Estritamente CRESCENTES com z (é o que distingue
+                         largura de espessura), e a_eq,0 = a e b_eq,0 = b
+                         exatamente. None quando indefinidas (q_líq = 0 ou
+                         Δσ <= 0) e, nesse caso, None em TODOS os pontos —
+                         None não vira número na tela (REQ-PROP-03 (E)).
+                         Sob Boussinesq são LEITURA ILUSTRATIVA, não área de
+                         cálculo — ver `largura_equivalente`.
     rotulo             : identificação do ponto no perfil ("base da sapata",
                          "base de 'Areia' / topo de 'Argila'", ...)
     fonte              : "boussinesq" ou "2v1h" — o método viaja junto com o
                          número (REQ-PROP-04)
+
+    A espessura do trecho (h_i) é grandeza de TRECHO e está em
+    `CamadaPropagacao`, com outro universo de índice. O símbolo "L" não é
+    usado para nenhuma das duas — REQ-PROP-03 (C).
     """
 
     z: float
@@ -471,10 +502,30 @@ class PontoPropagacao:
 class CamadaPropagacao:
     """Δσ no trecho de UMA camada dentro do intervalo analisado. Informativo.
 
-    espessura é a do TRECHO analisado da camada (pode ser menor que a
-    espessura da camada, se ela for cortada pela base da sapata ou pelo teto
-    de profundidade). Corresponde aos L1/L2/L3 do desenho, assim como
-    delta_sigma_topo/base correspondem aos q1/q2/q3.
+    Grandezas de TRECHO (REQ-PROP-03 (B), ruleset v7), indexadas por camada,
+    i = 1..n:
+
+    espessura          : h_i [m] — espessura do TRECHO analisado da camada,
+                         que pode ser menor que a espessura da camada se ela
+                         for cortada pela base da sapata (em cima) ou pelo
+                         teto de profundidade `z_max` (embaixo). Por isso a
+                         sequência de h_i NÃO é monótona nem tem significado
+                         de espraiamento: é estratigrafia recortada.
+    delta_sigma_medio  : Δσ_méd,i [kPa], amostrado na MEIA-ALTURA do trecho.
+                         Exibição opcional e, se exibido, com este rótulo —
+                         jamais como "q_i".
+
+    Os símbolos do croqui de espraiamento NÃO saem daqui: são grandezas de
+    PONTO (por INTERFACE, i = 0..n com i = 0 na base da sapata) e vivem em
+    `PontoPropagacao` — q_i (`delta_sigma`) e a_eq,i/b_eq,i
+    (`largura_equivalente_a`/`_b`). Largura cresce com z; espessura não tem
+    por que crescer. Confundir as duas famílias é o defeito que a v7 do
+    ruleset encerrou.
+
+    O símbolo "L" (e "L1/L2/L3", e "B_eq") está PROIBIDO neste croqui, no
+    núcleo, na tela e no memorial — REQ-PROP-03 (C). Esta docstring dizia, até
+    a v6, que `espessura` "corresponde aos L1/L2/L3 do desenho", enquanto o
+    desenho usava "L" para largura: era uma das três fontes da colisão.
     """
 
     indice: int

@@ -472,7 +472,10 @@ def test_delta_sigma_por_fatia_inalterado_apos_a_consolidacao():
 
 
 # ======================================================================== #
-#  Largura equivalente de espraiamento (L de desenho)
+#  Largura equivalente de espraiamento — a_eq / b_eq do croqui
+#  (grandeza de PONTO, por interface; ruleset v7, REQ-PROP-03 (B). O símbolo
+#  "L" foi abolido deste croqui por ter significado largura e espessura ao
+#  mesmo tempo em artefatos diferentes — REQ-PROP-03 (C).)
 # ======================================================================== #
 @pytest.mark.parametrize("z", [0.0, 0.5, 1.0, 2.0, 5.0])
 def test_largura_equivalente_do_2v1h_e_exatamente_a_mais_z(z):
@@ -592,3 +595,171 @@ def test_angulo_do_2v1h_e_26_57_graus():
     alargamento_por_lado = (a + z - a) / 2.0
     assert math.degrees(math.atan(alargamento_por_lado / z)) == pytest.approx(
         26.565, abs=0.01)
+
+
+# ======================================================================== #
+#  REQ-PROP-09 (c) — símbolos do croqui: a_eq/b_eq são LARGURA (grandeza de
+#  PONTO, por interface, i = 0..n) e `espessura` é h_i (grandeza de TRECHO,
+#  por camada, i = 1..n). As duas famílias são [length], de modo que NENHUMA
+#  análise dimensional distingue uma da outra: só teste de propriedade
+#  distingue, e é o que estes cinco travam.
+#
+#  Histórico: a v6 do ruleset definia "L1/L2/L3 = espessuras" e o desenho
+#  usava "L" para largura. Símbolo queimado, abolido na v7.
+# ======================================================================== #
+_GEOMETRIAS_DO_CROQUI = [(2.0, 2.0), (2.0, 4.0), (1.5, 3.0)]
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("a,b", _GEOMETRIAS_DO_CROQUI)
+def test_largura_equivalente_em_z_zero_e_a_propria_sapata(fonte, a, b):
+    """(c.1) a_eq(z=0) == a e b_eq(z=0) == b, EXATOS, nos dois métodos.
+
+    Protege a ancoragem do índice de interface da v7: i = 0 é a base da
+    sapata, e lá a área equivalente é a área real — o tronco de espraiamento
+    nasce com a largura da sapata, não com zero e não com uma espessura.
+    Igualdade exata (==), não aproximada: em z = 0 o Δσ é q_líq exato nos dois
+    métodos, logo a_eq·b_eq = a·b exato. Qualquer offset introduzido na
+    fórmula da largura aparece aqui na primeira casa.
+
+    Checado na função `largura_equivalente` e no ponto i = 0 de
+    `PontoPropagacao`, que é o que a UI lê (REQ-UI-06).
+    """
+    q = 200.0
+    ds0 = acrescimo_tensao(fonte, q, a, b, 0.0)
+    assert largura_equivalente(q, a, b, ds0) == (a, b)
+
+    solo = _solo(hf=1.5)
+    r = propagacao_em_profundidade(solo, a, b, 200.0, fonte=fonte)
+    assert r.pontos[0].z == 0.0
+    assert r.pontos[0].rotulo.startswith("base da sapata")
+    assert r.pontos[0].largura_equivalente_a == a
+    assert r.pontos[0].largura_equivalente_b == b
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("a,b", _GEOMETRIAS_DO_CROQUI)
+def test_largura_equivalente_e_estritamente_crescente_com_a_profundidade(
+        fonte, a, b):
+    """(c.2) a_eq e b_eq estritamente CRESCENTES em >= 4 profundidades.
+
+    É a propriedade que distingue LARGURA de ESPESSURA, e o motivo central da
+    decisão do a2 na v7: a espessura de camada não tem por que crescer com a
+    profundidade (e não cresce — ver o contraexemplo em
+    `test_espessura_das_camadas_nao_e_monotona_quando_z_max_corta`), enquanto
+    a largura equivalente cresce necessariamente, porque Δσ decresce e a carga
+    total se conserva. Se alguém voltar a alimentar o croqui com `espessura`
+    no lugar de a_eq, este teste é o que cai.
+
+    O alargamento é igual nas duas direções por construção (a_eq − a =
+    b_eq − b), o que também é verificado aqui.
+    """
+    q = 200.0
+    profundidades = (0.0, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0)   # 7 > 4 exigidas
+    larguras_a, larguras_b = [], []
+    for z in profundidades:
+        ds = acrescimo_tensao(fonte, q, a, b, z)
+        a_eq, b_eq = largura_equivalente(q, a, b, ds)
+        assert a_eq - a == pytest.approx(b_eq - b, rel=1e-9, abs=1e-12)
+        larguras_a.append(a_eq)
+        larguras_b.append(b_eq)
+    assert all(x < y for x, y in zip(larguras_a, larguras_a[1:]))
+    assert all(x < y for x, y in zip(larguras_b, larguras_b[1:]))
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("a,b", _GEOMETRIAS_DO_CROQUI)
+def test_faixa_de_sanidade_da_largura_em_z_igual_a_2B(fonte, a, b):
+    """(c.3) Em z = 2·B (B = min(a,b)): 2,7 <= a_eq/B <= 3,1.
+
+    Faixa de sanidade de REQ-PROP-03 (F), medida nos dois métodos e em três
+    geometrias. É o teste de TRANSCRIÇÃO: uma espessura de camada trocada por
+    uma largura (ou vice-versa) passa ilesa por qualquer checagem dimensional,
+    porque ambas são [length] — mas não passa por esta faixa. No perfil de
+    referência, na mesma cota, as espessuras de trecho valem 2,5 e 3,0 m, isto
+    é, h/B ~ 1,3 a 1,5: fora da faixa por larga margem.
+
+    Valores medidos (não são normativos, são regressão): 2V:1H dá exatamente
+    3,000 em toda geometria, porque a_eq = a + 2B e, aqui, a = B; Boussinesq
+    dá 3,042 nas sapatas quadradas e 2,782 nas retangulares.
+    """
+    B = min(a, b)
+    assert a == B, "fixture: 'a' deve ser o lado menor, senão a razão muda"
+    q = 200.0
+    z = 2.0 * B
+    ds = acrescimo_tensao(fonte, q, a, b, z)
+    a_eq, _ = largura_equivalente(q, a, b, ds)
+    assert 2.7 <= a_eq / B <= 3.1, f"{fonte}: a_eq/B = {a_eq / B:.4f}"
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+def test_pressao_liquida_nula_deixa_a_largura_none_em_todos_os_pontos(fonte):
+    """(c.4) q_líq = 0 -> a_eq e b_eq são None em TODOS os pontos.
+
+    Trava o contrato que REQ-PROP-03 (E) obriga a UI a respeitar: sem pressão
+    líquida não existe largura de espraiamento, e None é AUSÊNCIA de largura —
+    não zero, e sobretudo não a dimensão da sapata. O idioma
+    `largura_equivalente_a or dim` substituiria o None pela dimensão da sapata
+    e a exibiria como largura calculada, ao lado de um Δσ = 0.
+
+    O contrato é "None em todos os pontos", não "None em alguns": se um único
+    ponto trouxesse número, a tela desenharia um tronco parcial e o engano
+    voltaria por outra porta. O aviso de pressão líquida nula tem de vir
+    junto, porque é ele que explica o traço no desenho.
+    """
+    solo = _solo(hf=1.5)
+    sobrecarga = solo.sobrecarga_no_nivel_da_base()
+    r = propagacao_em_profundidade(solo, 2.0, 3.0, sobrecarga, fonte=fonte)
+
+    assert r.q_liquida == 0.0
+    assert r.pontos, "fixture sem pontos: o teste não estaria testando nada"
+    for p in r.pontos:
+        assert p.largura_equivalente_a is None, p.rotulo
+        assert p.largura_equivalente_b is None, p.rotulo
+        assert p.delta_sigma == 0.0
+    assert any("Pressão líquida nula" in aviso for aviso in r.avisos)
+
+
+def test_espessura_das_camadas_nao_e_monotona_quando_z_max_corta():
+    """(c.5) Contraexemplo que encerrou a leitura "L1/L2/L3 = espessuras".
+
+    Perfil de referência (1,5 / 2,5 / 3,0 / 5,0 m) com a base em 1,5 m: abaixo
+    da sapata sobram trechos de 2,5 / 3,0 / 5,0 m, crescentes por acaso da
+    estratigrafia. Basta o teto de exibição `z_max` cair dentro de uma camada
+    para a sequência EXIBIDA deixar de ser crescente:
+
+        z_max = 6,0 m (corta a última)     -> 2,5 / 3,0 / 0,5
+        z_max = 4,0 m (corta a penúltima)  -> 2,5 / 1,5
+
+    Como z_max = 2·B é justamente o teto recomendado de exibição
+    (REQ-UI-05), este é o caso NORMAL da tela, não uma borda exótica.
+
+    A propriedade protegida é a distinção da v7: `espessura` é h_i, grandeza
+    de TRECHO recortada pela estratigrafia e pelo teto de profundidade — não
+    tem, e não deve ter, o comportamento monótono crescente de a_eq (ver
+    `test_largura_equivalente_e_estritamente_crescente_com_a_profundidade`).
+    Se um dia esta sequência passar a ser sempre crescente, ou alguém a ligou
+    à largura, ou reintroduziu extrapolação da última camada.
+    """
+    solo = _solo(hf=1.5)
+
+    r_cheio = propagacao_em_profundidade(solo, 2.0, 2.0, 200.0)
+    assert [c.espessura for c in r_cheio.camadas] == pytest.approx(
+        [2.5, 3.0, 5.0])
+
+    r6 = propagacao_em_profundidade(solo, 2.0, 2.0, 200.0, z_max=6.0)
+    espessuras6 = [c.espessura for c in r6.camadas]
+    assert espessuras6 == pytest.approx([2.5, 3.0, 0.5])
+    assert not all(x < y for x, y in zip(espessuras6, espessuras6[1:]))
+    assert espessuras6[-1] < espessuras6[-2]
+
+    r4 = propagacao_em_profundidade(solo, 2.0, 2.0, 200.0, z_max=4.0)
+    espessuras4 = [c.espessura for c in r4.camadas]
+    assert espessuras4 == pytest.approx([2.5, 1.5])
+    assert not all(x < y for x, y in zip(espessuras4, espessuras4[1:]))
+
+    # ... e, na MESMA análise, a largura por interface continua crescente:
+    # duas famílias de grandeza, dois comportamentos, um só universo [length].
+    larguras = [p.largura_equivalente_a for p in r4.pontos]
+    assert all(x is not None for x in larguras)
+    assert all(x < y for x, y in zip(larguras, larguras[1:]))
