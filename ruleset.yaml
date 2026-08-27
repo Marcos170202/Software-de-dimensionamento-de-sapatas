@@ -7,9 +7,56 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 2
+versao: 3
 escopo: "sapata isolada, carga centrada, solo homogêneo"
-data_congelamento: "2026-08-26"
+data_congelamento: "2026-08-27"
+
+# --- Versão 3: rodada NBR 6118 §22.6 (rigidez e direcionalidade) ------------
+#
+# ATENÇÃO: esta versão ALTERA o ruleset. Conforme CLAUDE.md regra 5, as
+# aprovações de A6 (relatorios/revisao_codigo.md) e A7 (relatorios/validacao*)
+# ficam INVALIDADAS para tudo que dependa das regras NBR6118-22.6.*: é
+# obrigatória nova rodada de A6 e A7 antes de qualquer release. As regras
+# NBR6122-* e NBR6118-8/9/19.4/19.5 não foram tocadas.
+#
+# Disparada por consulta do usuário: "o modelo classifica sapata isolada como
+# unidirecional/bidirecional e aplica redutor de armadura secundária?"
+#
+# RESPOSTA NORMATIVA, conferida por leitura VISUAL das páginas 191/192/193 da
+# NBR 6118:2023 pelo a2-verificador (não pelo resumo do a1): NÃO EXISTE, na
+# NBR 6118:2023, classificação de sapata em unidirecional/bidirecional, nem
+# critério geométrico que a produza, nem redutor de armadura em direção
+# secundária. Os itens 22.6.2.2-a) (rígida) e 22.6.2.3-a) (flexível) exigem
+# trabalho à flexão NAS DUAS DIREÇÕES, incondicionalmente. A única dicotomia
+# de comportamento estrutural oferecida pela Norma é rígida x flexível
+# (declarado textualmente em 22.6.2.1). Portanto o comportamento atual do
+# software — sempre dimensionar as duas direções, sem redutor — está CORRETO
+# e não é lacuna; passa a ser regra APROVADA e explicitamente protegida
+# contra "otimização" futura (ver NBR6118-22.6.2.2a-flexao-duas-direcoes).
+#
+# A NBR 6122:2022 corrobora pelo lado terminológico: "sapata corrida" (3.40) é
+# definida por CARREGAMENTO (carga distribuída linearmente ou 3+ pilares num
+# mesmo alinhamento), não por forma alongada. Uma sapata retangular alongada
+# sob UM pilar permanece no campo de 3.38 (sapata) — não migra para 3.40 e
+# não herda nenhum tratamento de viga/faixa por analogia terminológica.
+#
+# Auditoria da extração do a1 nesta rodada: 15 transcrições + 4 buscas
+# negativas. Rastreabilidade (norma+item+página+hash) presente em 15/15, e
+# todos os 15 hashes foram reconferidos como sha256 reproduzível do próprio
+# enunciado. Três imprecisões do a1 corrigidas aqui, nenhuma bloqueante:
+#   (a) o a1 afirma que 22.6.4.1.3 é "a ÚNICA referência cruzada da Seção 22
+#       para as Seções 19 e 20". FALSO como escrito: 22.6.2.2-b) remete a
+#       19.5.3.1 e 22.6.2.3-b) remete a 19.5. O correto e mais estreito:
+#       22.6.4.1.3 é a única remissão que importa requisitos de DETALHAMENTO
+#       DE LAJE (Seção 20) para sapata — e só para sapata FLEXÍVEL. Sapata
+#       rígida TEM, sim, obrigação vinda da Seção 19 (compressão diagonal por
+#       19.5.3.1, via 22.6.2.2-b).
+#   (b) a busca negativa NBR6122-sapata-isolada-nada registra 'bidirecional'
+#       como NADA_ENCONTRADO na NBR 6122:2022; o termo OCORRE duas vezes
+#       (PDF p. 50 e 53), como "teste bidirecional" (ensaio tipo Osterberg).
+#       A conclusão do a1 não muda, mas o falso positivo não foi documentado.
+#   (c) "sapata isolada" tem 0 ocorrência no singular na NBR 6122; a única
+#       ocorrência é no plural, "sapatas isoladas", em 7.7.1.
 
 # --- Versão 2: adição do escopo AMPLO ---------------------------------------
 #
@@ -208,9 +255,241 @@ regras:
     checagem_numerica: "Tabela K conferida célula a célula contra a imagem da p. 163 — idêntica. Fórmula de Wp idêntica."
     observacao: "Só o caso 'pilar interno' está implementado; pilar de borda/canto (19.5.2.3/19.5.2.4, com u* e MSd1=MSd-M*Sd) não estão. Para sapata isolada isto é adequado sempre que (a-ap)/2>=2d e (b-bp)/2>=2d — quando não é (sapata muito justa), o código já cai para o cisalhamento como laje em vez de aplicar a fórmula errada de pilar interno fora do domínio. Comportamento correto, não é pendência."
 
-# Colisão de símbolo (a2-verificador.md, item 3): não há colisão de 'd' ou
-# 'sigma' entre domínios neste escopo porque nenhuma regra estrutural (NBR
-# 6118) foi aprovada ainda. Revisitar quando A5 começar.
+  # --- Seção 22.6 (sapatas: rigidez e direcionalidade) — rodada v3 --------
+
+  - id: NBR6118-22.6.1-rigidez
+    norma: "NBR 6118:2023"
+    item: "22.6.1"
+    pagina: 191
+    metodo: ambos   # classificação puramente geométrica; neutra ao método de
+                    # segurança (não envolve FS global nem gamma_f/gamma_m).
+    status: APROVADA
+    clausula_ref: "NBR6118-22.6.1-rigidez"      # kb/clausulas.jsonl
+    formula_ref: "NBR6118-22.6.1-rigidez"       # kb/formulas.yaml
+    implementacao: "estrutural.rigidez.classificar (campo h_necessario/rigida_nbr) e estrutural.sapata.Sapata._alturas"
+    formula: "h >= (a - a_p)/3, verificada NAS DUAS DIREÇÕES"
+    checagem_dimensional: "pint: h [m] vs (a - a_p)/3 -> {'[length]': 1}. Homogêneo. Mutantes testados e REJEITADOS pelo pint: (a - a_p**2)/3 -> DimensionalityError; (a - a_p)/3m -> adimensional != [length]. A checagem tem poder de detecção."
+    checagem_numerica: "a=b=2,00 m, a_p=0,30 m, b_p=0,50 m -> h_nec = max(0,5667; 0,5000) = 0,5667 m; h=0,60 -> RÍGIDA, h=0,50 -> FLEXÍVEL. Código bate com cálculo independente em 4/4 casos, inclusive a=6,0/b=0,8 (h_nec=1,9333 m). Faixa de h plausível (0,10-1,93 m para sapatas de 0,6 a 6,0 m)."
+    observacao: >-
+      Texto CONFERIDO por leitura visual da página 191 pelo a2-verificador
+      (render 200 dpi), não aceito do resumo do a1. Enunciado literal: "Quando
+      se verifica a expressão a seguir, nas duas direções, a sapata é
+      considerada rígida. Caso contrário, a sapata é considerada flexível".
+      O código implementa exatamente isso via h_nec = max((a-ap)/3, (b-bp)/3),
+      que é a forma correta de exigir a condição NAS DUAS direções (basta
+      falhar em uma para ser flexível). Conferido em rigidez.py:120-121 e
+      sapata.py:454.
+      NÃO ALTERADA pela Emenda 1:2026 — verificado visualmente por
+      a2-verificador: os cabeçalhos da emenda saltam de "Página 189, Figura
+      22.5" (emenda p. 17) para "Página 194, Figura 22.7" (emenda p. 18),
+      pulando as páginas 190-193 da norma-mãe, que contêm 22.6 inteiro.
+      ESTA REGRA FECHA a pendência que estava registrada em
+      escopo_amplo_em_conferencia > sapata_isolada.rigidez ("o critério
+      geométrico h>=(a-ap)/3 (§22.6.1) precisa ser conferido").
+      ATENÇÃO ao que a aprovação NÃO cobre: apenas a expressão de
+      classificação. O método de Winkler/Hetényi e os critérios de Meyerhof
+      (lambda_L, K_r) que convivem na mesma função NÃO são texto normativo e
+      continuam PENDENTE_HUMANO — não podem receber [rule: ] de norma.
+      Rígida/flexível também NÃO é critério de direcionalidade de armadura.
+
+  - id: NBR6118-22.6.2.2a-flexao-duas-direcoes
+    norma: "NBR 6118:2023"
+    item: "22.6.2.2-a) e 22.6.2.3-a)"
+    pagina: 192
+    metodo: calculo
+    status: APROVADA
+    clausula_ref: "NBR6118-22.6.2.2-sapata-rigida, NBR6118-22.6.2.3-sapata-flexivel"
+    implementacao: "estrutural.momentos (campo de momentos nas duas direções) e estrutural.sapata.Sapata (armadura As_x e As_y sempre calculadas)"
+    tipo: PROIBICAO
+    checagem_dimensional: "N/A — regra qualitativa, não há expressão a balancear."
+    checagem_numerica: "N/A — regra de comportamento. Verificado por inspeção: nenhum ponto de calc_core/ reduz, dispensa ou aplica fator <1 a uma das direções (grep por 'unidirecional', 'bidirecional', 'armadura secundária', 'armadura de distribuição', 'razão de lados' -> 0 ocorrência em calc_core/ e ui/)."
+    observacao: >-
+      REGRA DE PROIBIÇÃO — autoriza o comportamento atual e o protege.
+      Texto literal conferido na página 192: 22.6.2.2-a) "trabalho à flexão
+      nas duas direções, admitindo-se que, para cada uma delas, a tração na
+      flexão seja uniformemente distribuída na largura correspondente da
+      sapata"; 22.6.2.3-a) "trabalho à flexão nas duas direções, não sendo
+      possível admitir tração na flexão uniformemente distribuída (...)".
+      As duas alíneas são INCONDICIONAIS quanto às duas direções.
+      É PROIBIDO a A4/A5 introduzir: (i) classificação uni/bidirecional de
+      sapata; (ii) redutor, fator ou dispensa de armadura numa direção dita
+      "secundária"; (iii) transposição do piso de 20 % de 20.1/Tabela 19.1
+      como se fosse um TETO ou um redutor — nesses itens 20 % é MÍNIMO de
+      laje, não redução de armadura calculada de sapata.
+      Fundamento adicional (NBR 6122:2022, 3.40, p. 8, conferido em texto
+      UTF-8 limpo): "sapata corrida" é definida por CARREGAMENTO (carga
+      distribuída linearmente OU três ou mais pilares num mesmo alinhamento),
+      não por forma alongada. Logo a analogia "sapata alongada sob um pilar
+      = sapata corrida = unidirecional" NÃO tem amparo terminológico.
+      Nota de escopo: 22.6.2.3-a) acrescenta, para sapata FLEXÍVEL, que "a
+      concentração de flexão junto ao pilar deve ser, em princípio,
+      avaliada". O pacote hoje trata sapata flexível pela mesma teoria de
+      flexão da rígida; essa avaliação de concentração NÃO está implementada
+      e é o mesmo problema físico da regra
+      NBR6118-22.6.2.2a-sapata-alongada abaixo — tratar em conjunto.
+
+  - id: NBR6118-22.6.2.2a-sapata-alongada
+    norma: "NBR 6118:2023"
+    item: "22.6.2.2-a) (parte final)"
+    pagina: 192
+    metodo: calculo
+    status: PENDENTE_HUMANO
+    clausula_ref: "NBR6118-22.6.2.2-sapata-rigida"
+    implementacao: null       # NÃO implementar até virar APROVADA
+    motivo_pendencia: >-
+      A Norma RECONHECE a condição mas NÃO A OPERACIONALIZA: não quantifica
+      "muito alongada", não dá razão de lados nem de balanços, e não oferece
+      regra substituta. Fixar o limiar e a regra substituta é julgamento de
+      engenharia, que nenhum agente deste pipeline pode tomar sozinho.
+    trecho_literal: >-
+      "trabalho à flexão nas duas direções, admitindo-se que, para cada uma
+      delas, a tração na flexão seja uniformemente distribuída na largura
+      correspondente da sapata. Essa hipótese não se aplica à compressão na
+      flexão, que se concentra mais na região do pilar que se apoia na sapata
+      e não se aplica também ao caso de sapatas muito alongadas em relação à
+      forma do pilar" (NBR 6118:2023, 22.6.2.2-a, p. 192, lido visualmente
+      pelo a2-verificador a 200 dpi).
+    leitura_proposta: >-
+      O sujeito de "não se aplica também" é "Essa hipótese", isto é, a
+      hipótese de tração na flexão UNIFORMEMENTE DISTRIBUÍDA na largura. Em
+      sapata muito alongada em relação à forma do pilar, a tração de flexão
+      concentra-se na faixa próxima ao pilar em vez de se espalhar na largura
+      inteira. Consequência: a exceção NÃO é permissão para reduzir armadura
+      numa direção — ao contrário, exige tratamento MAIS refinado, porque
+      espalhar As uniformemente subarma a faixa junto ao pilar.
+      Note "em relação à FORMA DO PILAR": o alongamento é relativo ao pilar,
+      não absoluto. Uma sapata a/b alto sob pilar de mesma proporção
+      (a/b ~ a_p/b_p, balanços iguais) não é o caso visado; o caso visado é
+      balanço muito desigual nas duas direções.
+    impacto_se_a_leitura_estiver_errada: >-
+      DO LADO INSEGURO. Hoje o software aplica a hipótese de distribuição
+      uniforme (momentos.py:207 invoca explicitamente 22.6.2.2-a) e distribui
+      a armadura na largura toda (22.6.4.1.1), SEM detectar nem avisar a
+      condição de alongamento. Confirmado por execução: com a=6,00 m e
+      b=0,80 m (balanços 2,90 m x 0,30 m, razão 9,7) o motor não emite
+      nenhum alerta. Se a concentração junto ao pilar for relevante, a faixa
+      sob o pilar fica subarmada e o memorial não registra a ressalva.
+    pergunta_objetiva: >-
+      (1) Qual índice e qual limiar caracterizam "sapata muito alongada em
+      relação à forma do pilar" para efeito de disparar um aviso?
+      (2) Uma vez disparado, o software deve apenas AVISAR (não alterando
+      nenhum número) ou deve mudar o modelo (ex.: largura colaborante,
+      faixas, grelha/MEF já disponíveis no pacote)?
+      (3) Para sapata FLEXÍVEL, a "concentração de flexão junto ao pilar" de
+      22.6.2.3-a) deve ser avaliada pelo mesmo mecanismo?
+    sugestao_de_gatilho_NAO_NORMATIVA: >-
+      NÃO APROVADA — é apenas material para a decisão humana, NÃO pode ser
+      implementada como se fosse leitura da norma, e NÃO tem amparo em texto
+      normativo algum. Índice candidato, coerente com "em relação à forma do
+      pilar": balanços c_a = (a - a_p)/2 e c_b = (b - b_p)/2; índice
+      lambda = max(c_a, c_b) / min(c_a, c_b). lambda = 1 é a sapata de
+      balanços iguais (a/b = a_p/b_p), proporção clássica de projeto.
+      Faixas candidatas para discussão: lambda >= 2 aviso; lambda >= 3 aviso
+      forte. Os números 2 e 3 são PALPITE DE TRIAGEM sem respaldo normativo e
+      precisam de decisão de engenharia registrada antes de qualquer uso.
+      Se adotados, devem ser rotulados em código como decisão de engenharia
+      (jamais [rule: ] de norma) e o limiar deve ser parâmetro visível e
+      sobrescrivível, nunca constante escondida.
+
+  - id: NBR6118-22.6.4.1.3-remissao-lajes
+    norma: "NBR 6118:2023"
+    item: "22.6.4.1.3"
+    pagina: 193
+    metodo: calculo
+    status: PENDENTE_HUMANO
+    clausula_ref: "NBR6118-22.6.4.1.3-sapata-flexivel-detalhamento"
+    implementacao: null
+    motivo_pendencia: >-
+      Achado de ESCOPO, não de cálculo. Texto integral do item, conferido
+      visualmente na p. 193: "Devem ser atendidos os requisitos relativos às
+      lajes e punção (ver Seções 19 e 20)." O item está sob 22.6.4.1
+      (Detalhamento — Sapatas rígidas) mas seu título é "Sapatas flexíveis",
+      e é a única remissão que traz requisitos de DETALHAMENTO DE LAJE
+      (Seção 20) para dentro do projeto de sapata. Sapata RÍGIDA não recebe
+      essa remissão (embora receba 19.5.3.1 via 22.6.2.2-b — não confundir).
+      Decidir se o software passa a aplicar os mínimos de laje (20.1 e
+      Tabela 19.1) às sapatas FLEXÍVEIS é decisão de engenharia com efeito
+      direto em consumo de aço; não é dedutível do texto sozinha.
+    pergunta_objetiva: >-
+      O software deve aplicar a sapatas FLEXÍVEIS os mínimos de armadura de
+      laje (Tabela 19.1: As/s >= 0,9 cm²/m e rho_s >= 0,5 rho_min para a
+      secundária; 20.1: secundária >= 20 % da principal, espaçamento <= 33 cm,
+      phi <= h/8, prolongamento de 4 cm além do eixo do apoio)?
+    obstaculo_conhecido: >-
+      Mesmo decidindo SIM, a Tabela 19.1 e 20.1 são escritas para lajes já
+      classificadas como "armadas em uma direção" ou "nas duas direções", e a
+      NBR 6118:2023 NÃO define em lugar nenhum o critério dessa classificação
+      (busca negativa NBR6118-criterio-vaos-nada, reconferida: a razão
+      ly/lx <= 2 é convenção de bibliografia, não texto da Norma). Como
+      22.6.2.2-a/22.6.2.3-a já obrigam as DUAS direções na sapata, a leitura
+      coerente é que uma sapata nunca cai na linha "armadas em uma direção"
+      da Tabela 19.1 — mas isso precisa de confirmação humana.
+    impacto_se_a_leitura_estiver_errada: >-
+      Se os mínimos de laje forem devidos e não aplicados, sapata flexível
+      pouco solicitada pode sair com armadura abaixo do mínimo normativo
+      (lado inseguro em fissuração/ductilidade). Se forem aplicados
+      indevidamente a sapata RÍGIDA, o consumo de aço sobe sem amparo — e
+      pior, o memorial citaria um item que não alcança sapata rígida.
+
+  - id: NBR6118Em1-20.1-armadura-secundaria-positiva
+    norma: "NBR 6118:2023/Em1:2026"
+    item: "20.1, penúltimo parágrafo"
+    pagina: 14        # paginação da própria Emenda 1; texto-mãe na p. 172
+    metodo: calculo
+    status: PENDENTE_HUMANO
+    clausula_ref: "NBR6118Em1-20.1-armadura-secundaria"
+    implementacao: null
+    motivo_pendencia: >-
+      Atualização normativa REAL e confirmada, mas de LAJE, e que só alcança
+      sapata se NBR6118-22.6.4.1.3-remissao-lajes for decidida
+      afirmativamente. Fica encadeada àquela decisão — sem regra própria de
+      sapata nesta rodada.
+    achado: >-
+      Conferido visualmente na Emenda 1, p. 14 (PDF p. 18; a Emenda 1 é PDF
+      SEM camada de texto — 0 caractere em 23 páginas — leitura 100 % visual).
+      Cabeçalho "Página 172, 20.1, penúltimo parágrafo / Substituir por:" e
+      novo texto: "A armadura POSITIVA secundária de flexão deve ser igual ou
+      superior a 20 % da armadura principal (...)". O texto de 2023 dizia
+      apenas "A armadura secundária de flexão". A palavra load-bearing
+      "positiva" foi confirmada pelo a2-verificador de forma independente.
+      Efeito: a exigência dos 20 % passa a valer só à armadura POSITIVA —
+      restringe, não amplia.
+    observacao: >-
+      Registrar como conhecimento geral: se algum dia o pipeline dimensionar
+      laje (fora do escopo atual), usar a redação da Em1:2026, não a de 2023.
+
+# =============================================================================
+# ACHADO COLATERAL desta rodada — NÃO é regra, é aviso para quem for
+# implementar a pendência de pilar de borda/canto (ver CLAUDE.md, "Pendente em
+# ambos os motores", e a observação de NBR6118-19.5.2.2-K-Wp).
+# A Emenda 1:2026 ALTERA 19.5.2.3 (p. 164 da norma-mãe). Conferido
+# visualmente na Emenda 1, p. 14: a emenda reapresenta
+#     tau_Sd = F_Sd/(u*·d) + K_1·M_Sd1/(W_p1·d),  M_Sd1 = (M_Sd - M*_Sd) >= 0
+# com W_p1 calculado para o perímetro u e K_1 assumindo os valores de K da
+# Tabela 19.2. Quem for implementar pilar de borda DEVE partir da redação da
+# Em1:2026, não da de 2023. Não conferido item a item nesta rodada — fora do
+# escopo desta consulta; extrair antes de implementar.
+# =============================================================================
+
+# Colisão de símbolo (a2-verificador.md, item 3): COLISÃO REAL DETECTADA nesta
+# rodada, entre os dois motores que coexistem no repositório.
+#   - calc_core/geotecnico/  chama as dimensões em planta de B e L
+#     (restricoes.verificar_dimensao_minima(B, L), geometria.*).
+#   - calc_core/sapata_isolada/  chama as MESMAS grandezas físicas de a e b
+#     (rigidez.classificar(a, b, h, h0, ap, bp), sapata.Sapata).
+#   - a NBR 6118:2023, 22.6.1, usa 'a' para a dimensão da sapata e 'a_p' para a
+#     do pilar; a NBR 6122:2022, 7.7.1, não usa símbolo.
+#   - 'h' é altura da SAPATA no domínio estrutural (22.6.1) e é usado para
+#     espessura de camada/profundidade no domínio geotécnico.
+# Exigência para A4/A5: usar namespace por domínio no campo `implementacao` e
+# nas docstrings — `estrutural.<...>` e `geotecnico.<...>`, como já feito nas
+# regras acima. NÃO renomear as APIs existentes nesta rodada (quebraria a UI e
+# os testes); o namespace é de DOCUMENTAÇÃO e rastreabilidade. Uma unificação
+# de nomenclatura entre os dois motores é candidata a tarefa própria, com nova
+# rodada de A6/A7.
+# 'd' (altura útil, estrutural) x 'd' (profundidade de assentamento,
+# geotécnico): ainda sem colisão efetiva — o motor geotécnico chama a
+# profundidade de assentamento de outra coisa. Revisitar se §7.3.3 entrar.
 #
 # Colisão de método de segurança: nenhuma regra aprovada mistura 'admissivel'
 # e 'calculo' — todas usam metodo: ambos porque a fórmula em si (sigma=N/A)
@@ -246,8 +525,25 @@ escopo_amplo_em_conferencia:
     status: PENDENTE_HUMANO
   - modulo: "sapata_isolada.rigidez, sapata_isolada.grelha"
     cobre: "Classificação rígida/flexível (NBR 6118 §22.6.1) e discretização em base elástica de Winkler (Hetényi, Hambly) — método numérico consagrado, não é texto literal da norma"
-    status: PENDENTE_HUMANO
-    observacao: "O critério geométrico h>=(a-ap)/3 (§22.6.1) precisa ser conferido; o método de Winkler em si não é 'aprovável' contra um texto normativo — é engenharia consagrada, deve ser documentado como tal, não rotulado com [rule: ...] de norma."
+    status: PENDENTE_HUMANO   # PARCIALMENTE RESOLVIDO — ver abaixo
+    observacao: >-
+      ATUALIZADO em 2026-08-27 (versão 3). O critério geométrico
+      h>=(a-ap)/3 (§22.6.1) FOI CONFERIDO nesta rodada e virou regra própria
+      APROVADA: ver NBR6118-22.6.1-rigidez na lista `regras`. Texto lido
+      visualmente na p. 191, checado dimensionalmente com pint e conferido
+      numericamente contra o código em 4 casos — bate exatamente, inclusive
+      a exigência "nas duas direções" (h_nec = max das duas).
+      O QUE CONTINUA PENDENTE_HUMANO neste módulo: tudo o que NÃO é o critério
+      geométrico — Winkler/Hetényi (lambda_L, classe curta/média/longa), a
+      rigidez relativa K_r de Meyerhof, kv_por_tensao_admissivel (Bowles),
+      kv_por_modulo (Vésic), a grelha e a distribuição de pressões dela
+      resultante. Nada disso é texto normativo e nada disso pode receber
+      [rule: ] de norma — é engenharia consagrada e deve ser rotulada como tal.
+      DEFEITOS DE CITAÇÃO detectados neste módulo nesta rodada (corrigir via
+      A5, não são erro de cálculo): rigidez.py:19 e :142 atribuem a punção de
+      sapata flexível ao item "22.6.3", que na verdade é "Modelo de cálculo";
+      o item correto é 22.6.2.3-b). rigidez.py:56 cita "NBR 6122:2019",
+      edição inexistente no acervo (é 2022). Ver kb/pendencias.md.
   - modulo: "sapata_isolada.recalques"
     cobre: "Recalque imediato, Schmertmann (1978), adensamento de Terzaghi, evolução no tempo (NBR 6122 §6.2, §7.4)"
     status: PENDENTE_HUMANO
