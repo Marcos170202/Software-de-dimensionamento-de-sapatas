@@ -170,3 +170,224 @@ recalques, MEF do solo, exportação PDF/visualização). Nenhum desses módulos
 é `APROVADA` — todos passaram no teste de sanidade do próprio pacote e num
 caso de ponta a ponta, mas não tiveram fórmula alguma conferida contra o
 texto da norma nesta rodada.
+
+---
+
+# RODADA 2026-08-27 (ruleset versão 4) — NBR 6122 §6.2.1 / citações de edição
+
+Origem: dois achados do a6 encaminhados ao a2 para confirmação normativa.
+O a5 está PROIBIDO de tocar em qualquer um destes pontos até ler esta seção.
+
+## Questão 1 — item de deslizamento/tombamento: a6 está CERTO na estrutura, e o problema é maior do que ele viu
+
+**Releitura feita pelo a2**, não herdada do a6: texto extraído com pymupdf
+(`NBR 06122 - 2022 - Projeto e execução de fundações.pdf`,
+sha256 `65fb1d5c60b81066010c08a2e86fdedb3491d0603a7c98a46917d52f29571f53`)
+E conferida contra o render a 140 dpi da mesma página. As duas leituras
+coincidem caractere a caractere. Páginas impressas 17-18 = PDF p. 29-30
+(offset de 12).
+
+**Estrutura real da NBR 6122:2022, seção 6.2.1:**
+
+| item | título literal | PDF p. |
+|---|---|---|
+| 6.2.1.1 | Segurança de fundação rasa (direta ou superficial) | 29 |
+| 6.2.1.1.1 | Segurança na compressão | 29 |
+| 6.2.1.1.2 | Coeficientes de ponderação para verificação de tração, deslizamento e tombamento | 29 |
+| 6.2.1.1.3 | Fator de segurança global para verificação de flutuação | 30 |
+| 6.2.1.2 | **Segurança de fundações profundas** | 30 |
+| 6.2.1.2.1 | Resistência determinada por método semiempírico | 30 |
+| 6.2.1.2.2 | Resistência determinada por provas de carga estáticas | 31 |
+
+**Respostas às três perguntas:**
+
+1. **Sim** — 6.2.1.2 é "Segurança de fundações profundas". Seu conteúdo é
+   inteiramente sobre estacas (Rk, ξ1..ξ4, provas de carga). Citá-lo para
+   deslizamento/tombamento de sapata é erro puro. O a6 está certo.
+2. **Sim** — 6.2.1.1.2 existe e é o item de fundação rasa para tração,
+   deslizamento e tombamento. O a6 está certo.
+3. **NÃO.** Aqui o a6 parou cedo. O item 6.2.1.1.2 **não prescreve fator de
+   segurança global nenhum.**
+
+**Trecho literal integral de 6.2.1.1.2** (p. impressa 17-18):
+
+> "Coeficientes de ponderação para verificação de tração, deslizamento e
+> tombamento — Devem ser adotados os seguintes coeficientes de ponderação:
+> γm = 1,2 (minoração) para a parcela favorável do peso; γm = 1,4 (minoração)
+> para a resistência do solo; γf = 1,4 (majoração) para o esforço atuante, se
+> disponível apenas o seu valor característico; se já fornecido o valor de
+> cálculo, nenhum coeficiente de ponderação deve ser aplicado a ele."
+
+É só isso. Não há FS global. Varredura das 120 páginas do PDF por
+`deslizamento|tombamento` devolve **4 ocorrências e nenhuma outra**:
+6.2.1.1 alínea c) (lista de mecanismos de ELU), o título de 6.2.1.1.2, o corpo
+de 6.2.1.1.2, e 7.5.1 (chumbadores em rocha inclinada). Em toda a NBR 6122:2022
+**não existe fator de segurança global para deslizamento ou tombamento**.
+O único FS global de fundação rasa fora da compressão é 1,1, e é para
+**flutuação** (6.2.1.1.3) — item diferente, fenômeno diferente.
+
+### Consequência: a correção "6.2.1.2 → 6.2.1.1.2" NÃO pode ser aplicada sozinha
+
+Trocar o número de item e deixar o resto como está transformaria um erro
+visível (item errado) num erro invisível (item certo dando respaldo normativo
+aparente a um critério que a norma não contém). Isso é PIOR. O a5 fica
+bloqueado nos cinco pontos que citam 6.2.1.2 até haver decisão humana.
+
+### Achado de segurança — LADO INSEGURO, prioridade ALTA
+
+`sapata.py:732-750 (_verificar_estabilidade)` itera sobre `self.combs_els`
+(valores **característicos**) e compara contra FS global
+(`geotecnia.py:215-216`: `fs_deslizamento = 1.5`, `fs_tombamento = 1.5`).
+Isso é a rota de **valores admissíveis** aplicada a uma verificação para a
+qual a NBR 6122:2022 só oferece a rota de **valores de cálculo**. É a colisão
+de método de segurança descrita em `.claude/agents/a2-verificador.md` §3 —
+o erro clássico do setor.
+
+Convertendo 6.2.1.1.2 para FS global equivalente, para comparar maçã com maçã:
+
+| verificação | exigência implícita da norma | código | déficit |
+|---|---|---|---|
+| deslizamento (leitura estrita: 1,2 · 1,4 · 1,4) | **2,35** | 1,5 | −36 % |
+| deslizamento (leitura branda: 1,4 · 1,4) | **1,96** | 1,5 | −23 % |
+| tombamento (1,2 · 1,4) | **1,68** | 1,5 | −11 % |
+
+Em **todas** as leituras possíveis o código é menos conservador que a norma.
+Checagem dimensional feita com `pint`: as duas razões fecham adimensionais
+(`kN/kN` e `kN·m/kN·m`) — a análise dimensional **não** acusa este defeito,
+porque ele é de método e de valor, não de transcrição. Registrado aqui
+justamente por isso.
+
+Defeito irmão, mesma família, em `acoes.py:138-140`: a combinação para
+tombamento/deslizamento minora o permanente estabilizante com `gamma_g = 1,0`.
+A norma manda `γm = 1,2` (minoração) sobre a parcela favorável do peso.
+`1,0` não é minoração nenhuma.
+
+**Pergunta objetiva para o engenheiro (2 itens, ambos bloqueantes):**
+
+1. "γm = 1,4 (minoração) para a resistência do solo" incide sobre tanδ e c'
+   **além** da minoração de 1,2 já aplicada ao peso favorável (FS equivalente
+   2,35), ou as duas são alternativas conforme a parcela (FS equivalente
+   1,96)? Muda o resultado em 20 %.
+2. O software migra a verificação de estabilidade para o método de valores de
+   cálculo (combinações ELU + coeficientes parciais de 6.2.1.1.2), ou mantém
+   uma rota de valores admissíveis com FS fixado pelo projetista? Se mantiver,
+   o FS **não pode** ostentar `[rule:]` de NBR 6122 — tem de ser rotulado como
+   decisão de engenharia, porque a norma não o fornece.
+
+**Impacto se a leitura estiver errada:** se eu estiver errado e existir em
+algum lugar um FS global de 1,5 para estas verificações, o custo é ter
+enrijecido o critério sem necessidade (sapatas maiores, obra mais cara).
+Se eu estiver certo e nada for feito, o motor aprova sapatas com folga ao
+deslizamento até 36 % abaixo da exigida pela norma, e o memorial cita um item
+de fundação profunda como respaldo. O segundo risco é assimetricamente pior.
+
+**Registrado no ruleset:** regra nova
+`NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento`, `metodo: calculo`,
+`status: PENDENTE_HUMANO`.
+
+### Achado colateral encontrado pelo a2 nesta releitura (não veio do a6)
+
+`geotecnia.py:217` define `coef_sigma_max_excentrico = 1.2` e `sapata.py:359`
+faz `limite = self.solo.sigma_adm * 1.2` **sempre** que a seção fica
+parcialmente comprimida (k > 1), sem condição alguma. Não existe na
+NBR 6122:2022 majoração de 20 % da tensão admissível por excentricidade.
+A única majoração de tensão admissível da norma é a de **vento**:
+
+> §6.3.2: "...nas quais o vento é a ação variável principal, os valores de
+> tensão admissível de sapatas e tubulões [...] podem ser majorados em até
+> 15 %. Quando esta majoração for utilizada, o fator de segurança global não
+> pode ser inferior a 1,6." (30 % em galpões industriais, torres de linhas de
+> transmissão, reservatórios elevados, silos graneleiros, torres eólicas,
+> torres de telecomunicações e tanques de produtos químicos.)
+> §6.3.3 (valores de cálculo): até 10 %.
+
+Ou seja: a constante 1,2 (a) excede o teto geral de 15 %, (b) ignora a
+condição de vento ser ação variável principal, (c) ignora a exigência
+FSg ≥ 1,6. É uma guarda condicional virada constante — exatamente o defeito
+que `a2-verificador.md` §3 manda proibir. `PENDENTE_HUMANO`, a5 não mexe.
+
+## Questão 2 — lista de ação para o a5: ocorrências de "NBR 6122:2019"
+
+Contagem própria do a2 (`grep -rn "6122:2019" calc_core/ ui/`):
+**13 ocorrências em arquivos-fonte**. O a6 está certo no total, o a5 estava
+errado (12). Os `.pyc` em `__pycache__/` também casam com o grep mas são
+artefatos de build — **não editar**, regeneram sozinhos.
+
+A edição 2019 não existe no acervo deste repositório. O acervo tem
+NBR 6122:**2022**. Toda ocorrência do ano deve virar 2022. O que não é
+automático é o **item citado junto** — a numeração pode ter mudado entre
+edições e a edição 2019 não está disponível para comparação. O que dá para
+fazer, e foi feito, é conferir se o item citado existe e diz o que a string
+afirma **na edição 2022**.
+
+| # | arquivo:linha | ação |
+|---|---|---|
+| 1 | `calc_core/sapata_isolada/__init__.py:5` | **trocar ano** |
+| 2 | `calc_core/sapata_isolada/recalques.py:14` | **trocar ano** + ver nota A |
+| 3 | `calc_core/sapata_isolada/pranchas.py:67` | **trocar ano** (carimbo da prancha) |
+| 4 | `calc_core/sapata_isolada/sapata.py:5` | **trocar ano** |
+| 5 | `calc_core/sapata_isolada/relatorio.py:33` | **trocar ano** (cabeçalho do memorial) |
+| 6 | `calc_core/sapata_isolada/acoes.py:133` | **trocar ano** + ver nota B |
+| 7 | `calc_core/sapata_isolada/geotecnia.py:7` | **trocar ano** |
+| 8 | `calc_core/sapata_isolada/geotecnia.py:202` | **trocar ano** |
+| 9 | `calc_core/sapata_isolada/geotecnia.py:236` | **trocar ano** |
+| 10 | `ui/completo/resultado.py:21` | **trocar ano** (itens conferidos, ver nota C) |
+| 11 | `ui/completo/resultado.py:22` | **REVISAR ITEM PRIMEIRO — BLOQUEADO** (Questão 1) |
+| 12 | `ui/completo/resultado.py:27` | **trocar ano** + ver nota A |
+| 13 | `ui/completo/app.py:38` | **trocar ano** (subtítulo da janela) |
+
+Conferência dos itens citados junto ao ano, contra a edição 2022:
+
+- **Nota C — `resultado.py:21`, "§7.1/§7.6.1 — tensão admissível na base":
+  CORRETO na 2022, troca de ano é segura.** §7.1 "Generalidades" (PDF p. 33,
+  p. impressa 21) abre com "A grandeza fundamental para o projeto de fundações
+  rasas é a tensão admissível, se o projeto for feito considerando fator de
+  segurança global e valores característicos, ou a tensão resistente de
+  cálculo, quando for feito considerando coeficientes de ponderação e valores
+  de cálculo." §7.6.1 "Cargas centradas" (PDF p. 35) confere e já é regra
+  `APROVADA` no ruleset (`NBR6122-7.6.1-area-carga-centrada`).
+- **Nota A — `recalques.py:14` e `resultado.py:27`, "§6.2/§7 — deslocamentos e
+  sua verificação": ano pode ser trocado; item é impreciso, não falso.**
+  Na 2022, §6.2 é "Estados limites" (não "deslocamentos"); quem trata de
+  deslocamento é §6.2.2 (ELS, `Ek ≤ C`) e §6.2.2.2 ("Valores limites dos
+  deslocamentos das fundações"). §7 inteiro é "Fundação rasa"; o item que
+  amarra tensão ao ELS é §7.4, que remete explicitamente a 6.2.2. Sugestão
+  **não bloqueante** para o a5 aplicar junto: `§6.2.2.2/§7.4`. Se preferir
+  não mexer no item agora, trocar só o ano é aceitável — a citação atual é
+  ancestral verdadeiro, apenas grosso.
+- **Nota B — `acoes.py:133`, "prática consagrada e NBR 6122:2019, item 6.2":
+  ano pode ser trocado; NÃO promover a citação.** §6.2.2.1 exige `Ek ≤ C` com
+  ações e parâmetros **característicos**, o que sustenta usar combinação de
+  serviço para verificar a tensão do solo. Mas a norma **não** prescreve a
+  combinação "ELS rara" especificamente. A docstring já rotula como "prática
+  consagrada" e esse rótulo tem de **permanecer**. Refinar para §6.2.2.1 é
+  opcional; o que não pode é a linha passar a sugerir que a escolha da
+  combinação é texto normativo.
+
+### Correção adicional que o a6 não listou: `6.2.1.2` aparece em CINCO lugares, não quatro
+
+O a6 listou quatro e usou números de linha desatualizados (`sapata.py:712`,
+depois dos commits do a5 é `sapata.py:732`). Lista correta e verificada
+(`grep -rn "6\.2\.1\.2" calc_core/ ui/ --include=*.py`) — **todos BLOQUEADOS**
+até a decisão da Questão 1:
+
+| arquivo:linha | trecho |
+|---|---|
+| `calc_core/sapata_isolada/sapata.py:732` | `#  Estabilidade global (NBR 6122, item 6.2.1.2)` |
+| `calc_core/sapata_isolada/relatorio.py:129` | `_sec("4. ESTABILIDADE (NBR 6122, 6.2.1.2)")` |
+| `calc_core/sapata_isolada/acoes.py:140` | `... peso próprio é estabilizante (NBR 6122, item 6.2.1.2).` |
+| `calc_core/sapata_isolada/geotecnia.py:215` | `fs_deslizamento: float = 1.5  # NBR 6122, 6.2.1.2` ← **omitido pelo a6** |
+| `ui/completo/resultado.py:22` | `ITEM_ESTABILIDADE = "NBR 6122:2019 §6.2.1.2 — ..."` |
+
+`geotecnia.py:215` é justamente a linha onde a citação errada e o valor sem
+respaldo normativo estão na mesma linha — a mais importante das cinco, e a que
+escapou das duas revisões anteriores.
+
+### Sobre a inconsistência 2019/2022 apontada pelo a6
+
+Procede: `rigidez.py:56` já foi corrigido para 2022 pelo a5 e as outras 13
+ficaram em 2019. A correção do a5 estava **certa em mérito** (2019 não existe
+no acervo), só ficou incompleta. Não reverter `rigidez.py:56`; completar as
+outras 12 liberadas acima. A ocorrência 11 permanece em 2019 até a decisão
+humana — e isso é intencional e preferível: uma citação visivelmente errada
+é mais segura que uma citação errada disfarçada de certa.

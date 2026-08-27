@@ -7,9 +7,30 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 3
+versao: 4
 escopo: "sapata isolada, carga centrada, solo homogêneo"
 data_congelamento: "2026-08-27"
+
+# --- Versão 4: rodada NBR 6122 §6.2.1 (estabilidade de fundação rasa) -------
+#
+# ATENÇÃO: esta versão ALTERA o ruleset. Conforme CLAUDE.md regra 5, as
+# aprovações de A6 e A7 ficam INVALIDADAS para tudo que dependa das regras
+# NBR6122-6.2.1.* e do módulo sapata_isolada.sapata (estabilidade): nova
+# rodada de A6 e A7 é obrigatória antes de qualquer release. As regras
+# NBR6118-* e as demais NBR6122-* não foram tocadas nesta versão.
+#
+# Disparada por achado do a6 (citação "§6.2.1.2" para deslizamento/tombamento).
+# Releitura da fonte pelo a2 (texto pymupdf + render 140 dpi das p. 17-18
+# impressas = PDF p. 29-30) CONFIRMA o a6 na estrutura e vai ALÉM dele no
+# conteúdo:
+#   - 6.2.1.2 é "Segurança de fundações PROFUNDAS" — citação errada, confirmado.
+#   - 6.2.1.1.2 existe, é "Coeficientes de ponderação para verificação de
+#     tração, deslizamento e tombamento" e é o item aplicável a fundação rasa.
+#   - MAS 6.2.1.1.2 NÃO prescreve fator de segurança global algum. Prescreve
+#     APENAS coeficientes parciais (γm=1,2 / γm=1,4 / γf=1,4). Portanto a
+#     troca "6.2.1.2 -> 6.2.1.1.2" NÃO pode ser feita sozinha: daria respaldo
+#     normativo aparente a um FS=1,5 que a norma não contém. Ver regra
+#     NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento e kb/pendencias.md.
 
 # --- Versão 3: rodada NBR 6118 §22.6 (rigidez e direcionalidade) ------------
 #
@@ -143,6 +164,69 @@ regras:
     metodo: ambos
     status: PENDENTE_HUMANO
     motivo_pendencia: "Fora do escopo mínimo (carga horizontal). Depende de dados de solo (ângulo de atrito, empuxo passivo) não coletados na entrada atual."
+
+  - id: NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento
+    norma: "NBR 6122:2022"
+    item: "6.2.1.1.2"
+    pagina: 17          # página impressa 17 = PDF p. 29 (offset 12)
+    hash: "sha256:816ce04330cbfffee574b14aaa2b18591d3f4d83fee5c9a7cb4ce8e761813e93"
+    hash_pdf_fonte: "sha256:65fb1d5c60b81066010c08a2e86fdedb3491d0603a7c98a46917d52f29571f53"
+    metodo: calculo     # <<< SÓ valores de cálculo. A norma NÃO oferece rota
+                        # de valores admissíveis (FS global) para tração,
+                        # deslizamento e tombamento de fundação rasa.
+    status: PENDENTE_HUMANO
+    implementacao: "geotecnico.<a definir> — HOJE existe apenas
+      sapata_isolada.sapata::_verificar_estabilidade, que NÃO implementa esta
+      regra (usa FS global sobre combinações ELS). Não é [rule:] desta regra."
+    texto_literal: >-
+      "6.2.1.1.2 Coeficientes de ponderação para verificação de tração,
+      deslizamento e tombamento — Devem ser adotados os seguintes coeficientes
+      de ponderação: γm = 1,2 (minoração) para a parcela favorável do peso;
+      γm = 1,4 (minoração) para a resistência do solo; γf = 1,4 (majoração)
+      para o esforço atuante, se disponível apenas o seu valor característico;
+      se já fornecido o valor de cálculo, nenhum coeficiente de ponderação
+      deve ser aplicado a ele."
+    checagem_dimensional: >-
+      Coeficientes adimensionais aplicados a grandezas homogêneas
+      (peso [kN], resistência [kN], esforço atuante [kN]). As razões FS do
+      código também fecham adimensionais (verificado com pint: N·tanδ + c'·A
+      [kN] / H [kN] e N·a/2 [kN·m] / M [kN·m]). A dimensão NÃO acusa o defeito
+      aqui — o defeito é de MÉTODO e de VALOR, não de transcrição dimensional.
+    checagem_numerica: >-
+      Convertendo 6.2.1.1.2 para FS global equivalente: deslizamento exige
+      R_k/S_k >= 1,2·1,4·1,4 = 2,35 (leitura estrita, peso favorável minorado
+      E resistência do solo minorada) ou >= 1,4·1,4 = 1,96 (leitura branda, um
+      único γm sobre a resistência de atrito). Tombamento: >= 1,2·1,4 = 1,68.
+      O código adota 1,5 e 1,5 (geotecnia.py:215-216). Em TODAS as leituras
+      possíveis o código é MENOS conservador que a norma: -36% a -57% em
+      deslizamento, -11% em tombamento. LADO INSEGURO.
+    motivo_pendencia: >-
+      Exige julgamento de engenharia em dois pontos que o a2 não pode decidir:
+      (1) se "γm = 1,4 para a resistência do solo" incide sobre tanδ/c' além
+      da minoração de 1,2 já aplicada ao peso favorável, ou se as duas são
+      alternativas — muda o FS equivalente de 2,35 para 1,96;
+      (2) se o software deve migrar a verificação de estabilidade para o
+      método de valores de cálculo (combinações ELU, coeficientes parciais),
+      abandonando o par FS=1,5/1,5 sobre combinações ELS, ou manter uma rota
+      de valores admissíveis com FS decidido pelo projetista e rotulado como
+      decisão de engenharia, NÃO como texto normativo.
+      NÃO IMPLEMENTAR em calc_core até virar APROVADA. A5 está proibido de
+      alterar os valores 1,5/1,5 nesta rodada — a correção de citação e a
+      correção de critério são coisas diferentes e a segunda não está decidida.
+    observacao: >-
+      COLISÃO DE MÉTODO DE SEGURANÇA (o erro clássico do setor, ver
+      a2-verificador.md §3). _verificar_estabilidade itera sobre
+      `self.combs_els` (valores característicos) e compara contra um FS
+      global — rota de "valores admissíveis". Mas a NBR 6122:2022 só define
+      tração/deslizamento/tombamento de fundação rasa pela rota de "valores
+      de cálculo". Não há, em toda a NBR 6122:2022, FS global para
+      deslizamento ou tombamento: varredura das 120 páginas por
+      "deslizamento|tombamento" retorna 4 ocorrências — 6.2.1.1 c) (lista de
+      mecanismos de ELU), o título e o corpo de 6.2.1.1.2, e 7.5.1 (fundação
+      sobre rocha inclinada). O único FS global de fundação rasa fora da
+      compressão é 1,1, e é para FLUTUAÇÃO (6.2.1.1.3) — não confundir.
+      Requisito para o software: proibir em tempo de execução a mistura de
+      valores característicos com FS global nesta verificação.
 
   - id: NBR6122-6.2.1.1.1-fatores-seguranca-tabela1
     norma: "NBR 6122:2022"
@@ -517,9 +601,30 @@ escopo_amplo_em_conferencia:
     cobre: "Perfil estratigráfico, tensão geostática, propagação de Boussinesq/Newmark, correlação SPT->sigma_adm"
     status: PENDENTE_HUMANO
   - modulo: "sapata_isolada.sapata (geometria/estabilidade sob carga excêntrica)"
-    cobre: "Núcleo central, diagrama trapezoidal/triangular, área efetiva de Meyerhof, FS deslizamento/tombamento (NBR 6122 §6.2.1.2/§7.6.2/§7.6.3)"
+    cobre: "Núcleo central, diagrama trapezoidal/triangular, área efetiva de Meyerhof, FS deslizamento/tombamento (NBR 6122 §6.2.1.1.2/§7.6.2/§7.6.3)"
     status: PENDENTE_HUMANO
-    observacao: "Testado numericamente (equilíbrio, casos de contorno) mas os coeficientes/fórmulas ainda não foram lidos da norma nesta rodada."
+    observacao: >-
+      Testado numericamente (equilíbrio, casos de contorno) mas os
+      coeficientes/fórmulas ainda não foram lidos da norma nesta rodada.
+      CORRIGIDO em 2026-08-27 (versão 4): esta linha citava "§6.2.1.2", que é
+      "Segurança de fundações PROFUNDAS". O item de fundação rasa é §6.2.1.1.2.
+      A correção da citação NESTE arquivo não autoriza a mesma troca cega no
+      código: §6.2.1.1.2 prescreve coeficientes parciais, não FS global — ver
+      regra NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento (PENDENTE_HUMANO).
+      SEGUNDO ACHADO nesta rodada, também do lado inseguro e independente do
+      primeiro: `geotecnia.py:217` define `coef_sigma_max_excentrico = 1.2`
+      ("majoração admitida no vértice") e `sapata.py:359` aplica
+      `limite = sigma_adm * 1.2` SEMPRE que a seção fica parcialmente
+      comprimida (k > 1), sem condição alguma. Não há na NBR 6122:2022
+      majoração de 20 % da tensão admissível por excentricidade. A única
+      majoração de tensão admissível da norma é a de VENTO (§6.3.2: até 15 %,
+      30 % em galpões/torres/silos/reservatórios elevados/torres eólicas/
+      telecomunicações/tanques químicos), condicionada a vento ser a ação
+      variável PRINCIPAL e a FSg >= 1,6; §6.3.3 dá 10 % no método de valores
+      de cálculo. Constante incondicional de 1,2 excede o teto geral de 15 %
+      e ignora as duas condições — é guarda condicional virada constante,
+      exatamente o defeito que a2-verificador.md §3 manda proibir.
+      PENDENTE_HUMANO; A5 não deve mexer neste valor nesta rodada.
   - modulo: "sapata_isolada.bielas"
     cobre: "Modelo de bielas e tirantes de Blévot generalizado (NBR 6118 §22.6.4.1); limites de nó CCC/CCT já conferidos via alpha_v/fcd (ver regras de punção acima)"
     status: PENDENTE_HUMANO
