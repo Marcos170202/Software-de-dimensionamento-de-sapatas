@@ -738,7 +738,13 @@ class Sapata:
         return max(alpha * lb * razao, lb_min)
 
     # ===================================================================== #
-    #  Estabilidade global (NBR 6122, item 6.2.1.2)
+    #  Estabilidade global — FS global sobre combinações características.
+    #  NÃO há item da NBR 6122:2022 que prescreva esta rota para deslizamento e
+    #  tombamento de fundação rasa; §6.2.1.1.2, único item aplicável, usa
+    #  coeficientes parciais sobre valores de cálculo. FS = 1,5 é prática
+    #  consagrada, sem respaldo normativo direto, sob decisão de engenharia
+    #  pendente.
+    #  [rule: NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento — PENDENTE_HUMANO]
     # ===================================================================== #
     def _verificar_estabilidade(self) -> list[VerificacaoEstabilidade]:
         out = []

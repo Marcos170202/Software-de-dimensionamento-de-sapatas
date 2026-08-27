@@ -212,7 +212,13 @@ class Solo:
     phi: float = 30.0
     coesao: float = 0.0
     fator_atrito_base: float = 2.0 / 3.0   # delta = 2/3 * phi (base rugosa)
-    fs_deslizamento: float = 1.5           # NBR 6122, 6.2.1.2
+    # FS global = 1,5 — PRÁTICA CONSAGRADA, SEM RESPALDO NORMATIVO. Não há item
+    # da NBR 6122:2022 que prescreva FS global para deslizamento/tombamento de
+    # fundação rasa: §6.2.1.1.2, único item aplicável, trata o assunto SÓ por
+    # coeficientes parciais (FS global equivalente de 1,68 a 2,35). Valor sob
+    # decisão de engenharia pendente — não alterar sem nova rodada do a2.
+    # [rule: NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento — PENDENTE_HUMANO]
+    fs_deslizamento: float = 1.5
     fs_tombamento: float = 1.5
     coef_sigma_max_excentrico: float = 1.2  # majoração admitida no vértice
     perfil: Optional[PerfilGeotecnico] = None

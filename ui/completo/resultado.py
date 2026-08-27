@@ -19,7 +19,11 @@ from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 from . import tema
 
 ITEM_TENSOES = "NBR 6122:2019 §7.1/§7.6.1 — tensão admissível na base"
-ITEM_ESTABILIDADE = "NBR 6122:2019 §6.2.1.2 — deslizamento e tombamento"
+ITEM_ESTABILIDADE = ("Deslizamento e tombamento — FS global = 1,5: prática "
+                     "consagrada, SEM respaldo normativo direto. A NBR "
+                     "6122:2022 §6.2.1.1.2 trata o assunto só por coeficientes "
+                     "parciais (equivalente 1,68 a 2,35). Valor sob decisão de "
+                     "engenharia pendente (ver ruleset.yaml).")
 ITEM_PUNCAO = ("NBR 6118:2023 §19.5.3.1 (C) · §19.5.3.2 (C') · "
                "§19.4.1 (cisalhamento como laje)")
 ITEM_ARMADURAS = ("NBR 6118:2023 §17.2.2 (flexão) · §19.3.3.2 (A_s,mín) · "
@@ -149,7 +153,8 @@ class PainelResultado(ttk.Frame):
         f2 = ttk.Frame(sub, style="Painel.TFrame")
         sub.add(f2, text="Estabilidade")
         ttk.Label(f2, text=ITEM_ESTABILIDADE, style="PainelFraco.TLabel",
-                  font=("Segoe UI", 8)).pack(anchor="w", padx=4, pady=(4, 0))
+                  font=("Segoe UI", 8), wraplength=420).pack(anchor="w", padx=4,
+                                                             pady=(4, 0))
         self.tab_estabilidade = _tabela(
             f2, ("Combinação", "FS desliz.", "FS tomb.X", "FS tomb.Y", "status"),
             (150, 80, 80, 80, 60))

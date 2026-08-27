@@ -126,7 +126,16 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
              f"{'resultante DENTRO' if pior.dentro_nucleo else 'resultante FORA'}")
 
     # ------------------------------------------------------------- estabilidade
-    L.append(_sec("4. ESTABILIDADE (NBR 6122, 6.2.1.2)"))
+    L.append(_sec("4. ESTABILIDADE — deslizamento e tombamento"))
+    L.append("  FS global = 1,5: PRÁTICA CONSAGRADA, SEM RESPALDO NORMATIVO "
+             "DIRETO. A NBR 6122:2022")
+    L.append("  §6.2.1.1.2 trata deslizamento/tombamento de fundação rasa só "
+             "por coeficientes")
+    L.append("  parciais (FS global equivalente de 1,68 a 2,35). Valor sob "
+             "decisão de engenharia")
+    L.append("  pendente — ver ruleset.yaml, regra "
+             "NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento.")
+    L.append("")
     L.append(f"  {'Combinação':<30}{'FS desliz.':>12}{'FS tomb.X':>12}"
              f"{'FS tomb.Y':>12}  status")
     piores_e = sorted(res.estabilidade,

@@ -137,7 +137,13 @@ def gerar_combinacoes(casos: Iterable[CasoCarga],
 
     Também é gerada a combinação com ações permanentes minoradas
     (gamma_g = 1,0) para as verificações de tombamento e deslizamento,
-    em que o peso próprio é estabilizante (NBR 6122, item 6.2.1.2).
+    em que o peso próprio é estabilizante. Não há item da NBR 6122:2022 que
+    prescreva esta combinação para deslizamento/tombamento de fundação rasa;
+    §6.2.1.1.2, único item aplicável, minora o peso favorável por gamma_m = 1,2
+    dentro da rota de valores de cálculo. O que se faz aqui (gamma_g = 1,0 sobre
+    combinações características, contra FS global) é prática consagrada, sem
+    respaldo normativo direto, sob decisão de engenharia pendente.
+    [rule: NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento — PENDENTE_HUMANO]
     """
     casos = list(casos)
     if not casos:
