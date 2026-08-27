@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .geotecnia import (PerfilGeotecnico, TipoSubstrato,
-                        acrescimo_tensao_centro)
+                        acrescimo_tensao_2v1h, acrescimo_tensao_centro)
 
 # --------------------------------------------------------------------------- #
 #  Fatores de influência I_w (recalque elástico de área retangular)
@@ -260,10 +260,23 @@ class AnaliseRecalque:
         return max(0.0, self.q_servico - self.perfil.tensao_vertical_efetiva(self.z_base))
 
     def _delta_sigma(self, z_abaixo_base: float) -> float:
+        """Δσ [kPa] na fatia, com z medido a partir da BASE da sapata.
+
+        [pratica: PC-BOUSSINESQ-NEWMARK-canto-retangulo]
+
+        O ramo 2V:1H (`usar_boussinesq=False`) NÃO pode ser exposto na UI,
+        ligado por default nem usado em memorial: medido contra Boussinesq,
+        entrega 0,748 do recalque, sistematicamente do lado inseguro. Fica
+        onde está, inalcançável na prática, até decisão humana — não criar um
+        segundo caminho para ele.
+
+        A expressão do 2V:1H era reescrita à mão aqui; agora chama
+        `acrescimo_tensao_2v1h`, para que uma correção futura na fórmula não
+        possa alcançar só uma das duas cópias.
+        """
         if self.usar_boussinesq:
             return acrescimo_tensao_centro(self.q_liquido, self.a, self.b, z_abaixo_base)
-        return self.q_liquido * (self.a * self.b) / \
-            ((self.a + z_abaixo_base) * (self.b + z_abaixo_base))
+        return acrescimo_tensao_2v1h(self.q_liquido, self.a, self.b, z_abaixo_base)
 
     # -------------------------------------------------------------- execução
     def executar(self) -> ResultadoRecalque:

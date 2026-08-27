@@ -26,8 +26,14 @@ from .acoes import (CasoCarga, Combinacao, Esforcos, Pilar, TipoAcao,
 from .bielas import ResultadoBielas, bielas_sapata, tirante_classico
 from .grelha import ResultadoGrelha, resolver_grelha
 from .solo_mef import MalhaSolo, analisar_solo, conferir_com_boussinesq
-from .geotecnia import (Camada, PerfilGeotecnico, Solo, TipoSubstrato,
-                        acrescimo_tensao_centro, sigma_adm_por_spt)
+from .geotecnia import (AVISO_MEIO_HOMOGENEO, AVISO_NAO_NORMATIVO, Camada,
+                        CamadaPropagacao, FONTE_2V1H, FONTE_BOUSSINESQ,
+                        PerfilGeotecnico, PontoPropagacao, PropagacaoTensoes,
+                        ROTULO_FONTE, Solo, TipoSubstrato, acrescimo_tensao,
+                        acrescimo_tensao_2v1h, acrescimo_tensao_centro,
+                        largura_equivalente, propagacao_comparada,
+                        propagacao_em_profundidade, sigma_adm_por_spt,
+                        tensao_liquida_na_base)
 from .materiais import Aco, Concreto, comprimento_ancoragem_basico
 from .momentos import (CampoMomentos, campo_momentos, curvas_nivel,
                        momento_unitario, niveis_uteis)
@@ -51,7 +57,12 @@ __all__ = [
     "CasoCarga", "Combinacao", "Esforcos", "Pilar", "TipoAcao",
     "TipoCombinacao", "filtrar", "gerar_combinacoes",
     "Camada", "PerfilGeotecnico", "Solo", "TipoSubstrato",
-    "acrescimo_tensao_centro", "sigma_adm_por_spt",
+    "acrescimo_tensao_centro", "acrescimo_tensao_2v1h", "acrescimo_tensao",
+    "sigma_adm_por_spt", "tensao_liquida_na_base", "largura_equivalente",
+    "propagacao_em_profundidade", "propagacao_comparada",
+    "PropagacaoTensoes", "PontoPropagacao", "CamadaPropagacao",
+    "FONTE_BOUSSINESQ", "FONTE_2V1H", "ROTULO_FONTE",
+    "AVISO_NAO_NORMATIVO", "AVISO_MEIO_HOMOGENEO",
     "AnaliseRecalque", "ResultadoRecalque", "recalque_elastico",
     "recalque_adensamento", "recalque_schmertmann", "grau_adensamento",
     "tempo_para_grau", "LIMITES_RECALQUE_MM", "DISTORCAO_ANGULAR_LIMITE",
