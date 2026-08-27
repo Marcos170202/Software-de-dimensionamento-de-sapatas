@@ -205,6 +205,14 @@ class ResultadoSapata:
     puncao: list[VerificacaoPuncao] = field(default_factory=list)
     armaduras: list[ArmaduraDirecao] = field(default_factory=list)
     ancoragem_arranque: dict = field(default_factory=dict)
+    # Pressão TOTAL de serviço na base [kPa] — ver `Sapata._pressao_servico`.
+    # Fica AQUI, e não em `ResultadoRecalque`, porque existe sempre: é
+    # `res.recalques` que é opcional (`verificar_recalque=False` ou perfil
+    # ausente), e é exatamente nesses casos que o consumidor a jusante
+    # (propagação de tensões em profundidade) precisava dela e não a tinha.
+    # `ResultadoRecalque.q_liquido` continua sendo a pressão LÍQUIDA e segue
+    # sendo a única fonte dela — os dois números não são duplicados.
+    q_servico: float = 0.0
     recalques: Optional[ResultadoRecalque] = None
     alertas: list[str] = field(default_factory=list)
     convergiu: bool = True
@@ -856,16 +864,47 @@ class Sapata:
     # ===================================================================== #
     #  Recalques
     # ===================================================================== #
+    def _pressao_servico(self, a: float, b: float, h: float, h0: float) -> float:
+        """Pressão TOTAL de serviço na base da sapata [kPa].
+
+            q_serviço = (N_qp + peso próprio) / (a·b)
+
+        É o mesmo número que sempre alimentou `AnaliseRecalque` (parâmetro
+        `q_servico`, recalques.py:245), de onde sai a pressão LÍQUIDA
+        `q_liquido = max(0; q_serviço − σ'_v0(hf))`. Só deixou de ser variável
+        local: agora é devolvido a quem precisa, via `ResultadoSapata.q_servico`.
+
+        Nenhuma fórmula nova e nenhum valor alterado — a combinação usada
+        continua sendo a ELS quase-permanente quando existir, com queda para a
+        ELS-rara quando não houver (a mesma escolha de `_analisar_recalques`).
+
+        Motivo de existir como método próprio: os consumidores a jusante que
+        pedem a pressão TOTAL (`geotecnia.propagacao_em_profundidade`, que
+        calcula a líquida internamente — REQ-PROP-01 do ruleset) só podiam
+        chegar a ela reconstituindo `q_liquido + sobrecarga_na_base`. Essa soma
+        erra sempre que q_serviço < sobrecarga, porque o `max(0; ...)` de
+        `AnaliseRecalque.q_liquido` satura em zero e a informação se perde; e
+        nem existia quando a análise de recalques não era executada.
+
+        Sem citação normativa e sem [rule:]: a NBR 6122:2022 não prescreve esta
+        divisão nem a combinação de serviço (isso é a NBR 8681). O que é
+        normativo, e está em `_estado_tensao`, é a comparação σ ≤ σ_adm.
+        """
+        if a <= 0.0 or b <= 0.0:
+            raise ValueError(
+                f"Dimensões em planta inválidas para a pressão de serviço: "
+                f"a = {a} m, b = {b} m (ambas devem ser > 0).")
+        combs = self.combs_qp or self.combs_els
+        Nqp = max(c.esforcos.N for c in combs)
+        return (Nqp + self._peso_proprio(a, b, h, h0)) / (a * b)
+
     def _analisar_recalques(self) -> Optional[ResultadoRecalque]:
         if not self.op.verificar_recalque or self.solo.perfil is None:
             if self.op.verificar_recalque and self.solo.perfil is None:
                 self.alertas.append("Perfil geotécnico não informado: análise de "
                                     "recalques não executada.")
             return None
-        combs = self.combs_qp or self.combs_els
-        Nqp = max(c.esforcos.N for c in combs)
-        pp = self._peso_proprio(self.a, self.b, self.h, self.h0)
-        q = (Nqp + pp) / (self.a * self.b)
+        q = self._pressao_servico(self.a, self.b, self.h, self.h0)
         analise = AnaliseRecalque(self.solo.perfil, self.a, self.b, self.solo.hf, q,
                                   limite_recalque_mm=self.op.limite_recalque_mm,
                                   vida_util_anos=self.op.vida_util_anos)
@@ -972,6 +1011,10 @@ class Sapata:
         estabilidade = self._verificar_estabilidade()
         ancoragem_arranque = self._ancoragem_pilar(h)
         recalques = self._analisar_recalques()
+        # Calculada sempre, inclusive com verificar_recalque=False ou sem
+        # perfil: é a mesma conta que `_analisar_recalques` faz internamente
+        # (mesma geometria, mesma combinação), e agora fica exposta.
+        q_servico = self._pressao_servico(a, b, h, h0)
 
         resultado = ResultadoSapata(
             a=a, b=b, h=h, h0=h0, d=d,
@@ -980,7 +1023,8 @@ class Sapata:
             inclinacao_graus=geo["inclinacao"],
             rigida=rigida, tensoes=tensoes, estabilidade=estabilidade,
             puncao=puncao, armaduras=armaduras or [],
-            ancoragem_arranque=ancoragem_arranque, recalques=recalques,
+            ancoragem_arranque=ancoragem_arranque, q_servico=q_servico,
+            recalques=recalques,
             alertas=self.alertas, convergiu=convergiu,
             modo_verificacao=modo_verificacao,
             classificacao=self.classificacao, reacoes=self.reacoes,

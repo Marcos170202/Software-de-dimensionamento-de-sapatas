@@ -289,6 +289,87 @@ def test_delta_sigma_decresce_com_a_profundidade_nas_duas_fontes():
 
 
 # ======================================================================== #
+#  ONDE `delta_sigma_medio` é amostrado — meia-altura do TRECHO analisado
+#
+#  Buraco de cobertura encontrado pelo a6 no GATE 2 (rodada 1): o mutante M10,
+#  que troca a profundidade de amostragem da meia-altura pelo TOPO da camada
+#  (`0.5*(zi+zf)` -> `zi` em `geotecnia.py:637`), sobrevivia à suíte inteira.
+#  Nada fixava a profundidade de amostragem: `test_delta_sigma_nunca_supera_a
+#  _pressao_liquida` só exige base <= médio <= topo, com igualdade permitida, e
+#  o médio é justamente o único número que a tela exibe por camada.
+#
+#  Os três testes abaixo matam M10 e as variantes "amostrar na base" e "usar a
+#  meia-altura da camada CHEIA em vez da do trecho analisado".
+# ======================================================================== #
+def test_delta_sigma_medio_e_amostrado_na_meia_altura_da_camada():
+    """`delta_sigma_medio` = Δσ em z = (z_topo + z_base)/2, exatamente.
+
+    Mata o mutante M10 (meia-altura -> topo) e o simétrico (-> base): o valor
+    tem de bater com `acrescimo_tensao` chamado nessa profundidade específica
+    com rel=1e-12, e tem de ficar ESTRITAMENTE entre os valores de topo e de
+    base, com folga larga (>= 10 %) nesta fixture — se fosse amostrado numa
+    das interfaces, a igualdade exata com aquela interface apareceria aqui.
+    """
+    solo = _solo(hf=1.5)
+    a, b = 2.0, 3.0
+    for fonte in (FONTE_BOUSSINESQ, FONTE_2V1H):
+        r = propagacao_em_profundidade(solo, a, b, 200.0, fonte=fonte)
+        assert r.camadas, "fixture sem camadas: o teste não estaria testando nada"
+        for c in r.camadas:
+            z_meio = 0.5 * (c.z_topo + c.z_base)
+            esperado = acrescimo_tensao(fonte, r.q_liquida, a, b, z_meio)
+            assert c.delta_sigma_medio == pytest.approx(esperado, rel=1e-12)
+            # e NÃO é nenhuma das duas interfaces
+            assert c.delta_sigma_base < c.delta_sigma_medio < c.delta_sigma_topo
+            assert c.delta_sigma_medio < 0.90 * c.delta_sigma_topo
+            assert c.delta_sigma_medio > 1.10 * c.delta_sigma_base
+
+
+def test_delta_sigma_medio_do_2v1h_bate_com_a_forma_fechada_na_meia_altura():
+    """Mesma checagem sem passar por `acrescimo_tensao`: para o 2V:1H o valor
+    na meia-altura tem forma fechada, Δσ = q_líq·a·b / ((a+z_m)(b+z_m)).
+
+    Independente da função de despacho, portanto sobrevive a uma mutação
+    simultânea nela — o número é conferido contra a álgebra, não contra outra
+    chamada do mesmo código.
+    """
+    solo = _solo(hf=1.5)
+    a, b = 2.0, 3.0
+    r = propagacao_em_profundidade(solo, a, b, 200.0, fonte=FONTE_2V1H)
+    for c in r.camadas:
+        z_meio = 0.5 * (c.z_topo + c.z_base)
+        fechada = r.q_liquida * a * b / ((a + z_meio) * (b + z_meio))
+        assert c.delta_sigma_medio == pytest.approx(fechada, rel=1e-12)
+
+
+def test_delta_sigma_medio_usa_a_meia_altura_do_trecho_e_nao_da_camada_cheia():
+    """Camada cortada pela base da sapata (em cima) e pelo teto de
+    profundidade (embaixo): a amostragem é na meia-altura do TRECHO ANALISADO.
+
+    hf = 2,5 m corta a 'Areia média' (1,5–4,0 m absolutos) -> trecho 0,0–1,5 m
+    abaixo da base, meia-altura em 0,75 m — e não em 0,25 m, que seria a
+    meia-altura da camada cheia rebatida para a origem na base. z_max = 4,0 m
+    corta a 'Argila mole' (trecho 1,5–4,0 m) -> meia-altura em 2,75 m, e não
+    em 3,0 m, que seria a da camada cheia (1,5–4,5 m).
+    """
+    solo = _solo(hf=2.5)
+    a = b = 2.0
+    r = propagacao_em_profundidade(solo, a, b, 300.0, z_max=4.0)
+    assert [c.nome for c in r.camadas] == ["Areia média", "Argila mole"]
+    assert [(c.z_topo, c.z_base) for c in r.camadas] == pytest.approx(
+        [(0.0, 1.5), (1.5, 4.0)], abs=1e-9)
+
+    esperados = {0.75: r.camadas[0], 2.75: r.camadas[1]}
+    for z_meio, c in esperados.items():
+        assert c.delta_sigma_medio == pytest.approx(
+            acrescimo_tensao_centro(r.q_liquida, a, b, z_meio), rel=1e-12)
+    # as profundidades "quase certas" que os erros plausíveis produziriam
+    for z_errado, c in ((0.25, r.camadas[0]), (3.0, r.camadas[1])):
+        assert c.delta_sigma_medio != pytest.approx(
+            acrescimo_tensao_centro(r.q_liquida, a, b, z_errado), rel=1e-3)
+
+
+# ======================================================================== #
 #  REQ-PROP-04 — o método viaja junto com o número
 # ======================================================================== #
 def test_fonte_acompanha_todos_os_valores():
