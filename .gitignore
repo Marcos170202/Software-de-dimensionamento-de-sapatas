@@ -11,3 +11,8 @@ venv/
 build/
 dist/
 *.spec.bak
+
+# Working file do a6-revisor por rodada de GATE 2 (relatorios/revisao_codigo.md é
+# o registro permanente, escrito só quando o gate se resolve — aprovado ou
+# escalado após o limite de ciclos).
+relatorios/revisao_codigo.json
