@@ -95,3 +95,80 @@ verificações físicas (equilíbrio, invariância testados no escopo mínimo),
 não contra uma segunda fonte independente para o escopo amplo. Ver
 `ruleset.yaml`, seção `escopo_amplo_em_conferencia`, para o que ainda não
 foi auditado item a item.
+
+## Adendo — 2026-08-27: classificação rígida/flexível e proibição de redutor
+uni/bidirecional (GATE 3 pós-GATE 2, nota 4,50, terceira rodada)
+
+Escopo: `NBR6118-22.6.1-rigidez` (`rigidez.py::classificar`,
+`sapata.py::_alturas`) e `NBR6118-22.6.2.2a-flexao-duas-direcoes`
+(`sapata.py::_ciclo_flexao`, `momentos.py::momento_unitario`/`campo_momentos`),
+mais as correções de citação normativa (12+ arquivos) e a extração de
+`OpcoesProjeto.balanco_minimo` (commits `e7f3d26~1..96e7036`).
+
+### Suíte completa
+`pytest tests/ --cov=calc_core --cov-report=term-missing`: **101/101
+passando**, rodado de forma independente (não aceito do relato dos agentes
+anteriores). Eram 79 antes desta rodada e 57 antes da rodada de momentos —
+crescimento confirmado pelo histórico dos próprios arquivos de teste
+(`test_rigidez_nbr_22_6_1.py`, `test_flexao_duas_direcoes_nbr_22_6_2.py`,
+`test_planta_travada.py`, todos novos nesta rodada). Cobertura de linhas:
+100% em `modelos.py` e `geotecnico/`; 93% em `rigidez.py`; 85% em `sapata.py`.
+
+### Casos de referência para `classificar()` — cálculo independente (não usa
+a fórmula do código como oráculo)
+`h_necessario = max((a-ap)/3, (b-bp)/3)` recalculado à mão para 4 geometrias:
+
+| caso | a×b (m) | ap×bp (m) | h (m) | h_nec (m) | esperado | obtido |
+|---|---|---|---|---|---|---|
+| rígida nas 2 direções | 2,00×2,00 | 0,40×0,40 | 0,70 | 0,5333 | RÍGIDA | RÍGIDA |
+| flexível nas 2 direções | 3,00×3,00 | 0,40×0,40 | 0,30 | 0,8667 | FLEXÍVEL | FLEXÍVEL |
+| rígida em X / flexível em Y | 2,00×3,60 | 0,40×0,40 | 0,55 | 1,0667 | FLEXÍVEL | FLEXÍVEL |
+| espelhado (rígida em Y / flexível em X) | 3,60×2,00 | 0,40×0,40 | 0,55 | 1,0667 | FLEXÍVEL | FLEXÍVEL |
+
+Os dois casos mistos confirmam que basta falhar numa direção para a
+classificação geral virar FLEXÍVEL — exatamente o comportamento que a
+`rodada 1` do a6 havia pego como mutante (`h_nec = (a-ap)/3`, ignorando Y).
+4/4 casos batem com `h_necessario` calculado à mão (rel. tol. 1e-9).
+
+### Invariância
+- `classificar()` simétrica sob troca `(a,ap) <-> (b,bp)`: 500 geometrias
+  aleatórias (seed fixa), 0 contra-exemplos.
+- `As_adot` estritamente positivo nas duas direções, 5 geometrias com carga
+  de compressão (quadrada, alongada nos dois sentidos, grande e pequena):
+  **PASSOU**, nenhuma direção suprimida.
+- Sapata quadrada + carga centrada: `As_adot(X) == As_adot(Y)` (22,913 cm² em
+  ambas) e mesma bitola/arranjo — **PASSOU**.
+
+### Equilíbrio: `momento_unitario()` contra integral própria (Simpson,
+10⁵ intervalos, sem reusar `plano_tensoes()` nem `momento_unitario()`)
+3 cenários (centrado; excêntrico nas duas direções; excêntrico com sapata
+alongada), direções X e Y — 6/6 confrontos batem em 4 casas decimais
+(rel. tol. 1e-4). Exemplo: caso 3, dir. X: código = 535,665295, integral
+independente = 535,665295 kN·m/m.
+
+### Achado D1 do a6 (dívida de teste, não de cálculo)
+Reproduzido `GeometriaImposta(a=3,00, b=1,20, h=0,40)`, `Pilar(0,30, 0,30)`,
+`N=4000 kN`: a saída ATUAL do software dá `As_y_adot = 33,96 cm²`
+(`modelo="flexao"`, `As_calc=33,96 cm² > As_min=18,00 cm²`) — confirma que o
+software em si está correto hoje; D1 continua sendo só ausência de um teste
+de regressão contra um mutante hipotético (`As_y *= 0.2` condicional à razão
+de lados), não um resultado incorreto atual.
+
+### `ruff check`
+`--select E9` no repositório inteiro: **sem erros**. Perfil completo em
+`calc_core/geotecnico/`, `calc_core/modelos.py`, `ui/`: **sem erros** — nada
+quebrou fora do escopo desta rodada.
+
+### Veredito — GATE 3
+**APROVADO.** 100% dos casos de criticidade ALTA (os 4 casos de referência de
+`classificar()`, os 6 confrontos de equilíbrio de momento, e a reprodução do
+D1) passaram; 0 casos MÉDIA reprovados; todos os testes de equilíbrio e
+invariância verdes; suíte completa 101/101; nenhuma divergência entre o
+código e o cálculo independente deste agente. Nenhuma alteração de fórmula
+encontrada nas correções de citação normativa nem na extração de
+`balanco_minimo` (regressão de 1008 combinações, documentada em
+`test_planta_travada.py`, com 0 divergências no valor padrão).
+
+Recomendação de dívida técnica (não bloqueante para este GATE): fechar D1 com
+um teste de regressão específico para o mutante condicional à razão de lados,
+como já sinalizado por a6.
