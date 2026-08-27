@@ -1,1 +1,13 @@
-sha256:5e367700172332d7f719d01c97e20796149eb2c01aa54e9410acc2b11167d4f8  ruleset.yaml
+# GATE 1 — NÃO CONGELADO. Este arquivo registra o hash corrente de
+# ruleset.yaml para que ninguém trabalhe sobre uma cópia divergente; ele NÃO
+# atesta que o portão foi vencido. O congelamento do GATE 1 exige 100 % dos
+# registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
+# registrada. Situação na versão 5: 14 APROVADA, 7 PENDENTE_HUMANO.
+#
+# Alteração do ruleset invalida as aprovações de A6 e A7 (CLAUDE.md regra 5).
+# Na versão 5 nenhum registro APROVADA mudou de status, valor ou citação — as
+# alterações são documentais e incidem sobre dois registros que já eram
+# PENDENTE_HUMANO (NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento e
+# NBR6122-7.6.2-area-comprimida). A nova rodada de A6/A7 pode restringir-se a
+# esses dois registros e ao que deles depende.
+sha256:c07f74a07768403df94261035dbb6891759a0d546e836755c8c7f60b5fab02d5  ruleset.yaml

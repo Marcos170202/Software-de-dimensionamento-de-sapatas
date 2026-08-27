@@ -7,9 +7,114 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 4
+versao: 5
 escopo: "sapata isolada, carga centrada, solo homogêneo"
 data_congelamento: "2026-08-27"
+
+# --- Versão 5: fonte secundária (apostila Bastos/UNESP) sobre a pendência ---
+#     NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento
+#
+# ATENÇÃO (CLAUDE.md regra 5): esta versão ALTERA o ruleset. As aprovações de
+# A6 e A7 ficam formalmente INVALIDADAS. Ressalva de escopo, para não gerar
+# retrabalho maior que o necessário: NENHUM registro que estava APROVADA mudou
+# de status, de valor ou de citação nesta versão. As alterações incidem sobre
+# dois registros que já eram PENDENTE_HUMANO (6.2.1.1.2 e 7.6.2) e são de
+# natureza documental. A nova rodada de A6/A7 exigida por esta versão pode,
+# portanto, restringir-se a esses dois registros e ao que deles depende.
+#
+# DECISÃO DESTA RODADA, EM UMA LINHA: a apostila NÃO resolve a pendência.
+# Ela a documenta melhor e permite ESTREITAR a pergunta ao humano de duas
+# perguntas bloqueantes para uma. O registro CONTINUA PENDENTE_HUMANO.
+#
+# Auditoria da extração do a1 (8 cláusulas BASTOS-* + 3 fórmulas), refeita
+# pelo a2 e não aceita de segunda mão:
+#   - Rastreabilidade: fonte + item + página + hash presentes em 8/8. OK.
+#   - Releitura VISUAL independente do a2, recorte a 500 dpi da eq. 1.72
+#     (PDF p. 78): confirma "γ_tomb = M_estab / M_tomb ≥ 1,5", símbolo gama,
+#     não ni. A camada de texto de fato perde a letra grega (sai "5,1 M M
+#     tomb estab tomb"), como o a1 relatou. Confirmado.
+#   - Releitura VISUAL da eq. 1.74 (recorte 500 dpi): confirma
+#     "F_estab = (N+P)·tg(2/3 φ) + A·(2/3 c)", e confirma que a fonte define
+#     "A = dimensão da base em contato com o solo".
+#   - Busca negativa refeita pelo a2 nas 119 páginas: "6.2.1" NÃO ocorre;
+#     "2022" NÃO ocorre; "coeficiente de segurança" ocorre UMA vez, na p. 78
+#     (PDF), justamente no parágrafo da eq. 1.72, sem remissão normativa.
+#     Confirmado integralmente.
+#   Conclusão da auditoria: extração do a1 ACEITA sem correção de conteúdo.
+#   O que segue são conclusões do a2, não do a1.
+#
+# ACHADO NORMATIVO NOVO DESTA RODADA — e é ele, não a apostila, que decide.
+# A leitura da v4 (registrada como "a NBR 6122 §7.1 permite as duas rotas,
+# logo a rota de valores admissíveis estaria disponível para deslizamento e
+# tombamento") está LARGA DEMAIS e fica CORRIGIDA aqui. Texto literal de §7.1
+# (PDF p. 33), relido nesta rodada:
+#   "A grandeza fundamental para o projeto de fundações rasas é a TENSÃO
+#    admissível, se o projeto for feito considerando fator de segurança global
+#    e valores característicos, ou a TENSÃO resistente de cálculo, quando for
+#    feito considerando coeficientes de ponderação e valores de cálculo."
+# A escolha de rota que §7.1 oferece é sobre a TENSÃO — a grandeza da
+# verificação de compressão. Não é uma licença geral de método para toda e
+# qualquer verificação de fundação rasa. O mesmo se lê em §6.2.1.1.1, cujo
+# título é "Segurança na COMPRESSÃO" e que abre com "A verificação da
+# segurança pode ser feita com valores característicos e fator de segurança
+# global ou com valores de cálculo (...) devendo ser obedecidos os valores da
+# Tabela 1".
+# A NBR 6122:2022 distribui a rota ITEM A ITEM, e não deixa o projetista
+# escolher em cada verificação:
+#   §6.2.1.1.1  compressão ............ AS DUAS rotas, explicitamente (Tabela 1)
+#   §6.2.1.1.2  tração/deslizamento/
+#               tombamento ............ SÓ coeficientes parciais. "Devem ser
+#                                       adotados os seguintes coeficientes de
+#                                       ponderação". Nenhum FS global.
+#   §6.2.1.1.3  flutuação ............. SÓ fator de segurança global (1,1)
+# Que §6.2.1.1.3 ofereça exclusivamente FS global, e §6.2.1.1.1 ofereça as
+# duas com tabela, mostra que a omissão de FS global em §6.2.1.1.2 é
+# deliberada e não lacuna de redação. Portanto: "escolher a rota de valores
+# admissíveis" NÃO é uma opção livre para deslizamento e tombamento, e não
+# pode ser usada como fundamento normativo para o par FS = 1,5/1,5.
+#
+# O QUE A APOSTILA MUDA (positivo, mas menor do que parece):
+#   1. Confirma, por fonte independente, que 1,5 é valor de ENSINO E PRÁTICA
+#      CORRENTE no Brasil para tombamento e escorregamento de sapata.
+#   2. Confirma, por busca negativa, que esse 1,5 NÃO TEM ÂNCORA NORMATIVA.
+#      A própria fonte, que cita a NBR 6122 dezesseis itens diferentes e o faz
+#      com precisão (três trechos conferidos palavra por palavra contra a
+#      edição 2022 do acervo), NÃO cita norma nenhuma ao dar o 1,5. A única
+#      citação de toda a seção 1.8 é a nota 41, sobre empuxo passivo (§7.6.3),
+#      e é para DESCARTAR o empuxo passivo — mais conservador que a norma.
+#   Isto é: a apostila é evidência de PRÁTICA, e evidência (negativa) reforçada
+#   de AUSÊNCIA DE RESPALDO NORMATIVO. Ela empurra o registro na direção de
+#   "rotular como prática consagrada", não na direção de "aprovar como norma".
+#
+# POR QUE, MESMO ASSIM, O REGISTRO NÃO VIRA APROVADA NESTA RODADA:
+#   Rotular 1,5 como prática consagrada é decisão documental, e essa o a2 toma
+#   — está tomada abaixo. Manter 1,5 como constante de segurança em produção,
+#   sabendo que o único item normativo aplicável implica equivalente de 1,68 a
+#   2,35, é decisão de engenharia com consequência dimensional direta e do lado
+#   inseguro. Não é do a2, não é de agente nenhum. Continua PENDENTE_HUMANO.
+#   O ganho desta rodada é que a pergunta ao humano cai de duas para uma.
+#
+# CHECAGEM DIMENSIONAL (pint) DAS TRÊS FÓRMULAS DA FONTE — resultado:
+#   eq. 1.72 (γ_tomb = M_estab/M_tomb) ............ HOMOGÊNEA, adimensional. OK
+#   eq. 1.73 (modelo 1, atrito puro) .............. HOMOGÊNEA, adimensional. OK
+#   eq. 1.74 (modelo 2, atrito + coesão) .......... REJEITADA. Ver abaixo.
+#   eq. 1.48/1.49 (área comprimida) ............... HOMOGÊNEAS, adimensionais. OK
+# A eq. 1.74, COM O SIGNIFICADO QUE A PRÓPRIA FONTE DÁ A "A" ("dimensão da
+# base em contato com o solo", isto é, um comprimento), não fecha: pint acusa
+# DimensionalityError ao somar (N+P)·tg(2/3φ) [kN] com A·(2/3 c) [m·kPa = kN/m].
+# Falta um comprimento. O a1 sinalizou e não corrigiu — correto, não é função
+# dele. A decisão do a2: a eq. 1.74, COMO ESCRITA NA FONTE, é REJEITADA por
+# inconsistência dimensional e NÃO pode ser citada como respaldo de nada.
+# Consequência prática: NENHUMA, porque o código não a implementa como escrita
+# (ver a regra abaixo) — mas a fórmula fica marcada para que ninguém a use
+# depois achando que passou por auditoria.
+#
+# NOTA DE MÉTODO: `tools/checar_dimensoes.py`, citado em a2-verificador.md,
+# NÃO EXISTE neste repositório (tools/ contém apenas decodificar_nbr.py). A
+# checagem acima foi feita com pint em script ad hoc. Criar essa ferramenta é
+# dívida técnica aberta — enquanto ela não existir, a checagem dimensional
+# depende de o a2 lembrar de fazê-la à mão, que é exatamente o que a cascata
+# determinística deveria evitar.
 
 # --- Versão 4: rodada NBR 6122 §6.2.1 (estabilidade de fundação rasa) -------
 #
@@ -156,6 +261,42 @@ regras:
     metodo: ambos
     status: PENDENTE_HUMANO
     motivo_pendencia: "Fora do escopo mínimo (carga excêntrica). Extraído em kb/clausulas.jsonl para quando o escopo for ampliado; ninguém decidiu ainda a estratégia de busca de B×L sob excentricidade dupla nem como tratar o núcleo central. NÃO implementar em calc_core até esta linha virar APROVADA."
+    achado_colateral_v5: >-
+      ACHADO SEPARADO, trazido pela rodada da apostila Bastos mas SEM ligação
+      com a pendência de deslizamento/tombamento — registrado aqui, que é onde
+      pertence, e explicitamente NÃO usado para justificar nada lá.
+      A mesma apostila traz um SEGUNDO critério de tombamento, nas notas a) e
+      b) da p. impressa 46 (PDF 50), eqs. 1.48 e 1.49, por ÁREA COMPRIMIDA:
+      e_Ag/A + e_Bg/B <= 1/6 sob cargas permanentes (base inteiramente
+      comprimida, núcleo central) e (e_A/A)² + (e_B/B)² <= 1/9 na condição
+      mais desfavorável ("pelo menos metade da área comprimida"). Registro
+      BASTOS-1.6.4-notas-a-b-eq148-149-tombamento-area-comprimida.
+      Este critério, ao contrário do γ >= 1,5, TEM interlocução direta com
+      §7.6.2 — e a própria apostila cita §7.6.2 em nota de rodapé.
+      A apostila NÃO articula os dois critérios entre si (não diz se são
+      alternativos, cumulativos, ou se cada um cabe a um caso). Essa lacuna é
+      da fonte e fica registrada como tal; não se resolve por interpretação.
+      VERIFICAÇÃO NUMÉRICA DO A2 sobre a interpretação que o a1 marcou como
+      sua: "1/9 corresponde a 50 % de área comprimida" CONFERE no limite
+      uniaxial — com e_B = 0, (e_A/A)² = 1/9 dá e_A = A/3, e o comprimento
+      comprimido do diagrama triangular é 3(A/2 − A/3) = A/2, exatamente
+      metade da base. Interpretação do a1 ACEITA nesse limite.
+      CONSEQUÊNCIA, E É UMA COLISÃO DE MÉTODO: 50 % é o patamar que §7.6.2
+      associa às SOLICITAÇÕES DE CÁLCULO. Para solicitações CARACTERÍSTICAS a
+      norma exige 2/3 da área. Aplicar o 1/9 da apostila a combinações
+      características seria misturar as rotas do lado inseguro — no mesmo
+      formato quadrático, o limite correto para valores característicos é
+      (5/18)² = 0,077, e não 1/9 = 0,111, ou seja, o critério da apostila é
+      cerca de 44 % mais permissivo do que a norma admite nessa rota.
+      SITUAÇÃO DO CÓDIGO, verificada nesta rodada: `sapata.py:98` define
+      `area_comprimida_minima = 2.0/3.0` e a verificação de `sapata.py:414`
+      roda sobre `combs_els`, isto é, 2/3 com solicitações características.
+      Isso está do lado CERTO e é coerente em método com §7.6.2. Logo este
+      achado colateral NÃO gera trabalho de correção e NÃO deve motivar troca
+      do 2/3 pelo 1/9: seria migração para o patamar de valores de cálculo sem
+      migrar as combinações. Fica como evidência de apoio para quando esta
+      regra for a julgamento humano, e como guarda contra uma "otimização"
+      futura mal fundamentada.
 
   - id: NBR6122-7.6.3-deslizamento
     norma: "NBR 6122:2022"
@@ -201,18 +342,138 @@ regras:
       possíveis o código é MENOS conservador que a norma: -36% a -57% em
       deslizamento, -11% em tombamento. LADO INSEGURO.
     motivo_pendencia: >-
-      Exige julgamento de engenharia em dois pontos que o a2 não pode decidir:
-      (1) se "γm = 1,4 para a resistência do solo" incide sobre tanδ/c' além
-      da minoração de 1,2 já aplicada ao peso favorável, ou se as duas são
-      alternativas — muda o FS equivalente de 2,35 para 1,96;
-      (2) se o software deve migrar a verificação de estabilidade para o
-      método de valores de cálculo (combinações ELU, coeficientes parciais),
-      abandonando o par FS=1,5/1,5 sobre combinações ELS, ou manter uma rota
-      de valores admissíveis com FS decidido pelo projetista e rotulado como
-      decisão de engenharia, NÃO como texto normativo.
-      NÃO IMPLEMENTAR em calc_core até virar APROVADA. A5 está proibido de
-      alterar os valores 1,5/1,5 nesta rodada — a correção de citação e a
+      REFORMULADO na versão 5 — de DUAS perguntas bloqueantes para UMA.
+      PERGUNTA BLOQUEANTE ÚNICA (era a nº 2): o software mantém a rota de
+      valores admissíveis (FS global sobre combinações características) para
+      deslizamento e tombamento, com FS = 1,5 rotulado como PRÁTICA CONSAGRADA
+      NÃO NORMATIVA, ou migra para o método de valores de cálculo de
+      §6.2.1.1.2 (combinações ELU + coeficientes parciais)? O engenheiro que
+      responder precisa estar ciente de três fatos, todos verificados:
+      (i) §6.2.1.1.2 é o ÚNICO item da NBR 6122:2022 que cobre deslizamento e
+      tombamento de fundação rasa, e ele só oferece coeficientes parciais;
+      (ii) a licença de escolha de rota de §7.1 e §6.2.1.1.1 é sobre a TENSÃO
+      (compressão), não sobre esta verificação — ver cabeçalho da versão 5;
+      (iii) o FS equivalente da norma é 1,68 (tombamento) a 2,35 (deslizamento)
+      contra os 1,5 do código, ou seja, manter 1,5 é decidir operar de 11 % a
+      36 % do lado inseguro em relação ao único item aplicável, em troca de
+      alinhamento com a prática de mercado.
+      PERGUNTA ANTES BLOQUEANTE, AGORA CONDICIONAL E DORMENTE (era a nº 1):
+      se "γm = 1,4 para a resistência do solo" incide sobre tanδ/c' além da
+      minoração de 1,2 já aplicada ao peso favorável (FS equivalente 2,35) ou
+      se as duas são alternativas (1,96). Só volta a ser bloqueante SE a
+      resposta à pergunta única for "migrar para valores de cálculo". Se a
+      resposta for "manter admissíveis", esta pergunta deixa de ter efeito
+      sobre o código e permanece registrada apenas como referência do cálculo
+      de equivalência.
+      NÃO IMPLEMENTAR em calc_core até virar APROVADA. A4/A5 continuam
+      PROIBIDOS de alterar os valores 1,5/1,5 — a correção de citação e a
       correção de critério são coisas diferentes e a segunda não está decidida.
+      A correção de CITAÇÃO, essa sim, está liberada: ver campo
+      `acao_liberada_para_a4` abaixo.
+    evidencia_secundaria_v5: >-
+      FONTE SECUNDÁRIA NÃO NORMATIVA, admitida como evidência de PRÁTICA e
+      NUNCA como fonte de obrigatoriedade: BASTOS, P.S., "Sapatas de
+      Fundação", UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.
+      (Sapatas.pdf na raiz). Item 1.8, p. impressas 74-75 / PDF 78-79.
+      Cláusulas BASTOS-1.8a-tombamento-eq170-172 e
+      BASTOS-1.8b-escorregamento-eq173-175 em kb/clausulas.jsonl; fórmulas
+      BASTOS-1.72-tombamento e BASTOS-1.75-escorregamento em kb/formulas.yaml.
+      A fonte prescreve γ_tomb = M_estab/M_tomb >= 1,5 e
+      γ_esc = F_estab/F_H >= 1,5 — os MESMOS dois valores do código, na MESMA
+      forma de fator de segurança global sobre razão resistente/solicitante.
+      Conferido pelo a2 por leitura visual própria a 500 dpi das duas equações.
+      O QUE ISSO ESTABELECE: FS = 1,5 para tombamento e escorregamento de
+      sapata é prática de ensino e de mercado no Brasil, não invenção deste
+      software. É base suficiente para o RÓTULO "prática consagrada".
+      O QUE ISSO NÃO ESTABELECE: conformidade com a NBR 6122:2022. A busca
+      negativa (registro BASTOS-6.2.1-coef-parciais-nada, refeita pelo a2 nas
+      119 páginas) mostra que a string "6.2.1" não ocorre uma única vez na
+      apostila e que a expressão "coeficiente de segurança" ocorre uma única
+      vez em todo o documento — justamente no parágrafo do 1,5, e sem remissão
+      normativa. A fonte apresenta 1,5 como valor de projeto direto.
+      LEITURA DO A2: uma segunda fonte independente que dá 1,5 SEM citar norma
+      é, ao mesmo tempo, evidência a favor do rótulo "prática consagrada" e
+      evidência adicional de que não existe âncora normativa para o valor.
+      Ela FORTALECE a rotulagem e NÃO substitui a decisão humana sobre manter
+      ou não a constante em produção.
+    correspondencia_codigo_x_fonte_secundaria: >-
+      Verificado pelo a2 com pint e com valores típicos (N=800 kN, P=60 kN,
+      F_H=60 kN, M=50 kN·m, h=0,8 m, base 2,0 x 2,0 m, φ=30°, c=10 kPa):
+      `sapata.py::_verificar_estabilidade` implementa, na prática, o modelo da
+      apostila e NÃO o da norma — M_tomb = M + F_H·h (eq. 1.70),
+      M_estab = (N+P)·A/2 (eq. 1.71), razão >= 1,5 (eq. 1.72), e para o
+      deslizamento a razão F_estab/F_H >= 1,5 (eq. 1.75) com F_estab de atrito
+      mais coesão (eq. 1.74). Todas as razões fecham adimensionais.
+      DUAS DIVERGÊNCIAS ENTRE O CÓDIGO E A FONTE, ambas apuradas nesta rodada:
+      (a) A FAVOR DO CÓDIGO — a eq. 1.74 escreve a parcela de coesão como A·c
+      com A definido pela fonte como comprimento, o que é dimensionalmente
+      inconsistente; o código escreve `self.solo.coesao * self.a * self.b`,
+      isto é, coesão vezes ÁREA, que é a leitura dimensionalmente correta.
+      O defeito da fonte NÃO se propagou para o código.
+      (b) CONTRA O CÓDIGO — a eq. 1.74 reduz a coesão a 2/3 (parcela
+      "A(2/3 c)"); o código aplica o fator 2/3 apenas ao ângulo de atrito
+      (`fator_atrito_base`) e usa a coesão CHEIA. No caso típico acima isso
+      torna o código 3,9 % menos conservador que a própria apostila na força
+      resistente ao deslizamento. É pequeno e não é bloqueante, mas significa
+      que o código não pode ser descrito como "implementa Bastos 1.74": ele
+      implementa uma variante mais permissiva. Se a resposta humana for
+      "manter a rota admissível", este item entra junto na mesma decisão.
+    alertas_da_fonte_avaliados_pelo_a2: >-
+      Os dois alertas de qualidade levantados pelo a1 foram avaliados e têm
+      PESOS MUITO DIFERENTES na decisão:
+      (1) COLISÃO DE SÍMBOLO γ — RELEVANTE, e diretamente relevante a esta
+      discussão. A apostila grafa o fator de segurança GLOBAL como γ_tomb e
+      γ_esc; a NBR 6122 usa γm/γf para COEFICIENTES PARCIAIS. É a colisão de
+      método de segurança do §3 do a2-verificador aparecendo já na notação.
+      Um leitor de memorial que veja "γ_tomb = 1,5" pode entender que se trata
+      de coeficiente de ponderação normativo — que é precisamente o erro que
+      esta pendência existe para impedir. REQUISITO REGISTRADO: o software
+      NÃO pode grafar esta constante como γ, em código, em tela ou em
+      memorial. Grafar `FSg_tombamento` / `FSg_deslizamento` (fator de
+      segurança global), com o rótulo de prática não normativa colado ao
+      número. Vale mesmo que a decisão humana seja migrar de método.
+      (2) INCONSISTÊNCIA DIMENSIONAL DA EQ. 1.74 — REAL (confirmada por pint,
+      ver cabeçalho da versão 5) mas IRRELEVANTE para a decisão sobre o valor
+      1,5. São coisas separadas: 1,5 vem da eq. 1.72 e da eq. 1.75, ambas
+      dimensionalmente sadias; o defeito está só na eq. 1.74, que é uma das
+      duas alternativas de F_estab. E o código já usa a forma dimensionalmente
+      correta (coesão x área), como registrado acima. Portanto este alerta NÃO
+      enfraquece a apostila como evidência de prática quanto ao 1,5. Ele
+      apenas proíbe que a eq. 1.74 seja citada como fórmula auditada.
+    discrepancia_de_edicao: >-
+      REGISTRO, NÃO TAREFA. Três edições diferentes da NBR 6122 circulam neste
+      dossiê: a apostila cita 2021 (três vezes, e "2022" não aparece nenhuma
+      vez em suas 119 páginas); o código cita 2019 em vários pontos; o acervo
+      deste repositório tem a de 2022. O a1 conferiu três trechos citados
+      literalmente pela apostila contra a edição 2022 e bateram palavra por
+      palavra, e a numeração dos dezesseis itens que ela cita coincide — o que
+      é COMPATÍVEL com a hipótese de erro de grafia do ano, mas NÃO a prova, e
+      em particular nada disso prova que o item de deslizamento/tombamento
+      tenha a mesma redação em 2021. Não há exemplar de 2021 nem de 2019 no
+      acervo, logo não há como investigar. Fica assim. Consequência operacional
+      única e suficiente: a fonte normativa deste projeto é a NBR 6122:2022 do
+      acervo, e toda citação no código deve dizer 2022 — as citações "2019"
+      espalhadas pelo código são incorretas por edição, independentemente de
+      estarem ou não corretas por item.
+    acao_liberada_para_a4: >-
+      LIBERADO, e SOMENTE isto: `geotecnia.py:215` traz o comentário
+      "# NBR 6122, 6.2.1.2" ao lado de `fs_deslizamento: float = 1.5`, e
+      `ui/completo/resultado.py:22` traz
+      ITEM_ESTABILIDADE = "NBR 6122:2019 §6.2.1.2 — deslizamento e tombamento".
+      As duas citações são falsas em dois níveis: §6.2.1.2 é "Segurança de
+      fundações PROFUNDAS", e a edição do acervo é 2022, não 2019. Devem ser
+      REMOVIDAS. Substituir NÃO por outro número de item, mas pela verdade
+      apurada: o valor 1,5 não tem item normativo; é prática consagrada de
+      mercado, documentada em fonte secundária, sob decisão pendente de
+      engenheiro. Redação sugerida para o comentário e para o rótulo de tela:
+      "FS global = 1,5 — PRÁTICA CONSAGRADA, SEM RESPALDO NORMATIVO. A NBR
+      6122:2022 §6.2.1.1.2 trata deslizamento/tombamento SÓ por coeficientes
+      parciais (equivalente 1,68 a 2,35). Valor sob decisão de engenharia
+      pendente. [rule: NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento —
+      PENDENTE_HUMANO]". Isto NÃO é a troca cega "6.2.1.2 -> 6.2.1.1.2" que a
+      versão 4 proibiu, e continua proibida: não se troca um item por outro,
+      RETIRA-SE a alegação normativa. Nenhum número muda. Nenhum resultado de
+      cálculo muda. Executor: a4-geotecnico (estabilidade geotécnica).
     observacao: >-
       COLISÃO DE MÉTODO DE SEGURANÇA (o erro clássico do setor, ver
       a2-verificador.md §3). _verificar_estabilidade itera sobre
