@@ -93,11 +93,49 @@ def classificar(a: float, b: float, h: float, h0: float, ap: float, bp: float,
     """
     Cruza o critério geométrico da NBR com dois critérios de rigidez relativa.
 
+    Critério normativo (campos `rigida_nbr` e `h_necessario`):
+        h >= (a - a_p)/3, verificada NAS DUAS DIREÇÕES; basta falhar em uma
+        para a sapata ser flexível — daí h_nec = max((a-ap)/3, (b-bp)/3).
+        Ref.: ABNT NBR 6118:2023, item 22.6.1, p. 191. [rule: NBR6118-22.6.1-rigidez]
+        Esta é a implementação canônica do critério no pacote;
+        `sapata.Sapata._alturas` apenas consome o mesmo enunciado para
+        pré-dimensionar a altura.
+
+    Os demais campos NÃO são texto normativo e não carregam identificador de
+    regra normativa: lambda_L_x / lambda_L_y / classe_hetenyi vêm de Hetényi (1946) e
+    rigidez_relativa de Meyerhof — engenharia consagrada, usada aqui apenas
+    como leitura complementar do comportamento solo-estrutura.
+
     Hetényi define o comportamento pela grandeza adimensional lambda·L:
         lambda = (k_v · b / (4 · E · I))^(1/4)
         lambda·L < pi/4  -> viga curta: gira praticamente como corpo rígido
         lambda·L > pi    -> viga longa: a carga não alcança as extremidades
+
+    Levanta ValueError para geometria impossível (dimensão não positiva ou
+    pilar maior que a sapata, que produziria h_necessario negativo e
+    classificaria como rígida silenciosamente) e para Ecs_MPa/kv não positivos.
     """
+    if a <= 0.0 or b <= 0.0:
+        raise ValueError(
+            f"Dimensões da sapata devem ser positivas: a={a}, b={b} [m].")
+    if h <= 0.0 or h0 <= 0.0:
+        raise ValueError(
+            f"Alturas da sapata devem ser positivas: h={h}, h0={h0} [m].")
+    if ap <= 0.0 or bp <= 0.0:
+        raise ValueError(
+            f"Dimensões do pilar devem ser positivas: ap={ap}, bp={bp} [m].")
+    if ap >= a or bp >= b:
+        raise ValueError(
+            f"Pilar não cabe na sapata: ap={ap} m contra a={a} m e bp={bp} m "
+            f"contra b={b} m. O critério de 22.6.1 pressupõe balanço "
+            "(a - a_p)/2 > 0 nas duas direções.")
+    if Ecs_MPa <= 0.0:
+        raise ValueError(
+            f"Módulo de deformação secante deve ser positivo: Ecs={Ecs_MPa} MPa.")
+    if kv <= 0.0:
+        raise ValueError(
+            f"Coeficiente de reação vertical deve ser positivo: kv={kv} kN/m³.")
+
     E = Ecs_MPa * 1000.0                      # MPa -> kPa
     h_med = (h + h0) / 2.0                    # altura equivalente do tronco
     obs: list[str] = []
@@ -118,6 +156,10 @@ def classificar(a: float, b: float, h: float, h0: float, ap: float, bp: float,
     else:
         classe = "média (comportamento intermediário)"
 
+    # NBR 6118:2023, 22.6.1, p. 191 [rule: NBR6118-22.6.1-rigidez]:
+    # "nas duas direções" -> o max() é a condição; remover a parcela de b
+    # (ou a de a) reintroduz o defeito de classificar como rígida uma sapata
+    # alongada que só atende ao critério na direção curta.
     h_nec = max((a - ap) / 3.0, (b - bp) / 3.0)
     rigida_nbr = h >= h_nec - 1e-9
 

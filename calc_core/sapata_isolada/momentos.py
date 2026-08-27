@@ -56,7 +56,8 @@ def momento_unitario(N: float, Mx: float, My: float, a: float, b: float,
     Tomar a face do pilar como seção de referência é prática de engenharia
     consagrada, não item normativo específico: a NBR 6118:2023, 22.6, não
     prescreve a posição dessa seção (22.6.3 exige apenas que o modelo de flexão
-    contemple 22.6.2). Decisão de engenharia, portanto, sem [rule: ] de norma.
+    contemple 22.6.2). Decisão de engenharia, portanto, sem identificador de
+    regra normativa associado.
 
     A pressão varia linearmente ao longo do eixo do balanço, com a coordenada
     transversal fixada na borda mais comprimida. Interpolar usando o vértice

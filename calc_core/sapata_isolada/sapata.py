@@ -280,19 +280,33 @@ class Sapata:
             (ap + c)(bp + c) = A   ->   c² + (ap + bp)·c + ap·bp - A = 0
 
         Se uma das dimensões estiver travada, a outra é obtida diretamente.
+
+        Piso de balanço: carga pequena com pilar grande faz a área necessária
+        cair dentro da própria seção do pilar (c = 0) e a sapata degeneraria em
+        a = ap. Sem balanço não há sapata — nem momento no balanço, nem
+        classificação de 22.6.1 (que pressupõe (a - ap)/2 > 0). As dimensões
+        livres recebem, por isso, um balanço mínimo de um módulo por lado.
+        Dimensão TRAVADA pelo projetista não é corrigida em silêncio: se ela
+        não couber, `rigidez.classificar` levanta ValueError com a mensagem
+        explícita.
         """
         ap, bp = self.pilar.ap, self.pilar.bp
+        m = self.op.modulo_dim
+
+        def livre(dim_pilar: float, valor: float) -> float:
+            return max(self.op.dim_minima, self._arredondar(valor),
+                       self._arredondar(dim_pilar + 2.0 * m))
+
         if self.op.travar_a:
             a = self.op.travar_a
-            return a, max(self.op.dim_minima, self._arredondar(area / a))
+            return a, livre(bp, area / a)
         if self.op.travar_b:
             b = self.op.travar_b
-            return max(self.op.dim_minima, self._arredondar(area / b)), b
+            return livre(ap, area / b), b
 
         disc = (ap + bp) ** 2 - 4.0 * (ap * bp - area)
         c = max((-(ap + bp) + math.sqrt(max(disc, 0.0))) / 2.0, 0.0)
-        return (max(self.op.dim_minima, self._arredondar(ap + c)),
-                max(self.op.dim_minima, self._arredondar(bp + c)))
+        return livre(ap, ap + c), livre(bp, bp + c)
 
     def _planta_inicial(self) -> tuple[float, float]:
         """
@@ -446,10 +460,16 @@ class Sapata:
     def _alturas(self, a: float, b: float, h_forcada: Optional[float] = None
                  ) -> tuple[float, float]:
         """
-        Condição de sapata RÍGIDA (NBR 6118:2023, item 22.6.1):
+        Condição de sapata RÍGIDA, verificada nas duas direções:
             h >= (a - ap)/3   e   h >= (b - bp)/3
+        Ref.: ABNT NBR 6118:2023, item 22.6.1, p. 191. [rule: NBR6118-22.6.1-rigidez]
+
+        Implementação canônica do critério: `rigidez.classificar`, que devolve
+        h_necessario/rigida_nbr. Aqui ele só é consumido para pré-dimensionar a
+        altura; a classificação que vale no memorial vem de `classificar`.
+
         Altura da aba: h0 >= max(h/3 ; h0_min) - prática de projeto para garantir
-        ancoragem e cobrimento das barras na borda.
+        ancoragem e cobrimento das barras na borda, sem item normativo próprio.
         """
         h_rigida = max((a - self.pilar.ap) / 3.0, (b - self.pilar.bp) / 3.0)
         h = h_forcada if h_forcada else max(self.op.h_minima,
