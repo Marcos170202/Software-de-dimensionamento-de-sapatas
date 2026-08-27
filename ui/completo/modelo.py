@@ -52,4 +52,9 @@ def construir_modelo_visual(sapata: Sapata, res: ResultadoSapata) -> dict:
         "nivel_agua": perfil.nivel_agua if perfil is not None else None,
         "armaduras": armaduras,
         "q_liquido": q_liquido,
+        # Objeto `Solo` inteiro (não um número derivado): o corte de
+        # espraiamento por camada (`visual2d.PerfilCortes._espraiamento`)
+        # chama `geotecnia.propagacao_em_profundidade(solo, ...)` — a UI só
+        # repassa a referência, quem calcula é o núcleo.
+        "solo": sapata.solo,
     }

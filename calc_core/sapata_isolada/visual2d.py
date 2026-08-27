@@ -12,7 +12,15 @@ from __future__ import annotations
 import math
 from typing import Optional
 
-from .geotecnia import acrescimo_tensao_centro, influencia_canto_retangulo
+from .geotecnia import (
+    AVISO_MEIO_HOMOGENEO,
+    AVISO_NAO_NORMATIVO,
+    FONTE_BOUSSINESQ,
+    ROTULO_FONTE,
+    PropagacaoTensoes,
+    influencia_canto_retangulo,
+    propagacao_em_profundidade,
+)
 from .momentos import CampoMomentos, cor_hex, curvas_nivel, niveis_uteis
 from .pintura import PoolCanvas, encadear_segmentos, faixas_por_linha
 
@@ -25,6 +33,14 @@ DESTAQUE = "#f0873c"
 
 CORES_SUBSTRATO = {"granular": "#c79a2e", "coesivo": "#6f8c6b",
                    "aterro": "#9a7b57", "rocha": "#6b7c8e"}
+
+# Mesmas cores do banner "Banner.TLabel" de ui/completo/tema.py (AMARELO /
+# fundo #3a2a10) — reaproveitadas aqui, não reinventadas, para que o aviso
+# permanente do corte de espraiamento tenha a MESMA leitura visual do banner
+# de escopo amplo que já fica fixo na tela (mesmo padrão pedido no requisito
+# REQ-UI-01/REQ-UI-02 do ruleset).
+AVISO_BG = "#3a2a10"
+AVISO_FG = "#e2b53f"
 
 
 def _escurecer(hexa: str, k: float = 0.32) -> str:
@@ -304,15 +320,28 @@ class PerfilCortes:
     MEIA_LARGURA = 1.25      # semilargura do corte, em múltiplos da dimensão
     PROFUNDIDADE = 2.6       # em múltiplos do menor lado
     N_GRADE = 61
+    # Faixa reservada no topo do corte para os dois avisos permanentes
+    # (REQ-UI-01/REQ-UI-02) quando o espraiamento por camada está ativo —
+    # generosa o bastante para os textos completos quebrarem em até duas
+    # linhas cada em larguras de canvas usuais (>= ~560 px).
+    FAIXA_AVISO_ESPRAIAMENTO = 84.0
 
     def __init__(self, canvas) -> None:
         self.canvas = canvas
         self.modelo: Optional[dict] = None
         self.direcao = "X"
         self.mostrar_bulbo = True
-        self.fonte = "boussinesq"      # ou "mef"
+        self.fonte = "boussinesq"      # ou "mef" — só do bulbo por isovalores
         self.malha_mef = None
         self._cache_bulbo = None
+        # ------------------------------------------------- espraiamento por camada
+        # Corte alternativo ao bulbo: pirâmide/tronco por Δσ nos LIMITES DE
+        # CAMADA (q1/q2/q3, L1/L2/L3 — REQ-UI-04). Estado independente do
+        # `fonte` do bulbo acima: aqui "fonte_espraiamento" escolhe entre
+        # Boussinesq/Newmark e 2V:1H (`calc_core.sapata_isolada.geotecnia`),
+        # nunca entre analítico e MEF.
+        self.mostrar_espraiamento = False
+        self.fonte_espraiamento = FONTE_BOUSSINESQ
         canvas.bind("<Configure>", lambda e: self.desenhar())
 
     def alternar(self, chave: str, valor: bool) -> None:
@@ -332,6 +361,16 @@ class PerfilCortes:
     def definir_fonte(self, fonte: str) -> None:
         self.fonte = fonte
         self._cache_bulbo = None
+        self.desenhar()
+
+    def definir_fonte_espraiamento(self, fonte: str) -> None:
+        """Boussinesq/Newmark (default) ou 2V:1H para o corte de espraiamento.
+
+        [REQ-UI-04] Seletor de VISUALIZAÇÃO — não altera recalque nem
+        verificação alguma; troca apenas qual `PropagacaoTensoes` alimenta
+        `_espraiamento()`.
+        """
+        self.fonte_espraiamento = fonte
         self.desenhar()
 
     def definir_direcao(self, direcao: str) -> None:
@@ -370,7 +409,12 @@ class PerfilCortes:
         col_x, col_l, faixa_rotulos = 62.0, 22.0, 158.0
         corte_x0 = col_x + col_l + faixa_rotulos
         corte_x1 = W - 22.0
-        topo, base = 66.0, H - 52.0
+        # reserva a faixa fixa dos dois avisos não normativos
+        # (REQ-UI-01/REQ-UI-02) quando o espraiamento por camada está ativo,
+        # para nunca sobrepor o cabeçalho nem a estratigrafia.
+        topo = 66.0 + (self.FAIXA_AVISO_ESPRAIAMENTO
+                       if self.mostrar_espraiamento else 0.0)
+        base = H - 52.0
 
         largura_corte = max(corte_x1 - corte_x0, 60.0)
         esc = min((base - topo) / prof_total, largura_corte / (2.0 * meia))
@@ -449,10 +493,19 @@ class PerfilCortes:
         if self.mostrar_bulbo:
             self._bulbo(m, px, ym, dim, transversal, hf, esc, base, W)
 
+        if self.mostrar_espraiamento:
+            self._espraiamento(m, px, ym, dim, hf, base, W, topo)
+
+        extras = []
+        if self.mostrar_bulbo:
+            extras.append("do bulbo")
+        if self.mostrar_espraiamento:
+            extras.append("do espraiamento por camada")
+        rodape = "corte para identificação das camadas"
+        if extras:
+            rodape += " e " + " e ".join(extras)
         c.create_text(W - 16, H - 16, anchor="e", fill=TINTA_FRACA,
-                      font=("Consolas", 8),
-                      text="corte para identificação das camadas"
-                           + (" e do bulbo" if self.mostrar_bulbo else ""))
+                      font=("Consolas", 8), text=rodape)
 
     # ------------------------------------------------------------- bulbo
     @staticmethod
@@ -540,6 +593,150 @@ class PerfilCortes:
         c.create_text(px(0), min(py(self.PROFUNDIDADE * min(dim, transversal))
                                  + 20, base - 8),
                       text=legenda, fill="#7fd8e8", font=("Consolas", 8))
+
+    # ------------------------------------------------- espraiamento por camada
+    def _propagacao_atual(self, m: dict) -> Optional[PropagacaoTensoes]:
+        """
+        Chama a API do a4 (`geotecnia.propagacao_em_profundidade`) — nenhuma
+        fórmula de propagação é reimplementada aqui [REQ-UI-06].
+
+        `q_aplicada` não está pronto no modelo (só `q_liquido`, que já
+        descontou o alívio de escavação em `AnaliseRecalque.q_liquido` —
+        `recalques.py:255-260`). Reconstituí-lo somando de volta a sobrecarga
+        geostática na cota da base (`solo.sobrecarga_no_nivel_da_base()`, o
+        mesmo método do núcleo que produziu o desconto) é o inverso exato,
+        sem perda, dessa subtração: `propagacao_em_profundidade` refaz
+        `max(0, q_aplicada - sobrecarga)` internamente e devolve o mesmo
+        `q_liquido` de onde partimos. Nenhuma fórmula de engenharia nova nasce
+        aqui — é a soma que desfaz a subtração que o núcleo já fez.
+        """
+        solo = m.get("solo")
+        q_liquido = m.get("q_liquido")
+        a, b = m.get("a"), m.get("b")
+        if solo is None or solo.perfil is None or q_liquido is None:
+            return None
+        if not a or not b:
+            return None
+        q_aplicada = q_liquido + solo.sobrecarga_no_nivel_da_base()
+        z_max = 2.0 * min(a, b)   # REQ-UI-05 — mesmo teto de 2B do bulbo
+        try:
+            return propagacao_em_profundidade(
+                solo, a, b, q_aplicada, fonte=self.fonte_espraiamento,
+                z_max=z_max)
+        except ValueError:
+            return None
+
+    def _espraiamento(self, m, px, ym, dim, hf, base, W, topo) -> None:
+        """
+        Corte em pirâmide/tronco: Δσ e a largura equivalente NOS LIMITES DE
+        CAMADA (q1/q2/q3, L1/L2/L3 do croqui clássico de espraiamento),
+        alternativa ao bulbo contínuo de isovalores de `_bulbo()`.
+
+        Fonte de dados: `PropagacaoTensoes` de `geotecnia.propagacao_em_
+        profundidade` — [pratica: PC-BOUSSINESQ-NEWMARK-canto-retangulo] ou
+        [pratica: PC-ESPRAIAMENTO-2V1H] conforme `self.fonte_espraiamento`.
+        A cor de cada tronco usa a MESMA rampa de `momentos.cor_hex` já
+        reaproveitada em `MapaMomentos`/`visual3d_*` — vermelho = mais Δσ, em
+        toda a parte do app, não uma paleta nova.
+        """
+        c = self.canvas
+        prop = self._propagacao_atual(m)
+
+        # REQ-UI-01/REQ-UI-02 — rótulos PERMANENTES (nunca só em tooltip ou
+        # popup) enquanto este corte estiver ativo. A faixa foi reservada em
+        # `desenhar()` (`topo += FAIXA_AVISO_ESPRAIAMENTO`); aqui as duas
+        # linhas se empilham por `bbox()`, para quebrar em 1-2 linhas sem se
+        # sobrepor em qualquer largura de canvas.
+        faixa_aviso_y0 = topo - self.FAIXA_AVISO_ESPRAIAMENTO
+        c.create_rectangle(0, faixa_aviso_y0, W, topo - 2, fill=AVISO_BG,
+                           outline="")
+        largura_texto = max(W - 20, 160)
+        item1 = c.create_text(10, faixa_aviso_y0 + 4, anchor="nw",
+                              fill=AVISO_FG, font=("Segoe UI Semibold", 8),
+                              text=AVISO_NAO_NORMATIVO, width=largura_texto)
+        y2 = (c.bbox(item1)[3] + 3) if c.bbox(item1) else faixa_aviso_y0 + 20
+        # REQ-UI-02 — "a maior armadilha visual desta tela": o campo é de
+        # meio homogêneo, mas as camadas ao lado são coloridas com suas
+        # propriedades reais. Igualmente permanente, não letra miúda.
+        item2 = c.create_text(10, y2, anchor="nw", fill=AVISO_FG,
+                              font=("Consolas", 7), text=AVISO_MEIO_HOMOGENEO,
+                              width=largura_texto)
+        # Método escolhido + q_líquida usada — empilhado na MESMA faixa fixa,
+        # não perto do desenho: se o bulbo por isovalores também estiver
+        # ligado, os dois textos de legenda (deste e de `_bulbo()`) ficam
+        # perto um do outro no corte e um comeria o outro.
+        y3 = (c.bbox(item2)[3] + 3) if c.bbox(item2) else y2 + 14
+        rotulo_metodo = ROTULO_FONTE.get(self.fonte_espraiamento,
+                                         self.fonte_espraiamento)
+        q_txt = (f" · q_líq {prop.q_liquida:.0f} kPa" if prop is not None
+                else "")
+        c.create_text(10, y3, anchor="nw", fill="#f4f6f7",
+                      font=("Consolas", 8, "bold"),
+                      text=f"{rotulo_metodo}{q_txt}", width=largura_texto)
+
+        if prop is None or not prop.camadas:
+            c.create_text(px(0), (topo + base) / 2, fill=TINTA_FRACA,
+                          font=("Segoe UI", 10),
+                          text="Sem perfil/solo suficiente para o "
+                               "espraiamento por camada")
+            return
+
+        def py(z_abaixo_base):
+            return ym(hf + z_abaixo_base)
+
+        q_ref = max(prop.q_liquida, 1e-9)
+        eixo_val = "a" if self.direcao == "X" else "b"
+
+        for indice, cam in enumerate(prop.camadas):
+            pt_topo = prop.pontos[indice]
+            pt_base = prop.pontos[indice + 1]
+            larg_topo = (getattr(pt_topo, f"largura_equivalente_{eixo_val}")
+                        or dim)
+            larg_base = (getattr(pt_base, f"largura_equivalente_{eixo_val}")
+                        or dim)
+            y0, y1 = py(cam.z_topo), py(cam.z_base)
+            if y0 > base:
+                break
+            y1 = min(y1, base)
+
+            fracao = max(0.0, min(1.0, cam.delta_sigma_medio / q_ref))
+            cor = cor_hex(fracao)
+            c.create_polygon(
+                px(-larg_topo / 2), y0, px(larg_topo / 2), y0,
+                px(larg_base / 2), y1, px(-larg_base / 2), y1,
+                fill=cor, outline="#f4f6f7", width=1)
+
+            # setas de espraiamento: bordas inclinadas com seta apontando
+            # para fora/baixo, no mesmo espírito das isolinhas de _bulbo().
+            for sinal in (-1, 1):
+                c.create_line(px(sinal * larg_topo / 2), y0,
+                              px(sinal * larg_base / 2), y1,
+                              fill="#f4f6f7", width=1.2, dash=(4, 2),
+                              arrow="last", arrowshape=(7, 8, 3))
+
+            c.create_line(px(-larg_base / 2), y1, px(larg_base / 2), y1,
+                          fill="#20272c", width=1)
+            meio_y = (y0 + y1) / 2
+            rotulo_q = f"q{indice + 1} = {cam.delta_sigma_medio:.1f} kPa"
+            rotulo_l = f"L{indice + 1} = {larg_base:.2f} m"
+            c.create_text(px(0), meio_y - 6, fill="#1d2429",
+                          font=("Consolas", 8, "bold"), text=rotulo_q)
+            c.create_text(px(0), meio_y + 7, fill="#1d2429",
+                          font=("Consolas", 7), text=rotulo_l)
+
+        # Avisos extras específicos desta chamada (ex.: "pressão líquida
+        # nula", "profundidade pedida excede o perfil"), diferentes dos dois
+        # fixos já na faixa do topo. Ficam no rodapé, fixos ao canvas — não
+        # presos à profundidade do desenho, para nunca colidir com a legenda
+        # de `_bulbo()` nem com as isolinhas quando os dois estão ligados.
+        y_extra = base + 14
+        for aviso in prop.avisos:
+            if aviso in (AVISO_NAO_NORMATIVO, AVISO_MEIO_HOMOGENEO):
+                continue   # já fixos na faixa do topo — não repetir
+            c.create_text(10, y_extra, anchor="w", fill=TINTA_FRACA,
+                          font=("Consolas", 7), text=aviso,
+                          width=max(W - 200, 120))
+            y_extra += 12
 
     def _hachura(self, x, larg, y0, y1, tipo):
         c = self.canvas

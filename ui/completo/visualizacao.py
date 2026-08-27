@@ -12,6 +12,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from calc_core.sapata_isolada.geotecnia import FONTE_2V1H, FONTE_BOUSSINESQ
 from calc_core.sapata_isolada.momentos import (
     CampoMomentos,
     campo_de_grelha,
@@ -261,6 +262,25 @@ class AbaPerfilGeologico(ttk.Frame):
                         command=lambda: self.painel.alternar(
                             "mostrar_bulbo", self.v_bulbo.get())).pack(
             side="left", padx=4)
+        ttk.Separator(barra, orient="vertical").pack(side="left", fill="y",
+                                                        padx=6)
+        # Espraiamento por camada (q1/q2/q3, L1/L2/L3) — corte alternativo ao
+        # bulbo acima, sobre o MESMO perfil de solo natural já desenhado
+        # (nunca lastro/reforço, ver ruleset REQ-UI-03). Não influencia
+        # recalque nem verificação alguma (REQ-UI-04).
+        self.v_espraiamento = tk.BooleanVar(value=False)
+        ttk.Checkbutton(barra, text="Espraiamento por camada",
+                        variable=self.v_espraiamento,
+                        command=lambda: self.painel.alternar(
+                            "mostrar_espraiamento",
+                            self.v_espraiamento.get())).pack(side="left",
+                                                              padx=4)
+        ttk.Button(barra, text="Boussinesq",
+                   command=lambda: self.painel.definir_fonte_espraiamento(
+                       FONTE_BOUSSINESQ)).pack(side="left", padx=2)
+        ttk.Button(barra, text="2V:1H",
+                   command=lambda: self.painel.definir_fonte_espraiamento(
+                       FONTE_2V1H)).pack(side="left", padx=2)
         canvas = _canvas(self)
         self.painel = PerfilCortes(canvas)
 
