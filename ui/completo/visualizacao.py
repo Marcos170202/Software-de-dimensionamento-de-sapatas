@@ -12,7 +12,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from calc_core.sapata_isolada.momentos import CampoMomentos, campo_momentos
+from calc_core.sapata_isolada.momentos import (
+    CampoMomentos,
+    campo_de_grelha,
+    campo_momentos,
+)
 from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 from calc_core.sapata_isolada.visual2d import MapaMomentos, PerfilCortes, ReacaoSolo
 from calc_core.sapata_isolada.visual3d import Visualizador3D
@@ -149,7 +153,18 @@ class AbaMomentos(ttk.Frame):
         self._geometria = modelo
         if campo is not None:
             self.mapa2d.definir_campo(campo)
-            self.superficie3d.definir(campo, modelo)
+
+        campo_grelha = None
+        if res.grelha is not None:
+            md = {ar.direcao: ar.Md for ar in res.armaduras}
+            try:
+                campo_grelha = campo_de_grelha(
+                    res.grelha, md.get("X", 0.0), md.get("Y", 0.0),
+                    "ELU governante (grelha)")
+            except Exception:   # noqa: BLE001 — cai no fallback analítico
+                campo_grelha = None
+
+        self.superficie3d.definir(campo, campo_grelha, modelo)
 
 
 class AbaReacaoSolo(ttk.Frame):

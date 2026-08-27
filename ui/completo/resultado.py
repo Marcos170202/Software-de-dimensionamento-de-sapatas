@@ -274,8 +274,10 @@ class PainelResultado(ttk.Frame):
             self.tab_tensoes.insert("", "end", values=(
                 t.combinacao, f"{t.sigma_max:.1f}", f"{t.sigma_min:.1f}",
                 f"{t.limite:.0f}", _status(t.ok)))
+        def fmt(v: float) -> str:
+            return "∞" if v == float("inf") else f"{v:.2f}"
+
         for e in res.estabilidade:
-            fmt = lambda v: "∞" if v == float("inf") else f"{v:.2f}"
             self.tab_estabilidade.insert("", "end", values=(
                 e.combinacao, fmt(e.fs_deslizamento), fmt(e.fs_tombamento_x),
                 fmt(e.fs_tombamento_y), _status(e.ok)))

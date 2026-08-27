@@ -38,6 +38,8 @@ class SuperficieMomentos3D:
     def __init__(self, canvas) -> None:
         self.canvas = canvas
         self.campo: Optional[CampoMomentos] = None
+        self.campo_analitico: Optional[CampoMomentos] = None
+        self.campo_grelha: Optional[CampoMomentos] = None
         self.geometria: Optional[dict] = None
         self.direcao = "X"
         self.modo = "grelha"           # "grelha" (barras) ou "superficie"
@@ -56,14 +58,31 @@ class SuperficieMomentos3D:
         canvas.bind("<Configure>", lambda e: self._reenquadrar())
 
     # ------------------------------------------------------------------ dados
-    def definir(self, campo: CampoMomentos, geometria: dict) -> None:
-        self.campo = campo
+    def definir(self, campo_analitico: Optional[CampoMomentos],
+               campo_grelha: Optional[CampoMomentos], geometria: dict) -> None:
+        """
+        Recebe os dois campos possíveis: o analítico (plano de tensões rígido,
+        usado pelo modo "Superfície" e como reserva do modo "Grelha" quando a
+        grelha não foi resolvida) e o real da grelha discretizada (usado pelo
+        modo "Grelha" quando disponível — `res.grelha` não é `None`).
+        """
+        self.campo_analitico = campo_analitico
+        self.campo_grelha = campo_grelha
         self.geometria = geometria
+        self._escolher_campo()
         self.cam.yaw, self.cam.pitch = self._iso()
         self._reenquadrar()
 
+    def _escolher_campo(self) -> None:
+        """Define `self.campo` (o que os desenhos consomem) a partir do modo."""
+        if self.modo == "grelha" and self.campo_grelha is not None:
+            self.campo = self.campo_grelha
+        else:
+            self.campo = self.campo_analitico
+
     def definir_modo(self, modo: str) -> None:
         self.modo = "grelha" if modo == "grelha" else "superficie"
+        self._escolher_campo()
         self.cam.yaw, self.cam.pitch = self._iso()
         self._reenquadrar()
 
@@ -269,8 +288,12 @@ class SuperficieMomentos3D:
             ativos.append("X")
         if self.mostrar_y:
             ativos.append("Y")
-        pool.texto(20, 22, "Grelha discretizada — diagramas de momento por barra",
-                   TINTA, ("Segoe UI Semibold", 11), "w")
+        if self.campo is self.campo_grelha and self.campo_grelha is not None:
+            titulo = "Grelha discretizada — diagramas de momento por barra"
+        else:
+            titulo = ("Campo analítico (grelha não disponível) — "
+                      "diagramas por barra")
+        pool.texto(20, 22, titulo, TINTA, ("Segoe UI Semibold", 11), "w")
         pool.texto(20, 42, f"direções exibidas: {' e '.join(ativos) or 'nenhuma'}"
                            f"  ·  Mx máx {mx:.1f}  ·  My máx {my:.1f} kN·m/m",
                    TINTA_FRACA, ("Consolas", 8), "w")

@@ -14,9 +14,13 @@ momento da pressão do solo que atua entre a borda mais próxima e o ponto:
     x <  0 :  m_x(x, y) = ∫[−a/2 .. x] σ(ξ, y) · (x − ξ) dξ
 
 Como σ varia linearmente em planta (flexão oblíqua composta), a integral tem
-forma fechada. Dentro da projeção do pilar o valor é mantido constante e igual
-ao da face, que é a seção de referência da NBR 6118 (item 22.6.4.1): o campo
-não deve sugerir armadura crescente sob o pilar.
+forma fechada. A expressão acima só vale FORA da projeção do pilar; sob a
+projeção, o balanço deixa de existir (a seção de referência é a própria face —
+NBR 6118:2023, 22.6.4.1) e o campo é obtido por interpolação linear entre os
+valores das duas faces opostas. Ver a discussão em `momento_1d`: a norma não
+define momento sob a seção de referência, e a interpolação é uma escolha de
+desenho do campo de visualização, contínua e limitada pelos valores de face —
+o campo não sugere armadura crescente sob o pilar.
 
 Unidades: momentos em kN·m/m, tensões em kPa, comprimentos em m.
 """
@@ -159,26 +163,86 @@ def campo_momentos(sapata, res, nx: int = 61, ny: int = 61) -> CampoMomentos:
     def sigma(xi: float, eta: float) -> float:
         return max(0.0, s_med + kx * xi + ky * eta)
 
-    xs = [-a / 2 + a * i / (nx - 1) for i in range(nx)]
-    ys = [-b / 2 + b * j / (ny - 1) for j in range(ny)]
+    def coords(dim: float, dim_p: float, n: int) -> list[float]:
+        """
+        Grade uniforme com os dois nós mais próximos das faces do pilar
+        deslocados para cima delas.
+
+        A face é a seção de referência (NBR 6118:2023, 22.6.4.1) e é onde o
+        campo tem seu máximo: se nenhum nó cai exatamente ali, o pico lido do
+        campo fica abaixo do momento de dimensionamento só por erro de
+        amostragem (~1,5 % numa grade 61x61), e o cabeçalho dos desenhos passa
+        a mostrar um "máx" incompatível com o M_d adotado. O deslocamento é de
+        no máximo meio espaçamento, preserva a ordem e preserva a simetria da
+        grade (os dois nós são espelhados por construção).
+        """
+        c = [-dim / 2 + dim * i / (n - 1) for i in range(n)]
+        meia = dim_p / 2.0
+        if meia <= 1e-9 or meia >= dim / 2.0 - 1e-9:
+            return c
+        i_neg = min(range(1, n - 1), key=lambda i: abs(c[i] + meia))
+        i_pos = n - 1 - i_neg
+        if i_neg >= i_pos:                    # pilar menor que uma célula
+            return c
+        c[i_neg], c[i_pos] = -meia, meia
+        return c
+
+    xs = coords(a, ap, nx)
+    ys = coords(b, bp, ny)
 
     def momento_1d(pos: float, fixo: float, dim: float, dim_p: float,
                    eixo: str) -> float:
-        """Momento do balanço até `pos`, mantido constante sob o pilar."""
-        # a seção de referência é a face do pilar (NBR 6118, 22.6.4.1)
+        """
+        Momento do balanço até `pos`; sob a projeção do pilar, interpolação
+        linear entre os valores das duas faces.
+
+        Fora da projeção (|pos| >= dim_p/2) o valor é o momento da pressão do
+        solo entre a borda mais próxima e `pos` — o balanço engastado na face,
+        que é a seção de referência da NBR 6118:2023, 22.6.4.1 (p. 192, lida
+        por imagem da página).
+
+        Sob a projeção do pilar não há balanço: a norma define a seção de
+        referência na face e manda (22.6.4.1.1, p. 192) distribuir a armadura
+        de flexão uniformemente ao longo da largura, de face a face da sapata;
+        22.6.2.2 a) admite a tração na flexão uniformemente distribuída na
+        largura correspondente. Ou seja, a norma NÃO define um valor de momento
+        sob a própria seção de referência, e nenhum valor adotado aqui altera a
+        armadura (esta vem de `momento_unitario`, que usa só a face crítica).
+
+        A interpolação linear entre m(-dim_p/2) e m(+dim_p/2) é, portanto, uma
+        escolha de DESENHO do campo de visualização, não um requisito literal
+        da norma. Ela foi adotada porque:
+          - é contínua por construção — coincide com a curva externa nos dois
+            limites |pos| = dim_p/2, sem degrau artificial no eixo do pilar
+            (o clamp por sinal usado antes saltava do valor de uma face para o
+            da outra exatamente em pos = 0, o que aparecia como um pico/funil
+            falso na superfície 3D e como uma aresta reta no mapa 2D);
+          - é limitada pelos dois valores de face, logo nunca sugere armadura
+            crescente sob o pilar — a invariante física do campo;
+          - é simétrica: não depende de convenção de sinal para pos = 0, e
+            girar o problema 90° troca x por y sem mais nada.
+        """
         limite = dim_p / 2.0
-        p = math.copysign(max(abs(pos), limite), pos if pos != 0 else 1.0)
-        borda = math.copysign(dim / 2.0, p)
-        L = abs(borda - p)
-        if L <= 1e-9:
-            return 0.0
-        if eixo == "X":
-            s0, s1 = sigma(p, fixo), sigma(borda, fixo)
-        else:
-            s0, s1 = sigma(fixo, p), sigma(fixo, borda)
-        # σ linear no trecho: ∫ (s0 + k·t)·t dt = s0·L²/2 + k·L³/3
-        k = (s1 - s0) / L
-        return s0 * L ** 2 / 2.0 + k * L ** 3 / 3.0
+
+        def balanco(p: float) -> float:
+            borda = math.copysign(dim / 2.0, p if p != 0.0 else 1.0)
+            L = abs(borda - p)
+            if L <= 1e-9:
+                return 0.0
+            if eixo == "X":
+                s0, s1 = sigma(p, fixo), sigma(borda, fixo)
+            else:
+                s0, s1 = sigma(fixo, p), sigma(fixo, borda)
+            # σ linear no trecho: ∫ (s0 + k·t)·t dt = s0·L²/2 + k·L³/3
+            k = (s1 - s0) / L
+            return s0 * L ** 2 / 2.0 + k * L ** 3 / 3.0
+
+        if limite <= 1e-9 or abs(pos) >= limite:
+            return balanco(pos)
+
+        m_esq, m_dir = balanco(-limite), balanco(limite)
+        t = (pos + limite) / (2.0 * limite)      # 0 na face esquerda, 1 na direita
+        return m_esq + (m_dir - m_esq) * t
 
     mx = [[momento_1d(x, y, a, ap, "X") for x in xs] for y in ys]
     my = [[momento_1d(y, x, b, bp, "Y") for x in xs] for y in ys]
@@ -288,29 +352,56 @@ def campo_de_grelha(g, md_x: float, md_y: float,
     Converte o resultado da grelha num CampoMomentos, para alimentar os mesmos
     desenhos usados pelo campo analítico.
 
-    Dentro da projeção do pilar o valor é substituído pelo da face, como no
-    campo analítico: ali a grelha tem a singularidade da carga concentrada e o
-    pico não converge com o refinamento.
+    Dentro da projeção do pilar o campo é interpolado linearmente entre os dois
+    nós que ladeiam a projeção, um de cada lado — o mesmo tratamento dado ao
+    campo analítico em `campo_momentos.momento_1d`: ali a grelha tem a
+    singularidade da carga concentrada e o pico não converge com o refinamento,
+    e a norma (NBR 6118:2023, 22.6.4.1, p. 192) não define momento sob a própria
+    seção de referência. A interpolação é contínua nos dois nós de apoio e fica
+    contida entre eles, logo não sugere armadura crescente sob o pilar.
+
+    A versão anterior copiava o valor do nó "mais próximo da face" escolhido por
+    `min(..., key=|‖c‖ − meia|)`, sem olhar o SINAL do nó preenchido: em empate
+    de distância — o caso comum numa malha simétrica — `min` devolvia sempre o
+    primeiro da lista, isto é, o nó do lado NEGATIVO, e os nós do lado positivo
+    sob o pilar recebiam o momento da face oposta.
     """
     xs, ys = g.x, g.y
     ap, bp = g.ap, g.bp
 
-    def clampar(campo, coords, meia, ao_longo_de_x: bool):
+    def clampar(campo, coords, meia: float, ao_longo_de_x: bool):
+        """Preenche a faixa |coord| < meia por interpolação entre os vizinhos
+        de fora, um de cada lado (respeitando o sinal)."""
         saida = [linha[:] for linha in campo]
+        internos = {k for k in range(len(coords)) if abs(coords[k]) < meia}
+        if not internos:
+            return saida
+        neg = [k for k in range(len(coords)) if coords[k] <= -meia]
+        pos = [k for k in range(len(coords)) if coords[k] >= meia]
+        k_neg = max(neg, key=lambda k: coords[k]) if neg else None
+        k_pos = min(pos, key=lambda k: coords[k]) if pos else None
+        if k_neg is None and k_pos is None:
+            return saida                      # projeção cobre a base inteira
+        if k_neg is None:
+            k_neg = k_pos
+        if k_pos is None:
+            k_pos = k_neg
+
+        def valor(k: int, j: int, i: int) -> float:
+            return campo[j][k] if ao_longo_de_x else campo[k][i]
+
+        span = coords[k_pos] - coords[k_neg]
         for j in range(len(ys)):
             for i in range(len(xs)):
-                c = xs[i] if ao_longo_de_x else ys[j]
-                if abs(c) >= meia:
+                k_int = i if ao_longo_de_x else j
+                if k_int not in internos:
                     continue
-                # valor do nó imediatamente fora da projeção, no mesmo alinhamento
-                if ao_longo_de_x:
-                    fora = [k for k in range(len(xs)) if abs(xs[k]) >= meia]
-                    k = min(fora, key=lambda k: abs(abs(xs[k]) - meia))
-                    saida[j][i] = campo[j][k]
-                else:
-                    fora = [k for k in range(len(ys)) if abs(ys[k]) >= meia]
-                    k = min(fora, key=lambda k: abs(abs(ys[k]) - meia))
-                    saida[j][i] = campo[k][i]
+                v_neg, v_pos = valor(k_neg, j, i), valor(k_pos, j, i)
+                if span <= 1e-12:
+                    saida[j][i] = v_neg
+                    continue
+                t = (coords[k_int] - coords[k_neg]) / span
+                saida[j][i] = v_neg + (v_pos - v_neg) * t
         return saida
 
     mx = clampar(g.mx, xs, ap / 2.0, True)
