@@ -7,9 +7,91 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 6
+versao: 7
 escopo: "sapata isolada, carga centrada, solo homogêneo"
 data_congelamento: "2026-08-27"
+
+# --- Versão 7: definição operacional dos símbolos do croqui de espraiamento ---
+#     (REQ-PROP-03). Resolve o conflito ALTA/E1 apontado pelo a6 no GATE 2 do
+#     commit a00401e.
+#
+# ATENÇÃO (CLAUDE.md regra 5): esta versão ALTERA o ruleset. As aprovações de A6
+# e A7 ficam formalmente INVALIDADAS. Ressalva de escopo: NENHUMA fórmula,
+# NENHUM valor numérico, NENHUM status e NENHUMA citação normativa mudou nesta
+# versão. `PC-BOUSSINESQ-NEWMARK-canto-retangulo` continua APROVADA e
+# `PC-ESPRAIAMENTO-2V1H` continua APROVADA_COM_USO_RESTRITO, com os mesmos
+# `origem_da_confianca`, `formula`, `checagem_dimensional` e `checagem_numerica`
+# da v6. O que muda é DEFINIÇÃO DE SÍMBOLO e semântica de rótulo: o que a tela
+# e o memorial chamam de "q_i" e de "L_i". A nova rodada de A6/A7 pode
+# restringir-se ao croqui de espraiamento (visual2d.PerfilCortes._espraiamento,
+# ui/completo/visualizacao.py) e aos testes dele.
+#
+# O CONFLITO, COMO CHEGOU: o texto da v6 dizia "q1/q2/q3 nas cotas das
+# interfaces, com L1/L2/L3 as ESPESSURAS"; o a3 implementou L_i como a LARGURA
+# equivalente do tronco (`PontoPropagacao.largura_equivalente_a/_b`); a
+# docstring de `CamadaPropagacao` (a4) repetia a leitura de espessura. Três
+# artefatos, duas leituras, um símbolo. O a6 mediu: camada de espessura real
+# 3,90 m exibida como "L2 = 6,69 m".
+#
+# DECISÃO: o texto da v6 é que estava errado, e o símbolo "L" é abolido deste
+# croqui. Não basta corrigir "espessura" para "largura": "L" já significa
+# dimensão em planta do retângulo carregado na docstring de
+# `influencia_canto_retangulo` ("m = B/z, n = L/z") e comprimento de sapata no
+# outro motor (`calc_core/geotecnico/`, que chama as dimensões em planta de B e
+# L). Manter "L" seria trocar uma ambiguidade por outra. Ver a seção de colisão
+# de símbolo, adiante.
+#
+# VERIFICAÇÃO DETERMINÍSTICA QUE SUSTENTA A DECISÃO (feita pelo a2, não aceita
+# do a3 nem do a6):
+#   1. ANÁLISE DIMENSIONAL É CEGA AQUI, e é preciso dizê-lo antes de tudo:
+#      com pint, largura equivalente e espessura de camada têm a MESMA
+#      dimensionalidade [length]. Nenhum mutante que troque um pelo outro será
+#      rejeitado. É o mesmo limite já registrado na v6 para 2V:1H x 1V:1H. Logo
+#      a proteção não pode ser dimensional — tem de ser de SEMÂNTICA DE ÍNDICE
+#      (item 4 abaixo), e é isso que REQ-PROP-03 passa a exigir.
+#   2. MONOTONICIDADE. A largura equivalente cresce estritamente com z nos DOIS
+#      métodos: no 2V:1H por construção (a+z, b+z); no Boussinesq porque Δσ é
+#      monótona decrescente e a_eq·b_eq = q_líq·a·b/Δσ. Medido no perfil de
+#      referência (4 camadas, sapata 2,0x2,0 m, hf 1,5 m, q 250 kPa):
+#      Boussinesq a_eq = 2,00 / 4,07 / 8,18 / 15,31 m; 2V:1H = 2,00 / 4,50 /
+#      7,50 / 12,50 m. Confere com o croqui clássico de referência (L1<L2<L3
+#      crescendo com a profundidade, q1>q2>q3 decrescendo). A espessura NÃO tem
+#      essa propriedade.
+#   3. CONTRAEXEMPLO QUE ENCERRA A LEITURA "ESPESSURA", e ele não depende de
+#      perfil escolhido a dedo: com o teto de exibição que o PRÓPRIO ruleset
+#      exige em REQ-UI-05 (z_max = 2·B), a última camada é TRUNCADA e as
+#      espessuras do mesmo perfil ficam [2,50; 1,50] m — DECRESCENTES. Isto é:
+#      na configuração default obrigatória, a leitura "espessura" contradiz o
+#      croqui que a feature existe para reproduzir. Não é coincidência do perfil
+#      de teste; é consequência do teto.
+#   4. SEMÂNTICA DE ÍNDICE — a raiz do defeito, e a única guarda que resta de pé
+#      depois do item 1. Δσ nas interfaces é grandeza DE PONTO (vive em
+#      `PontoPropagacao`); espessura é grandeza DE TRECHO (vive em
+#      `CamadaPropagacao`). O texto da v6 indexava as duas com o mesmo "i", o
+#      que é impossível de satisfazer: há n+1 interfaces para n camadas. Largura
+#      equivalente é grandeza de ponto, no MESMO dataclass e na MESMA cota de
+#      Δσ — por isso ela, e não a espessura, é a companheira correta de q_i.
+#   5. CONTORNO E FAIXA PLAUSÍVEL, para virar teste de regressão: a_eq(z=0) = a
+#      exatamente (interface 0 = base da sapata, área equivalente = área real);
+#      na cota do teto z = 2·B, a_eq/B fica em 2,78–3,04 nos dois métodos e em
+#      5 geometrias (2x2, 2x4, 1,2x1,2, 4x4, 1,5x3,0). Largura equivalente da
+#      ordem de 3·B a 2·B de profundidade é plausível e é o que o croqui deve
+#      mostrar; qualquer coisa fora de ~[2,5·B; 3,5·B] ali é transcrição errada.
+#   6. FALLBACK SILENCIOSO DETECTADO NESTA RODADA, do lado do engano por
+#      silêncio, e que o a6 não pegou: `visual2d.py:693-696` faz
+#      `getattr(pt, "largura_equivalente_a") or dim`. Com q_líq = 0 (q de
+#      serviço não supera a sobrecarga na cota da base) `largura_equivalente`
+#      devolve None em TODOS os pontos — verificado — e a tela passa a rotular a
+#      dimensão da sapata como se fosse largura calculada, ao lado de Δσ = 0.
+#      Vira requisito explícito em REQ-PROP-03: sem largura definida, não se
+#      escreve número.
+#
+# O QUE ESTA VERSÃO NÃO FAZ: não reabre PC-BOUSSINESQ-NEWMARK-canto-retangulo
+# nem PC-ESPRAIAMENTO-2V1H; não autoriza nenhum uso novo; não transforma
+# largura equivalente em grandeza de cálculo. Sob Boussinesq ela continua sendo
+# LEITURA GEOMÉTRICA ILUSTRATIVA — a solução elástica não tem tronco de
+# espraiamento — e o rótulo na tela tem de dizer isso (ver `uso_autorizado` da
+# entrada Boussinesq, item (1), e REQ-UI-07).
 
 # --- Versão 6: propagação de tensão em profundidade (Boussinesq/Newmark e -----
 #     espraiamento 2V:1H). Cria a seção `praticas_consagradas`.
@@ -918,6 +1000,36 @@ regras:
 # geotécnico): ainda sem colisão efetiva — o motor geotécnico chama a
 # profundidade de assentamento de outra coisa. Revisitar se §7.3.3 entrar.
 #
+# 'L' NO CROQUI DE ESPRAIAMENTO — COLISÃO CONSUMADA, resolvida na versão 7.
+# Este não é risco potencial: o símbolo já significava três coisas ao mesmo
+# tempo no repositório (ruleset v6 REQ-PROP-03 = espessura de camada; docstring
+# de `CamadaPropagacao` = espessura de camada; `visual2d.py:721` = largura
+# equivalente do tronco), e ainda concorria com 'L' = dimensão em planta do
+# retângulo carregado na docstring de `influencia_canto_retangulo` ("m = B/z,
+# n = L/z") e com 'L' = comprimento da sapata em `calc_core/geotecnico/`
+# (restricoes.verificar_dimensao_minima(B, L)).
+# RESOLUÇÃO, obrigatória para A3 e A4 (o mesmo nome do topo ao fim da cadeia —
+# núcleo, tela e memorial — é o que impede a colisão de voltar):
+#   - 'L' e 'L_i' ficam PROIBIDOS neste croqui, em qualquer acepção.
+#   - LARGURA equivalente do tronco, por INTERFACE: `a_eq,i` e `b_eq,i`
+#     (`geotecnico.propagacao.a_eq/b_eq`), espelhando os campos que o núcleo já
+#     expõe, `PontoPropagacao.largura_equivalente_a/_b`. Em corte, exibe-se a
+#     do eixo do corte: `a_eq` no corte X, `b_eq` no corte Y.
+#     NÃO usar 'B_eq': 'B' já é a menor dimensão em planta nos tetos "z <= 2·B"
+#     e na razão de sanidade a_eq/B, e um 'B_eq' ao lado de um 'B' com outro
+#     significado reintroduz exatamente o defeito que se está corrigindo.
+#   - ESPESSURA do trecho de camada, por CAMADA: `h_i`
+#     (`CamadaPropagacao.espessura`). Grandeza de TRECHO, índice de camada.
+#     Exibi-la no croqui é OPCIONAL — a coluna estratigráfica ao lado já rotula
+#     cada camada com suas cotas ("aterro · 0,00–1,50 m") e repetir a espessura
+#     dentro do tronco é redundância que rouba espaço do que só o croqui pode
+#     comunicar, que é a largura alcançada em cada cota.
+#   - Grandeza de PONTO (interface, i = 0..n, i = 0 é a base da sapata) x
+#     grandeza de TRECHO (camada, i = 1..n): índices de universos diferentes,
+#     nunca sob o mesmo símbolo indexado. A análise dimensional NÃO separa esses
+#     dois mundos — ambos são [length] — então a separação é de nomenclatura, e
+#     é por isso que ela é normativa aqui e não questão de gosto.
+#
 # Colisão de método de segurança: nenhuma regra aprovada mistura 'admissivel'
 # e 'calculo' — todas usam metodo: ambos porque a fórmula em si (sigma=N/A)
 # é neutra ao método; a diferença fica no valor de sigma_adm que o chamador
@@ -1006,6 +1118,16 @@ praticas_consagradas:
       (1) Campo dsigma_z(z) do PERFIL GEOTÉCNICO GERAL abaixo da base da sapata,
       para visualização em corte e para a coluna de dsigma por camada do
       memorial, sempre rotulado como não normativo.
+      (1.b) PRECISÃO DA VERSÃO 7, sem ampliar o uso: a largura equivalente
+      a_eq/b_eq (`largura_equivalente`, derivada de dsigma por equivalência de
+      carga total) é autorizada APENAS como traçado e rótulo do croqui. Sob
+      Boussinesq ela é LEITURA GEOMÉTRICA ILUSTRATIVA — a solução elástica não
+      tem tronco de espraiamento, não tem largura carregada e a tensão varia ao
+      longo do plano horizontal —, e o desenho, que é um trapézio com setas,
+      sugere o contrário. Por isso o rótulo tem de trazer a ressalva junto
+      (REQ-UI-07). PROIBIDO usar a_eq/b_eq como área em conta alguma: não é
+      área efetiva, não é área espraiada, não entra em verificação de tensão,
+      de recalque nem de camada subjacente.
       (2) Manutenção do uso já existente: bulbo de `visual2d.PerfilCortes._bulbo`
       e parcela de acréscimo de tensão de `recalques.py:264`.
       Fora disso, nada. Em particular NÃO autoriza usar dsigma_z para checar
@@ -1114,8 +1236,12 @@ praticas_consagradas:
     uso_autorizado: >-
       (1) VISUALIZAÇÃO. Traçado da pirâmide/tronco de espraiamento no corte, como
       ALTERNATIVA selecionável ao bulbo de Boussinesq já existente, e os valores
-      de dsigma_z por camada (q1/q2/q3 nas profundidades das interfaces) exibidos
-      junto ao desenho e no memorial.
+      de dsigma_z NAS COTAS DAS INTERFACES (q_i, i = 0 na base da sapata)
+      exibidos junto ao desenho e no memorial, cada um acompanhado da largura
+      equivalente da MESMA interface (a_eq,i / b_eq,i). Aqui — e só aqui, ao
+      contrário do Boussinesq — a largura é a própria geometria do método:
+      a_eq = a+z e b_eq = b+z, exato por construção do 2V:1H (perna 1). Ver
+      REQ-PROP-03 para a definição operacional dos símbolos, obrigatória.
       (2) Comparação lado a lado com Boussinesq — inclusive, e de preferência,
       mostrando a divergência acima, que é informação útil ao projetista.
       Em ambos os casos, com rótulo visível de método não normativo.
@@ -1228,12 +1354,62 @@ requisitos_para_a4:
       `dominio_de_validade` das duas entradas — hoje z<0 devolve q no Boussinesq
       e 4q no 2V:1H, ambos sem exceção.
   - id: REQ-PROP-03-sem-veredito
+    versao_do_texto: 7      # REESCRITO. O texto da v6 definia L1/L2/L3 errado.
     texto: >-
-      O cálculo por camada (q1/q2/q3 nas cotas das interfaces, com L1/L2/L3 as
-      espessuras) produz VALORES INFORMATIVOS. É PROIBIDO derivar deles
-      qualquer PASSA/NÃO PASSA, cor de reprovação, alerta de segurança ou linha
-      em lista de verificações. Não é preciosismo: é a fronteira que separa esta
-      aprovação de uma que o a2 não pode dar sozinho.
+      (A) SEM VEREDITO — inalterado desde a v6 e é a parte que sustenta a
+      aprovação. O cálculo de propagação produz VALORES INFORMATIVOS. É
+      PROIBIDO derivar deles qualquer PASSA/NÃO PASSA, cor de reprovação,
+      alerta de segurança ou linha em lista de verificações. Não é preciosismo:
+      é a fronteira que separa esta aprovação de uma que o a2 não pode dar
+      sozinho.
+      (B) DEFINIÇÃO OPERACIONAL DOS SÍMBOLOS DO CROQUI — reescrita na v7; o
+      texto da v6 dizia "q1/q2/q3 nas cotas das interfaces, com L1/L2/L3 as
+      espessuras" e a segunda metade estava ERRADA. Duas famílias de grandeza,
+      dois universos de índice, e nunca o mesmo símbolo para as duas:
+        * POR INTERFACE (grandeza de PONTO; i = 0..n, com i = 0 na BASE da
+          sapata; vem de `PontoPropagacao`):
+            q_i     = `delta_sigma` na cota da interface i [kPa];
+            a_eq,i  = `largura_equivalente_a` na MESMA interface [m], exibida
+            b_eq,i  = `largura_equivalente_b`, no corte do eixo correspondente.
+          São essas duas famílias que o croqui clássico mostra, e é por isso
+          que elas compartilham o índice: são a mesma cota. Comportamento
+          esperado e verificável: q_i estritamente decrescente, a_eq,i
+          estritamente crescente com a profundidade, nos DOIS métodos.
+        * POR CAMADA (grandeza de TRECHO; i = 1..n; vem de `CamadaPropagacao`):
+            h_i        = `espessura` do trecho analisado [m] — exibição
+                         OPCIONAL, a coluna estratigráfica já a informa;
+            Δσ_méd,i   = `delta_sigma_medio`, amostrado na MEIA-ALTURA do
+                         trecho — exibição opcional e, se exibida, com este
+                         rótulo, jamais como "q_i".
+      (C) PROIBIÇÃO DE SÍMBOLO. "L", "L_i", "L1/L2/L3" não podem aparecer neste
+      croqui, no núcleo, na tela nem no memorial, em nenhuma acepção — o
+      símbolo está queimado por ter significado espessura e largura ao mesmo
+      tempo em artefatos diferentes (ver a seção de colisão de símbolo).
+      Também não usar "B_eq", pelo motivo registrado lá.
+      (D) q EXIBIDO É O DE INTERFACE, não a média. Reforço explícito, porque
+      isto já valia pela v6 (`uso_autorizado` das duas práticas: "nas
+      profundidades das interfaces") e mesmo assim a tela exibe hoje um único
+      `delta_sigma_medio` por camada. Medido pelo a6 em caso real: camada que
+      vai de 158,6 a 18,1 kPa (9x) resumida em "q2 = 48,3 kPa"; medido pelo a2
+      no perfil de referência: camada que vai de 223,0 a 53,7 kPa exibida como
+      130,3 kPa. O croqui existe para mostrar a QUEDA da tensão ao longo da
+      profundidade — um número por camada apaga justamente isso. Os dois
+      valores de interface de cada camada já estão calculados e expostos pelo
+      a4 (`delta_sigma_topo`/`delta_sigma_base`) e nunca foram consumidos.
+      Interfaces internas são compartilhadas por duas camadas: exibir UM valor
+      por interface, não dois iguais.
+      (E) LARGURA INDEFINIDA NÃO VIRA NÚMERO. `largura_equivalente` devolve
+      None quando q_líq = 0 ou Δσ <= 0, e nessa situação devolve None em TODOS
+      os pontos. O idioma `largura_equivalente_a or dim` de `visual2d.py:693`
+      substitui o None pela dimensão da sapata e a rotula como se fosse largura
+      calculada, ao lado de um Δσ = 0 — engano por silêncio. Sem largura
+      definida: não escrever número (traço, ou omitir o rótulo), e deixar o
+      aviso de pressão líquida nula visível.
+      (F) FAIXA DE SANIDADE, para teste de regressão: a_eq(z=0) = a exatamente;
+      na cota do teto z = 2·B, a_eq/B entre 2,7 e 3,1 nos dois métodos e em
+      todas as geometrias medidas (2x2, 2x4, 1,2x1,2, 4x4, 1,5x3,0). Fora dessa
+      faixa, suspeitar de transcrição — a análise dimensional não pega, porque
+      largura e espessura são ambas [length].
   - id: REQ-PROP-04-metodo-explicito
     texto: >-
       O método usado (Boussinesq/Newmark ou 2V:1H) tem de viajar junto com o
@@ -1271,6 +1447,42 @@ requisitos_para_a4:
       estrutural 'b' aparece como largura de seção. Docstrings e campo
       `implementacao` usam o namespace `geotecnico.propagacao.*`, como acima.
       NÃO renomear API existente nesta rodada (quebraria UI e testes).
+  - id: REQ-PROP-09-simbolos-e-testes-do-croqui
+    versao_do_texto: 7      # NOVO na v7, decorre de REQ-PROP-03 (B) a (F).
+    texto: >-
+      Decorrências da v7 no núcleo. Nenhuma muda número algum.
+      (a) DOCSTRING DE `CamadaPropagacao` (geotecnia.py:471-478) está ERRADA e
+      é uma das três fontes do conflito: diz que `espessura` "corresponde aos
+      L1/L2/L3 do desenho". Não corresponde, e "L" deixou de existir. Redigir:
+      `espessura` = h_i, grandeza de TRECHO; os símbolos do croqui por
+      interface são q_i e a_eq,i/b_eq,i, em `PontoPropagacao`. Enquanto essa
+      docstring não for corrigida, o mesmo defeito volta na próxima leitura —
+      foi ela que respaldou a leitura "espessura" do a6.
+      (b) A docstring de `PontoPropagacao` passa a nomear explicitamente
+      `largura_equivalente_a/_b` como a_eq/b_eq, e a de `largura_equivalente`
+      mantém, com destaque, a ressalva de que sob Boussinesq o valor é leitura
+      ilustrativa.
+      (c) TESTES a criar, que travam exatamente o que a análise dimensional não
+      pega (as duas grandezas são [length]):
+        1. a_eq(z=0) == a e b_eq(z=0) == b, exatos, nos dois métodos;
+        2. a_eq estritamente crescente com z em >= 4 profundidades, nos dois
+           métodos — é a propriedade que distingue largura de espessura;
+        3. em z = 2·B, 2,7 <= a_eq/B <= 3,1 nos dois métodos, em pelo menos
+           três geometrias (2x2, 2x4, 1,5x3,0);
+        4. com q_líq = 0, `largura_equivalente` é None em TODOS os pontos —
+           trava o contrato que REQ-PROP-03 (E) obriga a UI a respeitar;
+        5. com z_max = 2·B e perfil que termina abaixo disso, a última camada
+           vem truncada e `espessura` NÃO é monótona crescente — registra em
+           teste o contraexemplo que derrubou a leitura "espessura", para que
+           ninguém a ressuscite;
+        6. `delta_sigma_medio` fixado na MEIA-ALTURA do trecho (mata o mutante
+           M10 do a6, hoje sobrevivente): para uma camada de z=0 a z=2 m,
+           delta_sigma_medio == acrescimo_tensao(fonte, q, a, b, 1.0), e é
+           estritamente menor que `delta_sigma_topo`.
+      (d) `ResultadoRecalque` deve expor `q_servico` para eliminar a
+      reconstituição q_líquido + sobrecarga que a UI faz hoje (a6, E3/E2 em
+      visual2d.py:616 e :620). Sem isso, com `verificar_recalque=False` e
+      perfil PRESENTE, o croqui não aparece e a tela culpa o perfil.
 
 requisitos_para_a3:
   - id: REQ-UI-01-rotulo-nao-normativo
@@ -1307,9 +1519,35 @@ requisitos_para_a3:
       influência que `recalques.py:251` já usa.
   - id: REQ-UI-06-ui-nao-calcula
     texto: >-
-      CLAUDE.md regra 4. q1/q2/q3 vêm prontos de calc_core. `ui/` recebe e
-      desenha. Nenhuma reimplementação da fórmula na camada de desenho — foi
-      assim que nasceu a duplicação de `recalques.py:265`.
+      CLAUDE.md regra 4. q_i e a_eq,i/b_eq,i vêm prontos de calc_core (v7: e são
+      LIDOS de `PontoPropagacao`, não recalculados nem derivados na tela).
+      `ui/` recebe e desenha. Nenhuma reimplementação da fórmula na camada de
+      desenho — foi assim que nasceu a duplicação de `recalques.py:265`.
+  - id: REQ-UI-07-simbolos-do-croqui
+    versao_do_texto: 7      # NOVO na v7. É o que o a6 deve conferir no croqui.
+    texto: >-
+      Rotulagem do croqui de espraiamento, conforme REQ-PROP-03 (B) a (F).
+      Checável item a item:
+      (a) Um rótulo de tensão POR INTERFACE, com o valor da interface
+      (`delta_sigma_topo`/`delta_sigma_base` — a interface interna é
+      compartilhada, um rótulo só), na cota da interface, não na meia-altura da
+      camada. NÃO exibir `delta_sigma_medio` como "q_i". Se for exibido, rótulo
+      próprio "Δσ_méd".
+      (b) Um rótulo de largura POR INTERFACE, na mesma cota do q_i
+      correspondente: "a_eq" no corte X, "b_eq" no corte Y, com unidade.
+      (c) "L", "L1/L2/L3" e "B_eq" não aparecem em lugar nenhum da tela nem do
+      memorial. A espessura da camada, se exibida, é "h" e vem de
+      `CamadaPropagacao.espessura` — e a recomendação é NÃO exibi-la no tronco,
+      porque a coluna estratigráfica ao lado já a informa por cota.
+      (d) Sob Boussinesq, o rótulo de largura carrega a ressalva de leitura
+      ilustrativa (o método não tem tronco de espraiamento); sob 2V:1H, não
+      precisa. A ressalva pode ficar na legenda do método, desde que visível
+      junto ao desenho.
+      (e) Largura None (q_líq = 0) não vira número: traço ou omissão, com o
+      aviso de pressão líquida nula visível — nunca a dimensão da sapata
+      apresentada como largura calculada (`or dim` de `visual2d.py:693`).
+      (f) O rótulo do método vem de `prop.rotulo_metodo`, não do estado da UI
+      (REQ-PROP-04; a6, visual2d.py:669).
 
 # =============================================================================
 # escopo_amplo_em_conferencia — módulos portados de calc_core/sapata_isolada/

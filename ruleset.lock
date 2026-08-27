@@ -4,20 +4,30 @@
 # registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
 # registrada.
 #
-# Situação na versão 6:
+# Situação na versão 7 (idêntica à da versão 6 — nenhum status mudou):
 #   regras (normativas) ............ 14 APROVADA, 7 PENDENTE_HUMANO
-#   praticas_consagradas (nova) .... 1 APROVADA, 1 APROVADA_COM_USO_RESTRITO
+#   praticas_consagradas ........... 1 APROVADA, 1 APROVADA_COM_USO_RESTRITO
 #   escopo_amplo_em_conferencia .... 8 PENDENTE_HUMANO
 #
 # Alteração do ruleset invalida as aprovações de A6 e A7 (CLAUDE.md regra 5).
-# Na versão 6 nenhum registro APROVADA de `regras` mudou de status, valor ou
-# citação. As alterações são: (a) seção NOVA `praticas_consagradas` com dois
-# registros, mais `requisitos_para_a4` e `requisitos_para_a3`; (b) fechamento
-# parcial da linha `escopo_amplo_em_conferencia > sapata_isolada.geotecnia`,
-# que já era PENDENTE_HUMANO. A nova rodada de A6/A7 pode restringir-se aos
-# dois registros novos e ao código que vier a depender deles.
+# NA VERSÃO 7 ISSO VALE FORMALMENTE, e vale pouco na prática: o GATE 2 do
+# commit a00401e já estava REPROVADO (nota 3,78, veto em E1/E5) e o A7 não
+# chegou a rodar sobre esta feature. Nenhuma fórmula, nenhum valor numérico,
+# nenhum status e nenhuma citação normativa mudaram na v7. Mudou a DEFINIÇÃO
+# OPERACIONAL dos símbolos do croqui de espraiamento:
+#   - REQ-PROP-03 REESCRITO: L1/L2/L3 = "espessuras" era ERRADO; o símbolo 'L'
+#     fica PROIBIDO neste croqui; largura equivalente por interface passa a ser
+#     a_eq/b_eq e espessura de camada passa a ser h_i; q exibido é o de
+#     INTERFACE (delta_sigma_topo/base), nunca delta_sigma_medio.
+#   - REQ-PROP-09 (novo, A4) e REQ-UI-07 (novo, A3) — decorrências checáveis.
+#   - Precisões de `uso_autorizado` nas duas práticas, restritivas, sem ampliar
+#     uso: a_eq/b_eq só para traçado e rótulo, jamais como área de cálculo.
+#   - Seção de colisão de símbolo: registrada a colisão consumada de 'L'.
+# A nova rodada de A6/A7 pode restringir-se ao croqui de espraiamento
+# (calc_core/sapata_isolada/visual2d.py, ui/completo/visualizacao.py,
+# calc_core/sapata_isolada/geotecnia.py nas docstrings) e aos testes dele.
 #
-# APROVADA_COM_USO_RESTRITO é status novo desta versão: aprovado DENTRO do
+# APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-sha256:e7809f876db32186084362c8f9899d56c83ee3305d16ab7b422aec3b4ab08b7f  ruleset.yaml
+sha256:ebb2160ebeb18ff91c55e75a748ea320ec4f51169287e2effd5b347ccab12f0a  ruleset.yaml
