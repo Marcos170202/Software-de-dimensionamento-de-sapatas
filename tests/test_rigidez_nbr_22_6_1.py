@@ -125,19 +125,77 @@ def test_caso_numerico_do_ruleset():
     assert alongada.rigida_nbr is False
 
 
+def test_fronteira_da_desigualdade_nao_admite_folga():
+    """A tolerância de `rigida_nbr = h >= h_nec - 1e-9` é numérica, não de
+    projeto: existe só para o ponto de igualdade sobreviver ao ponto flutuante.
+
+    Alargá-la para 1e-2 (1 cm de folga, do lado INSEGURO — classificaria como
+    rígida uma sapata que a norma manda tratar como flexível, dispensando a
+    punção de 22.6.2.3-b) passava em todos os testes anteriores a este.
+    Cenário do ruleset: a = b = 2,00 m, ap = 0,30 m, bp = 0,50 m,
+    h_nec = 1,70/3 = 0,5666667 m.
+        h = 0,5666667 m -> rígida  (igualdade: tem de valer)
+        h = 0,5600000 m -> flexível (6,7 mm abaixo: com folga de 1 cm o
+                                     mutante diria 'rígida')
+    """
+    comum = dict(a=2.00, b=2.00, ap=0.30, bp=0.50, h0=0.25,
+                 Ecs_MPa=ECS_MPA, kv=KV)
+    assert classificar(h=0.5666667, **comum).h_necessario == pytest.approx(
+        0.5666667, abs=1e-6)
+    assert classificar(h=0.5666667, **comum).rigida_nbr is True
+    assert classificar(h=0.56, **comum).rigida_nbr is False
+    assert classificar(h=0.56, **comum).modelo_recomendado == "flexivel"
+
+
+def _sapata_para_alturas(pilar: Pilar, **op) -> Sapata:
+    """Sapata mínima só para chamar `_alturas` (não dimensiona nada aqui)."""
+    solo = Solo(sigma_adm=250.0, hf=1.5)
+    combs = gerar_combinacoes([CasoCarga("G", Esforcos(N=500.0))])
+    return Sapata(pilar, solo, Concreto(25.0), Aco(500.0), combs, 0.045,
+                  OpcoesProjeto(verificar_recalque=False, **op))
+
+
 def test_alturas_da_sapata_respeita_as_duas_direcoes():
     """`Sapata._alturas` implementa o MESMO critério de 22.6.1 e por isso
     também precisa do caso com Y governante (mesmo mutante, outro arquivo:
     sapata.py)."""
-    pilar = Pilar(ap=1.00, bp=0.20)
-    solo = Solo(sigma_adm=250.0, hf=1.5)
-    combs = gerar_combinacoes([CasoCarga("G", Esforcos(N=500.0))])
-    s = Sapata(pilar, solo, Concreto(25.0), Aco(500.0), combs, 0.045,
-               OpcoesProjeto(verificar_recalque=False))
+    s = _sapata_para_alturas(Pilar(ap=1.00, bp=0.20))
     h, h0 = s._alturas(1.20, 3.00)
     assert h >= H_NEC_ESPERADO - 1e-9, (
         "altura pré-dimensionada ignorou a direção Y (b - bp)/3")
     assert h0 <= h
+
+
+def test_alturas_da_sapata_respeita_a_direcao_x_espelhada():
+    """Caso espelhado do anterior: agora quem governa é X.
+
+    O teste acima sozinho deixava vivo o mutante ESPELHADO em
+    `sapata.py::_alturas`
+
+        h_rigida = max((a - ap)/3, (b - bp)/3)     # correto
+        h_rigida = (b - self.pilar.bp) / 3.0       # mutante: ignora X
+
+    que passava nos 79 testes existentes. Medido no cenário
+    Pilar(0,20 x 1,00) / _alturas(3,00; 1,20):
+        correto -> (h, h0) = (0,95 ; 0,35) m
+        mutante -> (h, h0) = (0,30 ; 0,20) m
+    e, ponta a ponta com travar_b = 1,20 m e N = 900 kN (sigma_adm = 250 kPa),
+    h = 1,10 m / As_y = 56,93 cm² no correto contra h = 0,75 m /
+    As_y = 38,25 cm² no mutante — do lado INSEGURO.
+    """
+    s = _sapata_para_alturas(Pilar(ap=0.20, bp=1.00))
+    h, h0 = s._alturas(3.00, 1.20)
+    assert h >= (3.00 - 0.20) / 3.0 - 1e-9, (
+        "altura pré-dimensionada ignorou a direção X (a - ap)/3")
+    assert h0 <= h
+
+
+def test_alturas_e_simetrica_entre_x_e_y():
+    """Girar o problema 90° troca x por y e nada mais: mesma altura."""
+    hy, h0y = _sapata_para_alturas(Pilar(ap=1.00, bp=0.20))._alturas(1.20, 3.00)
+    hx, h0x = _sapata_para_alturas(Pilar(ap=0.20, bp=1.00))._alturas(3.00, 1.20)
+    assert hx == pytest.approx(hy, rel=1e-12)
+    assert h0x == pytest.approx(h0y, rel=1e-12)
 
 
 # --------------------------------------------------------------------------- #

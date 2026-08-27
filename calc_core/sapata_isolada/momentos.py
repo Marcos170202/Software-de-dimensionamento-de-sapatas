@@ -53,6 +53,14 @@ def momento_unitario(N: float, Mx: float, My: float, a: float, b: float,
     Momento fletor por unidade de largura [kN·m/m] na face do pilar, na faixa
     de borda mais solicitada.
 
+    Ref.: ABNT NBR 6118:2023, itens 22.6.2.2-a) e 22.6.2.3-a), p. 192.
+    [rule: NBR6118-22.6.2.2a-flexao-duas-direcoes]
+    REGRA DE PROIBIÇÃO: `direcao` só seleciona QUAL balanço integrar — as duas
+    direções são calculadas incondicionalmente pelo mesmo caminho, com a mesma
+    expressão e sem nenhum fator dependente da razão entre lados. É proibido
+    introduzir aqui (ou em quem chama) redutor, teto ou dispensa de momento/
+    armadura numa direção dita "secundária".
+
     Tomar a face do pilar como seção de referência é prática de engenharia
     consagrada, não item normativo específico: a NBR 6118:2023, 22.6, não
     prescreve a posição dessa seção (22.6.3 exige apenas que o modelo de flexão
@@ -126,6 +134,12 @@ def campo_momentos(sapata, res, nx: int = 61, ny: int = 61) -> CampoMomentos:
     """
     Monta o campo a partir da combinação última que produziu o maior momento
     de dimensionamento — a mesma que governou a armadura.
+
+    Ref.: ABNT NBR 6118:2023, itens 22.6.2.2-a) e 22.6.2.3-a), p. 192.
+    [rule: NBR6118-22.6.2.2a-flexao-duas-direcoes]
+    REGRA DE PROIBIÇÃO: o campo é montado para as DUAS direções (`mx` e `my`)
+    sempre, com a mesma rotina e a mesma escala; nenhuma delas é suprimida,
+    reduzida ou tratada como "de distribuição" por causa da forma da sapata.
     """
     a, b = res.a, res.b
     ap, bp = sapata.pilar.ap, sapata.pilar.bp

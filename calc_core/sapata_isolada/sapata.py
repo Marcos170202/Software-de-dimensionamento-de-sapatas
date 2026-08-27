@@ -79,6 +79,12 @@ class OpcoesProjeto:
     dim_minima: float = 0.60          # menor dimensão em planta admitida [m]
     h_minima: float = 0.30            # altura total mínima [m]
     h0_minima: float = 0.20           # altura mínima da aba (borda) [m]
+    # balanço livre mínimo POR LADO, nas dimensões não travadas pelo projetista
+    # [m]. Critério de projeto, não granularidade de desenho: sem balanço não
+    # há sapata (nem momento no balanço, nem domínio de validade de 22.6.1, que
+    # pressupõe (a - a_p)/2 > 0). Vinha embutido como 2·modulo_dim, misturando
+    # os dois conceitos; o padrão 0,05 m reproduz exatamente o valor anterior.
+    balanco_minimo: float = 0.05
     peso_proprio_estimado: float = 0.05   # 5% de Nk na 1a iteração
     folga_topo: float = 0.05          # folga do bloco superior além do pilar [m]
     inclinacao_max_graus: float = 30.0
@@ -285,17 +291,20 @@ class Sapata:
         cair dentro da própria seção do pilar (c = 0) e a sapata degeneraria em
         a = ap. Sem balanço não há sapata — nem momento no balanço, nem
         classificação de 22.6.1 (que pressupõe (a - ap)/2 > 0). As dimensões
-        livres recebem, por isso, um balanço mínimo de um módulo por lado.
+        livres recebem, por isso, o balanço mínimo `OpcoesProjeto.balanco_minimo`
+        POR LADO — critério de projeto, com nome próprio, e não a granularidade
+        de desenho `modulo_dim` (com o padrão 0,05 m os dois coincidem, e a
+        saída é idêntica à da versão anterior).
         Dimensão TRAVADA pelo projetista não é corrigida em silêncio: se ela
         não couber, `rigidez.classificar` levanta ValueError com a mensagem
         explícita.
         """
         ap, bp = self.pilar.ap, self.pilar.bp
-        m = self.op.modulo_dim
+        folga = 2.0 * self.op.balanco_minimo    # um balanço mínimo de cada lado
 
         def livre(dim_pilar: float, valor: float) -> float:
             return max(self.op.dim_minima, self._arredondar(valor),
-                       self._arredondar(dim_pilar + 2.0 * m))
+                       self._arredondar(dim_pilar + folga))
 
         if self.op.travar_a:
             a = self.op.travar_a
@@ -1029,7 +1038,24 @@ class Sapata:
 
     # ------------------------------------------------------------------ ciclo
     def _ciclo_flexao(self, a: float, b: float, h: float, dx: float, dy: float):
-        """Dimensiona a armadura nas duas direções e devolve as taxas."""
+        """Dimensiona a armadura nas duas direções e devolve as taxas.
+
+        Ref.: ABNT NBR 6118:2023, itens 22.6.2.2-a) e 22.6.2.3-a), p. 192.
+        [rule: NBR6118-22.6.2.2a-flexao-duas-direcoes]
+
+        REGRA DE PROIBIÇÃO: as duas direções são dimensionadas
+        INCONDICIONALMENTE — o laço abaixo percorre ("X", ...) e ("Y", ...) sem
+        nenhuma condição de entrada, e cada direção recebe o momento no próprio
+        balanço, a própria armadura mínima integral e o próprio arranjo de
+        barras. É PROIBIDO introduzir aqui redutor, teto ou dispensa de
+        armadura numa direção dita "secundária", assim como qualquer
+        classificação uni/bidirecional da sapata a partir da razão entre lados.
+        As duas alíneas citadas são incondicionais quanto às duas direções, e o
+        piso de 20 % de 20.1/Tabela 19.1 é MÍNIMO DE LAJE, nunca uma redução da
+        armadura calculada de sapata.
+
+        Protegido por tests/test_flexao_duas_direcoes_nbr_22_6_2.py.
+        """
         armaduras: list[ArmaduraDirecao] = []
         ok_total = True
         taxas = {}
