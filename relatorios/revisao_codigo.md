@@ -375,3 +375,54 @@ carga excêntrica; flexível mostrou uma concentração em "domo" bem sob o
 pilar (pico 160,2 kPa, "fonte: grelha discretizada", isolinhas concêntricas)
 com o aviso laranja de sapata flexível — os dois fisicamente coerentes com
 os respectivos modelos.
+
+## Adendo — 2026-08-27 (4ª rodada): GATE 2 formal — a6-revisor independente
+
+Diferente das rodadas anteriores, esta foi revisada por uma instância
+separada do **a6-revisor** rodando como subagente (não a sessão que escreveu
+o código) — mais próximo da separação de papéis que `.claude/agents/a6-revisor.md`
+pede, embora ainda dentro da mesma sessão orquestradora.
+
+**Origem:** pergunta do usuário sobre classificação uni/bidirecional de
+sapata levou a um pipeline completo a1→a2→a5→a6, com 3 rodadas de revisão
+(protocolo do próprio a6: 3 tentativas antes de escalar para decisão
+humana).
+
+- **Rodada 1**: REPROVADO (nota 4,25) — regra `NBR6118-22.6.1-rigidez`
+  aprovada sem `[rule:]` no código e sem teste que a protegesse (mutante que
+  apaga a exigência "nas duas direções" passava em todos os testes).
+- **Rodada 2**: REPROVADO (nota 4,38) — corrigido o achado da rodada 1, mas
+  o a6 achou um mutante espelhado (mesma falha, direção oposta, em
+  `sapata.py::_alturas`) e a regra de proibição de redutor de armadura
+  (`NBR6118-22.6.2.2a-flexao-duas-direcoes`) também sem tag nem teste.
+- **Rodada 3**: **APROVADO — nota final 4,50** (E1=4,5 E2=5,0 E3=4,0 E4=4,5
+  E5=4,0). Todos os mutantes das rodadas anteriores confirmados mortos,
+  reproduzidos de forma independente pelo próprio a6 (não só aceitos do
+  relato do a5).
+
+**Defeitos remanescentes, todos não bloqueantes** (registrados para
+disciplina, não para nova rodada — critério do próprio a6):
+
+- **D1 (MÉDIA)**: o teste que protege a proibição de redutor de armadura não
+  pega a forma condicional à razão de lados (`if direcao=="Y" and
+  min(a,b)/max(a,b)<0.5: As*=0.2`) — exatamente o "redutor por
+  classificação uni/bidirecional" que a regra proíbe, porque os dois casos
+  de teste existentes (quadrado e alongado) mascaram esse mutante por vias
+  diferentes. Reproduzido pelo a6: `a=3,00/b=1,20/h=0,40/ap=bp=0,30/N=4000
+  kN` → correto `As_y=33,96 cm²`, mutante `As_y=18,00 cm²` (−47%, lado
+  inseguro), suíte 101/101 verde. **Corrigir no próximo toque em
+  `sapata.py`, com o teste especificado pelo a6** (sapata alongada onde a
+  flexão/bielas governa a direção curta, não a mínima).
+- **D2 (BAIXA)**: tolerância de fronteira em `rigidez.py:164` só é
+  protegida até `1e-2`; `1e-3` ainda sobrevive.
+- **D3 (BAIXA)**: 4 das 14 regras `APROVADA` do ruleset (ancoragem,
+  cisalhamento, punção — pré-existentes, fora do escopo desta rodada) citam
+  norma+item na docstring mas sem o `[rule: <id>]`/página formais. Zero tags
+  órfãs (nenhuma tag sem regra correspondente).
+- **D4 (BAIXA, processo)**: `tools/checar_rastreabilidade.py`, previsto na
+  Camada 1 do protocolo do a6, não existe neste repositório — a checagem
+  cruzada ruleset↔código é feita manualmente a cada rodada.
+
+**Liberado para o a7-validador.** Nenhum destes defeitos altera número
+produzido hoje pelo software; D1 é dívida de proteção contra regressão
+futura, não um resultado incorreto atual.
