@@ -503,3 +503,55 @@ no acervo), só ficou incompleta. Não reverter `rigidez.py:56`; completar as
 outras 12 liberadas acima. A ocorrência 11 permanece em 2019 até a decisão
 humana — e isso é intencional e preferível: uma citação visivelmente errada
 é mais segura que uma citação errada disfarçada de certa.
+
+---
+
+## Rodada 2026-08-27 (b) — Espraiamento 2V:1H entre camadas de solo
+
+**Pedido:** visualização de corte mostrando espraiamento de tensões entre camadas.
+Gatilho: `calc_core/sapata_isolada/geotecnia.py:191`, função órfã
+`acrescimo_tensao_2v1h(q, a, b, z)`.
+
+**Resultado da busca: NEGATIVO em todo o acervo.** Registros novos em
+`kb/clausulas.jsonl`: `NBR6122-espraiamento-2v1h-nada` e
+`BASTOS-espraiamento-2v1h-nada` (buscas negativas), mais cinco registros
+positivos de contexto (`NBR6122-1-escopo-melhoramento-solo-excluido`,
+`NBR6122-7.3.1-camadas-influenciadas`, `NBR6122-7.3.2-metodos-teoricos-dominio`,
+`NBR6122-7.7.4-cotas-diferentes-angulo-alfa`, `NBR6122-7.8.2-bloco-angulo-beta`,
+`NBR6122-8.3-efeito-grupo-sapata-hipotetica`) e
+`BASTOS-1.5-distribuicao-tensoes-na-base`.
+
+### O que o a2 precisa decidir (não decidido aqui)
+
+1. **Rótulo da fórmula.** Não há item normativo citável. Diferença relevante em
+   relação ao FS = 1,5 e a Winkler/Hetényi: para aqueles existia ao menos uma
+   fonte secundária no acervo (apostila do Bastos, eq. 1.72/1.75). Para o 2V:1H
+   **não há fonte alguma no repositório** — nem normativa nem secundária. Se o
+   rótulo for `PRÁTICA CONSAGRADA`, ele se apoiará em conhecimento geral de
+   Mecânica dos Solos sem documento de respaldo neste acervo. Isso é um degrau
+   abaixo dos casos já rotulados.
+2. **`kb/formulas.yaml` não recebeu entrada para o 2V:1H**, deliberadamente:
+   um registro exige norma + item + página + hash, e não existe fonte para
+   nenhum dos quatro. Registrar a fórmula a partir do código-fonte seria
+   inverter o sentido do pipeline (o código passaria a ser a fonte da regra).
+3. **Cobertura no ruleset.** `escopo_amplo_em_conferencia > sapata_isolada.geotecnia`
+   está `PENDENTE_HUMANO` e cobre "propagação de Boussinesq/Newmark" — a função
+   2V:1H está no módulo listado, mas **não** na enumeração do que o item cobre.
+   Zona cinzenta a resolver explicitamente.
+4. **Boussinesq também não tem respaldo na NBR 6122** (0 ocorrências). O bulbo
+   já desenhado por `PerfilCortes._bulbo` e o 2V:1H estão no mesmo patamar
+   normativo: nenhum. A diferença é de consagração bibliográfica, não de estatuto.
+
+### Armadilhas de citação a evitar no memorial
+
+- §7.7.4 (α ≥ 60°/45°/30°) **não** é ângulo de espraiamento: é proteção
+  geométrica entre fundações vizinhas em cotas diferentes, medido com a
+  **vertical**, e cresce para solo **pior** — comportamento oposto ao de um
+  ângulo de difusão de tensão (2V:1H ≙ 26,57° com a vertical, fixo).
+- §7.8.2 (β ≥ 60°) é geometria do **bloco de concreto**, não do solo.
+- §8.3 (sapata hipotética a f/3) é **fundação profunda** e mantém o **contorno
+  do grupo sem alargamento** com a profundidade.
+- §1 Escopo **exclui** "melhoramento do solo" — camada de reforço/lastro de
+  rachão sobre solo mole está fora do escopo da Norma **por declaração**, não
+  por omissão. É o argumento mais forte contra qualquer `[rule: ]` de NBR 6122
+  numa futura implementação.
