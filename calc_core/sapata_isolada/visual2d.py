@@ -45,15 +45,47 @@ class MapaMomentos:
     def __init__(self, canvas) -> None:
         self.canvas = canvas
         self.campo: Optional[CampoMomentos] = None
+        self.campo_analitico: Optional[CampoMomentos] = None
+        self.campo_grelha: Optional[CampoMomentos] = None
+        self.fonte = "analitico"       # ou "grelha"
+        self.rigida: Optional[bool] = None
         self.direcao = "X"
         self.mostrar_isolinhas = True
         self.mostrar_grade = False
         self.pool = PoolCanvas(canvas)
         canvas.bind("<Configure>", lambda e: self.desenhar())
 
-    def definir_campo(self, campo: CampoMomentos) -> None:
-        self.campo = campo
+    def definir(self, campo_analitico: Optional[CampoMomentos],
+               campo_grelha: Optional[CampoMomentos] = None,
+               rigida: Optional[bool] = None) -> None:
+        """
+        Recebe os dois campos possíveis: o analítico (plano de tensões
+        rígido) e o real da grelha discretizada sobre apoios elásticos —
+        mesma convenção de `SuperficieMomentos3D.definir`.
+
+        `rigida` é a classificação da sapata (NBR 6118, 22.6.1/22.6.3): se
+        `False` (sapata flexível), a hipótese de placa rígida do campo
+        analítico não vale, e a fonte padrão passa a ser a grelha. Se `True`
+        ou desconhecida, mantém o analítico como padrão.
+        """
+        self.campo_analitico = campo_analitico
+        self.campo_grelha = campo_grelha
+        self.rigida = rigida
+        self.fonte = ("grelha" if rigida is False and campo_grelha is not None
+                      else "analitico")
+        self._escolher_campo()
         self.desenhar()
+
+    def definir_fonte(self, fonte: str) -> None:
+        self.fonte = "grelha" if fonte == "grelha" else "analitico"
+        self._escolher_campo()
+        self.desenhar()
+
+    def _escolher_campo(self) -> None:
+        if self.fonte == "grelha" and self.campo_grelha is not None:
+            self.campo = self.campo_grelha
+        else:
+            self.campo = self.campo_analitico
 
     def definir_direcao(self, direcao: str) -> None:
         self.direcao = direcao
@@ -239,14 +271,23 @@ class MapaMomentos:
         pool.texto(20, 22, rot, TINTA, ("Segoe UI Semibold", 11), "w")
         md = campo.md_projeto_x if self.direcao == "X" else campo.md_projeto_y
         largura = campo.b if self.direcao == "X" else campo.a
+        fonte = ("grelha discretizada" if campo is self.campo_grelha
+                 and self.campo_grelha is not None else "campo analítico (placa rígida)")
         pool.texto(20, 42, f"máx {vmax:.1f} kN·m/m  ·  faixa integrada "
-                           f"{vmax * largura:.1f} kN·m", TINTA_FRACA,
-                   ("Consolas", 8), "w")
+                           f"{vmax * largura:.1f} kN·m  ·  fonte: {fonte}",
+                   TINTA_FRACA, ("Consolas", 8), "w")
         pool.texto(20, 58, f"M_d adotado no cálculo {md:.1f} kN·m  ·  "
                            f"{campo.combinacao}", TINTA_FRACA, ("Consolas", 8), "w")
+        y = 74
         if campo.parcial:
-            pool.texto(20, 74, "seção parcialmente comprimida — campo aproximado",
+            pool.texto(20, y, "seção parcialmente comprimida — campo aproximado",
                        DESTAQUE, ("Consolas", 8), "w")
+            y += 16
+        if self.rigida is False:
+            pool.texto(20, y, "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo "
+                              "analítico assume placa rígida; use a Grelha para "
+                              "o comportamento real.", DESTAQUE,
+                       ("Consolas", 8), "w")
 
 
 # =========================================================================== #

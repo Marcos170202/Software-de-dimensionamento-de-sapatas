@@ -107,6 +107,14 @@ class AbaMomentos(ttk.Frame):
                         command=lambda: self.mapa2d.alternar(
                             "mostrar_grade", self.v_grade.get())).pack(
             side="left", padx=4)
+        ttk.Separator(barra2d, orient="vertical").pack(side="left", fill="y",
+                                                          padx=6)
+        ttk.Button(barra2d, text="Analítico",
+                   command=lambda: self.mapa2d.definir_fonte("analitico")).pack(
+            side="left", padx=2)
+        ttk.Button(barra2d, text="Grelha",
+                   command=lambda: self.mapa2d.definir_fonte("grelha")).pack(
+            side="left", padx=2)
         canvas2d = _canvas(aba2d)
         self.mapa2d = MapaMomentos(canvas2d)
 
@@ -151,8 +159,6 @@ class AbaMomentos(ttk.Frame):
             campo = None
         self._campo = campo
         self._geometria = modelo
-        if campo is not None:
-            self.mapa2d.definir_campo(campo)
 
         campo_grelha = None
         if res.grelha is not None:
@@ -164,7 +170,14 @@ class AbaMomentos(ttk.Frame):
             except Exception:   # noqa: BLE001 — cai no fallback analítico
                 campo_grelha = None
 
-        self.superficie3d.definir(campo, campo_grelha, modelo)
+        # Fonte padrão: quando a sapata é FLEXÍVEL a hipótese de placa rígida
+        # do campo analítico não vale — ver 22.6.3. O modo "Grelha" do 3D já
+        # é o padrão da aba e já usa o campo real; aqui é o Mapa 2D e o modo
+        # "Superfície" do 3D que precisam saber a classificação.
+        if campo is not None:
+            self.mapa2d.definir(campo, campo_grelha, res.rigida)
+
+        self.superficie3d.definir(campo, campo_grelha, modelo, res.rigida)
 
 
 class AbaReacaoSolo(ttk.Frame):

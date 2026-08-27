@@ -270,3 +270,66 @@ independente do a6-revisor. `momentos.py` continua em
 `escopo_amplo_em_conferencia` no `ruleset.yaml` (`PENDENTE_HUMANO`) — esta
 correção não muda esse status; é um conserto de um defeito de desenho já
 identificado, não uma auditoria formula-a-fórmula completa do módulo.
+
+## Adendo — 2026-08-27 (2ª rodada): diagramas de momento agora variam com a
+## classificação rígida/flexível
+
+O adendo anterior corrigiu o degrau no campo de momentos, mas deixou passar
+uma lacuna real do pedido original do usuário: ele pediu que o diagrama de
+MOMENTO também variasse conforme a sapata é rígida ou flexível, do mesmo
+jeito que o diagrama de tensão no solo já varia — e o "Mapa 2D" e o modo
+"Superfície" da "Superfície 3D" continuavam a mostrar sempre o campo
+analítico (que assume placa rígida com pressão linear), mesmo quando a
+sapata é classificada `FLEXÍVEL` (NBR 6118, 22.6.3), sem nenhum aviso disso
+na tela.
+
+**Verificação que confirmou a lacuna:** forçar um caso genuinamente flexível
+via `GeometriaImposta` (o "modo verificação" já exposto no formulário —
+não é um caso de laboratório inatingível pelo usuário real: `a=b=3,0 m`,
+`h=0,30 m` contra `0,93 m` que tornaria rígida) e comparar os dois modelos:
+pressão do solo discretizada (Winkler) 97,5–134,8 kPa contra rígida linear
+118,8–123,8 kPa (17,4% de diferença no pico — isso já funcionava certo em
+`ReacaoSolo`), e confirmar visualmente (renderização headless real, mesmo
+método das rodadas anteriores) que o campo de momentos discretizado tem
+forma bem diferente do analítico: concentrado numa "ilha" sob o pilar
+(comportamento elástico local, esperado numa sapata flexível), contra a
+mancha espalhada por toda a base que o modelo rígido sempre produz.
+
+**Correção** (delegada ao a3-interface, só wiring/exibição — nenhuma conta
+nova, `momentos.py`/`sapata.py`/`grelha.py`/`ReacaoSolo` não foram tocados):
+- `MapaMomentos` (`visual2d.py`) ganhou a mesma capacidade de dois campos que
+  a `SuperficieMomentos3D` já tinha (`definir(analitico, grelha, rigida)`,
+  botões "Analítico"/"Grelha" na barra da aba "Mapa 2D").
+- Fonte padrão agora depende de `res.rigida`: grelha quando a sapata é
+  flexível (a hipótese de placa rígida do campo analítico não vale nesse
+  caso), analítico quando é rígida — nas duas telas (Mapa 2D e o modo
+  "Superfície" da 3D; o modo "Grelha" da 3D já usava sempre o campo real,
+  desde a rodada anterior).
+- Aviso visível (mesmo estilo de cor `DESTAQUE`/laranja já usado para
+  "seção parcialmente comprimida") nas duas telas quando a sapata é
+  flexível: "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo analítico assume
+  placa rígida; use a Grelha para o comportamento real."
+- Rótulo de rodapé em cada desenho agora também informa a fonte ativa
+  ("fonte: grelha discretizada" / "campo analítico (placa rígida)").
+
+**Revisão independente feita pela sessão principal** (o processo do
+a3-interface foi interrompido de novo por erro de conexão da API antes de
+reportar — igual à rodada anterior — mas o diff já escrito em disco foi lido
+e conferido do zero):
+- Suíte completa (57/57), `ruff --select E9` em `calc_core/sapata_isolada/`,
+  perfil completo em `calc_core/geotecnico/`/`calc_core/modelos.py`/`ui/`, e
+  `mypy --strict` no mesmo escopo — todos limpos, sem regressão.
+- Teste headless de ponta a ponta (Xvfb + `AbaMomentos` real, não só as
+  classes de desenho isoladas) com os DOIS cenários — rígido (o de sempre) e
+  o flexível forçado acima — confirmando a escolha de fonte certa nos dois
+  casos, nas duas telas.
+- Renderização real (postscript + ghostscript) do caso flexível nas duas
+  telas: o "Mapa 2D" mostrou a mancha concentrada sob o pilar com o rótulo
+  "fonte: grelha discretizada" e o aviso laranja; a primeira tentativa de
+  renderizar a "Superfície 3D" veio em branco — investigado antes de
+  concluir que era defeito: era o mesmo artefato de teste já documentado no
+  adendo de 2026-08-26 (o Tkinter não dá tamanho real ao canvas de uma aba
+  de sub-`Notebook` nunca selecionada). Selecionando a aba "Superfície 3D"
+  de verdade antes de medir, a superfície apareceu corretamente — concha
+  suave concentrada sob o pilar, rótulo "fonte: grelha discretizada" e o
+  mesmo aviso. Não era um defeito do código.
