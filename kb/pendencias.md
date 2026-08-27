@@ -555,3 +555,88 @@ positivos de contexto (`NBR6122-1-escopo-melhoramento-solo-excluido`,
   rachão sobre solo mole está fora do escopo da Norma **por declaração**, não
   por omissão. É o argumento mais forte contra qualquer `[rule: ]` de NBR 6122
   numa futura implementação.
+
+---
+
+## Rodada 2026-08-27 (c) — a2-verificador: decisão sobre propagação de tensão
+
+Fecha o levantamento da rodada (b). Registros criados em `ruleset.yaml`
+(versão 6, seção nova `praticas_consagradas`):
+
+| id | status |
+|---|---|
+| `PC-BOUSSINESQ-NEWMARK-canto-retangulo` | `APROVADA` |
+| `PC-ESPRAIAMENTO-2V1H` | `APROVADA_COM_USO_RESTRITO` |
+
+Ambas com `respaldo_normativo: NENHUM` e `natureza: PRATICA_CONSAGRADA`. Citação
+em código é `[pratica: <id>]`, **nunca** `[rule: <id>]`.
+
+### O que NÃO foi aprovado e continua exigindo decisão humana
+
+**Pendência C1 — o ramo 2V:1H de `recalques.py:263-266` alimentando recalque.**
+
+*Pergunta objetiva:* o parâmetro `usar_boussinesq` de `RecalqueCalculador` deve
+ser removido (mantendo só Boussinesq), ou mantido como opção do projetista com
+aviso de que subestima o recalque?
+
+*Trecho literal (código, `calc_core/sapata_isolada/recalques.py:262-266`):*
+
+```python
+def _delta_sigma(self, z_abaixo_base: float) -> float:
+    if self.usar_boussinesq:
+        return acrescimo_tensao_centro(self.q_liquido, self.a, self.b, z_abaixo_base)
+    return self.q_liquido * (self.a * self.b) / \
+        ((self.a + z_abaixo_base) * (self.b + z_abaixo_base))
+```
+
+*Leitura proposta pelo a2:* remover o ramo. Não é uma alternativa equivalente.
+Integrando `dsigma·dz` de 0 a 2B — proxy direto do recalque em meio homogêneo —
+o 2V:1H entrega **0,748** do valor de Boussinesq, fator praticamente invariante
+com a geometria (0,748 para 2x2, 2x4, 1,2x1,2 e 4x4 m; 0,797 se integrado até
+4B). Recalque ~25 % menor, **do lado inseguro**, sistemático. O default hoje é
+`True` e nenhum chamador passa `False`, então o ramo é inalcançável na prática —
+não há urgência, mas há uma armadilha carregada.
+
+*Impacto se a leitura estiver errada:* se houver razão de projeto para preferir
+o 2V:1H em recalque (não conhecida pelo a2), remover o ramo tira uma opção
+legítima. Custo baixo e reversível. O impacto do erro oposto — expor o seletor e
+alguém usá-lo — é recalque 25 % menor num memorial assinado.
+
+*Enquanto não houver decisão:* `REQ-PROP-05` proíbe expor o seletor, ligá-lo por
+default ou usá-lo em memorial.
+
+**Pendência C2 — espraiamento com ângulo variável por camada / lastro de rachão.**
+
+*Pergunta objetiva:* o software deve algum dia oferecer espraiamento com ângulo
+diferente por camada (o caso da imagem de referência 1: lastro de rachão sobre
+solo mole)?
+
+*Leitura proposta pelo a2:* **não**, e por dois motivos independentes — cada um
+bastaria. (i) A NBR 6122:2022 §1 (Escopo) exclui "melhoramento do solo" por
+declaração, não por omissão: não existe item da norma para citar. (ii) Mais
+decisivo, é erro de modelo: o benefício de um lastro vem justamente do contraste
+de rigidez, e um método de ângulo constante não enxerga contraste de rigidez —
+não pode quantificar o efeito que o lastro existe para produzir. Adotar ângulos
+diferentes por camada também descaracteriza a fórmula aprovada: a área alargada
+deixa de ser `(a+z)(b+z)` e a verificação de equilíbrio vertical feita nesta
+rodada não vale mais.
+
+*Impacto se a leitura estiver errada:* nenhum sobre o código atual (nada disso
+está implementado). O risco é de expectativa: se a funcionalidade for prometida
+na UI, o memorial insinuará cobertura normativa que a norma explicitamente não
+dá. `REQ-UI-03` proíbe nomear ou insinuar a funcionalidade.
+
+**Pendência C3 — verificação de camada subjacente.**
+
+*Pergunta objetiva:* o software pode comparar `dsigma_z(z) + sigma'_v0(z)` com o
+`sigma_adm` de uma camada mais profunda e emitir PASSA/NÃO PASSA?
+
+*Leitura proposta pelo a2:* não sem decisão de engenharia registrada. A NBR
+6122:2022 não prescreve o procedimento, e transformar um valor informativo em
+critério de aceitação é exatamente o que separa o que o a2 pode aprovar sozinho
+do que não pode. `REQ-PROP-03` mantém os valores como informativos.
+
+*Impacto se a leitura estiver errada:* se a verificação for devida e não for
+feita, uma camada mole profunda passa despercebida — lado inseguro. É a
+pendência mais relevante das três em consequência de projeto, e a que mais
+merece a atenção do engenheiro.

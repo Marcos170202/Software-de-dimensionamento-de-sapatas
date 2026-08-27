@@ -7,9 +7,91 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 5
+versao: 6
 escopo: "sapata isolada, carga centrada, solo homogêneo"
 data_congelamento: "2026-08-27"
+
+# --- Versão 6: propagação de tensão em profundidade (Boussinesq/Newmark e -----
+#     espraiamento 2V:1H). Cria a seção `praticas_consagradas`.
+#
+# ATENÇÃO (CLAUDE.md regra 5): esta versão ALTERA o ruleset. As aprovações de
+# A6 e A7 ficam formalmente INVALIDADAS. Ressalva de escopo, idêntica em espírito
+# à da v5: NENHUM registro que estava APROVADA em `regras` mudou de status, de
+# valor ou de citação. Esta versão (a) cria uma seção NOVA, (b) fecha
+# parcialmente uma linha que já era PENDENTE_HUMANO em
+# escopo_amplo_em_conferencia. A nova rodada de A6/A7 pode restringir-se aos
+# dois registros novos e ao código que vier a depender deles.
+#
+# PREMISSA DO PEDIDO QUE ESTA RODADA CORRIGE — importa porque foi o fundamento
+# oferecido para a decisão. Foi dito ao a2 que Winkler/Hetényi/Meyerhof já
+# estariam "aprovados como prática consagrada sem fonte física no repo" e que
+# bastaria aplicar o mesmo critério. NÃO É O CASO. Conferido linha a linha neste
+# arquivo antes de decidir:
+#   - escopo_amplo_em_conferencia > "sapata_isolada.rigidez, sapata_isolada.grelha"
+#     tem status: PENDENTE_HUMANO, e sua observação diz textualmente que
+#     Winkler/Hetényi (lambda_L), K_r de Meyerhof, kv de Bowles e kv de Vésic
+#     "continuam PENDENTE_HUMANO".
+#   - a regra NBR6118-22.6.1-rigidez, essa sim APROVADA, cobre SÓ o critério
+#     geométrico h >= (a-ap)/3, que é texto normativo — e sua observação isola
+#     explicitamente Winkler/Meyerhof do alcance da aprovação.
+#   - o FS = 1,5 de tombamento/deslizamento foi ROTULADO prática consagrada na
+#     v5 e mesmo assim ficou PENDENTE_HUMANO.
+# Isto é: neste ruleset, "rotular como prática consagrada" NUNCA foi, sozinho,
+# fundamento para APROVAR. O único caso em que um método não normativo saiu
+# APROVADA é a folga 'c' de NBR6122-7.6.1 — e lá o que decide não é a
+# consagração, é que a escolha não altera nenhuma verificação (a área A_nec já
+# está fixada pela norma; a folga só reparte A_nec entre B e L).
+# A decisão desta rodada NÃO se apoia, portanto, em precedente de "consagração".
+# Ela se apoia noutro critério, que é o que efetivamente separa os casos acima:
+#
+#   CRITÉRIO ADOTADO E DECLARADO NESTA VERSÃO
+#   O a2 pode aprovar sozinho um método não normativo quando as DUAS condições
+#   valem:
+#     (i)  a fórmula é uma AFIRMAÇÃO VERIFICÁVEL — identidade matemática ou
+#          consequência exata de uma convenção geométrica declarada — e o a2 a
+#          verificou de forma INDEPENDENTE do código e da bibliografia; e
+#     (ii) o resultado NÃO decide, sozinho, nenhuma aprovação/reprovação de
+#          projeto (não é nível de segurança, não é critério de aceitação).
+#   Falhando (i): PENDENTE_HUMANO — é palpite. Falhando (ii): PENDENTE_HUMANO —
+#   é julgamento de engenharia, e a2-verificador.md proíbe.
+#   FS=1,5 falha (ii). kv de Bowles/Vésic falha (i) e (ii). As duas fórmulas
+#   desta rodada passam em (i) por verificação numérica própria, e passam em
+#   (ii) SOMENTE dentro do uso restrito declarado em cada registro — fora dele,
+#   continuam pendentes. É por isso que as aprovações abaixo são GUARDADAS por
+#   uso, e não abertas.
+#
+# VERIFICAÇÃO MATEMÁTICA INDEPENDENTE (a2, não aceita do a1 nem do código):
+#   1. `influencia_canto_retangulo(m,n)` foi conferida contra uma INTEGRAÇÃO
+#      NUMÉRICA DIRETA da solução de carga pontual de Boussinesq
+#      (dsigma_z = 3 q z³ / (2 pi R^5)) sobre o retângulo m x n, quadratura de
+#      ponto médio 1500x1500, escrita do zero pelo a2 sem olhar a forma fechada.
+#      Diferença máxima 3,2e-08 em 11 pares (m,n) testados — inclusive
+#      (2;2), (5;5) e (10;1,2), que caem no ramo m²n² > m²+n²+1 onde o arco-
+#      tangente exige o acréscimo de pi. É esse ramo que quebra na maioria das
+#      implementações erradas, e o `math.atan2(num, den2)` do código o resolve
+#      corretamente. NÃO É "bate com a tabela": é identidade matemática
+#      confirmada contra a integral de origem.
+#      Limites: I(1e4,1e4) = 0,250000 (quadrante infinito); I(m,0) = 0;
+#      I(m,n) = I(n,m) exata; I(1,1) = 0,17522, valor clássico de tabela.
+#   2. `acrescimo_tensao_centro` = 4 x I(a/2z, b/2z) — superposição correta de
+#      quatro quadrantes com o canto comum sob o centro. z -> 0 dá exatamente q.
+#      z = 20 m sob sapata 2x2 dá 0,95 kPa (0,5 % de q). Monótona decrescente.
+#   3. `acrescimo_tensao_2v1h` — a conferência aqui NÃO pode ser dimensional
+#      (ver abaixo, a dimensão não distingue 2:1 de 1:1). Foi feita por
+#      EQUILÍBRIO VERTICAL: sigma_z(z) x (a+z)(b+z) = q x a x b para todo z,
+#      exato em ponto flutuante em 4/4 profundidades testadas. Ou seja, a
+#      fórmula é a consequência exata e única da convenção "a resultante q·a·b
+#      distribui-se uniformemente sobre a área alargada de z/2 por lado".
+#      z/2 por lado <=> arctan(0,5) = 26,57° com a vertical <=> 2V:1H. Confere.
+#      Contorno: z = 0 dá exatamente q. z -> infinito dá 0.
+#
+# LIMITE CONHECIDO DA CHECAGEM DIMENSIONAL, registrado porque é instrutivo:
+# com pint, os mutantes (a+z)²(b+z), (a·b)/(a+z), (b+z²) e (a·z)(b·z) são todos
+# REJEITADOS. Mas `q·a·b/((a+2z)(b+2z))` — que é espraiamento a 45°, 1V:1H, e
+# daria tensões grosseiramente menores — passa como HOMOGÊNEO. A análise
+# dimensional pega erro de transcrição; NÃO pega troca de ângulo de
+# espraiamento. Por isso o teste de equilíbrio vertical do item 3 acima não é
+# supérfluo: ele é a única checagem determinística que fixa o 2V:1H.
 
 # --- Versão 5: fonte secundária (apostila Bastos/UNESP) sobre a pendência ---
 #     NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento
@@ -847,6 +929,389 @@ regras:
 # centrada permanente/acidental apenas, sem combinação de vento).
 
 # =============================================================================
+# praticas_consagradas — SEÇÃO NOVA na versão 6.
+#
+# POR QUE UMA SEÇÃO SEPARADA, e não mais duas linhas em `regras`:
+# a cascata do a2-verificador §1 exige norma + item + página + hash e manda
+# REJEITAR sem apelo o que não tiver os quatro. Um método não normativo NUNCA
+# terá os quatro — colocá-lo em `regras` com `norma: null` obrigaria a violar a
+# própria cascata ou a inventar uma norma. Pior: qualquer consumidor que
+# percorra `regras` para montar o memorial passaria a poder emitir um
+# `[rule: ]` para algo que não é regra de norma nenhuma. A separação física
+# impede o erro por construção.
+#
+# ESTATUTO DESTAS ENTRADAS:
+#   - Para efeito da regra 2 do CLAUDE.md ("nada entra em calc_core/ sem regra
+#     APROVADA correspondente"), uma entrada aqui com status APROVADA CONTA como
+#     autorização — dentro, e apenas dentro, do `uso_autorizado` declarado.
+#   - Para efeito da regra 3 do CLAUDE.md (docstring com item normativo), estas
+#     entradas NÃO fornecem item normativo. A docstring cita
+#     `[pratica: <id>]`, JAMAIS `[rule: <id>]`. Um `[rule: ]` apontando para um
+#     id desta seção é defeito, e o a6 deve tratá-lo como tal.
+#   - `norma`, `item`, `pagina`, `hash`: ausentes por definição, não por falha
+#     de extração. O campo `origem_da_confianca` ocupa o lugar deles e diz, sem
+#     eufemismo, em que a aprovação se apoia.
+# =============================================================================
+praticas_consagradas:
+
+  - id: PC-BOUSSINESQ-NEWMARK-canto-retangulo
+    natureza: PRATICA_CONSAGRADA        # NÃO é regra normativa. Nunca [rule: ].
+    citacao_em_codigo: "[pratica: PC-BOUSSINESQ-NEWMARK-canto-retangulo]"
+    metodo: ambos    # é campo de tensões, neutro ao método de segurança: não
+                     # envolve FS global nem gamma_f/gamma_m. Ver guarda de
+                     # método no campo `requisitos_para_a4`.
+    status: APROVADA
+    respaldo_normativo: NENHUM
+    implementacao: >-
+      geotecnico.propagacao.influencia_canto_retangulo (m, n) e
+      geotecnico.propagacao.acrescimo_tensao_centro (q, a, b, z) —
+      hoje em calc_core/sapata_isolada/geotecnia.py:162-188.
+    formula: >-
+      I(m,n) = (1/4pi) · [ 2mn·sqrt(m²+n²+1)/(m²+n²+1+m²n²) · (m²+n²+2)/(m²+n²+1)
+                           + arctan( 2mn·sqrt(m²+n²+1) / (m²+n²+1-m²n²) ) ],
+      com o arco-tangente tomado em (0, pi) — isto é, somando pi quando
+      m²n² > m²+n²+1. m = B/z e n = L/z são as dimensões do RETÂNGULO cujo
+      CANTO está sobre a vertical do ponto, divididas por z.
+      Sob o CENTRO de sapata a x b: dsigma_z(z) = 4·q·I(a/2z, b/2z).
+    origem_da_confianca: >-
+      NÃO é autoridade bibliográfica — não há, neste acervo, nem norma nem livro
+      que traga esta expressão, e o a2 não aprova por memória de tabela.
+      É VERIFICAÇÃO MATEMÁTICA PRÓPRIA. A forma fechada é a integral exata da
+      solução de carga pontual de Boussinesq (1885) sobre um retângulo, integral
+      que Newmark (1935) publicou resolvida. O a2 refez a integração
+      NUMERICAMENTE, do zero, a partir de dsigma_z = 3q z³/(2 pi R^5), quadratura
+      de ponto médio 1500x1500, e comparou com a forma fechada do código em 11
+      pares (m,n): diferença máxima 3,2e-08.
+      Consequência do tipo de verificação: esta aprovação NÃO depende de
+      ninguém confiar na citação "Boussinesq/Newmark". Ela é reprodutível em
+      cinco minutos por qualquer pessoa com um integrador numérico, e é assim
+      que deve ser reauditada. O nome do método é etiqueta, não fundamento.
+    checagem_dimensional: >-
+      pint: m = (a/2)/z e n = (b/2)/z saem `dimensionless` — pré-requisito do
+      arco-tangente e da raiz. I é adimensional por construção. 4·q·I tem a
+      dimensão de q ([mass]/[length]/[time]²  = kPa). Homogêneo.
+      A checagem tem pouco poder aqui (I é adimensional, quase nada a
+      desbalancear); quem carrega a verificação é a integração numérica.
+    checagem_numerica: >-
+      Contorno: z -> 0 dá exatamente q (I -> 0,25 por quadrante; I(1e4,1e4) =
+      0,250000). I(1,1) = 0,17522, valor clássico. I(m,0) = 0. I(m,n) = I(n,m).
+      Ramo crítico m²n² > m²+n²+1 conferido em (2;2), (5;5), (10;1,2) contra a
+      integral — bate; o `atan2` do código resolve o acréscimo de pi.
+      Faixa plausível com valores típicos (a=b=2,0 m, q_líq=200 kPa):
+      186 kPa a 0,5 m; 140 kPa a 1,0 m; 67 kPa a 2,0 m (= B); 21,6 kPa a 4,0 m
+      (= 2B, 11 % de q). Profundidade em que dsigma cai a 10 % de q: 2,09·B para
+      sapata quadrada e 1,46·B para a=2/b=4 — coerente com o "bulbo de 2B" que
+      `recalques.py:251` já adota como profundidade de influência.
+    uso_autorizado: >-
+      (1) Campo dsigma_z(z) do PERFIL GEOTÉCNICO GERAL abaixo da base da sapata,
+      para visualização em corte e para a coluna de dsigma por camada do
+      memorial, sempre rotulado como não normativo.
+      (2) Manutenção do uso já existente: bulbo de `visual2d.PerfilCortes._bulbo`
+      e parcela de acréscimo de tensão de `recalques.py:264`.
+      Fora disso, nada. Em particular NÃO autoriza usar dsigma_z para checar
+      capacidade de carga de camada subjacente (ver `nao_autorizado`).
+    nao_autorizado: >-
+      (a) VERIFICAÇÃO DE CAMADA SUBJACENTE. Comparar dsigma_z(z) + sigma'_v0(z)
+      com um sigma_adm da camada de baixo e emitir PASSA/NÃO PASSA é critério de
+      aceitação de projeto. A NBR 6122:2022 não prescreve esse procedimento e o
+      a2 não o aprova. Se A4 quiser exibir o número, exiba como INFORMATIVO, sem
+      veredito, sem cor de reprovação, sem entrar em lista de verificações.
+      (b) O modelo, e não a fórmula. A fórmula está certa; a HIPÓTESE é meio
+      semi-infinito homogêneo, isótropo, elástico-linear, sem peso, carregado
+      por pressão uniforme em área flexível. O solo real é estratificado. Um
+      contraste de rigidez entre camadas altera o campo de tensões e ESTA
+      SOLUÇÃO NÃO REPRESENTA ISSO — as camadas coloridas do desenho são
+      cenografia sobre um campo calculado como se o maciço fosse homogêneo.
+      Isto tem que estar escrito na tela e no memorial, não só aqui.
+      (c) Sapata rígida. A hipótese é de carregamento uniforme (placa flexível);
+      sapata rígida real redistribui pressão para os bordos. Não modelado.
+    dominio_de_validade: >-
+      z >= 0 medido A PARTIR DA BASE da sapata (não da superfície do terreno) —
+      erro de origem de eixo é o defeito mais provável no wiring; a
+      `recalques.py` já usa `z_abaixo_base` e é o padrão a seguir.
+      a > 0, b > 0. q = pressão LÍQUIDA (ver `requisitos_para_a4`).
+      DEFEITO DE DOMÍNIO DETECTADO NESTA RODADA, do lado inseguro por silêncio:
+      `acrescimo_tensao_centro(q,a,b,z)` com z = -1,0 m RETORNA q = 200 kPa sem
+      erro, porque o guarda é `if z <= 1e-6: return q` e ele engole todo o
+      semieixo negativo. Um erro de sinal no wiring não aparece como exceção —
+      aparece como tensão plausível. A4 deve validar z >= 0 no chamador.
+    observacao: >-
+      FECHA PARCIALMENTE a linha `escopo_amplo_em_conferencia >
+      sapata_isolada.geotecnia`, no que ela chama de "propagação de
+      Boussinesq/Newmark". O resto daquela linha (perfil estratigráfico, tensão
+      geostática, correlação SPT -> sigma_adm) CONTINUA PENDENTE_HUMANO.
+      Nota de qualidade, não bloqueante: a docstring de
+      `influencia_canto_retangulo` diz "m = B/z, n = L/z" sem dizer que B e L
+      são as dimensões do retângulo com CANTO sobre o ponto. O chamador
+      `acrescimo_tensao_centro` faz certo (a/2, b/2), e
+      `visual2d._razao` também. A docstring é que induz ao erro de passar a
+      largura inteira — o que subestimaria dsigma. Corrigir a redação quando A4
+      encostar no arquivo.
+
+  - id: PC-ESPRAIAMENTO-2V1H
+    natureza: PRATICA_CONSAGRADA        # NÃO é regra normativa. Nunca [rule: ].
+    citacao_em_codigo: "[pratica: PC-ESPRAIAMENTO-2V1H]"
+    metodo: ambos    # convenção geométrica, neutra ao método de segurança.
+    status: APROVADA_COM_USO_RESTRITO
+    respaldo_normativo: NENHUM
+    implementacao: >-
+      geotecnico.propagacao.acrescimo_tensao_2v1h (q, a, b, z) — hoje em
+      calc_core/sapata_isolada/geotecnia.py:191. Existe uma SEGUNDA cópia da
+      mesma expressão, escrita à mão, em recalques.py:265-266 (ver
+      `defeitos_detectados`).
+    formula: "dsigma_z(z) = q · (a·b) / ((a+z)·(b+z))"
+    origem_da_confianca: >-
+      DUAS PERNAS, e é importante que fiquem separadas.
+      PERNA 1, FORTE, verificação própria: dada a convenção "2 na vertical para
+      1 na horizontal, com a resultante distribuída uniformemente sobre a área
+      alargada", a fórmula acima é a ÚNICA consequência possível, e o a2 a
+      verificou por equilíbrio vertical — dsigma_z(z)·(a+z)(b+z) = q·a·b exato
+      em 4/4 profundidades. Alargamento de z/2 por lado = arctan(0,5) = 26,57°
+      com a vertical = 2V:1H. Nada aqui é opinião.
+      PERNA 2, FRACA, e declarada como fraca: que a convenção 2V:1H seja a
+      convenção usual é CONHECIMENTO GERAL DE MECÂNICA DOS SOLOS afirmado pelo
+      a2, presente em qualquer texto introdutório da disciplina (Terzaghi &
+      Peck, Das, Pinto, Cintra & Aoki são as referências habituais), SEM NENHUM
+      DOCUMENTO NO ACERVO QUE O COMPROVE. O a1 varreu a NBR 6122:2022 (120
+      páginas) e a apostila do Bastos (119 páginas): zero ocorrência de
+      espraiamento, 2:1, Boussinesq ou bulbo. Isto é um degrau abaixo do FS=1,5,
+      que ao menos tinha a apostila — e o a1 fez bem em sinalizar.
+      POR QUE, MESMO ASSIM, APROVA: o que a perna 2 sustenta é apenas o NOME e a
+      escolha do ângulo; o número sai inteiro da perna 1. E o `uso_autorizado`
+      abaixo foi cortado justamente até onde a perna 1 sozinha basta — nenhuma
+      decisão de projeto depende do 26,57°. Se algum dia depender, volta a ser
+      PENDENTE_HUMANO (é exatamente o que está registrado em `nao_autorizado`).
+      Um humano refuta ou confirma a perna 2 em um minuto com qualquer livro da
+      estante; se ela cair, cai só a etiqueta "2V:1H", não a aritmética.
+    checagem_dimensional: >-
+      pint: q·(a·b)/((a+z)(b+z)) -> [mass]/[length]/[time]² = kPa. Homogêneo.
+      MUTANTES REJEITADOS pelo pint: (a+z)²(b+z) -> kPa/m; (a·b)/(a+z) -> kN/m;
+      (b+z²) -> DimensionalityError; (a·z)(b·z) -> kPa/m².
+      MUTANTE NÃO REJEITADO, e é o que interessa: q·a·b/((a+2z)(b+2z)) — que é
+      1V:1H, 45°, e daria dsigma muito menor — é HOMOGÊNEO e passa. A análise
+      dimensional NÃO distingue ângulo de espraiamento. Registrado no cabeçalho
+      da versão 6 como limite conhecido da ferramenta.
+    checagem_numerica: >-
+      Contorno: z=0 -> exatamente q. z -> infinito -> 0. Monótona decrescente.
+      Equilíbrio vertical exato em toda profundidade (a checagem que fixa o
+      ângulo). Valores típicos (a=b=2,0 m, q_líq=200 kPa): 128 kPa a 0,5 m;
+      88,9 kPa a 1,0 m; 50,0 kPa a 2,0 m; 22,2 kPa a 4,0 m. Faixa plausível.
+      COMPARAÇÃO COM BOUSSINESQ — é o achado numérico desta rodada e é ele que
+      define o `uso_autorizado`. O 2V:1H NÃO é uma aproximação neutra do bulbo:
+        z = 0,5 m  ->  2V:1H dá  69 % de Boussinesq  (128 x 186 kPa)
+        z = 1,0 m  ->            63 %                (88,9 x 140 kPa)
+        z = 2,0 m  ->            74 %
+        z = 3,78 m (= 1,89·B) -> 100 %  (cruzamento)
+        z = 8,0 m  ->           138 %
+      Isto é: SUBESTIMA na faixa rasa, que é onde o recalque se acumula, e
+      superestima abaixo do bulbo, onde já quase não há tensão. Integrando
+      dsigma·dz de 0 a 2B — proxy direto do recalque em meio homogêneo — o
+      2V:1H entrega 0,748 do valor de Boussinesq, e o fator é praticamente
+      invariante com a geometria (0,748 para 2x2, 2x4, 1,2x1,2 e 4x4; 0,797 se
+      integrado até 4B). Ou seja: trocar Boussinesq por 2V:1H em recalque
+      produz recalque cerca de 25 % MENOR, DO LADO INSEGURO, de forma
+      sistemática e não aleatória.
+    uso_autorizado: >-
+      (1) VISUALIZAÇÃO. Traçado da pirâmide/tronco de espraiamento no corte, como
+      ALTERNATIVA selecionável ao bulbo de Boussinesq já existente, e os valores
+      de dsigma_z por camada (q1/q2/q3 nas profundidades das interfaces) exibidos
+      junto ao desenho e no memorial.
+      (2) Comparação lado a lado com Boussinesq — inclusive, e de preferência,
+      mostrando a divergência acima, que é informação útil ao projetista.
+      Em ambos os casos, com rótulo visível de método não normativo.
+    nao_autorizado: >-
+      (a) ALIMENTAR RECALQUE. O ramo `usar_boussinesq=False` de
+      `recalques.py:263-266` está PROIBIDO de ser exposto na UI, ligado por
+      default ou usado em memorial, pelo fator 0,748 medido acima. Fica
+      PENDENTE_HUMANO próprio — ver kb/pendencias.md, rodada 2026-08-27 (c).
+      Hoje o default é `usar_boussinesq: bool = True` e nenhum chamador passa
+      False; o ramo é inalcançável na prática. MANTER assim. A4 não pode
+      adicionar o seletor.
+      (b) VERIFICAÇÃO DE CAMADA SUBJACENTE — mesma proibição, e pelo mesmo
+      motivo, de PC-BOUSSINESQ-NEWMARK-canto-retangulo > nao_autorizado (a).
+      Com o 2V:1H o risco é maior: subestima dsigma em até 37 % na faixa rasa,
+      que é justamente onde costuma estar a camada mole que se quer verificar.
+      (c) ÂNGULO VARIÁVEL POR CAMADA. Aprovou-se UM ângulo, 26,57°, constante do
+      topo ao fundo. Adotar ângulos diferentes por camada (30°, 45° em camada de
+      reforço etc.) é OUTRO método, não é este, não tem verificação de
+      equilíbrio feita e NÃO está aprovado. Nem a perna 1 sustenta isso: com
+      ângulo variável a área alargada deixa de ser (a+z)(b+z) e a fórmula muda.
+      (d) CAMADA DE REFORÇO / LASTRO DE RACHÃO — ver `espaco_de_aplicacao`.
+    espaco_de_aplicacao: >-
+      DECLARAÇÃO EXPLÍCITA, pedida nesta rodada e necessária para não prometer
+      cobertura que não existe. Este método é autorizado para o PERFIL
+      GEOTÉCNICO GERAL abaixo da base da sapata — solo natural estratificado,
+      mesmíssimo uso que o bulbo de Boussinesq já tem em `_bulbo()`. A
+      visualização continua desenhando as camadas de solo natural coloridas que
+      `PerfilCortes` já desenha, ganhando o espraiamento simplificado como
+      alternativa ao bulbo.
+      NÃO É AUTORIZADO como cálculo de camada de reforço, lastro de rachão,
+      colchão granular ou substituição de solo mole. Dois motivos independentes,
+      e cada um bastaria:
+      (i) NORMATIVO — a NBR 6122:2022 §1 (Escopo) EXCLUI "melhoramento do solo"
+      do que ela cobre. Levantamento do a1, conferido: a exclusão é por
+      declaração da norma, não por omissão. Não existe, e não existirá, item da
+      NBR 6122 para citar num dimensionamento de lastro. Qualquer memorial que
+      insinue isso é falso.
+      (ii) FÍSICO, e é o que realmente impede — o 2V:1H de ângulo único pressupõe
+      MEIO HOMOGÊNEO. O efeito inteiro de um lastro de rachão é o contraste de
+      rigidez: a camada rígida espraia MAIS que o solo mole embaixo dela, e é
+      disso que vem o benefício. Um método de ângulo constante não enxerga
+      contraste de rigidez — logo não pode quantificar o benefício que o lastro
+      existe para produzir. Usá-lo ali não é falta de respaldo normativo: é
+      erro de modelo.
+    dominio_de_validade: >-
+      z >= 0 a partir da BASE da sapata. a > 0, b > 0. q = pressão LÍQUIDA.
+      TETO DE PROFUNDIDADE — não há teto na implementação e a fórmula segue
+      "funcionando" para qualquer z (tende a 0, o que é correto). Limite
+      RECOMENDADO de exibição: z <= 2·B (mesmo bulbo de 2B que
+      `recalques.py:251` já usa) e, de todo modo, nunca além da profundidade do
+      perfil geotécnico informado. Abaixo de ~1,9·B o 2V:1H passa a superestimar
+      Boussinesq e a comparação entre os dois inverte de sinal — exibir sem
+      aviso ali confunde o leitor do memorial.
+      LIMITES LATERAIS ASSUMIDOS, registrados e NÃO implementados por decisão
+      (registrar, não implementar — foi o pedido, e é o certo: implementar
+      contorno lateral exigiria decidir o que fazer quando a pirâmide sai do
+      terreno, e isso é julgamento):
+      (i) MACIÇO LATERALMENTE ILIMITADO. A pirâmide de espraiamento pode, para z
+      grande, exceder as dimensões do terreno modelado, de um talude próximo, de
+      uma divisa ou de uma escavação vizinha. Nada disso é verificado. Se a
+      pirâmide "sai" do maciço, o resultado deixa de ter significado e o
+      software não avisa.
+      (ii) SAPATA ISOLADA, SEM VIZINHA. Pirâmides de sapatas vizinhas se
+      superpõem e as tensões se somam — o método, como está, ignora
+      completamente. Fora do escopo declarado do projeto ("sapata isolada"), mas
+      registrado porque é o erro que um usuário comete sozinho, olhando um
+      desenho bonito de uma sapata só.
+      ARMADILHA DE CITAÇÃO, herdada do levantamento do a1 e repetida aqui porque
+      é onde alguém vai procurar: NÃO citar §7.7.4 (alfa >= 60°/45°/30°) como
+      ângulo de espraiamento — é proteção geométrica entre fundações em cotas
+      diferentes, e cresce quando o solo PIORA, comportamento oposto ao de um
+      ângulo de difusão. NÃO citar §7.8.2 (beta >= 60°) — é geometria do bloco
+      de concreto. NÃO citar §8.3 (sapata hipotética a f/3) — é fundação
+      profunda e mantém o contorno do grupo SEM alargamento com a profundidade.
+    defeitos_detectados: >-
+      Três, todos para A4 tratar, nenhum bloqueante da aprovação:
+      (1) DUPLICAÇÃO. `recalques.py:265-266` reescreve a expressão à mão em vez
+      de chamar `acrescimo_tensao_2v1h`. Duas cópias da mesma fórmula em módulos
+      diferentes é exatamente como uma delas fica para trás numa correção
+      futura. Unificar chamando a função — sem alterar resultado.
+      (2) z NEGATIVO SEM GUARDA, pior que no Boussinesq: `acrescimo_tensao_2v1h`
+      não tem guarda nenhuma. Com a=b=2,0 m e q=200 kPa, z = -1,0 m retorna
+      800 kPa — QUATRO VEZES q, tensão crescendo para cima, fisicamente
+      impossível — e z = -2,0 m (z = -a) levanta ZeroDivisionError. Validar
+      z >= 0 no chamador.
+      (3) A função está sem teste. `tests/test_sapata_isolada_sanidade.py`
+      cobre `influencia_canto_retangulo` e `acrescimo_tensao_centro` e não toca
+      no 2V:1H. Os testes a criar estão em `requisitos_para_a4`.
+
+# -----------------------------------------------------------------------------
+# Requisitos de implementação decorrentes das duas entradas acima.
+# Vale para A4 (cálculo) e A3 (interface). É a parte operacional da aprovação —
+# a aprovação é DESTES itens juntos, não da fórmula solta.
+# -----------------------------------------------------------------------------
+requisitos_para_a4:
+  - id: REQ-PROP-01-pressao-liquida
+    texto: >-
+      q passado a qualquer das duas funções é a pressão LÍQUIDA na base
+      (q_serviço - sigma'_v0 na cota da base), não a pressão total. É o que
+      `recalques.py:255-260` já faz. Usar a total superestima dsigma em toda a
+      profundidade. O rótulo na tela e no memorial deve dizer qual foi usada,
+      com o valor — "q_líq = ... kPa", como `pranchas.py:575` já faz.
+      Ressalva de citação: aquela docstring diz "conforme prática da NBR 6122";
+      alívio de escavação aparece na NBR 6122:2022 §7.2 como um dos doze fatores
+      a considerar, NÃO como fórmula prescrita. Não emitir [rule: ] por isso.
+  - id: REQ-PROP-02-guarda-de-dominio
+    texto: >-
+      Validar no chamador, antes de chamar: z >= 0 (origem na BASE da sapata),
+      a > 0, b > 0, q >= 0. Erro explícito, não retorno silencioso. Motivo em
+      `dominio_de_validade` das duas entradas — hoje z<0 devolve q no Boussinesq
+      e 4q no 2V:1H, ambos sem exceção.
+  - id: REQ-PROP-03-sem-veredito
+    texto: >-
+      O cálculo por camada (q1/q2/q3 nas cotas das interfaces, com L1/L2/L3 as
+      espessuras) produz VALORES INFORMATIVOS. É PROIBIDO derivar deles
+      qualquer PASSA/NÃO PASSA, cor de reprovação, alerta de segurança ou linha
+      em lista de verificações. Não é preciosismo: é a fronteira que separa esta
+      aprovação de uma que o a2 não pode dar sozinho.
+  - id: REQ-PROP-04-metodo-explicito
+    texto: >-
+      O método usado (Boussinesq/Newmark ou 2V:1H) tem de viajar junto com o
+      número até o memorial — não pode ficar só no estado da UI. Dois números de
+      dsigma para a mesma camada, calculados por métodos diferentes, diferem em
+      até 37 % (ver checagem_numerica de PC-ESPRAIAMENTO-2V1H); um memorial que
+      não diga qual foi usado é irrastreável.
+  - id: REQ-PROP-05-nao-expor-2v1h-em-recalque
+    texto: >-
+      PROIBIDO ligar `usar_boussinesq=False` em `recalques.py`, expor esse
+      seletor na UI ou mudar o default. Fator medido: recalque ~25 % menor, lado
+      inseguro. Manter default True e nenhum chamador passando False.
+  - id: REQ-PROP-06-testes
+    texto: >-
+      Criar testes para `acrescimo_tensao_2v1h`, que hoje não tem nenhum:
+      (a) z=0 -> q exato; (b) equilíbrio vertical dsigma·(a+z)(b+z) = q·a·b em
+      pelo menos 4 profundidades; (c) monotonicidade decrescente em z;
+      (d) z<0 levanta erro (depende de REQ-PROP-02);
+      (e) razão 2V1H/Boussinesq em z=1,0 m com a=b=2,0 m fica em 0,63 +/- 0,01 —
+      teste de regressão que trava a troca acidental do ângulo, que é o único
+      erro que a análise dimensional não pega.
+      Para Boussinesq, os testes existentes (I(10,10)~0,25; z->0 -> q; z=20 -> <2)
+      são fracos: acrescentar I(1,1) = 0,17522 +/- 1e-4 e ao menos um ponto do
+      ramo m²n² > m²+n²+1, ex. I(2,2) = 0,23247 +/- 1e-4.
+  - id: REQ-PROP-07-unificar-2v1h
+    texto: >-
+      `recalques.py:265-266` deve chamar `acrescimo_tensao_2v1h` em vez de
+      reescrever a expressão. Nenhum número muda.
+  - id: REQ-PROP-08-namespace
+    texto: >-
+      Colisão de símbolo (a2-verificador.md §3): estas funções usam 'a' e 'b'
+      para dimensões em planta e 'z' para profundidade — 'z' aqui é
+      GEOTÉCNICO (profundidade abaixo da base), e não deve ser confundido com
+      braço/altura estrutural; 'b' aqui é dimensão em planta, e no domínio
+      estrutural 'b' aparece como largura de seção. Docstrings e campo
+      `implementacao` usam o namespace `geotecnico.propagacao.*`, como acima.
+      NÃO renomear API existente nesta rodada (quebraria UI e testes).
+
+requisitos_para_a3:
+  - id: REQ-UI-01-rotulo-nao-normativo
+    texto: >-
+      Rótulo permanente e visível junto ao desenho e repetido no memorial:
+      "Propagação de tensão em profundidade — método não normativo. A NBR
+      6122:2022 não prescreve método de espraiamento. Valores informativos."
+      Sem sigla, sem asterisco de rodapé: texto legível ao lado do resultado.
+  - id: REQ-UI-02-aviso-de-homogeneidade
+    texto: >-
+      O desenho vai mostrar camadas coloridas e um campo de tensão calculado
+      como se o maciço fosse homogêneo. Essa contradição visual é a maior
+      armadilha desta tela e precisa de aviso explícito: "As camadas são
+      exibidas com suas propriedades reais; o campo de tensões é calculado em
+      meio homogêneo e NÃO representa o contraste de rigidez entre camadas."
+  - id: REQ-UI-03-sem-lastro
+    texto: >-
+      Não oferecer, nomear ou insinuar cálculo de lastro de rachão, colchão
+      granular, camada de reforço ou substituição de solo mole. Nomear a
+      funcionalidade pelo que ela é — espraiamento em perfil de solo natural.
+      A NBR 6122:2022 §1 exclui melhoramento do solo do seu escopo por
+      declaração; ver PC-ESPRAIAMENTO-2V1H > espaco_de_aplicacao.
+  - id: REQ-UI-04-seletor-de-metodo
+    texto: >-
+      Seletor Boussinesq/Newmark (default, o que já existe) x 2V:1H, no mesmo
+      lugar do checkbox "Bulbo de tensões" de `ui/completo/visualizacao.py:259`.
+      O método escolhido aparece no desenho, não só no controle. Este seletor é
+      de VISUALIZAÇÃO — não altera recalque nem verificação alguma
+      (REQ-PROP-05).
+  - id: REQ-UI-05-teto-de-profundidade
+    texto: >-
+      Não desenhar espraiamento abaixo da profundidade do perfil geotécnico
+      informado. Profundidade sugerida de exibição 2·B, coerente com o bulbo de
+      influência que `recalques.py:251` já usa.
+  - id: REQ-UI-06-ui-nao-calcula
+    texto: >-
+      CLAUDE.md regra 4. q1/q2/q3 vêm prontos de calc_core. `ui/` recebe e
+      desenha. Nenhuma reimplementação da fórmula na camada de desenho — foi
+      assim que nasceu a duplicação de `recalques.py:265`.
+
+# =============================================================================
 # escopo_amplo_em_conferencia — módulos portados de calc_core/sapata_isolada/
 # que passaram no teste de sanidade do próprio pacote e num caso completo de
 # ponta a ponta (ver relatorios/conformidade.md), mas cujas fórmulas NÃO
@@ -859,8 +1324,22 @@ escopo_amplo_em_conferencia:
     cobre: "Combinações ELU/ELS automáticas conforme NBR 8681 e NBR 6118 §11"
     status: PENDENTE_HUMANO
   - modulo: "sapata_isolada.geotecnia"
-    cobre: "Perfil estratigráfico, tensão geostática, propagação de Boussinesq/Newmark, correlação SPT->sigma_adm"
+    cobre: "Perfil estratigráfico, tensão geostática, correlação SPT->sigma_adm"
     status: PENDENTE_HUMANO
+    observacao: >-
+      ATUALIZADO em 2026-08-27 (versão 6). Esta linha citava "propagação de
+      Boussinesq/Newmark" na enumeração; a propagação SAIU daqui e virou
+      registro próprio: `praticas_consagradas > PC-BOUSSINESQ-NEWMARK-canto-
+      retangulo` (APROVADA) e `PC-ESPRAIAMENTO-2V1H`
+      (APROVADA_COM_USO_RESTRITO), ambas com uso autorizado explícito.
+      RESOLVE a zona cinzenta apontada pelo a1 (kb/pendencias.md, rodada
+      2026-08-27 (b), item 3): `acrescimo_tensao_2v1h` estava no módulo listado
+      mas não na enumeração do que a linha cobria, e portanto não estava
+      coberta nem por esta pendência nem por regra alguma. Agora está.
+      O QUE CONTINUA PENDENTE_HUMANO nesta linha: perfil estratigráfico, tensão
+      vertical total/efetiva/poropressão, tensão de pré-adensamento e a
+      correlação SPT -> sigma_adm (`sigma_adm_por_spt`, que é também a pendência
+      §7.3.3 listada no CLAUDE.md). Nada disso foi conferido nesta rodada.
   - modulo: "sapata_isolada.sapata (geometria/estabilidade sob carga excêntrica)"
     cobre: "Núcleo central, diagrama trapezoidal/triangular, área efetiva de Meyerhof, FS deslizamento/tombamento (NBR 6122 §6.2.1.1.2/§7.6.2/§7.6.3)"
     status: PENDENTE_HUMANO

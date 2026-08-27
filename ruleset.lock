@@ -2,12 +2,22 @@
 # ruleset.yaml para que ninguém trabalhe sobre uma cópia divergente; ele NÃO
 # atesta que o portão foi vencido. O congelamento do GATE 1 exige 100 % dos
 # registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
-# registrada. Situação na versão 5: 14 APROVADA, 7 PENDENTE_HUMANO.
+# registrada.
+#
+# Situação na versão 6:
+#   regras (normativas) ............ 14 APROVADA, 7 PENDENTE_HUMANO
+#   praticas_consagradas (nova) .... 1 APROVADA, 1 APROVADA_COM_USO_RESTRITO
+#   escopo_amplo_em_conferencia .... 8 PENDENTE_HUMANO
 #
 # Alteração do ruleset invalida as aprovações de A6 e A7 (CLAUDE.md regra 5).
-# Na versão 5 nenhum registro APROVADA mudou de status, valor ou citação — as
-# alterações são documentais e incidem sobre dois registros que já eram
-# PENDENTE_HUMANO (NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento e
-# NBR6122-7.6.2-area-comprimida). A nova rodada de A6/A7 pode restringir-se a
-# esses dois registros e ao que deles depende.
-sha256:c07f74a07768403df94261035dbb6891759a0d546e836755c8c7f60b5fab02d5  ruleset.yaml
+# Na versão 6 nenhum registro APROVADA de `regras` mudou de status, valor ou
+# citação. As alterações são: (a) seção NOVA `praticas_consagradas` com dois
+# registros, mais `requisitos_para_a4` e `requisitos_para_a3`; (b) fechamento
+# parcial da linha `escopo_amplo_em_conferencia > sapata_isolada.geotecnia`,
+# que já era PENDENTE_HUMANO. A nova rodada de A6/A7 pode restringir-se aos
+# dois registros novos e ao código que vier a depender deles.
+#
+# APROVADA_COM_USO_RESTRITO é status novo desta versão: aprovado DENTRO do
+# campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
+# conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
+sha256:e7809f876db32186084362c8f9899d56c83ee3305d16ab7b422aec3b4ab08b7f  ruleset.yaml
