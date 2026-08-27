@@ -23,11 +23,13 @@ excêntrica, bielas de Blévot, rigidez/Winkler, recalques, MEF do solo) está
 `PENDENTE_HUMANO` em `ruleset.yaml` — portado e testado numericamente, mas
 não auditado fórmula a fórmula. Interface: `ui/completo/` (lançada por
 `ui/app_completo.py`) — modelo 3D interativo (arrastar para girar), mapas de
-momentos 2D/3D, reação do solo, perfil geológico com bulbo de tensões, e
-exportação de memorial em PDF (`Exportar PDF`) — todos reaproveitando os
-desenhos e o exportador que já existem em `calc_core/sapata_isolada/`, sem
-cálculo na camada de interface. O aviso de escopo fica num banner fixo,
-nunca só num popup de abertura.
+momentos 2D/3D, reação do solo em corte 2D e superfície 3D (as duas
+sensíveis à classificação rígida/flexível da NBR 6118 §22.6.1/22.6.3, com
+aviso na tela quando a sapata é flexível), perfil geológico com bulbo de
+tensões, e exportação de memorial em PDF (`Exportar PDF`) — todos
+reaproveitando os desenhos e o exportador que já existem em
+`calc_core/sapata_isolada/`, sem cálculo na camada de interface. O aviso de
+escopo fica num banner fixo, nunca só num popup de abertura.
 
 **NÃO implementado em nenhum dos dois:** determinação de σ_adm a partir de
 SPT/CPT, majoração por vento na tensão admissível, pilar de borda/canto na

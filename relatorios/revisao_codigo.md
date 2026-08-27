@@ -333,3 +333,45 @@ e conferido do zero):
   de verdade antes de medir, a superfície apareceu corretamente — concha
   suave concentrada sob o pilar, rótulo "fonte: grelha discretizada" e o
   mesmo aviso. Não era um defeito do código.
+
+## Adendo — 2026-08-27 (3ª rodada): superfície 3D de tensão no solo
+
+O pedido original do usuário (screenshot de referência, início da interface
+do escopo amplo) foi por "modelos 3D interativos que indicam momentos,
+cargas, tensões no solo". As duas primeiras rodadas trataram o 3D de
+momentos; a tensão no solo só tinha o corte 2D de sempre (`ReacaoSolo`,
+aba "Reação do solo") — nenhuma superfície 3D. Usuário perguntou
+diretamente se isso seria acrescentado.
+
+**Implementado** (delegado ao a3-interface, sem cálculo novo — só desenho,
+consumindo `CampoMomentos.sigma` e `ResultadoGrelha.pressao`, que já
+existiam prontos): `calc_core/sapata_isolada/visual3d_tensoes.py`
+(`SuperficieTensoes3D`, `GradeTensoes`, `grade_de_campo_momentos`,
+`grade_de_grelha`), reaproveitando a câmera/projeção/rampa de cores já
+testadas em `visual3d_momentos.py`/`projecao.py`/`pintura.py`. Convenção de
+desenho documentada no topo do módulo: como tensão no solo é reação de
+COMPRESSÃO (não tração, como o momento), a superfície cresce no sentido
+OPOSTO ao diagrama de momentos — sobe de um "piso" de referência (σ=0) até
+encostar no plano da base (σ=σ_máx), em vez de pendurar abaixo dele.
+Sensível à classificação rígida/flexível, mesmo padrão dos outros dois
+diagramas (fonte padrão grelha quando `res.rigida is False`, analítico
+quando rígida, aviso laranja quando flexível).
+
+Encaixado como sub-aba "Superfície 3D" dentro de "Reação do solo" (que virou
+um `Notebook` com "Corte 2D" + "Superfície 3D", espelhando o padrão já usado
+em "Momentos"). Como efeito colateral positivo, `PainelVisualizacao` passou
+a montar `campo_momentos()`/`campo_de_grelha()` uma única vez por
+atualização (`_campos_momento()`) e repassar para as duas abas que
+precisam, em vez de recalcular por aba.
+
+**Revisão independente da sessão principal:** suíte completa (57/57), ruff
+`--select E9` em `calc_core/sapata_isolada/`, perfil completo em
+`calc_core/geotecnico/`/`calc_core/modelos.py`/`ui/`, `mypy --strict` no
+mesmo escopo — todos limpos. Renderização real de ponta a ponta (headless,
+`PainelVisualizacao` completo, não só a classe de desenho isolada) dos dois
+cenários (rígido e flexível forçado): rígido mostrou um plano inclinado liso
+(pico 312,7 kPa, "fonte: campo analítico"), coerente com pressão linear sob
+carga excêntrica; flexível mostrou uma concentração em "domo" bem sob o
+pilar (pico 160,2 kPa, "fonte: grelha discretizada", isolinhas concêntricas)
+com o aviso laranja de sapata flexível — os dois fisicamente coerentes com
+os respectivos modelos.

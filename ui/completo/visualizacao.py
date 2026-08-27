@@ -21,6 +21,12 @@ from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 from calc_core.sapata_isolada.visual2d import MapaMomentos, PerfilCortes, ReacaoSolo
 from calc_core.sapata_isolada.visual3d import Visualizador3D
 from calc_core.sapata_isolada.visual3d_momentos import SuperficieMomentos3D
+from calc_core.sapata_isolada.visual3d_tensoes import (
+    GradeTensoes,
+    SuperficieTensoes3D,
+    grade_de_campo_momentos,
+    grade_de_grelha,
+)
 
 from . import tema
 
@@ -152,23 +158,17 @@ class AbaMomentos(ttk.Frame):
     def _mudar_direcao_3d(self, direcao: str) -> None:
         self.superficie3d.definir_direcao(direcao)
 
-    def atualizar(self, sapata: Sapata, res: ResultadoSapata, modelo: dict) -> None:
-        try:
-            campo = campo_momentos(sapata, res)
-        except Exception:   # noqa: BLE001 — mapa fica vazio, não trava a UI
-            campo = None
+    def atualizar(self, sapata: Sapata, res: ResultadoSapata, modelo: dict,
+                 campo: CampoMomentos | None,
+                 campo_grelha: CampoMomentos | None) -> None:
+        """
+        `campo`/`campo_grelha` já vêm prontos de `_campos_momento()`
+        (montada uma única vez por `PainelVisualizacao.atualizar`) — a aba
+        Reação do solo consome os mesmos dois campos para a superfície de
+        tensões, e recalcular `campo_momentos()` aqui duplicaria trabalho.
+        """
         self._campo = campo
         self._geometria = modelo
-
-        campo_grelha = None
-        if res.grelha is not None:
-            md = {ar.direcao: ar.Md for ar in res.armaduras}
-            try:
-                campo_grelha = campo_de_grelha(
-                    res.grelha, md.get("X", 0.0), md.get("Y", 0.0),
-                    "ELU governante (grelha)")
-            except Exception:   # noqa: BLE001 — cai no fallback analítico
-                campo_grelha = None
 
         # Fonte padrão: quando a sapata é FLEXÍVEL a hipótese de placa rígida
         # do campo analítico não vale — ver 22.6.3. O modo "Grelha" do 3D já
@@ -181,25 +181,65 @@ class AbaMomentos(ttk.Frame):
 
 
 class AbaReacaoSolo(ttk.Frame):
-    """Aba 'Reação do solo': modelo rígido x discretizado, por direção."""
+    """
+    Aba 'Reação do solo': sub-abas com o corte 2D (modelo rígido x
+    discretizado, por direção) e a superfície tridimensional de tensão de
+    contato — mesmo padrão de `AbaMomentos` ('Mapa 2D'/'Superfície 3D').
+    """
 
     def __init__(self, master: tk.Misc) -> None:
         super().__init__(master, style="Painel.TFrame")
-        barra = _barra_ferramentas(self)
-        ttk.Button(barra, text="Direção X",
+        sub = ttk.Notebook(self)
+        sub.pack(fill="both", expand=True)
+
+        aba2d = ttk.Frame(sub, style="Painel.TFrame")
+        aba3d = ttk.Frame(sub, style="Painel.TFrame")
+        sub.add(aba2d, text="Corte 2D")
+        sub.add(aba3d, text="Superfície 3D")
+
+        barra2d = _barra_ferramentas(aba2d)
+        ttk.Button(barra2d, text="Direção X",
                    command=lambda: self._mudar_direcao("X")).pack(side="left",
                                                                     padx=2)
-        ttk.Button(barra, text="Direção Y",
+        ttk.Button(barra2d, text="Direção Y",
                    command=lambda: self._mudar_direcao("Y")).pack(side="left",
                                                                     padx=2)
-        canvas = _canvas(self)
-        self.painel = ReacaoSolo(canvas)
+        canvas2d = _canvas(aba2d)
+        self.painel = ReacaoSolo(canvas2d)
+
+        barra3d = _barra_ferramentas(aba3d)
+        ttk.Button(barra3d, text="Analítico",
+                   command=lambda: self.superficie3d.definir_fonte(
+                       "analitico")).pack(side="left", padx=2)
+        ttk.Button(barra3d, text="Grelha",
+                   command=lambda: self.superficie3d.definir_fonte(
+                       "grelha")).pack(side="left", padx=2)
+        ttk.Separator(barra3d, orient="vertical").pack(side="left", fill="y",
+                                                          padx=6)
+        for rotulo, nome in (("ISO", "iso"), ("Frente", "frente"),
+                             ("Lado", "lado"), ("Topo", "topo")):
+            ttk.Button(barra3d, text=rotulo,
+                       command=lambda n=nome: self.superficie3d.vista(n)).pack(
+                side="left", padx=2)
+        canvas3d = _canvas(aba3d)
+        self.superficie3d = SuperficieTensoes3D(canvas3d)
 
     def _mudar_direcao(self, direcao: str) -> None:
         self.painel.definir_direcao(direcao)
 
-    def atualizar(self, res: ResultadoSapata, modelo: dict) -> None:
+    def atualizar(self, res: ResultadoSapata, modelo: dict,
+                 campo: CampoMomentos | None) -> None:
         self.painel.definir(res.reacoes, res.classificacao, modelo)
+
+        grade_analitica: GradeTensoes | None = None
+        if campo is not None:
+            grade_analitica = grade_de_campo_momentos(campo)
+        grade_grelha: GradeTensoes | None = None
+        if res.grelha is not None:
+            grade_grelha = grade_de_grelha(res.grelha, res.grelha.ap,
+                                           res.grelha.bp)
+        self.superficie3d.definir(grade_analitica, grade_grelha, modelo,
+                                  res.rigida)
 
 
 class AbaPerfilGeologico(ttk.Frame):
@@ -247,6 +287,34 @@ class PainelVisualizacao(ttk.Notebook):
 
     def atualizar(self, sapata: Sapata, res: ResultadoSapata, modelo: dict) -> None:
         self.aba_3d.atualizar(modelo)
-        self.aba_momentos.atualizar(sapata, res, modelo)
-        self.aba_reacao.atualizar(res, modelo)
+        campo, campo_grelha = _campos_momento(sapata, res)
+        self.aba_momentos.atualizar(sapata, res, modelo, campo, campo_grelha)
+        self.aba_reacao.atualizar(res, modelo, campo)
         self.aba_perfil.atualizar(modelo)
+
+
+def _campos_momento(sapata: Sapata, res: ResultadoSapata
+                    ) -> tuple[CampoMomentos | None, CampoMomentos | None]:
+    """
+    Monta os dois campos de momento (analítico e grelha) uma única vez por
+    atualização. `AbaMomentos` os consome diretamente; `AbaReacaoSolo` deriva
+    a grade de tensões dos mesmos campos (`campo.sigma`/`res.grelha.pressao`,
+    via `grade_de_campo_momentos`/`grade_de_grelha`) — assim `campo_momentos()`
+    não é recalculado por aba.
+    """
+    try:
+        campo = campo_momentos(sapata, res)
+    except Exception:   # noqa: BLE001 — abas ficam vazias, não trava a UI
+        campo = None
+
+    campo_grelha = None
+    if res.grelha is not None:
+        md = {ar.direcao: ar.Md for ar in res.armaduras}
+        try:
+            campo_grelha = campo_de_grelha(
+                res.grelha, md.get("X", 0.0), md.get("Y", 0.0),
+                "ELU governante (grelha)")
+        except Exception:   # noqa: BLE001 — cai no fallback analítico
+            campo_grelha = None
+
+    return campo, campo_grelha
