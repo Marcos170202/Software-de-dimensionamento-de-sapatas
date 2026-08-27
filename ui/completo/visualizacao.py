@@ -171,7 +171,7 @@ class AbaMomentos(ttk.Frame):
         self._geometria = modelo
 
         # Fonte padrão: quando a sapata é FLEXÍVEL a hipótese de placa rígida
-        # do campo analítico não vale — ver 22.6.3. O modo "Grelha" do 3D já
+        # do campo analítico não vale — ver 22.6.1/22.6.2.3. O modo "Grelha" do 3D já
         # é o padrão da aba e já usa o campo real; aqui é o Mapa 2D e o modo
         # "Superfície" do 3D que precisam saber a classificação.
         if campo is not None:

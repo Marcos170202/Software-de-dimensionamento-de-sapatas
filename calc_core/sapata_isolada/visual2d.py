@@ -63,7 +63,7 @@ class MapaMomentos:
         rígido) e o real da grelha discretizada sobre apoios elásticos —
         mesma convenção de `SuperficieMomentos3D.definir`.
 
-        `rigida` é a classificação da sapata (NBR 6118, 22.6.1/22.6.3): se
+        `rigida` é a classificação da sapata (NBR 6118, 22.6.1/22.6.2.3): se
         `False` (sapata flexível), a hipótese de placa rígida do campo
         analítico não vale, e a fonte padrão passa a ser a grelha. Se `True`
         ou desconhecida, mantém o analítico como padrão.
@@ -284,7 +284,7 @@ class MapaMomentos:
                        DESTAQUE, ("Consolas", 8), "w")
             y += 16
         if self.rigida is False:
-            pool.texto(20, y, "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo "
+            pool.texto(20, y, "Sapata FLEXÍVEL (NBR 6118, 22.6.1/22.6.2.3) — o campo "
                               "analítico assume placa rígida; use a Grelha para "
                               "o comportamento real.", DESTAQUE,
                        ("Consolas", 8), "w")
@@ -685,7 +685,7 @@ class ReacaoSolo:
                    ("Segoe UI Semibold", 11), "w")
         if c:
             regime = ("RÍGIDA pela NBR 6118, 22.6.1"
-                      if c.rigida_nbr else "FLEXÍVEL — verificar punção (22.6.3)")
+                      if c.rigida_nbr else "FLEXÍVEL — verificar punção (22.6.2.3-b)")
             pool.texto(20, 42, f"{regime}  ·  h necessário para rigidez "
                                f"{c.h_necessario:.2f} m", TINTA_FRACA,
                        ("Consolas", 8), "w")

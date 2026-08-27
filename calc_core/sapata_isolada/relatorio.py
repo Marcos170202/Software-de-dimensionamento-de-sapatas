@@ -73,7 +73,7 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
         L.append(f"  Critério NBR 6118, 22.6.1 ... h = {res.h:.2f} m contra "
                  f"{c.h_necessario:.2f} m para rigidez")
         L.append(f"  Comportamento normativo ..... "
-                 f"{'RÍGIDA (22.6.2)' if c.rigida_nbr else 'FLEXÍVEL (22.6.3)'}")
+                 f"{'RÍGIDA (22.6.2.2)' if c.rigida_nbr else 'FLEXÍVEL (22.6.2.3)'}")
         L.append(f"  Parâmetro de Hetényi ........ lambda*L = "
                  f"{max(c.lambda_L_x, c.lambda_L_y):.2f}  ->  {c.classe_hetenyi}")
         L.append(f"  Rigidez relativa (Meyerhof) . K_r = {c.rigidez_relativa:.2f}")
@@ -81,7 +81,7 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
         if c.rigida_nbr:
             L.append("  Ruptura por compressão diagonal; punção em C' é informativa.")
         else:
-            L.append("  Verificação de punção obrigatória (NBR 6118, 22.6.3).")
+            L.append("  Verificação de punção obrigatória (NBR 6118, 22.6.2.3-b).")
         if res.grelha:
             g = res.grelha
             L.append(f"\n  Grelha discretizada — {g.n_gl} graus de liberdade, "
@@ -154,7 +154,7 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
 
     # ----------------------------------------------------------------- armaduras
     if res.bielas:
-        L.append(_sec("5.1. MODELO DE BIELAS E TIRANTES (NBR 6118, 22.6.4.1)"))
+        L.append(_sec("5.1. MODELO DE BIELAS E TIRANTES (NBR 6118, 22.6.3)"))
         for bl in res.bielas.values():
             L.append(f"  Direção {bl.direcao}:")
             L.append(f"    Resultante da reação no lado  {bl.R:.1f} kN, "

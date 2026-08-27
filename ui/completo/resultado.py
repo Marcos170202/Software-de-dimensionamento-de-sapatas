@@ -23,7 +23,7 @@ ITEM_ESTABILIDADE = "NBR 6122:2019 §6.2.1.2 — deslizamento e tombamento"
 ITEM_PUNCAO = ("NBR 6118:2023 §19.5.3.1 (C) · §19.5.3.2 (C') · "
                "§19.4.1 (cisalhamento como laje)")
 ITEM_ARMADURAS = ("NBR 6118:2023 §17.2.2 (flexão) · §19.3.3.2 (A_s,mín) · "
-                   "§9.4.2.4 (ancoragem) · §22.6.4.1 (bielas, sapata rígida)")
+                   "§9.4.2.4 (ancoragem) · §22.6.3 (bielas, sapata rígida)")
 ITEM_RECALQUES = "NBR 6122:2019 §6.2/§7 — deslocamentos e sua verificação"
 
 

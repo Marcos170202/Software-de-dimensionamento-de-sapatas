@@ -3,11 +3,13 @@ bielas.py
 ---------
 Dimensionamento de sapata RÍGIDA por bielas e tirantes.
 
-A NBR 6118:2023, item 22.6.4.1, admite os dois caminhos para a armadura de
-sapata rígida — teoria de flexão ou modelo de bielas e tirantes. Para peça
-rígida o segundo representa melhor o que acontece: a carga do pilar desce por
-bielas comprimidas inclinadas até a reação do solo, e o tirante na base é a
-armadura. Não há a distribuição de deformações que a teoria de flexão pressupõe.
+A NBR 6118:2023, item 22.6.3 (Modelo de cálculo), admite os dois caminhos para
+a armadura de sapata rígida — modelos de flexão "quando for o caso" e, no seu
+último parágrafo, "permitindo-se a adoção de um modelo de bielas e tirantes
+para a determinação das armaduras". Para peça rígida o segundo representa
+melhor o que acontece: a carga do pilar desce por bielas comprimidas
+inclinadas até a reação do solo, e o tirante na base é a armadura. Não há a
+distribuição de deformações que a teoria de flexão pressupõe.
 
 Modelo (Blévot, generalizado para carga excêntrica)
 --------------------------------------------------

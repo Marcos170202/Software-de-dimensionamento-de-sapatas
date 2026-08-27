@@ -69,7 +69,7 @@ class SuperficieMomentos3D:
         grelha discretizada (usado pelo modo "Grelha" sempre que disponível —
         `res.grelha` não é `None` — e também pelo modo "Superfície" quando a
         sapata é FLEXÍVEL, pois aí a hipótese de placa rígida do campo
-        analítico não vale — NBR 6118, 22.6.1/22.6.3).
+        analítico não vale — NBR 6118, 22.6.1/22.6.2.3).
 
         `rigida` é `res.rigida`: `False` troca a fonte padrão do modo
         "Superfície" para a grelha; `True` ou desconhecida mantém o
@@ -316,7 +316,7 @@ class SuperficieMomentos3D:
         pool.texto(20, 74, "escala vertical e de cores comuns às duas direções",
                    TINTA_FRACA, ("Consolas", 8), "w")
         if self.rigida is False:
-            pool.texto(20, 90, "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo "
+            pool.texto(20, 90, "Sapata FLEXÍVEL (NBR 6118, 22.6.1/22.6.2.3) — o campo "
                                "analítico assume placa rígida; use a Grelha "
                                "para o comportamento real.", DESTAQUE,
                        ("Consolas", 8), "w")
@@ -458,7 +458,7 @@ class SuperficieMomentos3D:
                             f"  ·  fonte: {fonte}", TINTA_FRACA, ("Consolas", 8), 'w')
         pool.texto(20, 58, f"combinação: {c.combinacao}", TINTA_FRACA, ("Consolas", 8), 'w')
         if self.rigida is False:
-            pool.texto(20, 74, "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo "
+            pool.texto(20, 74, "Sapata FLEXÍVEL (NBR 6118, 22.6.1/22.6.2.3) — o campo "
                                "analítico assume placa rígida; use a Grelha "
                                "para o comportamento real.", DESTAQUE,
                        ("Consolas", 8), 'w')

@@ -296,13 +296,15 @@ def resolver_grelha(N: float, Mx: float, My: float, a: float, b: float,
 
     def momento_face(direcao: str) -> float:
         """
-        Momento na seção de referência (face do pilar, NBR 6118, 22.6.4.1),
-        por EQUILÍBRIO do trecho em balanço.
+        Momento na seção de referência (face do pilar — prática de engenharia
+        consagrada, não item normativo específico), por EQUILÍBRIO do trecho
+        em balanço.
 
         Ler o momento nodal perto do pilar não serve: ali o campo tem a
         singularidade da carga concentrada e o valor não converge com o
         refinamento. Integrar a pressão além da face é estável — a pressão
-        converge — e reproduz a definição normativa da seção de referência.
+        converge — e reproduz a mesma seção de referência adotada no campo
+        analítico (`momentos.momento_unitario`), para que os dois não divirjam.
         """
         melhor = 0.0
         if direcao == "X":

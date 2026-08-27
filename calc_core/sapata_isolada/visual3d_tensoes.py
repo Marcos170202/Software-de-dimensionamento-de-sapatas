@@ -11,7 +11,7 @@ momentos:
   - o modelo RÍGIDO (plano de tensões linear), de `CampoMomentos.sigma`;
   - o modelo discretizado da GRELHA sobre apoios elásticos (Winkler), de
     `ResultadoGrelha.pressao` — a pressão real quando a hipótese de placa
-    rígida não vale (sapata FLEXÍVEL, NBR 6118:2023, 22.6.3).
+    rígida não vale (sapata FLEXÍVEL, NBR 6118:2023, 22.6.1/22.6.2.3).
 `grade_de_campo_momentos`/`grade_de_grelha` adaptam esses dois objetos para
 `GradeTensoes`, a grade genérica (x, y, valores) que este módulo desenha —
 nenhuma conta nova é feita aqui, só leitura dos campos já calculados.
@@ -147,7 +147,7 @@ class SuperficieTensoes3D:
 
         `rigida` é `res.rigida`: `False` (sapata FLEXÍVEL) troca a fonte
         padrão para a grelha — a hipótese de placa rígida do plano de
-        tensões não vale nesse caso (NBR 6118:2023, 22.6.1/22.6.3); `True`
+        tensões não vale nesse caso (NBR 6118:2023, 22.6.1/22.6.2.3); `True`
         ou desconhecida mantém o analítico.
         """
         self.campo_analitico = campo_analitico
@@ -380,7 +380,7 @@ class SuperficieTensoes3D:
         pool.texto(20, 58, f"combinação: {c.combinacao}", TINTA_FRACA,
                   ("Consolas", 8), 'w')
         if self.rigida is False:
-            pool.texto(20, 74, "Sapata FLEXÍVEL (NBR 6118, 22.6.3) — o campo "
+            pool.texto(20, 74, "Sapata FLEXÍVEL (NBR 6118, 22.6.1/22.6.2.3) — o campo "
                                "analítico assume placa rígida; use a Grelha "
                                "para o comportamento real.", DESTAQUE,
                        ("Consolas", 8), 'w')

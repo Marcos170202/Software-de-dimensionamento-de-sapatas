@@ -15,12 +15,13 @@ momento da pressão do solo que atua entre a borda mais próxima e o ponto:
 
 Como σ varia linearmente em planta (flexão oblíqua composta), a integral tem
 forma fechada. A expressão acima só vale FORA da projeção do pilar; sob a
-projeção, o balanço deixa de existir (a seção de referência é a própria face —
-NBR 6118:2023, 22.6.4.1) e o campo é obtido por interpolação linear entre os
-valores das duas faces opostas. Ver a discussão em `momento_1d`: a norma não
-define momento sob a seção de referência, e a interpolação é uma escolha de
-desenho do campo de visualização, contínua e limitada pelos valores de face —
-o campo não sugere armadura crescente sob o pilar.
+projeção, o balanço deixa de existir (a seção de referência é a própria face do
+pilar — prática de engenharia consagrada, não item normativo específico) e o
+campo é obtido por interpolação linear entre os valores das duas faces opostas.
+Ver a discussão em `momento_1d`: a norma não define momento sob a seção de
+referência, e a interpolação é uma escolha de desenho do campo de visualização,
+contínua e limitada pelos valores de face — o campo não sugere armadura
+crescente sob o pilar.
 
 Unidades: momentos em kN·m/m, tensões em kPa, comprimentos em m.
 """
@@ -50,7 +51,12 @@ def momento_unitario(N: float, Mx: float, My: float, a: float, b: float,
                      ap: float, bp: float, direcao: str) -> float:
     """
     Momento fletor por unidade de largura [kN·m/m] na face do pilar, na faixa
-    de borda mais solicitada — seção de referência da NBR 6118, item 22.6.4.1.
+    de borda mais solicitada.
+
+    Tomar a face do pilar como seção de referência é prática de engenharia
+    consagrada, não item normativo específico: a NBR 6118:2023, 22.6, não
+    prescreve a posição dessa seção (22.6.3 exige apenas que o modelo de flexão
+    contemple 22.6.2). Decisão de engenharia, portanto, sem [rule: ] de norma.
 
     A pressão varia linearmente ao longo do eixo do balanço, com a coordenada
     transversal fixada na borda mais comprimida. Interpolar usando o vértice
@@ -168,8 +174,9 @@ def campo_momentos(sapata, res, nx: int = 61, ny: int = 61) -> CampoMomentos:
         Grade uniforme com os dois nós mais próximos das faces do pilar
         deslocados para cima delas.
 
-        A face é a seção de referência (NBR 6118:2023, 22.6.4.1) e é onde o
-        campo tem seu máximo: se nenhum nó cai exatamente ali, o pico lido do
+        A face é a seção de referência adotada (prática de engenharia
+        consagrada, não item normativo específico) e é onde o campo tem seu
+        máximo: se nenhum nó cai exatamente ali, o pico lido do
         campo fica abaixo do momento de dimensionamento só por erro de
         amostragem (~1,5 % numa grade 61x61), e o cabeçalho dos desenhos passa
         a mostrar um "máx" incompatível com o M_d adotado. O deslocamento é de
@@ -198,12 +205,13 @@ def campo_momentos(sapata, res, nx: int = 61, ny: int = 61) -> CampoMomentos:
 
         Fora da projeção (|pos| >= dim_p/2) o valor é o momento da pressão do
         solo entre a borda mais próxima e `pos` — o balanço engastado na face,
-        que é a seção de referência da NBR 6118:2023, 22.6.4.1 (p. 192, lida
-        por imagem da página).
+        seção de referência adotada por prática de engenharia consagrada (a
+        NBR 6118:2023, 22.6, p. 191-193, lida por imagem da página, não define
+        a posição dessa seção).
 
-        Sob a projeção do pilar não há balanço: a norma define a seção de
-        referência na face e manda (22.6.4.1.1, p. 192) distribuir a armadura
-        de flexão uniformemente ao longo da largura, de face a face da sapata;
+        Sob a projeção do pilar não há balanço, e a norma nada diz sobre o
+        momento ali: 22.6.4.1.1 (p. 192) manda distribuir a armadura de flexão
+        uniformemente ao longo da largura, de face a face da sapata, e
         22.6.2.2 a) admite a tração na flexão uniformemente distribuída na
         largura correspondente. Ou seja, a norma NÃO define um valor de momento
         sob a própria seção de referência, e nenhum valor adotado aqui altera a
@@ -356,8 +364,9 @@ def campo_de_grelha(g, md_x: float, md_y: float,
     nós que ladeiam a projeção, um de cada lado — o mesmo tratamento dado ao
     campo analítico em `campo_momentos.momento_1d`: ali a grelha tem a
     singularidade da carga concentrada e o pico não converge com o refinamento,
-    e a norma (NBR 6118:2023, 22.6.4.1, p. 192) não define momento sob a própria
-    seção de referência. A interpolação é contínua nos dois nós de apoio e fica
+    e a norma (NBR 6118:2023, 22.6, p. 191-193) não define momento sob a própria
+    seção de referência — que é, ela mesma, prática de engenharia consagrada e
+    não item normativo. A interpolação é contínua nos dois nós de apoio e fica
     contida entre eles, logo não sugere armadura crescente sob o pilar.
 
     A versão anterior copiava o valor do nó "mais próximo da face" escolhido por

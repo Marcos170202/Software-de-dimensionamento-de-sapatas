@@ -16,8 +16,9 @@ A NBR 6118:2023 separa os dois comportamentos:
     item 22.6.1  classificação: rígida quando h >= (a - a_p)/3
     item 22.6.2  rígida  — flexão nas duas direções, tração distribuída na
                  largura, ruptura por compressão diagonal (sem cone de punção)
-    item 22.6.3  flexível — comporta-se como laje: punção deve ser verificada
-                 nas superfícies críticas do item 19.5
+    item 22.6.2.3-b)  flexível — cisalhamento descrito pelo fenômeno da punção,
+                 verificada nas superfícies críticas do item 19.5 (o
+                 detalhamento remete às lajes e à punção: item 22.6.4.1.3)
 
 Modelo numérico
 ---------------
@@ -53,7 +54,7 @@ def kv_por_tensao_admissivel(sigma_adm: float, recalque_referencia: float = 0.01
         k_v = sigma_adm / recalque_referencia
 
     Valor indicativo para pré-dimensionamento; prova de carga ou ensaio de
-    placa é o que a NBR 6122:2019 espera para uso em projeto.
+    placa é o que a NBR 6122:2022 espera para uso em projeto.
     """
     return sigma_adm / max(recalque_referencia, 1e-4)
 
@@ -139,7 +140,7 @@ def classificar(a: float, b: float, h: float, h0: float, ap: float, bp: float,
     if not rigida_nbr:
         obs.append(
             f"Sapata flexível: h = {h:.2f} m contra {h_nec:.2f} m que a tornaria "
-            "rígida. A NBR 6118, 22.6.3, exige verificação de punção.")
+            "rígida. A NBR 6118, 22.6.2.3-b), exige verificação de punção.")
     return Classificacao(rigida_nbr, h_nec, lLx, lLy, Kr, classe, modelo, obs)
 
 

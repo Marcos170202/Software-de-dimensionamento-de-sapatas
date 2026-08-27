@@ -516,7 +516,7 @@ class Sapata:
                     "compressão diagonal (NBR 6118, 22.6.2). Verificado o "
                     "cisalhamento como laje.")
             if flexivel:
-                nota = ("Sapata flexível (22.6.3) exigiria punção em C', mas o "
+                nota = ("Sapata flexível (22.6.2.3-b) exigiria punção em C', mas o "
                         "contorno cai fora da base — governa o cisalhamento.")
             verificacoes.append(VerificacaoPuncao(
                 "-", "C' (2d)", 0.0, tau_rd1, 0.0, True, nota))
@@ -538,7 +538,7 @@ class Sapata:
             sigma_d = Fsd / (a * b)
             Fsd_ef = max(0.0, Fsd - sigma_d * area_int)
             tau_sd = Fsd_ef / (u1 * d)
-            obs = ("obrigatória para sapata flexível (22.6.3)" if flexivel
+            obs = ("obrigatória para sapata flexível (22.6.2.3-b)" if flexivel
                    else "informativa: em sapata rígida governa a compressão "
                         "diagonal (22.6.2)")
             obs += " ; reação do solo interna a C' descontada"
@@ -592,7 +592,9 @@ class Sapata:
         """
         Momento fletor de cálculo na seção de referência (face do pilar),
         integrando o diagrama real de pressões do solo na faixa de borda mais
-        solicitada — NBR 6118, item 22.6.4.1.
+        solicitada. A seção de referência na face do pilar é prática de
+        engenharia consagrada, não item normativo específico: a NBR 6118:2023,
+        22.6, não define a posição dessa seção. Decisão de engenharia.
 
         O cálculo por unidade de largura fica em `momentos.momento_unitario`,
         compartilhado com o mapa de isovalores para que os dois não divirjam.
@@ -842,7 +844,8 @@ class Sapata:
         Uma passada de flexão + punção para a geometria dada.
 
         A classificação é refeita aqui porque muda com a altura, e é ela que
-        decide se a punção em C' é obrigatória (22.6.3) ou informativa (22.6.2).
+        decide se a punção em C' é obrigatória (22.6.2.3-b) ou informativa
+        (22.6.2.2-b).
         """
         self.classificacao = classificar(a, b, h, h0, self.pilar.ap,
                                          self.pilar.bp, self.concreto.Ecs,
@@ -975,7 +978,7 @@ class Sapata:
                     f"{p.contorno}: solicitante {p.tau_sd:.1f} contra resistente "
                     f"{p.tau_rd:.1f} (aproveitamento {p.aproveitamento:.2f}).")
         # sapata flexível não é reprovação: é outro caminho de verificação
-        # (NBR 6118, 22.6.3), que exige punção — já coberta acima.
+        # (NBR 6118, 22.6.2.3-b), que exige punção — já coberta acima.
         for ar in res.armaduras:
             if not ar.as_suficiente:
                 falhas.append(
@@ -1020,7 +1023,7 @@ class Sapata:
             As, xd, dominio_ok = self._armadura_flexao_simples(Md, largura, d_ef)
             As_flexao = As if math.isfinite(As) else 0.0
 
-            # sapata rígida: a NBR 6118, 22.6.4.1, admite bielas e tirantes,
+            # sapata rígida: a NBR 6118, 22.6.3, admite bielas e tirantes,
             # que representa melhor o funcionamento da peça rígida
             biela = self.bielas.get(direcao)
             As_bielas = biela.As if biela else 0.0

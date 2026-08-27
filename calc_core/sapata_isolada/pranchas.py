@@ -412,10 +412,10 @@ def prancha_momentos(pdf: PDF, res, campo: CampoMomentos, obra: str,
     for i, linha in enumerate([
             "Momento por unidade de largura do balanço, com a pressão do solo",
             "da combinação última governante. A seção de referência é a face do",
-            "pilar (NBR 6118, 22.6.4.1): sob o pilar o valor é mantido no patamar",
-            "da face, e não cresce. A armadura é dimensionada pela faixa de borda",
-            "mais solicitada, por isso o M_d adotado corresponde ao pico do mapa",
-            "integrado na largura da sapata."]):
+            "pilar (prática de engenharia, não item normativo): sob o pilar o",
+            "valor é mantido no patamar da face, e não cresce. A armadura é",
+            "dimensionada pela faixa de borda mais solicitada, por isso o M_d",
+            "adotado corresponde ao pico do mapa integrado na largura da sapata."]):
         pdf.texto(218, 80 - i * 4.4, linha, 6.2, CINZA)
 
     if campo.alertas:
