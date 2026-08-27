@@ -50,3 +50,163 @@ formulas:
       divergencia: false
     status: OK
     alterada_por_emenda1: false   # ver clausula NBR6118-Em1-secao22-nada
+
+  # ---------------------------------------------------------------------------
+  # RODADA 2026-08-27 (b) — FONTE SECUNDÁRIA, NÃO NORMATIVA
+  #
+  # As fórmulas abaixo NÃO vêm de norma ABNT. Vêm da apostila
+  #   BASTOS, P.S. "Sapatas de Fundação". UNESP Bauru/SP, Estruturas de
+  #   Concreto III, Out/2023, 119 p.  (arquivo Sapatas.pdf na raiz do repo)
+  # que é material didático / registro de prática de engenharia.
+  #
+  # Nenhuma delas pode virar regra APROVADA no ruleset com base apenas nesta
+  # fonte, e nenhuma pode ser citada em memorial como requisito normativo.
+  # Estão aqui para o a2-verificador avaliar, com o rótulo bem visível.
+  #
+  # A camada de texto do PDF PERDE as letras gregas dentro dos campos de
+  # equação (a eq. 1.72 sai como "5,1 M M tomb estab tomb"). Todas foram lidas
+  # VISUALMENTE, em duas passadas independentes.
+  # ---------------------------------------------------------------------------
+
+  - id: BASTOS-1.72-tombamento
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.8 a) — equações 1.70, 1.71 e 1.72"
+    pagina: "PDF 78 (impressa 74)"
+    clausula_ref: BASTOS-1.8a-tombamento-eq170-172   # kb/clausulas.jsonl
+    titulo: "Coeficiente de segurança ao tombamento"
+    latex: 'M_{tomb} = M + F_H \cdot h \;;\quad M_{estab} = (N + P)\,\frac{A}{2} \;;\quad \gamma_{tomb} = \frac{M_{estab}}{M_{tomb}} \ge 1{,}5'
+    sympy: "Ge(((N + P)*A/2) / (M + F_H*h), Rational(3,2))"
+    variaveis:
+      M_tomb: {descricao: "momento de tombamento em torno do ponto 1 (aresta da base)", unidade: "kN·m", valor: null}
+      M_estab: {descricao: "momento estabilizador em torno do ponto 1", unidade: "kN·m", valor: null}
+      M: {descricao: "momento fletor aplicado na sapata", unidade: "kN·m", valor: null}
+      F_H: {descricao: "força horizontal aplicada", unidade: "kN", valor: null}
+      h: {descricao: "altura do ponto de aplicação de F_H acima da base da sapata (Figura 1.116)", unidade: "m", valor: null}
+      N: {descricao: "força normal do pilar", unidade: "kN", valor: null}
+      P: {descricao: "peso próprio da sapata (Figura 1.116). O peso do solo sobre a sapata PODE também ser considerado — a fonte deixa facultativo", unidade: "kN", valor: null}
+      A: {descricao: "dimensão da base da sapata na direção do tombamento", unidade: "m", valor: null}
+      gamma_tomb: {descricao: "coeficiente de segurança ao tombamento", unidade: "adimensional", valor: 1.5}
+    dominio_validade: >-
+      Sapata submetida a força horizontal e/ou momento fletor — a fonte NÃO
+      manda aplicar esta verificação a sapata sob carga estritamente centrada e
+      vertical. Rotação em torno do ponto 1, aresta da base. NÃO DECLARADO NA
+      FONTE: se N, M e F_H são valores característicos ou de cálculo; qual
+      combinação de ações; tipo de solo; condição drenada/não drenada; se o
+      coeficiente muda quando o vento é a ação variável principal. A inclusão do
+      peso do solo sobre a sapata em M_estab é facultativa ("pode também ser
+      considerado").
+    citacao_normativa_no_trecho: >-
+      NENHUMA. O trecho das eqs. 1.70 a 1.72 não remete a nenhum item da NBR
+      6122, da NBR 6118, da NBR 8681 nem de qualquer outra norma, e não traz
+      nota de rodapé nem colchete de referência bibliográfica. O valor 1,5 é
+      apresentado como valor de projeto direto.
+    hipoteses_do_autor: >-
+      INTERPRETAÇÃO deste extrator, não está escrita na fonte: o braço A/2 em
+      M_estab pressupõe resultante de (N + P) aplicada no centro de gravidade da
+      base; a excentricidade da carga entra pelo termo M do numerador de M_tomb,
+      não pelo braço de M_estab.
+    leitura_visual:
+      passada_1: "γ_tomb = M_estab / M_tomb ≥ 1,5   [página PDF 78 inteira a 150 dpi]"
+      passada_2: "γ_tomb = M_estab / M_tomb ≥ 1,5   [recorte da região da equação a 400 dpi]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: BASTOS-1.75-escorregamento
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.8 b) — equações 1.73, 1.74 e 1.75"
+    pagina: "PDF 78-79 (impressas 74-75)"
+    clausula_ref: BASTOS-1.8b-escorregamento-eq173-175   # kb/clausulas.jsonl
+    titulo: "Coeficiente de segurança ao escorregamento (deslizamento), com dois modelos de F_estab"
+    latex: '\gamma_{esc} = \frac{F_{estab}}{F_H} \ge 1{,}5 \;;\quad \text{modelo 1: } (N+P)\,\tan\varphi = F_H \cdot \gamma_{esc} \;;\quad \text{modelo 2: } F_{estab} = (N+P)\,\tan\!\left(\tfrac{2}{3}\phi\right) + A\left(\tfrac{2}{3}c\right)'
+    sympy_modelo_1_atrito_puro: "Ge(((N + P)*tan(varphi)) / F_H, Rational(3,2))"
+    sympy_modelo_2_atrito_coesao: "Ge(((N + P)*tan(Rational(2,3)*phi) + A*(Rational(2,3)*c)) / F_H, Rational(3,2))"
+    variaveis:
+      gamma_esc: {descricao: "coeficiente de segurança ao escorregamento", unidade: "adimensional", valor: 1.5}
+      F_estab: {descricao: "força estabilizadora (atrito, ou atrito + coesão)", unidade: "kN", valor: null}
+      F_H: {descricao: "força horizontal aplicada", unidade: "kN", valor: null}
+      N: {descricao: "força normal do pilar", unidade: "kN", valor: null}
+      P: {descricao: "peso próprio da sapata", unidade: "kN", valor: null}
+      varphi: {descricao: "MODELO 1 (eq. 1.73): ângulo de atrito entre os DOIS MATERIAIS EM CONTATO (concreto x solo). tg varphi = mu = coeficiente de atrito. Restrição EXPLÍCITA da fonte: não maior que o ângulo de atrito interno do solo", unidade: "grau", valor: null}
+      mu: {descricao: "coeficiente de atrito, igual a tg varphi", unidade: "adimensional", valor: null}
+      phi: {descricao: "MODELO 2 (eq. 1.74): ângulo de atrito INTERNO DO SOLO — grandeza DIFERENTE de varphi acima", unidade: "grau", valor: null}
+      c: {descricao: "coesão do solo", unidade: "kPa", valor: null}
+      A: {descricao: "dimensão da base em contato com o solo (assim definido literalmente na fonte)", unidade: "m", valor: null}
+    dominio_validade: >-
+      Sapata sob força horizontal F_H. Modelo 1: atrito puro no contato
+      concreto-solo, com a única restrição de domínio declarada em toda a seção
+      1.8 — varphi (interface concreto x solo) não maior que o ângulo de atrito
+      interno do solo. Modelo 2: atrito + coesão, com redução a 2/3 tanto do
+      ângulo de atrito interno quanto da coesão; a fonte NÃO declara em que solo
+      cada modelo se aplica, nem condição drenada/não drenada, nem se são
+      valores característicos ou de cálculo. Empuxo passivo EXPLICITAMENTE
+      desprezado pela fonte ("por não se ter garantia de sua atuação
+      permanente") — mais conservador que a NBR 6122 7.6.3, que o admite
+      reduzido por coeficiente de no mínimo 2,0.
+    alerta_de_unidades: >-
+      ATENÇÃO NA IMPLEMENTAÇÃO: na eq. 1.74 a parcela de coesão é escrita
+      A·(2/3·c), com A definido pela própria fonte como "dimensão da base em
+      contato com o solo" — uma DIMENSÃO (comprimento), não uma ÁREA. Como c é
+      uma tensão, o produto A·c só é homogêneo com força se A for área, ou se a
+      expressão estiver por unidade de largura. A fonte não esclarece. NÃO
+      CORRIGIR POR CONTA PRÓPRIA: sinalizado ao a2 para decisão, com o texto
+      transcrito exatamente como está na página.
+    alerta_de_notacao: >-
+      A fonte usa dois glifos phi distintos para duas grandezas distintas
+      (interface concreto-solo na eq. 1.73; atrito interno do solo na eq. 1.74).
+      Unificá-los no código produz erro.
+    citacao_normativa_no_trecho: >-
+      NENHUMA para as eqs. 1.73, 1.74 e 1.75 e para o valor 1,5. A única citação
+      normativa de toda a seção 1.8 é a nota de rodapé 41 (NBR 6122 item 7.6.3),
+      que trata de empuxo passivo — e o empuxo passivo é justamente o termo que
+      este modelo despreza.
+    leitura_visual:
+      passada_1: "(N+P) tg φ = F_H · γ_esc (1.73); F_estab = (N+P) tg(2/3 ϕ) + A(2/3 c) (1.74); γ_esc = F_estab/F_H ≥ 1,5 (1.75)   [páginas PDF 78 e 79 a 150 dpi]"
+      passada_2: "(N+P) tg φ = F_H · γ_esc (1.73); F_estab = (N+P) tg(2/3 ϕ) + A(2/3 c) (1.74); γ_esc = F_estab/F_H ≥ 1,5 (1.75)   [recortes das regiões das equações a 400 dpi]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: BASTOS-1.48-1.49-tombamento-area-comprimida
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Notas a) e b) após a eq. 1.47 — equações 1.48 e 1.49"
+    pagina: "PDF 50 (impressa 46)"
+    clausula_ref: BASTOS-1.6.4-notas-a-b-eq148-149-tombamento-area-comprimida
+    titulo: "SEGUNDO critério de tombamento da mesma apostila — por área comprimida, sem coeficiente 1,5"
+    latex: '\frac{e_{A,g}}{A} + \frac{e_{B,g}}{B} \le \frac{1}{6} \;;\quad \left(\frac{e_A}{A}\right)^2 + \left(\frac{e_B}{B}\right)^2 \le \frac{1}{9}'
+    sympy_1_48: "Le(e_Ag/A + e_Bg/B, Rational(1,6))"
+    sympy_1_49: "Le((e_A/A)**2 + (e_B/B)**2, Rational(1,9))"
+    variaveis:
+      e_Ag: {descricao: "excentricidade na direção A devida SOMENTE às cargas permanentes (G = peso próprio + solo sobre a sapata)", unidade: "m", valor: null}
+      e_Bg: {descricao: "excentricidade na direção B devida SOMENTE às cargas permanentes", unidade: "m", valor: null}
+      e_A: {descricao: "excentricidade na direção A na condição mais desfavorável", unidade: "m", valor: null}
+      e_B: {descricao: "excentricidade na direção B na condição mais desfavorável", unidade: "m", valor: null}
+      A: {descricao: "dimensão da base na direção A", unidade: "m", valor: null}
+      B: {descricao: "dimensão da base na direção B", unidade: "m", valor: null}
+    significado:
+      eq_1_48: "base INTEIRAMENTE comprimida sob cargas permanentes (núcleo central de inércia)"
+      eq_1_49: "pelo menos METADE da área da base comprimida na condição mais desfavorável — é este o critério que a fonte chama de 'segurança contra o tombamento' aqui"
+    dominio_validade: >-
+      Sapata retangular A x B com momentos fletores nas DUAS direções,
+      excentricidades e_A e e_B, solo não resistente à tração. Eq. 1.48 aplicada
+      às CARGAS PERMANENTES. Eq. 1.49 aplicada à "condição mais desfavorável",
+      que a fonte NÃO define (não diz se característica ou de cálculo). Tipo de
+      solo NÃO_DECLARADO_NA_FONTE.
+    achado_para_o_a2: >-
+      A MESMA apostila oferece DOIS critérios não equivalentes contra
+      tombamento: este (área comprimida, eq. 1.48/1.49) e o da eq. 1.72
+      (γ_tomb ≥ 1,5, seção 1.8). Este dialoga diretamente com a NBR 6122 7.6.2
+      ("a área comprimida deve ser de no mínimo 2/3 da área total, se
+      consideradas as solicitações características, ou 50 % da área total, se
+      consideradas as solicitações de cálculo"), item que a própria apostila
+      cita na nota de rodapé 33 (PDF 47). O da eq. 1.72 não cita norma alguma.
+      A apostila NÃO diz como os dois se articulam, nem se são cumulativos.
+      OBSERVE que 1/9 corresponde a 50 % de área comprimida — o patamar da NBR
+      6122 7.6.2 para SOLICITAÇÕES DE CÁLCULO, não para as características.
+      Esta última frase é INTERPRETAÇÃO deste extrator, não afirmação da fonte.
+    leitura_visual:
+      passada_1: "e_A,g/A + e_B,g/B ≤ 1/6 (1.48); (e_A/A)² + (e_B/B)² ≤ 1/9 (1.49)   [página PDF 50 a 150 dpi]"
+      passada_2: "e_A,g/A + e_B,g/B ≤ 1/6 (1.48); (e_A/A)² + (e_B/B)² ≤ 1/9 (1.49)   [recortes a 400 dpi localizados pelas coordenadas dos rótulos]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
