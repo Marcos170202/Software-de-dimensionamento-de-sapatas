@@ -506,3 +506,113 @@ sem rodada 4 nem escalada; entregou):
 feature está aprovada na superfície TELA. O memorial PDF não a contém —
 nenhum caso de validação que confira o PDF pode ser declarado ALTA
 enquanto a seção não existir; declarar como descoberto, não aprovado.
+
+## Adendo 2026-08-28 — salvar/abrir projeto (.s7proj) + importar/exportar
+## Excel (`ui/completo/`): a saga completa, das 3 rodadas de GATE 2 ao GATE
+## 3 reprovado
+
+Feature de I/O puro pedida pelo usuário: salvar/reabrir o estado completo
+do formulário num arquivo próprio (`.s7proj`, JSON versionado), importar
+pilar/cargas e perfil geotécnico de uma planilha Excel de layout fixo, e
+exportar um resumo tabular do resultado já calculado em Excel.
+`calc_core/` continua sem dependência externa — `openpyxl` entra só em
+`ui/completo/`. Revisada por a6-revisor (subagente, sessão própria por
+rodada) e validada por a7-validador (este adendo), ambos sobre o mesmo
+limite de 3 rodadas de GATE 2 já usado pelas features anteriores.
+
+### GATE 2 — três rodadas
+
+- **Rodada 1 (REPROVADO, nota 3,5):** `openpyxl` fora de
+  `requirements-dev.txt` quebrava o CI; nomes de caso de carga duplicados
+  colapsados em silêncio na tela (`por_nome = {c.nome: c for c in casos}`
+  sem checar duplicata — carga permanente subestimada); resultado
+  calculado não invalidado ao trocar de projeto (memorial de um projeto
+  exportável enquanto a tela já mostrava outro); `Camada`/`Solo` sem
+  nenhuma validação de domínio (espessura negativa dava recalque 0 mm e
+  "APROVADO" em vez de erro).
+- **Rodada 2 (REPROVADO, nota 4,0):** as próprias correções da rodada 1
+  abriram dois ALTA novos — `ler_solo()` fora do `try/except` de
+  `_importar_excel` matando a importação em silêncio no meio de um estado
+  parcial (mesma classe de defeito da rodada 1, por um caminho novo), e 6
+  erros de lint `TRY004` quebrando o comando exato do CI. Mais 4 MÉDIA
+  (domínio numérico de `OpcoesProjeto` sem checagem de faixa;
+  `modelo_reacao`/`modelo_armadura_rigida` aceitando qualquer string e
+  caindo em silêncio no ramo errado do núcleo; mensagem de conflito
+  ap/bp confusa quando a primeira linha estava em branco; **N1** — aviso
+  de "campos não repostos" comparando cada `CasoCarga` carregado contra o
+  default CRU do dataclass em vez do que `ler_casos` de fato repõe para
+  Q/W, gerando 6 avisos falsos em todo projeto salvo com W).
+- **Rodada 3 (APROVADO, nota 4,5):** os dois ALTA fechados sem reabrir a
+  mesma classe de defeito (varredura própria do a6, não só as correções
+  pontuais); painel de visualização invalidado junto com o resultado;
+  validação de domínio/enum/null em `OpcoesProjeto` contra os valores que
+  o NÚCLEO de fato aceita; N.A. da planilha lido e validado em todas as
+  linhas. **N1 ficou aberto, único MÉDIA remanescente**, corrigido depois
+  da aprovação em commit separado (`2b78697`) — `campos_divergentes_do_
+  default` reescrito para comparar cada caso pelo NOME do slot
+  (`_CASOS_REFERENCIA_POR_NOME`, espelhando exatamente `ler_casos`), não
+  pelo default cru do dataclass; 3 testes novos (401 no total).
+
+### GATE 3 (a7-validador) — REPROVADO
+
+Diferente das features anteriores desta sessão, o a6 foi explícito: "o
+que a7 deve exercitar são os CAMINHOS DE DADOS, não fórmulas" — não há
+exemplo bibliográfico a reproduzir, e sim fidelidade de transporte:
+tela→arquivo→tela, planilha vs. digitado, PDF vs. Excel do mesmo cálculo.
+Detalhe completo em `relatorios/conformidade.md`, adendo do mesmo dia;
+resumo aqui porque, ao contrário das rodadas de GATE 2 acima, o GATE 3
+encontrou um `BUG` que as 3 rodadas de a6 não pegaram:
+
+- **Round-trip `.s7proj` tela-a-tela: PASSOU**, 100 % dos campos com
+  widget na tela batem exatamente após salvar/reabrir (incluindo um
+  perfil de 3 camadas com uma coesiva completa).
+- **Planilha vs. digitado à mão: REPROVOU — `BUG` novo, ALTA,
+  devolvido a A3.** `excel_import.py::importar_perfil_geotecnico`
+  constrói cada `Camada` sem `gamma_nat`/`gamma_sat`/`phi`/`coesao` (a
+  aba "Perfil geotécnico" não tem coluna para eles) — toda camada
+  importada por planilha recebe em silêncio os defaults do dataclass
+  (18,0 / 20,0 / 30,0 / 0,0), nunca os valores reais do perfil. Como
+  `gamma_nat`/`gamma_sat` entram direto na tensão vertical efetiva que
+  alimenta o recalque por adensamento, um mesmo perfil geotécnico
+  digitado na tela e importado por planilha (com os MESMOS valores nas
+  colunas que a planilha de fato tem) produziu recalques 6,8 % diferentes
+  neste caso de teste — sem NENHUM aviso ao usuário, ao contrário do
+  padrão já estabelecido em `projeto.CAMPOS_NAO_REPOSTOS`
+  (documentado, avisado nominalmente, testado) para a mesma classe de
+  perda de dado no caminho `.s7proj`. Nenhuma das 3 rodadas de GATE 2
+  tinha um teste que comparasse um perfil importado contra o mesmo perfil
+  digitado — só contra os valores que a própria planilha de exemplo já
+  trazia, o que nunca expôs a lacuna.
+- **PDF vs. Excel do mesmo cálculo: PASSOU** nos valores conferidos
+  (tensões, armaduras, veredito, dígito a dígito, via extrator de texto
+  escrito para esta rodada — o PDF é `zlib` cru, sem biblioteca). Achado
+  MÉDIA nesta própria feature (não pré-existente): `excel_export.py`
+  recompõe, com um `and` de 4 booleanos, exatamente a mesma composição
+  que `Sapata._montar_resultado` já usa para `resultado.aprovado` —
+  duplicação sem teste que pegue deriva se o núcleo mudar o critério.
+  Achado BAIXA pré-existente e fora desta feature, mas só percebido pela
+  comparação PDF×Excel pedida: `pranchas.py:340` imprime "CA-50" fixo
+  independente do aço real (auto-inconsistente com a linha de materiais
+  do mesmo PDF, que mostra a categoria certa).
+- **N1: confirmado corrigido** nas duas direções (falso-positivo — G/Q/W
+  típico não gera mais aviso; falso-negativo — `.s7proj` editado à mão já
+  tinha teste permanente, reconfirmado passando).
+- **REQ estrutural (nenhum veredito na UI):** confirmado por leitura
+  integral dos 3 módulos, com a única exceção já citada acima
+  (`ok_direcao`).
+- **Equilíbrio (salvar/reabrir não muda `dimensionar()`):** confirmado
+  para sapata rígida, flexível e com vento — bit-idêntico, sem teste
+  permanente prévio para os 3 perfis.
+
+**Diferença em relação ao padrão das features anteriores:** todas as
+feições revisadas nesta sessão até aqui (espraiamento, corte por camada)
+tiveram GATE 3 aprovado depois de um GATE 2 já rigoroso — a auditoria
+independente do a7 reconfirmava, sem achar `BUG` novo. Nesta feature, o
+a7 achou um `BUG` real (planilha-vs-digitado) que passou pelas 3 rodadas
+de a6 — não porque a6 tenha sido menos rigoroso (a rodada 2 pegou uma
+classe de defeito irmã, `ler_solo()` fora do `try/except`), mas porque
+nenhuma das 3 rodadas comparou um perfil IMPORTADO com o MESMO perfil
+DIGITADO — o tipo de comparação cruzada de caminho de dado que só um
+validador dedicado a isso (e não a um formulário de cada vez) tende a
+fazer. Registrado aqui como reforço do valor de A7 ser um agente
+separado de A6, não uma repetição do mesmo checklist.
