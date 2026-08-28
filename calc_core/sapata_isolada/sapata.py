@@ -212,7 +212,18 @@ class ResultadoSapata:
     # (propagação de tensões em profundidade) precisava dela e não a tinha.
     # `ResultadoRecalque.q_liquido` continua sendo a pressão LÍQUIDA e segue
     # sendo a única fonte dela — os dois números não são duplicados.
-    q_servico: float = 0.0
+    #
+    # O default é None, e NÃO 0.0, de propósito (a6, GATE 2 rodada 2). Hoje há
+    # um único ponto de construção (`Sapata._montar_resultado`, ~l. 1019) e ele
+    # sempre passa um float de verdade, de modo que o valor em produção não
+    # muda. O que muda é o modo de falha de um esquecimento futuro: 0.0 é uma
+    # pressão FISICAMENTE PLAUSÍVEL, e um campo esquecido faria a propagação de
+    # tensões exibir "Pressão líquida nula: q aplicada (0.0 kPa) não supera a
+    # sobrecarga" — diagnóstico coerente, completo e falso. Com None, o mesmo
+    # esquecimento aparece como AUSÊNCIA de dado: `visual2d._propagacao_atual`
+    # já testa `q_servico is None` e degrada para "sem dado", que é a falha
+    # honesta. Quem lê este campo deve tratar None, não assumir número.
+    q_servico: Optional[float] = None
     recalques: Optional[ResultadoRecalque] = None
     alertas: list[str] = field(default_factory=list)
     convergiu: bool = True

@@ -763,3 +763,148 @@ def test_espessura_das_camadas_nao_e_monotona_quando_z_max_corta():
     larguras = [p.largura_equivalente_a for p in r4.pontos]
     assert all(x is not None for x in larguras)
     assert all(x < y for x, y in zip(larguras, larguras[1:]))
+
+
+# ======================================================================== #
+#  Contrato PONTO <-> TRECHO — o que sustenta o desvio aceito em REQ-UI-07(a)
+#
+#  REQ-UI-07(a), no texto da v7 do ruleset, nomeava
+#  `CamadaPropagacao.delta_sigma_topo`/`delta_sigma_base` como fonte do rótulo
+#  q_i de cada interface do croqui de espraiamento. O a3 implementou o croqui
+#  lendo `PontoPropagacao.delta_sigma`. Na rodada 2 do GATE 2 o a6 verificou a
+#  equivalência (184 pares, identidade bit-a-bit) e ACEITOU o desvio como
+#  equivalente-e-mais-seguro: o objeto de PONTO carrega q_i e a_eq,i/b_eq,i
+#  juntos, na mesma cota, e ler a tensão do TRECHO e a largura do PONTO
+#  obrigaria a UI a reconstruir o mapeamento ponto->camada — que é justamente
+#  a classe de erro que produziu o defeito original.
+#
+#  A aceitação foi condicionada a ESTE teste (despacho do a6 ao a4; o a2
+#  reescreveu REQ-UI-07(a) na v8 para nomear `PontoPropagacao.delta_sigma` como
+#  fonte preferencial, mantendo `delta_sigma_topo`/`_base` válidas e
+#  equivalentes). Ele não corrige bug nenhum: hoje
+#  as duas famílias batem porque `propagacao_em_profundidade` chama a MESMA
+#  `acrescimo_tensao(fonte, q_liq, a, b, z)` na mesma cota (geotecnia.py, no
+#  laço de camadas e no helper `ponto`). Nada no código IMPÕE isso. Se um dia
+#  o laço de camadas passar a amostrar em outra cota, a interpolar, a arredondar
+#  ou a aplicar correção de contraste de rigidez, o croqui do a3 e o texto do
+#  REQ-UI-07(a) passam a designar números DIFERENTES com o mesmo símbolo, em
+#  silêncio. É esse silêncio que estes testes quebram.
+#
+#  Por isso a igualdade é EXATA (==), não `pytest.approx`: o contrato não é
+#  "valores próximos", é "o mesmo número, da mesma chamada". Um approx aceitaria
+#  a divergência que o teste existe para proibir.
+# ======================================================================== #
+_GEOMETRIAS_DO_CONTRATO = [
+    (2.2, 2.2),     # geometria de referência do croqui (a3/a6, rodada 2)
+    (2.0, 4.0),     # retangular, a < b
+    (4.0, 2.0),     # retangular invertida — pega troca de eixo a/b
+    (1.2, 1.2),     # quadrada pequena
+]
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("a,b", _GEOMETRIAS_DO_CONTRATO)
+def test_contrato_ponto_camada_delta_sigma_identico(fonte, a, b):
+    """REQ-UI-07(a): `pontos[i].delta_sigma` ≡ `camadas[i].delta_sigma_topo`.
+
+    Trava, para TODO i em `camadas` e nos dois métodos, as quatro identidades
+    exatas que sustentam o desvio do a3 aceito pelo a6 na rodada 2 do GATE 2
+    (ver o cabeçalho desta seção — o teste existe sem bug conhecido, e é essa
+    a razão):
+
+        pontos[i].z            == camadas[i].z_topo
+        pontos[i+1].z          == camadas[i].z_base
+        pontos[i].delta_sigma  == camadas[i].delta_sigma_topo
+        pontos[i+1].delta_sigma == camadas[i].delta_sigma_base
+
+    Junto vai o invariante ESTRUTURAL sem o qual a indexação acima não
+    significa nada: `len(pontos) == len(camadas) + 1`, n+1 interfaces para n
+    trechos. Se alguém acrescentar um ponto intermediário (subdivisão para
+    plotagem, por exemplo) sem acrescentar o trecho correspondente, o
+    alinhamento se desloca de um e todos os rótulos do croqui passam a
+    apontar para a interface errada — a falha cai aqui, e não na tela.
+    """
+    solo = _solo(hf=1.5)
+    r = propagacao_em_profundidade(solo, a, b, 200.0, fonte=fonte)
+
+    assert r.camadas, "fixture degenerada: sem camadas não há contrato a testar"
+    assert len(r.pontos) == len(r.camadas) + 1
+
+    for i, c in enumerate(r.camadas):
+        assert r.pontos[i].z == c.z_topo, f"i={i}: cota de topo desalinhada"
+        assert r.pontos[i + 1].z == c.z_base, f"i={i}: cota de base desalinhada"
+        assert r.pontos[i].delta_sigma == c.delta_sigma_topo, (
+            f"i={i}: q_i do croqui ({r.pontos[i].delta_sigma}) != "
+            f"delta_sigma_topo ({c.delta_sigma_topo})")
+        assert r.pontos[i + 1].delta_sigma == c.delta_sigma_base, (
+            f"i={i}: q_(i+1) do croqui ({r.pontos[i + 1].delta_sigma}) != "
+            f"delta_sigma_base ({c.delta_sigma_base})")
+        # A fonte também viaja igual nas duas famílias (REQ-PROP-04): um
+        # croqui que misturasse métodos entre ponto e trecho seria pior que
+        # um croqui errado.
+        assert r.pontos[i].fonte == c.fonte == fonte
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("a,b", _GEOMETRIAS_DO_CONTRATO)
+@pytest.mark.parametrize("z_max", [6.0, 4.0, 1.0])
+def test_contrato_ponto_camada_sobrevive_ao_teto_de_profundidade(
+        fonte, a, b, z_max):
+    """REQ-UI-07(a) + REQ-UI-05: o contrato vale com `z_max` cortando camada.
+
+    O teto de exibição da tela é 2·B, que quase nunca cai num limite de
+    camada: o trecho de baixo sai recortado e o último ponto ganha o rótulo
+    "limite da análise". É o caso NORMAL do croqui, não uma borda. Se a cota
+    de recorte fosse calculada duas vezes — uma para o trecho, outra para o
+    ponto — bastaria uma diferença de arredondamento entre as duas para
+    quebrar a identidade exata; aqui se exige que continue sendo o mesmo
+    número.
+    """
+    solo = _solo(hf=1.5)
+    r = propagacao_em_profundidade(solo, a, b, 200.0, fonte=fonte,
+                                   z_max=z_max)
+
+    assert r.camadas
+    assert len(r.pontos) == len(r.camadas) + 1
+    assert r.pontos[-1].z == r.z_max == r.camadas[-1].z_base
+
+    for i, c in enumerate(r.camadas):
+        assert r.pontos[i].z == c.z_topo
+        assert r.pontos[i + 1].z == c.z_base
+        assert r.pontos[i].delta_sigma == c.delta_sigma_topo
+        assert r.pontos[i + 1].delta_sigma == c.delta_sigma_base
+
+
+@pytest.mark.parametrize("fonte", [FONTE_BOUSSINESQ, FONTE_2V1H])
+@pytest.mark.parametrize("hf", [0.5, 1.5, 3.0, 5.0])
+def test_contrato_ponto_camada_usa_posicao_e_nao_o_indice_estratigrafico(
+        fonte, hf):
+    """REQ-UI-07(a): o pareamento é POSICIONAL — `camadas[i]`, não `indice`.
+
+    `CamadaPropagacao.indice` é o índice da camada no PERFIL, e as camadas
+    inteiramente acima da cota de assentamento não entram no resultado. Com a
+    base a 3,0 m no perfil de referência, `camadas[0].indice` vale 1, não 0:
+    quem parear `pontos[c.indice]` com `c` acerta por acaso quando a sapata
+    assenta na primeira camada e erra em todas as outras cotas.
+
+    Este teste roda a mesma identidade em quatro cotas de assentamento — uma
+    delas coincidente com limite de camada, outras dentro de camada — e
+    verifica explicitamente que os dois índices divergem em pelo menos uma
+    delas, para que o teste não passe por coincidência de numeração.
+    """
+    solo = _solo(hf=hf)
+    r = propagacao_em_profundidade(solo, 2.2, 2.2, 220.0, fonte=fonte)
+
+    assert r.camadas
+    assert len(r.pontos) == len(r.camadas) + 1
+    for i, c in enumerate(r.camadas):
+        assert r.pontos[i].z == c.z_topo
+        assert r.pontos[i + 1].z == c.z_base
+        assert r.pontos[i].delta_sigma == c.delta_sigma_topo
+        assert r.pontos[i + 1].delta_sigma == c.delta_sigma_base
+
+    if hf >= 3.0:
+        # Perfil de referência: camadas em 0-1,5 / 1,5-4,0 / 4,0-7,0 / 7,0-12,0.
+        # Com hf = 3,0 a primeira camada é descartada; com hf = 5,0, as duas
+        # primeiras. Em ambos os casos posição != índice estratigráfico.
+        assert r.camadas[0].indice != 0
