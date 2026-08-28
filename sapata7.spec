@@ -48,7 +48,16 @@ a_completo = Analysis(
     pathex=["."],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    # `ui/completo/app.py::_modulo_excel` importa `ui.completo.excel_import`/
+    # `excel_export` de forma TARDIA e DINÂMICA (`importlib.import_module`,
+    # string montada em runtime) — de propósito, para que a ausência de
+    # `openpyxl` não impeça o resto do app de abrir (ver defeito D1 do GATE
+    # 2, rodada 1, e o comentário em `app.py`). A análise ESTÁTICA do
+    # PyInstaller não enxerga esse import dinâmico, então os dois módulos
+    # precisam ser listados aqui à mão — sem isto, os itens de menu de
+    # Excel do .exe (que funcionam em `python -m ui.app_completo`) quebram
+    # com `ModuleNotFoundError` só no binário congelado.
+    hiddenimports=["ui.completo.excel_import", "ui.completo.excel_export"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

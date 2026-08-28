@@ -16,8 +16,10 @@ barra superior) e no rodapé do memorial — nunca só num popup de abertura.
 """
 from __future__ import annotations
 
+import importlib
 import sys
 import tkinter as tk
+from dataclasses import replace
 from tkinter import filedialog, messagebox, ttk
 
 if __package__ in (None, ""):
@@ -28,41 +30,66 @@ from calc_core.sapata_isolada.acoes import gerar_combinacoes
 from calc_core.sapata_isolada.pranchas import gerar_memorial_pdf
 from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 
-from . import tema
+from . import avisos, projeto, tema
 from .formulario import PainelEntrada
 from .modelo import construir_modelo_visual
 from .resultado import PainelResultado
 from .visualizacao import PainelVisualizacao
 
+# `excel_export`/`excel_import` importam `openpyxl` no topo do arquivo — uma
+# dependência de runtime SÓ dos 4 itens de menu de Excel (ver
+# requirements.txt). Importá-los aqui, no topo de `app.py`, tornaria
+# `openpyxl` uma dependência DURA de `ui.completo` inteiro (o pacote é
+# importado por `ui.completo.__init__` -> `.app`), derrubando qualquer teste
+# ou uso deste módulo num ambiente sem `openpyxl` (ver defeito D1 do GATE 2,
+# rodada 1). `_modulo_excel` faz o import tardio, só quando um desses 4 itens
+# de menu é de fato usado, e mostra um aviso claro se a lib estiver ausente
+# em vez de deixar o app inteiro morrer com `ModuleNotFoundError` no boot.
+_AVISO_OPENPYXL_AUSENTE = (
+    "Os recursos de Excel (importar planilha, gerar modelo, exportar "
+    "relatório) exigem a biblioteca 'openpyxl', que não está instalada "
+    "neste ambiente Python.\n\nInstale com:\n    pip install openpyxl\n\n"
+    "(já está listada em requirements.txt e requirements-dev.txt).")
+
+
+def _modulo_excel(nome: str):
+    """Importa `ui.completo.excel_import` ou `ui.completo.excel_export` sob
+    demanda. Devolve `None` (depois de avisar o usuário) se `openpyxl` não
+    estiver instalado, em vez de deixar o `ImportError` subir cru."""
+    try:
+        return importlib.import_module(f".{nome}", package=__package__)
+    except ImportError as erro:
+        # BAIXA do GATE 2, rodada 2 (`app.py:55`): capturar `ImportError` do
+        # módulo INTEIRO (não só de `openpyxl`) faz um erro de refactor no
+        # núcleo (símbolo renomeado/removido em
+        # `calc_core.sapata_isolada.*`, importado por `excel_import`/
+        # `excel_export`) ser diagnosticado ERRADO como "openpyxl ausente" —
+        # confunde o diagnóstico e esconde o bug real. `erro.name` é o nome
+        # do módulo que faltou — a `ModuleNotFoundError` real que o
+        # interpretador levanta quando `import openpyxl` (no topo de
+        # `excel_import.py`/`excel_export.py`) falha SEMPRE traz
+        # `name="openpyxl"`; só re-propaga quando o atributo está presente
+        # E aponta para outro módulo (`erro.name is None` — sem informação
+        # — mantém o comportamento antigo, para não arriscar confundir um
+        # `ImportError` genérico sem `.name` com um bug do núcleo).
+        nome_faltante = getattr(erro, "name", None)
+        if nome_faltante is not None and nome_faltante != "openpyxl":
+            raise
+        messagebox.showerror("Biblioteca ausente", _AVISO_OPENPYXL_AUSENTE)
+        return None
+
+
 TITULO = "SAPATA ISOLADA"
-SUBTITULO = "NBR 6118:2023 · NBR 6122:2019 — escopo amplo"
+SUBTITULO = "NBR 6118:2023 · NBR 6122:2022 — escopo amplo"
 
-AVISO_BANNER = (
-    "ESCOPO AMPLO — PARCIALMENTE EM CONFERÊNCIA. Materiais, ancoragem, "
-    "cisalhamento e punção foram auditados item a item contra a NBR 6118 "
-    "(ver ruleset.yaml). Geotecnia sob carga excêntrica, bielas e tirantes, "
-    "rigidez/grelha, recalques e MEF do solo ainda NÃO foram auditados — "
-    "reveja com um engenheiro antes de qualquer uso profissional. "
-    "Ajuda ▸ Sobre o escopo para o texto completo."
-)
-
-AVISO_ESCOPO_COMPLETO = (
-    "ESCOPO AMPLO — PARCIALMENTE EM CONFERÊNCIA.\n\n"
-    "Materiais (NBR 6118 §8), ancoragem (§9.3-9.4), cisalhamento (§19.4) e "
-    "punção (§19.5) foram auditados item a item contra o texto da norma por "
-    "leitura visual das páginas, com 6 defeitos corrigidos (2 do lado "
-    "inseguro) — ver relatorios/revisao_codigo.md, adendo.\n\n"
-    "A geotecnia sob excentricidade dupla, o modelo de bielas e tirantes de "
-    "Blévot, a rigidez/grelha sobre base elástica de Winkler, os recalques "
-    "(Schmertmann/Terzaghi) e o MEF do solo foram PORTADOS mas AINDA NÃO "
-    "auditados item a item contra a fonte normativa — ver ruleset.yaml, "
-    "seção escopo_amplo_em_conferencia.\n\n"
-    "σ_adm sempre admite sobreposição manual pelo engenheiro (NBR 6122 "
-    "§7.2 lista doze fatores para fixá-la). Solo expansivo ou colapsível "
-    "exige tratamento específico (§7.5.2/§7.5.3) que nenhum dos dois "
-    "motores deste software dimensiona.\n\n"
-    "Minuta sujeita a conferência do responsável técnico que assina a ART."
-)
+# Texto movido para `avisos.py` (sem dependência de tkinter) para que
+# `excel_export.py` também possa gravá-lo na aba "Resumo" do relatório
+# Excel (defeito D10 do GATE 2, rodada 1) sem precisar importar `app.py`
+# (que importa `tkinter`). Reexportado aqui por compatibilidade — quem já
+# importava `AVISO_BANNER`/`AVISO_ESCOPO_COMPLETO` de `ui.completo.app`
+# continua funcionando.
+AVISO_BANNER = avisos.AVISO_BANNER
+AVISO_ESCOPO_COMPLETO = avisos.AVISO_ESCOPO_COMPLETO
 
 
 class AppSapataCompleto(tk.Tk):
@@ -85,12 +112,51 @@ class AppSapataCompleto(tk.Tk):
 
         self.bind("<F5>", lambda evento: self._calcular())
 
+    # ---------------------------------------------------- rede de segurança
+    def report_callback_exception(self, exc, val, tb) -> None:
+        """Sobrescreve o handler padrão do Tk para exceção não tratada
+        DENTRO de um callback (comando de menu, `bind`, `after`, etc.).
+
+        Por padrão o Tk só IMPRIME a exceção em `sys.stderr` via
+        `traceback.print_exception` — invisível num `.exe` empacotado com
+        `console=False` (ver `sapata7.spec`), então qualquer bug que escape
+        de um `try/except` dentro de um handler de menu falha 100% em
+        silêncio: nenhum diálogo, nenhum log, a tela simplesmente para de
+        reagir ou fica com estado parcial (ALTA #1 do GATE 2, rodada 2 —
+        `ler_solo()` fora de qualquer `try/except` em `_importar_excel`
+        era só UM sítio onde isso podia acontecer; este handler é a rede de
+        segurança para qualquer outro, presente ou futuro). Mostra a mesma
+        caixa de diálogo `messagebox.showerror` que os handlers já usam, em
+        vez de deixar a exceção morrer muda."""
+        import traceback
+        detalhe = "".join(traceback.format_exception(exc, val, tb))
+        try:
+            messagebox.showerror(
+                "Erro inesperado",
+                "Ocorreu um erro inesperado e não tratado nesta ação.\n\n"
+                f"{val}\n\nDetalhes técnicos:\n{detalhe[-2000:]}")
+        except Exception:   # noqa: BLE001, S110 — último recurso: este é o
+            # próprio handler de erro; se ele mesmo falhar (ex.: Tk já em
+            # processo de destruição), não há mais nenhum lugar para
+            # reportar — engolir aqui é preferível a um traceback duplo/
+            # recursivo no encerramento do app.
+            pass
+
     # ------------------------------------------------------------------ menu
     def _montar_menu(self) -> None:
         barra = tk.Menu(self)
         arquivo = tk.Menu(barra, tearoff=0)
         arquivo.add_command(label="Calcular\tF5", command=self._calcular)
+        arquivo.add_command(label="Salvar projeto...", command=self._salvar_projeto)
+        arquivo.add_command(label="Abrir projeto...", command=self._abrir_projeto)
+        arquivo.add_separator()
+        arquivo.add_command(label="Importar do Excel...", command=self._importar_excel)
+        arquivo.add_command(label="Gerar modelo de planilha...",
+                            command=self._gerar_modelo_excel)
+        arquivo.add_separator()
         arquivo.add_command(label="Exportar PDF...", command=self._exportar_pdf)
+        arquivo.add_command(label="Exportar relatório Excel...",
+                            command=self._exportar_excel)
         arquivo.add_separator()
         arquivo.add_command(label="Sair", command=self.destroy)
         barra.add_cascade(label="Arquivo", menu=arquivo)
@@ -229,6 +295,272 @@ class AppSapataCompleto(tk.Tk):
                       key=lambda t: t.sigma_max / max(t.limite, 1e-9))
             texto += f"  ·  crítica: {pior.combinacao}"
         self.status_direita.configure(text=texto)
+
+    # ------------------------------------------------------------ projeto
+    def _salvar_projeto(self) -> None:
+        caminho = filedialog.asksaveasfilename(
+            title="Salvar projeto", defaultextension=".s7proj",
+            filetypes=[("Projeto SAPATA-7", "*.s7proj")])
+        if not caminho:
+            return
+        try:
+            pilar = self.formulario.ler_pilar()
+            solo = self.formulario.ler_solo()
+            concreto, aco, cobrimento = self.formulario.ler_materiais()
+            casos = self.formulario.ler_casos()
+            opcoes = self.formulario.ler_opcoes()
+            projeto.salvar_projeto(caminho, pilar, solo, concreto, aco,
+                                   cobrimento, casos, opcoes)
+        except ValueError as erro:
+            messagebox.showerror("Entrada inválida", str(erro))
+            return
+        except Exception as erro:   # noqa: BLE001 — mostra ao usuário, não trava
+            messagebox.showerror("Erro ao salvar projeto",
+                                 f"{type(erro).__name__}: {erro}")
+            return
+        messagebox.showinfo("Projeto salvo", f"Projeto salvo em:\n{caminho}")
+
+    def _abrir_projeto(self) -> None:
+        caminho = filedialog.askopenfilename(
+            title="Abrir projeto", filetypes=[("Projeto SAPATA-7", "*.s7proj")])
+        if not caminho:
+            return
+        try:
+            dados = projeto.carregar_projeto(caminho)
+        except ValueError as erro:
+            messagebox.showerror("Erro ao abrir projeto", str(erro))
+            return
+        except Exception as erro:   # noqa: BLE001
+            messagebox.showerror("Erro ao abrir projeto",
+                                 f"{type(erro).__name__}: {erro}")
+            return
+
+        # Valida TUDO antes de aplicar QUALQUER coisa (D5 do GATE 2, rodada
+        # 1): `preencher_casos` é o único `preencher_*` que pode recusar os
+        # dados (nomes de caso fora de G/Q/W, ou duplicados), então é
+        # chamado PRIMEIRO — se falhar, nenhum outro campo do formulário
+        # (pilar/solo/materiais/opções) é tocado, e a mensagem de erro
+        # "nenhum caso foi preenchido, para não misturar dados antigos e
+        # novos" continua verdadeira para a tela inteira, não só para os
+        # casos de carga.
+        try:
+            self.formulario.preencher_casos(dados["casos"])
+            self.formulario.preencher_pilar(dados["pilar"])
+            self.formulario.preencher_solo(dados["solo"])
+            self.formulario.preencher_materiais(dados["concreto"], dados["aco"],
+                                                dados["cobrimento"])
+            self.formulario.preencher_opcoes(dados["opcoes"])
+        except ValueError as erro:
+            messagebox.showerror("Erro ao abrir projeto", str(erro))
+            return
+
+        # MEDIA #4 do GATE 2, rodada 2: a tela não tem widget para TODO
+        # campo que o arquivo pode trazer (ver `projeto.py`, docstring do
+        # módulo, e `projeto.CAMPOS_NAO_REPOSTOS`) — os que faltam voltam
+        # ao default do dataclass em silêncio no próximo F5. Avisa
+        # NOMINALMENTE só os que de fato DIVERGEM do default (evita ruído
+        # quando o arquivo já tinha os valores padrão).
+        divergentes = projeto.campos_divergentes_do_default(dados)
+        msg_divergentes = ""
+        if divergentes:
+            linhas = "\n".join(f"  • {d}" for d in divergentes)
+            msg_divergentes = (
+                "\n\nATENÇÃO — a tela não tem campo para os itens abaixo; "
+                "eles voltarão ao valor padrão do núcleo ao calcular (F5), "
+                "em vez do valor salvo no arquivo:\n" + linhas)
+
+        self._invalidar_resultado(
+            "Projeto carregado — calcule (F5) para atualizar o resultado.")
+        messagebox.showinfo(
+            "Projeto aberto",
+            f"Projeto carregado de:\n{caminho}\n\nRevise os campos e calcule "
+            "(F5) quando quiser — nenhum resultado foi recalculado "
+            "automaticamente (o resultado salvo nunca é lido: só os dados de "
+            "entrada). O resultado exibido na tela (se havia algum, de um "
+            f"cálculo anterior) foi marcado como obsoleto.{msg_divergentes}")
+
+    # ------------------------------------------------------- invalidação
+    def _invalidar_resultado(self, mensagem: str) -> None:
+        """Zera o cálculo em memória e marca a tela como desatualizada em
+        relação aos dados de entrada que acabaram de ser repostos por
+        "Abrir projeto..."/"Importar do Excel...". Sem isto, "Exportar PDF"/
+        "Exportar relatório Excel" continuavam exportando o cálculo
+        ANTERIOR — de outro projeto — enquanto o formulário já mostrava os
+        dados novos (defeito D3 do GATE 2, rodada 1). Os dois handlers de
+        exportação já caem sozinhos no ramo "calcule (F5) antes de
+        exportar" assim que `self._resultado`/`self._sapata` voltam a
+        `None`.
+
+        `self.visualizacao.limpar(...)` (MEDIA #1 do GATE 2, rodada 2):
+        sem isto, o modelo 3D/diagramas da sapata ANTERIOR continuavam
+        desenhados na coluna central enquanto `PainelResultado` já mostrava
+        "NÃO CALCULADO" e o formulário já tinha os dados do projeto NOVO —
+        um estado misto que `_invalidar_resultado` deveria eliminar por
+        inteiro, não só na coluna direita."""
+        self._sapata = None
+        self._resultado = None
+        self._modelo = None
+        self.resultado.limpar(mensagem)
+        self.visualizacao.limpar(mensagem)
+        self.status_esquerda.configure(text=mensagem)
+        self.status_direita.configure(text="")
+
+    # -------------------------------------------------------------- excel
+    def _importar_excel(self) -> None:
+        excel_import = _modulo_excel("excel_import")
+        if excel_import is None:
+            return
+        caminho = filedialog.askopenfilename(
+            title="Importar do Excel", filetypes=[("Excel", "*.xlsx")])
+        if not caminho:
+            return
+        try:
+            pilar, casos = excel_import.importar_pilar_e_cargas(caminho)
+            # `ler_solo()` é lido AQUI, dentro do MESMO `try` que trata
+            # `ValueError`, ANTES de qualquer `preencher_*` tocar a tela —
+            # não depois (ALTA #1 do GATE 2, rodada 2: `_float()` levanta
+            # `ValueError` para um campo com texto não numérico, ex. "200
+            # kPa" digitado em σ_adm; se isso só fosse descoberto depois de
+            # pilar/casos já terem sido aplicados, a tela ficava com uma
+            # mistura de dados antigos (solo) e novos (pilar/casos) e SEM
+            # invalidar o resultado — o mesmo defeito que a promessa
+            # "tudo-ou-nada" abaixo já existe para resolver, agora
+            # reaplicado ao próprio solo). O objeto é reaproveitado abaixo
+            # tanto para a mensagem "perfil mantido" quanto para o
+            # `replace(...)` que grava o perfil novo — nunca lido de novo.
+            solo_atual = self.formulario.ler_solo()
+        except ValueError as erro:
+            messagebox.showerror("Erro ao importar planilha", str(erro))
+            return
+        except Exception as erro:   # noqa: BLE001
+            messagebox.showerror("Erro ao importar planilha",
+                                 f"{type(erro).__name__}: {erro}")
+            return
+
+        # BAIXA do GATE 2, rodada 2 (`app.py:364`): o layout desta planilha
+        # não tem colunas de Hx/Hy — `preencher_casos` abaixo grava
+        # Hx=Hy=0 em CADA slot (G sempre; Q/W se importados) que o usuário
+        # eventualmente já tinha preenchido na tela. Zerar força horizontal
+        # ALIVIA deslizamento/tombamento — é silêncio do lado INSEGURO se a
+        # mensagem final não disser isso (a aba "Instruções" já avisa, mas
+        # o usuário pode não a ler). Captura ANTES de `preencher_casos`
+        # sobrescrever os campos.
+        nomes_importados = {c.nome for c in casos}
+        slots_com_horizontal_zerada = []
+        for nome, vs in (("G", self.formulario.v_G), ("Q", self.formulario.v_Q),
+                         ("W", self.formulario.v_W)):
+            if nome not in nomes_importados:
+                continue
+            try:
+                hx = float((vs["Hx"].get() or "0").strip().replace(",", "."))
+                hy = float((vs["Hy"].get() or "0").strip().replace(",", "."))
+            except ValueError:
+                continue
+            if hx != 0.0 or hy != 0.0:
+                slots_com_horizontal_zerada.append(nome)
+
+        # Mesma ordem "valida tudo antes de aplicar" de `_abrir_projeto`
+        # acima: `preencher_casos` primeiro, pilar só depois de confirmado
+        # que os casos vão entrar — senão um nome de caso recusado deixava
+        # o pilar já trocado e as cargas antigas na tela, um estado misto
+        # que a própria mensagem de erro nega (D5 do GATE 2, rodada 1).
+        try:
+            self.formulario.preencher_casos(casos)
+            self.formulario.preencher_pilar(pilar)
+        except ValueError as erro:
+            messagebox.showerror("Erro ao importar planilha", str(erro))
+            return
+
+        perfil_anterior = solo_atual.perfil
+        n_anterior = len(perfil_anterior.camadas) if perfil_anterior else 0
+        try:
+            perfil = excel_import.importar_perfil_geotecnico(caminho)
+        except excel_import.AbaAusente:
+            # não é fatal: nem toda planilha do usuário traz as duas abas.
+            # O perfil que já estava na tela é MANTIDO — mas isso precisa
+            # ser dito, não deixado em silêncio (D6 do GATE 2, rodada 1).
+            if n_anterior:
+                msg_perfil = (f"perfil geotécnico: aba ausente — o perfil "
+                              f"que já estava na tela foi MANTIDO "
+                              f"({n_anterior} camada(s)).")
+            else:
+                msg_perfil = "perfil geotécnico: aba ausente — não importado."
+        except ValueError as erro:
+            # Mesma coda do ramo `AbaAusente` acima (BAIXA da lista do GATE
+            # 2, rodada 2, `app.py:384`): um erro na aba "Perfil geotécnico"
+            # (célula inválida, tipo de substrato desconhecido etc.) também
+            # MANTÉM o perfil que já estava na tela — dizer isso evita o
+            # usuário concluir, ao ver só "NÃO importado por erro", que o
+            # perfil ficou vazio.
+            if n_anterior:
+                msg_perfil = (f"perfil geotécnico: NÃO importado por erro — "
+                              f"{erro} — o perfil que já estava na tela foi "
+                              f"MANTIDO ({n_anterior} camada(s)).")
+            else:
+                msg_perfil = f"perfil geotécnico: NÃO importado por erro — {erro}"
+        else:
+            self.formulario.preencher_solo(replace(solo_atual, perfil=perfil))
+            msg_perfil = (f"perfil geotécnico: {len(perfil.camadas)} "
+                          "camada(s) importada(s).")
+
+        msg_horizontais = ""
+        if slots_com_horizontal_zerada:
+            msg_horizontais = (
+                "\n\nATENÇÃO: esta planilha não tem colunas de Hx/Hy — a "
+                f"força horizontal que já estava preenchida em {', '.join(slots_com_horizontal_zerada)} "
+                "foi ZERADA pela importação (alivia deslizamento/tombamento "
+                "— confira/repreencha se o projeto tem ação horizontal).")
+
+        self._invalidar_resultado(
+            "Excel importado — calcule (F5) para atualizar o resultado.")
+        messagebox.showinfo(
+            "Excel importado",
+            f"Pilar e {len(casos)} caso(s) de carga importados de:\n"
+            f"{caminho}\n\n{msg_perfil}{msg_horizontais}\n\nO resultado "
+            "exibido na tela (se havia algum, de um cálculo anterior) foi "
+            "marcado como obsoleto.")
+
+    def _gerar_modelo_excel(self) -> None:
+        excel_import = _modulo_excel("excel_import")
+        if excel_import is None:
+            return
+        caminho = filedialog.asksaveasfilename(
+            title="Gerar modelo de planilha", defaultextension=".xlsx",
+            filetypes=[("Excel", "*.xlsx")])
+        if not caminho:
+            return
+        try:
+            excel_import.gerar_modelo_importacao(caminho)
+        except Exception as erro:   # noqa: BLE001
+            messagebox.showerror("Erro ao gerar modelo",
+                                 f"{type(erro).__name__}: {erro}")
+            return
+        messagebox.showinfo("Modelo gerado",
+                            f"Modelo de planilha salvo em:\n{caminho}")
+
+    def _exportar_excel(self) -> None:
+        if self._resultado is None or self._sapata is None:
+            messagebox.showinfo(
+                "Nada para exportar",
+                "Calcule a sapata (F5) antes de exportar o relatório em "
+                "Excel.")
+            return
+        excel_export = _modulo_excel("excel_export")
+        if excel_export is None:
+            return
+        caminho = filedialog.asksaveasfilename(
+            title="Salvar relatório em Excel", defaultextension=".xlsx",
+            filetypes=[("Excel", "*.xlsx")])
+        if not caminho:
+            return
+        try:
+            excel_export.exportar_relatorio_excel(caminho, self._sapata,
+                                                   self._resultado)
+        except Exception as erro:   # noqa: BLE001
+            messagebox.showerror("Erro ao exportar Excel",
+                                 f"{type(erro).__name__}: {erro}")
+            return
+        messagebox.showinfo("Excel exportado", f"Relatório salvo em:\n{caminho}")
 
     # ---------------------------------------------------------------- pdf
     def _exportar_pdf(self) -> None:

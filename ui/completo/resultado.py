@@ -204,6 +204,35 @@ class PainelResultado(ttk.Frame):
         aba.rowconfigure(0, weight=1)
         aba.columnconfigure(0, weight=1)
 
+    # ---------------------------------------------------------------- limpar
+    def limpar(self, mensagem: str = "Dados alterados — calcule (F5) para "
+                                       "atualizar o resultado.") -> None:
+        """Marca o painel como OBSOLETO em relação aos dados de entrada
+        atuais — chamado por `app.py::_abrir_projeto`/`_importar_excel`
+        depois de repor o formulário, para que a tela nunca mostre (nem
+        exporte) um resultado de um cálculo anterior junto de dados novos
+        (ver defeito D3 do GATE 2, rodada 1: exportar Excel/PDF depois de
+        abrir outro projeto sem apertar F5 exportava o cálculo velho)."""
+        self.selo.configure(text="NÃO CALCULADO", style="PainelFraco.TLabel")
+        self.dims.configure(text="—")
+        self.governante.configure(text=mensagem)
+        for tile in self.tiles.values():
+            tile.definir("—", "", None)
+        for arv in (self.tab_tensoes, self.tab_estabilidade, self.tab_puncao):
+            arv.delete(*arv.get_children())
+        for filho in self.frame_armaduras.winfo_children():
+            filho.destroy()
+        for filho in self.frame_recalques.winfo_children():
+            filho.destroy()
+        self.texto_memorial.configure(state="normal")
+        self.texto_memorial.delete("1.0", "end")
+        self.texto_memorial.insert("1.0", mensagem)
+        self.texto_memorial.configure(state="disabled")
+        self.texto_alertas.configure(state="normal")
+        self.texto_alertas.delete("1.0", "end")
+        self.texto_alertas.insert("1.0", mensagem)
+        self.texto_alertas.configure(state="disabled")
+
     # -------------------------------------------------------------- atualizar
     def atualizar(self, sapata: Sapata, res: ResultadoSapata) -> None:
         self._atualizar_cabecalho(res)

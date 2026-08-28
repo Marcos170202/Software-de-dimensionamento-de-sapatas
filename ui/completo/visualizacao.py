@@ -329,6 +329,44 @@ class PainelVisualizacao(ttk.Notebook):
         self.aba_reacao.atualizar(res, modelo, campo)
         self.aba_perfil.atualizar(modelo)
 
+    # ---------------------------------------------------------------- limpar
+    def _canvases(self) -> list[tk.Canvas]:
+        """Todos os `tk.Canvas` das quatro abas — usado só por `limpar()`
+        abaixo, nunca para desenhar (quem desenha é sempre o núcleo, via
+        `definir`/`definir_modelo` dos widgets `Visualizador3D`/
+        `MapaMomentos`/etc.)."""
+        return [
+            self.aba_3d.visualizador.canvas,
+            self.aba_momentos.mapa2d.canvas,
+            self.aba_momentos.superficie3d.canvas,
+            self.aba_reacao.painel.canvas,
+            self.aba_reacao.superficie3d.canvas,
+            self.aba_perfil.painel.canvas,
+        ]
+
+    def limpar(self, mensagem: str = "Dados alterados — calcule (F5) para "
+                                       "atualizar o resultado.") -> None:
+        """Simétrico a `PainelResultado.limpar` — chamado por
+        `app.py::_invalidar_resultado` (MEDIA #1 do GATE 2, rodada 2):
+        sem isto, `_invalidar_resultado` zerava `self._resultado`/
+        `PainelResultado`, mas o modelo 3D/diagramas da sapata ANTERIOR
+        continuavam desenhados aqui, ao lado de dados de entrada NOVOS já
+        repostos no formulário — o usuário via um desenho que não
+        correspondia a nenhum dos dois projetos (nem o antigo, calculado; nem
+        o novo, ainda não calculado). Apaga tudo que os widgets de desenho
+        têm no Canvas (`delete("all")` — a mesma operação que cada widget já
+        faz no início do próprio `definir`/`definir_modelo`, ver
+        `calc_core.sapata_isolada.visual2d`/`visual3d`) e escreve a mensagem
+        no centro de cada um."""
+        for canvas in self._canvases():
+            canvas.delete("all")
+            largura = max(canvas.winfo_width(), 200)
+            altura = max(canvas.winfo_height(), 80)
+            canvas.create_text(
+                largura / 2, altura / 2, text=mensagem, fill=tema.TEXTO_FRACO,
+                width=max(largura - 40, 120), justify="center",
+                font=("Segoe UI", 10))
+
 
 def _campos_momento(sapata: Sapata, res: ResultadoSapata
                     ) -> tuple[CampoMomentos | None, CampoMomentos | None]:

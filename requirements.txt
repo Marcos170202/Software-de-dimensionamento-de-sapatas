@@ -5,3 +5,10 @@
 # calc_core/ não tem NENHUMA dependência externa, de propósito (mantém o
 # .exe pequeno e evita risco de supply chain no núcleo de cálculo).
 pyinstaller>=6.0
+
+# openpyxl é dependência SÓ do escopo AMPLO (ui/completo/: projeto.py,
+# excel_import.py, excel_export.py — salvar/abrir projeto, importar
+# pilar/cargas e perfil geotécnico de planilha, exportar relatório-resumo em
+# Excel). NÃO é dependência de calc_core/ nem de ui/app_desktop.py: o .exe
+# mínimo (Sapata7.exe) não cresce por causa disto, só Sapata7Completo.exe.
+openpyxl>=3.1

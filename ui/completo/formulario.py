@@ -12,6 +12,7 @@ sempre o núcleo.
 from __future__ import annotations
 
 import tkinter as tk
+from collections import Counter
 from tkinter import messagebox, ttk
 
 from calc_core.sapata_isolada.acoes import CasoCarga, Esforcos, Pilar
@@ -425,9 +426,149 @@ class PainelEntrada(ttk.Frame):
         if ar is None:
             return
         w = self._arm[direcao]
-        w["phi"].set(f"{ar.phi_mm:g}")
+        w["phi"].set(f"{ar.phi_mm:.10g}")
         w["n"].set(str(ar.n_barras))
         w["espacamento"].set("")
+
+    # ------------------------------------------------------------------------
+    # "Preencher" — caminho inverso de "ler_*": mostra nos campos visíveis um
+    # objeto vindo de fora (projeto salvo em .s7proj ou planilha Excel
+    # importada). Usado por "Abrir projeto..." e "Importar do Excel..." em
+    # `ui/completo/app.py`. Reaproveita os mesmos widgets/estruturas de dados
+    # de `ler_*` — nenhum sistema de widgets paralelo.
+    # ------------------------------------------------------------------------
+    def preencher_pilar(self, pilar: Pilar) -> None:
+        self.v_ap.set(f"{pilar.ap:.10g}")
+        self.v_bp.set(f"{pilar.bp:.10g}")
+        self.v_phi_arranque.set(f"{pilar.phi_arranque_mm:.10g}")
+
+    def preencher_materiais(self, concreto: Concreto, aco: Aco,
+                            cobrimento: float) -> None:
+        """`cobrimento` é esperado em METROS — mesma unidade que
+        `ler_materiais` devolve (o campo na tela é em cm; a conversão de
+        volta espelha a que `ler_materiais` já faz ao ler)."""
+        self.v_fck.set(f"{concreto.fck:.10g}")
+        self.v_fyk.set(f"{aco.fyk:.10g}")
+        self.v_agregado.set(concreto.agregado)
+        self.v_cobrimento.set(f"{cobrimento*100:.10g}")
+
+    def preencher_solo(self, solo: Solo) -> None:
+        self.v_sigma_adm.set(f"{solo.sigma_adm:.10g}")
+        self.v_hf.set(f"{solo.hf:.10g}")
+        self.v_gamma_solo.set(f"{solo.gamma_solo:.10g}")
+        self.v_phi_solo.set(f"{solo.phi:.10g}")
+        self.v_coesao.set(f"{solo.coesao:.10g}")
+
+        perfil = solo.perfil
+        self._camadas = list(perfil.camadas) if perfil is not None else []
+        self._atualizar_tree_camadas()
+        nivel_agua = perfil.nivel_agua if perfil is not None else None
+        self.v_nivel_agua.set(f"{nivel_agua:.10g}" if nivel_agua is not None else "")
+
+    def preencher_casos(self, casos: list[CasoCarga]) -> None:
+        """Repõe os grupos G/Q/W a partir de uma lista de casos carregada,
+        casando pelo NOME — os mesmos "G"/"Q"/"W" que `ler_casos` sempre usa.
+        Um caso "Q"/"W" ausente na lista desmarca o checkbox correspondente
+        (o projeto carregado não tinha aquele caso ativo).
+
+        A tela só tem os três slots fixos G/Q/W (`ler_casos` nunca produz
+        outro nome). Um `CasoCarga` com QUALQUER outro nome não tem onde
+        entrar — levantar `ValueError` aqui, ANTES de mexer em qualquer
+        widget, é a alternativa a descartá-lo em silêncio (o defeito
+        corrigido depois da verificação independente de 2026-08-28: a
+        versão anterior desta função ignorava nomes fora de G/Q/W sem
+        aviso, e quem chamava (`ui/completo/app.py::_abrir_projeto`,
+        `_importar_excel`) reportava sucesso mesmo assim).
+
+        O mesmo guard clause recusa nomes REPETIDOS (defeito D2 do GATE 2,
+        rodada 1): a tela tem UM slot por nome, então `por_nome = {c.nome:
+        c for c in casos}`, mais abaixo, colapsaria duplicatas em silêncio
+        — o último caso "G" da lista venceria e as parcelas anteriores
+        (ex.: peso próprio numa linha, sobrecarga permanente noutra)
+        somem sem erro, subestimando a carga permanente exibida na tela.
+        Se a origem dos dados tem duas linhas "G", a soma tem de ser feita
+        ANTES de chegar aqui (na planilha, ou somando os `Esforcos` no
+        `.s7proj`) — nunca dentro da UI (regra "ui/ não calcula")."""
+        NOMES_ACEITOS = ("G", "Q", "W")
+        desconhecidos = [c.nome for c in casos if c.nome not in NOMES_ACEITOS]
+        if desconhecidos:
+            raise ValueError(
+                "Caso(s) de carga com nome não reconhecido pelo formulário: "
+                f"{desconhecidos!r}. Esta tela só tem campos fixos para os "
+                f"nomes {NOMES_ACEITOS!r} (G é sempre obrigatório; Q e W são "
+                "opcionais). Renomeie o(s) caso(s) para um desses três nomes "
+                "(exatamente, maiúsculas) na origem dos dados (planilha "
+                "Excel ou arquivo .s7proj) antes de importar/abrir — nenhum "
+                "caso foi preenchido nesta tentativa, para não misturar "
+                "dados antigos e novos.")
+
+        repetidos = sorted(nome for nome, qtd in Counter(c.nome for c in casos).items()
+                           if qtd > 1)
+        if repetidos:
+            raise ValueError(
+                f"Caso(s) de carga com nome repetido: {repetidos!r}. Esta "
+                "tela tem UM slot por nome (G/Q/W) — se a origem dos dados "
+                "traz mais de uma linha/entrada com o mesmo nome (ex.: "
+                "duas linhas 'G' para peso próprio e sobrecarga "
+                "permanente), some as parcelas ANTES de importar/abrir "
+                "(na planilha, ou somando N/Mx/My/Hx/Hy no arquivo "
+                ".s7proj); preencher um dos dois em silêncio descartaria a "
+                "carga do outro sem aviso — nenhum caso foi preenchido "
+                "nesta tentativa, para não misturar dados antigos e "
+                "novos.")
+
+        def preencher_grupo(vs: dict, esforcos: Esforcos) -> None:
+            vs["N"].set(f"{esforcos.N:.10g}")
+            vs["Mx"].set(f"{esforcos.Mx:.10g}")
+            vs["My"].set(f"{esforcos.My:.10g}")
+            vs["Hx"].set(f"{esforcos.Hx:.10g}")
+            vs["Hy"].set(f"{esforcos.Hy:.10g}")
+
+        por_nome = {c.nome: c for c in casos}
+
+        if "G" in por_nome:
+            preencher_grupo(self.v_G, por_nome["G"].esforcos)
+        if "Q" in por_nome:
+            self.usar_q.set(True)
+            preencher_grupo(self.v_Q, por_nome["Q"].esforcos)
+        else:
+            self.usar_q.set(False)
+        if "W" in por_nome:
+            self.usar_w.set(True)
+            preencher_grupo(self.v_W, por_nome["W"].esforcos)
+        else:
+            self.usar_w.set(False)
+
+    def preencher_opcoes(self, opcoes: OpcoesProjeto) -> None:
+        self.v_modelo_reacao.set(opcoes.modelo_reacao)
+        self.v_modelo_armadura.set(opcoes.modelo_armadura_rigida)
+
+        imposta = opcoes.geometria_imposta
+        self.modo_verificacao.set(imposta is not None)
+        if imposta is not None:
+            self.v_geo_a.set(f"{imposta.a:.10g}")
+            self.v_geo_b.set(f"{imposta.b:.10g}")
+            self.v_geo_h.set(f"{imposta.h:.10g}")
+            self.v_geo_h0.set(f"{imposta.h0:.10g}" if imposta.h0 is not None else "")
+        else:
+            self.v_geo_a.set("")
+            self.v_geo_b.set("")
+            self.v_geo_h.set("")
+            self.v_geo_h0.set("")
+        self._alternar_geometria()
+
+        for direcao, w in self._arm.items():
+            arm = opcoes.armaduras_impostas.get(direcao)
+            w["impor"].set(arm is not None)
+            if arm is not None:
+                w["phi"].set(f"{arm.phi_mm:.10g}")
+                w["n"].set(str(arm.n_barras) if arm.n_barras is not None else "")
+                w["espacamento"].set(
+                    f"{arm.espacamento:.10g}" if arm.espacamento is not None else "")
+            else:
+                w["phi"].set("12.5")
+                w["n"].set("")
+                w["espacamento"].set("")
 
     # ------------------------------------------------------------------ leitura
     def ler_pilar(self) -> Pilar:

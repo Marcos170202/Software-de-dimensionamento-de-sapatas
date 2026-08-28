@@ -52,6 +52,11 @@ python -m ui.app_desktop     # escopo mínimo, 100% auditado
 python -m ui.app_completo    # escopo amplo — parcialmente em conferência
 ```
 
+`requirements-dev.txt` já inclui `openpyxl` (necessário para `ui.app_completo`:
+salvar/abrir projeto, importar Excel, exportar relatório Excel). Sem
+`openpyxl`, `ui.app_completo` ainda abre — só os 4 itens de menu de Excel
+ficam desabilitados, com um aviso explicando como instalar a dependência.
+
 Abre uma janela desktop (Tkinter) com o formulário de entrada e o memorial
 de saída.
 
@@ -92,9 +97,27 @@ mypy --strict calc_core/geotecnico/ calc_core/modelos.py
 pytest tests/ --cov=calc_core --cov-report=term-missing
 ```
 
-45 testes no total, cobertura de linhas 100% em `calc_core/geotecnico/` (ver
-`relatorios/revisao_codigo.md` e `relatorios/conformidade.md` para o detalhe
-— incluindo as limitações do processo de revisão/validação em cada escopo).
+**Xvfb (obrigatório em CI/ambiente sem display):** `tests/test_projeto_e_excel.py`
+e outros arquivos instanciam `tk.Tk()` de verdade para cobrir `ui/completo/`
+(`app.py`/`formulario.py`) — sem um display X, esses testes fazem `pytest.skip`
+em vez de rodar (a suíte "passa" mesmo assim, mas com cobertura muito menor e
+sem checar as regressões que só esses testes cobrem). Em Linux sem display,
+instale e use o Xvfb:
+
+```bash
+sudo apt-get install -y xvfb
+xvfb-run -a pytest tests/ --cov=calc_core --cov-report=term-missing
+```
+
+O job `testes` do CI (`.github/workflows/build-exe.yml`) já faz isso — e tem
+uma trava (`test_ci_exige_display_para_suite_de_tk`) que FALHA, em vez de
+pular, se a variável `CI` estiver definida sem `DISPLAY`, para este silêncio
+nunca mais passar despercebido (ver MEDIA #5, `relatorios/revisao_codigo.json`).
+
+45 testes no total em `calc_core/geotecnico/`, cobertura de linhas 100% nesse
+escopo (ver `relatorios/revisao_codigo.md` e `relatorios/conformidade.md` para
+o detalhe — incluindo as limitações do processo de revisão/validação em cada
+escopo).
 
 `mypy --strict` e o padrão completo do `ruff` só são exigidos para
 `calc_core/geotecnico/`, `calc_core/modelos.py` e `ui/` — o pacote externo
