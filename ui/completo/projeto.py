@@ -839,6 +839,23 @@ CAMPOS_NAO_REPOSTOS: dict[str, tuple[str, ...]] = {
 # parte em `campos_divergentes_do_default` abaixo.
 CAMPOS_NAO_REPOSTOS_POR_CASO: tuple[str, ...] = (
     "tipo", "psi0", "psi1", "psi2", "reversivel")
+# `ler_casos` (`ui/completo/formulario.py`) NÃO reconstrói G/Q/W com o
+# default "cru" do dataclass `CasoCarga` — usa as factories
+# `CasoCarga.acidental`/`CasoCarga.vento`, que sobrescrevem tipo/psi0/psi1/
+# psi2/reversivel de acordo com o NOME do slot. Comparar contra
+# `_default_do_campo(caso, campo)` (default do dataclass) produz avisos
+# falsos para W (tipo/psi0/psi1/psi2/reversivel do dataclass ≠ o que a tela
+# repõe) e deixa de avisar quando o `.s7proj` tem, por coincidência, o
+# default do dataclass num campo que a tela vai sobrescrever para outro
+# valor (ex.: W.psi0=0.7 no arquivo — igual ao default do dataclass, mas
+# `ler_casos` sempre repõe 0.6 para W). A referência correta é por NOME de
+# slot, espelhando exatamente `ler_casos`. Um `caso.nome` fora de G/Q/W nem
+# chega aqui — `preencher_casos` já recusa antes.
+_CASOS_REFERENCIA_POR_NOME: dict[str, CasoCarga] = {
+    "G": CasoCarga("G", Esforcos()),
+    "Q": CasoCarga.acidental("Q", Esforcos()),
+    "W": CasoCarga.vento("W", Esforcos()),
+}
 
 
 def _default_do_campo(obj: Any, campo: str) -> Any:
@@ -859,9 +876,14 @@ def campos_divergentes_do_default(dados: dict) -> list[str]:
     "X (o formulário vai repor o default Y)"), os campos de `dados` (o dict
     devolvido por `carregar_projeto`) que a TELA não tem widget para repor
     (`CAMPOS_NAO_REPOSTOS`/`CAMPOS_NAO_REPOSTOS_POR_CASO`) E que têm, no
-    arquivo carregado, um valor DIFERENTE do default do dataclass do
-    núcleo — campos que já batem com o default não entram na lista (nada
-    muda, de fato, ao reabrir o projeto).
+    arquivo carregado, um valor DIFERENTE do que a tela de fato repõe ao
+    reconstruir o projeto — default do dataclass do núcleo para
+    `CAMPOS_NAO_REPOSTOS`; para `CAMPOS_NAO_REPOSTOS_POR_CASO`, o valor que
+    `ler_casos` (`ui/completo/formulario.py`) produz para aquele NOME de
+    slot (G/Q/W), via `_CASOS_REFERENCIA_POR_NOME` — não o default "cru" do
+    dataclass `CasoCarga`, que W e Q não usam. Campos que já batem com o que
+    a tela repõe não entram na lista (nada muda, de fato, ao reabrir o
+    projeto).
 
     Usada só para AVISAR (`ui/completo/app.py::_abrir_projeto`, MEDIA #4 do
     GATE 2, rodada 2); nunca para decidir o que salvar/carregar."""
@@ -883,18 +905,19 @@ def campos_divergentes_do_default(dados: dict) -> list[str]:
                     f"{nome_obj}.{campo}: {atual!r} (o formulário vai repor "
                     f"o default {default!r})")
     for i, caso in enumerate(dados.get("casos") or []):
+        referencia = _CASOS_REFERENCIA_POR_NOME.get(caso.nome)
+        if referencia is None:
+            continue
         for campo in CAMPOS_NAO_REPOSTOS_POR_CASO:
-            default = _default_do_campo(caso, campo)
-            if default is MISSING:
-                continue
             try:
                 atual = getattr(caso, campo)
             except AttributeError:
                 continue
-            valor_default = default.value if hasattr(default, "value") else default
+            reposto = getattr(referencia, campo)
+            valor_reposto = reposto.value if hasattr(reposto, "value") else reposto
             valor_atual = atual.value if hasattr(atual, "value") else atual
-            if valor_atual != valor_default:
+            if valor_atual != valor_reposto:
                 divergentes.append(
                     f"casos[{i}] ({caso.nome!r}).{campo}: {valor_atual!r} (o "
-                    f"formulário vai repor o default {valor_default!r})")
+                    f"formulário vai repor o default {valor_reposto!r})")
     return divergentes

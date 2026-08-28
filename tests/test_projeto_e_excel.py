@@ -1206,6 +1206,105 @@ def test_campos_divergentes_do_default_lista_campos_perdidos(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+#  N1 do GATE 2, rodada 3: a base de comparação de `CAMPOS_NAO_REPOSTOS_POR_
+#  CASO` era o default "cru" do dataclass `CasoCarga` (tipo=permanente,
+#  psi0=0.7, psi1=0.6, psi2=0.4, reversivel=False) — mas `ler_casos`
+#  (`ui/completo/formulario.py`) NUNCA repõe esse default para os slots Q e
+#  W: usa as factories `CasoCarga.acidental`/`CasoCarga.vento`. Isso gerava
+#  falso positivo (W sempre "divergente" do default cru, mesmo quando
+#  `ler_casos` ia repor EXATAMENTE o valor salvo) e falso negativo (um
+#  `.s7proj` com `W.psi0=0.7` — que por coincidência é o default do
+#  dataclass, mas não o que `ler_casos` repõe para W, que é 0.6 — não
+#  gerava aviso nenhum, embora a tela FOSSE sobrescrever o valor salvo).
+# --------------------------------------------------------------------------- #
+def test_campos_divergentes_do_default_vazio_para_gqw_via_tela(app_completo,
+                                                                 tmp_path):
+    """Mata o falso positivo: projeto trivial com G/Q/W montado pela TELA
+    (`PainelEntrada`, via `app.formulario` — não construindo `CasoCarga`
+    direto), salvo e reaberto. Antes da correção, isso produzia 6 linhas de
+    "ATENÇÃO" falsas citando tipo/psi0/psi1/psi2/reversivel de W."""
+    from unittest import mock
+
+    app = app_completo
+    app.formulario.usar_w.set(True)   # G e Q já vêm marcados/preenchidos
+
+    caminho = str(tmp_path / "trivial.s7proj")
+    with mock.patch("ui.completo.app.filedialog.asksaveasfilename",
+                    return_value=caminho), \
+         mock.patch("ui.completo.app.messagebox.showinfo"), \
+         mock.patch("ui.completo.app.messagebox.showerror"):
+        app._salvar_projeto()
+
+    dados = projeto.carregar_projeto(caminho)
+    casos_por_nome = {c.nome for c in dados["casos"]}
+    assert casos_por_nome == {"G", "Q", "W"}
+    assert projeto.campos_divergentes_do_default(dados) == []
+
+    with mock.patch("ui.completo.app.filedialog.askopenfilename",
+                    return_value=caminho), \
+         mock.patch("ui.completo.app.messagebox.showinfo") as mock_info, \
+         mock.patch("ui.completo.app.messagebox.showerror"):
+        app._abrir_projeto()
+
+    mensagem = mock_info.call_args[0][1]
+    assert "ATENÇÃO" not in mensagem
+
+
+def test_campos_divergentes_do_default_detecta_psi0_w_editado_a_mao(tmp_path):
+    """Mata o falso negativo: um `.s7proj` editado à mão com `W.psi0=0.7`
+    (o default do dataclass `CasoCarga`, não o que `ler_casos` repõe para o
+    slot W, que é 0.6) precisa disparar aviso citando esse campo
+    especificamente — é justamente o caso em que a tela VAI sobrescrever o
+    valor salvo (0.7 -> 0.6) sem avisar o engenheiro, se não corrigido."""
+    dados = _projeto_base()
+    dados["casos"] = [
+        {"nome": "G", "N": 300.0},
+        {"nome": "W", "My": 40.0, "Hx": 15.0, "tipo": "vento", "psi0": 0.7,
+         "psi1": 0.30, "psi2": 0.0, "reversivel": True},
+    ]
+    caminho = _escrever_projeto(tmp_path, dados)
+    carregado = projeto.carregar_projeto(caminho)
+    divergentes = " | ".join(projeto.campos_divergentes_do_default(carregado))
+    assert "('W').psi0: 0.7" in divergentes
+    assert "0.6" in divergentes   # valor que `ler_casos` de fato vai repor
+    # os demais campos de W (tipo/psi1/psi2/reversivel) batem com o que
+    # `ler_casos` repõe — não devem gerar aviso.
+    assert "('W').psi1" not in divergentes
+    assert "('W').psi2" not in divergentes
+    assert "('W').tipo" not in divergentes
+    assert "('W').reversivel" not in divergentes
+
+
+def test_abrir_projeto_mensagem_reflete_campos_divergentes(app_completo,
+                                                             tmp_path):
+    """Mutante MM (a6, ainda sobrevivente antes desta correção): garante que
+    a lista devolvida por `campos_divergentes_do_default` de fato CHEGA ao
+    texto do diálogo `messagebox.showinfo` de `_abrir_projeto` — não só que
+    a função a calcula corretamente (testado à parte acima). Sem essa
+    ligação, os dois testes anteriores poderiam passar mesmo que
+    `_abrir_projeto` ignorasse o retorno da função."""
+    from unittest import mock
+
+    caminho = str(tmp_path / "qualquer.s7proj")
+    projeto.salvar_projeto(
+        caminho, Pilar(ap=0.30, bp=0.30), Solo(sigma_adm=200.0),
+        Concreto(fck=25.0), Aco(fyk=500.0), 0.045,
+        [CasoCarga("G", Esforcos(N=300.0))], OpcoesProjeto())
+
+    sentinela = "SENTINELA-MM-campo-inventado-para-o-teste"
+    with mock.patch("ui.completo.app.filedialog.askopenfilename",
+                    return_value=caminho), \
+         mock.patch("ui.completo.app.projeto.campos_divergentes_do_default",
+                    return_value=[sentinela]), \
+         mock.patch("ui.completo.app.messagebox.showinfo") as mock_info, \
+         mock.patch("ui.completo.app.messagebox.showerror"):
+        app_completo._abrir_projeto()
+
+    mensagem = mock_info.call_args[0][1]
+    assert sentinela in mensagem
+
+
+# --------------------------------------------------------------------------- #
 #  MEDIA #5 do GATE 2, rodada 2: trava para o CI nunca mais rodar a suíte de
 #  Tk em modo "skip" silencioso. `app_completo` (fixture abaixo) faz
 #  `pytest.skip(...)` sem display — comportamento correto para um ambiente
