@@ -4,30 +4,39 @@
 # registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
 # registrada.
 #
-# Situação na versão 7 (idêntica à da versão 6 — nenhum status mudou):
+# Situação na versão 8 (idêntica à das versões 6 e 7 — nenhum status mudou):
 #   regras (normativas) ............ 14 APROVADA, 7 PENDENTE_HUMANO
 #   praticas_consagradas ........... 1 APROVADA, 1 APROVADA_COM_USO_RESTRITO
 #   escopo_amplo_em_conferencia .... 8 PENDENTE_HUMANO
 #
 # Alteração do ruleset invalida as aprovações de A6 e A7 (CLAUDE.md regra 5).
-# NA VERSÃO 7 ISSO VALE FORMALMENTE, e vale pouco na prática: o GATE 2 do
-# commit a00401e já estava REPROVADO (nota 3,78, veto em E1/E5) e o A7 não
-# chegou a rodar sobre esta feature. Nenhuma fórmula, nenhum valor numérico,
-# nenhum status e nenhuma citação normativa mudaram na v7. Mudou a DEFINIÇÃO
-# OPERACIONAL dos símbolos do croqui de espraiamento:
-#   - REQ-PROP-03 REESCRITO: L1/L2/L3 = "espessuras" era ERRADO; o símbolo 'L'
-#     fica PROIBIDO neste croqui; largura equivalente por interface passa a ser
-#     a_eq/b_eq e espessura de camada passa a ser h_i; q exibido é o de
-#     INTERFACE (delta_sigma_topo/base), nunca delta_sigma_medio.
-#   - REQ-PROP-09 (novo, A4) e REQ-UI-07 (novo, A3) — decorrências checáveis.
-#   - Precisões de `uso_autorizado` nas duas práticas, restritivas, sem ampliar
-#     uso: a_eq/b_eq só para traçado e rótulo, jamais como área de cálculo.
-#   - Seção de colisão de símbolo: registrada a colisão consumada de 'L'.
-# A nova rodada de A6/A7 pode restringir-se ao croqui de espraiamento
-# (calc_core/sapata_isolada/visual2d.py, ui/completo/visualizacao.py,
-# calc_core/sapata_isolada/geotecnia.py nas docstrings) e aos testes dele.
+# NA VERSÃO 8 ISSO VALE FORMALMENTE, e o efeito prático é NULO para a feature
+# do croqui de espraiamento: o GATE 2 da rodada 2 já está REPROVADO (nota 4,4,
+# veto em E5 = 3,0) — não há aprovação de A6 a invalidar — e o A7 nunca rodou
+# sobre ela. O próprio A6, ao despachar estes ajustes para o a2, registrou que
+# "ajuste de texto do ruleset NÃO deve reiniciar o ciclo de aprovação desta
+# feature". Para qualquer OUTRA feature a regra 5 vale sem atenuação, e o
+# alcance material desta versão é nulo lá também: nenhum registro fora dos três
+# itens abaixo foi tocado.
+#
+# A VERSÃO 8 É EDITORIAL. Não muda fórmula, valor numérico, status, citação
+# normativa, `uso_autorizado` nem `nao_autorizado`. Muda três textos que
+# nomeavam artefatos de código que a implementação verificada não usa:
+#   - REQ-UI-07(a): fonte preferencial do q_i passa a ser
+#     `PontoPropagacao.delta_sigma`; `CamadaPropagacao.delta_sigma_topo/base`
+#     seguem VÁLIDAS e equivalentes (identidade documentada, não proibição).
+#     Verificada por execução própria do a2 (2 fontes x 3 geometrias, igualdade
+#     exata) além dos 184 pares do a6.
+#   - REQ-PROP-09(d): `ResultadoRecalque` -> `ResultadoSapata`. O objeto antigo
+#     é None exatamente no caso que o requisito existe para consertar
+#     (`verificar_recalque=False`); o campo seria inalcançável.
+#   - REQ-UI-01 / REQ-PROP-04: nova `nota_de_escopo_v8` registrando que a
+#     integração ao memorial PDF fica para rodada posterior, com três gatilhos
+#     de reabertura. Não relaxa nenhum requisito. Ver kb/pendencias.md > D1.
+# NENHUM requisito novo foi criado e nenhum existente foi relaxado. A nova
+# rodada de A6/A7, se houver, pode restringir-se ao mesmo escopo da v7.
 #
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-sha256:ebb2160ebeb18ff91c55e75a748ea320ec4f51169287e2effd5b347ccab12f0a  ruleset.yaml
+0788be48e719baf3059ed458dfc9ee1242c55a0fe5e685a7bf74f518cf57d8bd  ruleset.yaml

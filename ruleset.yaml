@@ -7,9 +7,75 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 7
+versao: 8
 escopo: "sapata isolada, carga centrada, solo homogêneo"
-data_congelamento: "2026-08-27"
+data_congelamento: "2026-08-28"
+
+# --- Versão 8: alinhamento EDITORIAL de três textos da v7 ------------------
+#     (REQ-UI-07(a), REQ-PROP-09(d), nota de escopo em REQ-UI-01/REQ-PROP-04).
+#
+# NATUREZA DESTA VERSÃO, e é o que a distingue das v3 a v7: aqui NADA de
+# normativo muda. Não muda fórmula, não muda valor numérico, não muda status,
+# não muda citação de norma, não muda `uso_autorizado` nem `nao_autorizado` de
+# nenhuma das duas entradas de `praticas_consagradas`. Muda o TEXTO de dois
+# requisitos que, escritos na v7, nomeavam atributos de código que a
+# implementação verificada não usa (um deles porque não PODE usar), e
+# registra-se por escrito uma lacuna de escopo que já existia de fato e não
+# estava anotada em lugar nenhum. Em duas das três, o texto da v7 é que estava
+# fora de passo com o código — o mesmo padrão da v7 em relação à v6.
+#
+# CONSEQUÊNCIA PARA CLAUDE.md REGRA 5 — dito explicitamente, porque a regra é
+# de leitura literal e esta versão pede uma exceção estreita e justificada:
+# alterar o ruleset invalida formalmente as aprovações de A6 e A7. Nesta
+# versão o efeito prático é NULO para a feature do croqui de espraiamento, por
+# três razões verificáveis: (1) o GATE 2 da rodada 2 já está REPROVADO
+# (nota 4,4, veto em E5 = 3,0 — relatorios/revisao_codigo.json), logo não há
+# aprovação de A6 a invalidar; (2) o A7 nunca rodou sobre esta feature; (3) o
+# próprio A6, ao despachar estes três ajustes para o a2, registrou que
+# "ajuste de texto do ruleset NÃO deve reiniciar o ciclo de aprovação desta
+# feature". Para QUALQUER OUTRA feature, a regra 5 vale sem atenuação: nenhum
+# registro fora dos três itens abaixo foi tocado, então nenhuma outra
+# aprovação é materialmente afetada.
+#
+# VERIFICAÇÃO INDEPENDENTE FEITA PELO A2 ANTES DE EDITAR (não aceita de relato
+# do a3 nem do a6 — este arquivo é escrito por quem pressupõe que os outros
+# erraram):
+#   1. `PontoPropagacao.delta_sigma` existe e sua própria docstring
+#      (geotecnia.py:470) já o nomeia "q_i — Δσ_z [kPa] na cota da interface";
+#      a docstring de `CamadaPropagacao` (geotecnia.py:518-523) diz que os
+#      símbolos do croqui NÃO saem dali. Código e docstrings já concordavam
+#      entre si; o desalinhado era o texto de REQ-UI-07(a).
+#   2. IDENTIDADE NUMÉRICA CONFERIDA POR EXECUÇÃO PRÓPRIA, em amostra menor e
+#      independente da do a6 (6 configurações: 2 fontes x 3 geometrias
+#      2,2x2,2 / 2,0x4,0 / 1,5x3,0, perfil de 3 camadas, q = 250 kPa,
+#      hf = 1,5 m): para todo i, pontos[i].delta_sigma == camadas[i].
+#      delta_sigma_topo, pontos[i+1].delta_sigma == camadas[i].delta_sigma_base
+#      e pontos[i].z == camadas[i].z_topo, com igualdade EXATA (==, não
+#      aproximada). Bate com os 184 pares do a6. Causa comum: as duas famílias
+#      saem da MESMA chamada de `acrescimo_tensao(fonte, q_líq, a, b, z)` na
+#      MESMA cota (geotecnia.py:667-674 e :686-687).
+#   3. `ResultadoRecalque` (recalques.py:210-223) NÃO tem campo `q_servico` e
+#      não poderia ter utilidade se tivesse: o requisito existe para o caso
+#      `verificar_recalque=False`, em que o objeto inteiro é None.
+#      `ResultadoSapata.q_servico` existe (sapata.py:215) e é preenchido no
+#      único sítio de construção (sapata.py:1019). O texto da v7 pedia o campo
+#      no objeto errado — pedia-o exatamente onde ele seria inalcançável.
+#   4. `pranchas.py` não aparece em nenhum dos quatro commits da feature
+#      (72b9987, 783b3c3, 3f92b39, 9ecebd2) — confirmado por
+#      `git log 8e46372..HEAD --name-only`. A lacuna de memorial é real e é de
+#      OMISSÃO, não de erro: nenhum número errado chega ao PDF porque nada
+#      desta feature chega ao PDF.
+#
+# ANÁLISE DIMENSIONAL NESTA VERSÃO: não aplicável e é preciso dizê-lo em vez de
+# omitir. Nenhuma fórmula foi introduzida ou alterada; os três ajustes trocam
+# nome de atributo e registram escopo. A cascata determinística do a2 (§2) não
+# tem o que verificar aqui, e a proteção continua sendo a de SEMÂNTICA DE
+# ÍNDICE já exigida por REQ-PROP-03 (B) desde a v7.
+#
+# O QUE ESTA VERSÃO NÃO FAZ: não reabre `PC-BOUSSINESQ-NEWMARK-canto-retangulo`
+# nem `PC-ESPRAIAMENTO-2V1H`; não cria requisito novo; não relaxa nenhum
+# requisito existente; não muda o teto de exibição, a faixa de sanidade, a
+# proibição do símbolo "L"/"B_eq" nem a proibição de veredito.
 
 # --- Versão 7: definição operacional dos símbolos do croqui de espraiamento ---
 #     (REQ-PROP-03). Resolve o conflito ALTA/E1 apontado pelo a6 no GATE 2 do
@@ -1417,6 +1483,21 @@ requisitos_para_a4:
       dsigma para a mesma camada, calculados por métodos diferentes, diferem em
       até 37 % (ver checagem_numerica de PC-ESPRAIAMENTO-2V1H); um memorial que
       não diga qual foi usado é irrastreável.
+    estado_v8: ATENDIDO_NA_TELA_PENDENTE_NO_MEMORIAL
+    nota_de_escopo_v8: >-
+      REGISTRO ACRESCENTADO NA v8, gêmeo do de REQ-UI-01 — o requisito NÃO foi
+      relaxado. Na tela, o método já viaja junto com o número e vem de
+      `prop.rotulo_metodo`, não do estado da UI (REQ-UI-07 (f), verificado por
+      render pelo a6). No MEMORIAL, não viaja: `pranchas.py` não emite nada
+      desta feature, e portanto `fonte_espraiamento` segue sendo estado
+      exclusivamente de UI — que é precisamente o que este requisito nomeia.
+      A frase "o método tem de viajar junto com o número até o memorial" fica,
+      então, satisfeita por VACUIDADE: nenhum número desta feature chega ao
+      memorial, logo não há número desacompanhado de método. É satisfação
+      frágil e por isso está escrita aqui: no instante em que um único valor de
+      propagação for para o PDF sem o rótulo de método junto, este requisito
+      passa a estar VIOLADO, não pendente. Mesmos gatilhos de reabertura
+      listados em REQ-UI-01 > nota_de_escopo_v8.
   - id: REQ-PROP-05-nao-expor-2v1h-em-recalque
     texto: >-
       PROIBIDO ligar `usar_boussinesq=False` em `recalques.py`, expor esse
@@ -1448,7 +1529,9 @@ requisitos_para_a4:
       `implementacao` usam o namespace `geotecnico.propagacao.*`, como acima.
       NÃO renomear API existente nesta rodada (quebraria UI e testes).
   - id: REQ-PROP-09-simbolos-e-testes-do-croqui
-    versao_do_texto: 7      # NOVO na v7, decorre de REQ-PROP-03 (B) a (F).
+    versao_do_texto: 8      # v7: NOVO, decorre de REQ-PROP-03 (B) a (F).
+                            # v8: só o item (d) — ResultadoRecalque ->
+                            # ResultadoSapata. (a)/(b)/(c) inalterados.
     texto: >-
       Decorrências da v7 no núcleo. Nenhuma muda número algum.
       (a) DOCSTRING DE `CamadaPropagacao` (geotecnia.py:471-478) está ERRADA e
@@ -1479,10 +1562,32 @@ requisitos_para_a4:
            M10 do a6, hoje sobrevivente): para uma camada de z=0 a z=2 m,
            delta_sigma_medio == acrescimo_tensao(fonte, q, a, b, 1.0), e é
            estritamente menor que `delta_sigma_topo`.
-      (d) `ResultadoRecalque` deve expor `q_servico` para eliminar a
-      reconstituição q_líquido + sobrecarga que a UI faz hoje (a6, E3/E2 em
-      visual2d.py:616 e :620). Sem isso, com `verificar_recalque=False` e
-      perfil PRESENTE, o croqui não aparece e a tela culpa o perfil.
+      (d) CORRIGIDO NA v8 — o texto da v7 dizia `ResultadoRecalque` e estava
+      errado no OBJETO (o requisito, esse, é o mesmo). `ResultadoSapata` deve
+      expor `q_servico` para eliminar a reconstituição q_líquido + sobrecarga
+      que a UI faz hoje (a6, E3/E2 em visual2d.py:616 e :620). Sem isso, com
+      `verificar_recalque=False` e perfil PRESENTE, o croqui não aparece e a
+      tela culpa o perfil.
+      POR QUE `ResultadoRecalque` ESTAVA ERRADO, e não é preferência de
+      arquitetura: `ResultadoRecalque` é exatamente `None` no caso que este
+      requisito existe para consertar (`verificar_recalque=False`), então o
+      campo seria inalcançável justamente quando é necessário — o texto da v7
+      pedia o dado onde ele não pode ser lido. Conferido no código pelo a2:
+      `recalques.py:210-223` não tem `q_servico` (tem `q_liquido`), e
+      `ResultadoSapata.q_servico` (sapata.py:215) é construído num único sítio
+      (sapata.py:1019) que sempre passa o valor. `Sapata._pressao_servico` é
+      extração literal do bloco que já existia em `_analisar_recalques`
+      (max(N_qp) + peso próprio, dividido pela área), com guarda a>0/b>0
+      acrescentada: nenhuma fórmula nova, nenhum número alterado.
+      RESSALVA ANEXA, que não é este item mas vive nele: este requisito é
+      satisfeito pela EXISTÊNCIA do campo e por ele ser sempre preenchido — não
+      pelo seu valor default. Um default fisicamente plausível (`float = 0.0`,
+      como estava na rodada 2) faz um esquecimento futuro sair na tela como
+      "pressão líquida nula", diagnóstico coerente e falso, em vez de "sem
+      dado"; `Optional[float] = None` faz a ausência aparecer como ausência,
+      que é o comportamento que a UI já trata. É defeito BAIXA despachado ao a4
+      (sapata.py:215) e não vira requisito na v8 — fica registrado para que a
+      escolha não seja revertida por acidente.
 
 requisitos_para_a3:
   - id: REQ-UI-01-rotulo-nao-normativo
@@ -1491,6 +1596,38 @@ requisitos_para_a3:
       "Propagação de tensão em profundidade — método não normativo. A NBR
       6122:2022 não prescreve método de espraiamento. Valores informativos."
       Sem sigla, sem asterisco de rodapé: texto legível ao lado do resultado.
+    estado_v8: PARCIALMENTE_ATENDIDO_POR_DECISAO_DE_ESCOPO
+    nota_de_escopo_v8: >-
+      REGISTRO ACRESCENTADO NA v8 — o requisito NÃO foi relaxado; o que muda é
+      que a lacuna deixa de ser tácita. A metade "junto ao desenho" está
+      atendida e verificada por render (a6, rodada 2). A metade "repetido no
+      memorial" continua ABERTA: `calc_core/sapata_isolada/pranchas.py` não foi
+      tocado por nenhum dos quatro commits desta feature (72b9987, 783b3c3,
+      3f92b39, 9ecebd2 — confirmado pelo a2 com
+      `git log 8e46372..HEAD --name-only`), em nenhuma das três rodadas. O
+      espraiamento por camada, o rótulo de método e os dois avisos permanentes
+      existem só na tela.
+      NATUREZA DA LACUNA: é de OMISSÃO, não de erro. Nenhum número errado é
+      emitido no PDF porque nada desta feature chega ao PDF. Por isso NÃO é
+      bloqueante para o GATE 2 desta feature, e a v8 registra isso
+      explicitamente para que a próxima leitura não confunda "deliberadamente
+      adiado" com "esquecido" — que é a confusão que o a6 apontou ao dizer que
+      "hoje o requisito está parcialmente aberto sem nenhum registro de que
+      isso é deliberado" (defeito BAIXA/E4, pranchas.py:496, reincidente do
+      item 13 da rodada 1).
+      FORMA DO ADIAMENTO — pendência aberta com GATILHO, não com data. Prazo em
+      calendário não tem como ser cumprido nem cobrado por este pipeline; um
+      gatilho tem. A integração ao memorial fica para rodada posterior e passa
+      a ser BLOQUEANTE assim que qualquer uma destas ocorrer:
+        (i) o croqui de espraiamento for exposto em release ao usuário final
+            com o memorial PDF apresentado como completo para esta feature; ou
+        (ii) `pranchas.py` passar a emitir QUALQUER valor de propagação — a
+             partir daí o rótulo não-normativo e o rótulo de método viajam
+             junto ou nada é emitido (REQ-PROP-04); ou
+        (iii) o A7 rodar sobre esta feature: caso de validação que confira o
+              PDF não pode ser declarado ALTA com a seção ausente.
+      Enquanto nenhuma delas ocorrer, o estado correto é o atual e a tela é a
+      única superfície da feature. Registrado também em kb/pendencias.md.
   - id: REQ-UI-02-aviso-de-homogeneidade
     texto: >-
       O desenho vai mostrar camadas coloridas e um campo de tensão calculado
@@ -1524,15 +1661,53 @@ requisitos_para_a3:
       `ui/` recebe e desenha. Nenhuma reimplementação da fórmula na camada de
       desenho — foi assim que nasceu a duplicação de `recalques.py:265`.
   - id: REQ-UI-07-simbolos-do-croqui
-    versao_do_texto: 7      # NOVO na v7. É o que o a6 deve conferir no croqui.
+    versao_do_texto: 8      # v7: NOVO. v8: só o item (a) — troca de fonte
+                            # preferencial do q_i, sem mudar o que é exigido.
     texto: >-
       Rotulagem do croqui de espraiamento, conforme REQ-PROP-03 (B) a (F).
       Checável item a item:
-      (a) Um rótulo de tensão POR INTERFACE, com o valor da interface
-      (`delta_sigma_topo`/`delta_sigma_base` — a interface interna é
-      compartilhada, um rótulo só), na cota da interface, não na meia-altura da
-      camada. NÃO exibir `delta_sigma_medio` como "q_i". Se for exibido, rótulo
-      próprio "Δσ_méd".
+      (a) Um rótulo de tensão POR INTERFACE, na cota da interface, nunca na
+      meia-altura da camada, e a interface interna — compartilhada por duas
+      camadas — recebe UM rótulo só. FONTE PREFERENCIAL DO VALOR (redigido na
+      v8): `PontoPropagacao.delta_sigma`, isto é, `prop.pontos[i].delta_sigma`.
+      `CamadaPropagacao.delta_sigma_topo`/`delta_sigma_base`, que o texto da v7
+      nomeava, permanecem EQUIVALENTES E VÁLIDAS — não estão proibidas — mas
+      deixam de ser a fonte recomendada. A troca é de preferência, não de
+      número: são o mesmo número.
+        * IDENTIDADE (o que sustenta a equivalência, e é fato de código, não
+          convenção): para todo i, pontos[i].delta_sigma ==
+          camadas[i].delta_sigma_topo, pontos[i+1].delta_sigma ==
+          camadas[i].delta_sigma_base e pontos[i].z == camadas[i].z_topo, com
+          igualdade EXATA. As duas famílias saem da MESMA chamada de
+          `acrescimo_tensao(fonte, q_líq, a, b, z)` na MESMA cota
+          (geotecnia.py:667-674 e :686-687). Conferido por execução pelo a6
+          (184 pares: 2 fontes x 5 geometrias x 4 cotas de assentamento,
+          diferença máxima 0,000e+00) e reconferido em amostra independente
+          pelo a2 na v8 (2 fontes x 3 geometrias).
+        * POR QUE PREFERIR O PONTO: `PontoPropagacao` carrega q_i e a_eq,i /
+          b_eq,i JUNTOS, na mesma cota — que é literalmente a definição de
+          REQ-PROP-03 (B). Ler a tensão de `CamadaPropagacao` e a largura de
+          `PontoPropagacao` obrigaria a UI a reconstruir o mapeamento
+          ponto-camada, que é a classe de erro que produziu o defeito original
+          da rodada 1. A docstring de `CamadaPropagacao` (geotecnia.py:518-523)
+          já diz, por escrito, que os símbolos do croqui não saem dali.
+        * O QUE NÃO MUDOU: continua PROIBIDO exibir `delta_sigma_medio` como
+          "q_i" (REQ-PROP-03 (D)); se exibido, rótulo próprio "Δσ_méd". Usar
+          `delta_sigma_medio` como fator de COR do tronco não é rótulo e não
+          viola este item.
+        * A PREFERÊNCIA SÓ VALE ENQUANTO A IDENTIDADE VALER, e é isto que a v8
+          registra em vez de deixar tácito. As duas famílias são produzidas por
+          trechos independentes da MESMA função: se uma passar a amostrar com
+          offset, ou se `limites()` deixar de ser contíguo a partir da cota da
+          base, croqui e memorial exibirão números diferentes para a mesma
+          interface, em silêncio, e a justificativa desta alínea cai sem que
+          ninguém seja avisado. O teste de contrato que trava a identidade
+          (igualdade EXATA, `==`, não `approx`, parametrizado por fonte e
+          geometria, incluindo o alinhamento de cota) foi despachado ao a4 como
+          defeito MÉDIA da rodada 2 do GATE 2 (geotecnia.py:667) e é a rede
+          desta alínea: enquanto não existir, a preferência vale sem rede;
+          existindo, não pode ser removido sem revisitar este texto. A v8 NÃO
+          cria requisito novo por isso — apenas nomeia a dependência.
       (b) Um rótulo de largura POR INTERFACE, na mesma cota do q_i
       correspondente: "a_eq" no corte X, "b_eq" no corte Y, com unidade.
       (c) "L", "L1/L2/L3" e "B_eq" não aparecem em lugar nenhum da tela nem do

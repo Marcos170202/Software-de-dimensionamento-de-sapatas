@@ -640,3 +640,52 @@ do que não pode. `REQ-PROP-03` mantém os valores como informativos.
 feita, uma camada mole profunda passa despercebida — lado inseguro. É a
 pendência mais relevante das três em consequência de projeto, e a que mais
 merece a atenção do engenheiro.
+
+---
+
+## Rodada 2026-08-28 (ruleset versão 8) — lacuna de memorial do croqui de espraiamento
+
+Registro de escopo, não de norma. A v8 do ruleset é editorial (três textos
+realinhados a decisões de implementação já verificadas pelo a6 na rodada 2 do
+GATE 2); dois dos três ajustes não deixam pendência. Este deixa.
+
+**Pendência D1 — a feature de espraiamento não chega ao memorial PDF.**
+
+*Pergunta objetiva:* a integração do croqui de espraiamento ao memorial
+(`calc_core/sapata_isolada/pranchas.py`) fica para rodada posterior, ou é
+condição para liberar a feature ao usuário final?
+
+*Trecho literal da fonte (relatorio do a6, rodada 2, defeito BAIXA/E4,
+`pranchas.py:496`):* "Reincidente da rodada 1, item 13, não endereçado:
+pranchas.py não foi tocado por nenhum dos 4 commits. O espraiamento por camada,
+o rótulo de método e os dois avisos permanentes existem só na tela. Nenhum
+número errado é emitido — a feature simplesmente não chega ao PDF — mas a
+metade 'repetido no memorial' de REQ-UI-01 continua em aberto e
+fonte_espraiamento continua sendo estado exclusivamente de UI, que é o que
+REQ-PROP-04 nomeia. (...) Hoje o requisito está parcialmente aberto sem nenhum
+registro de que isso é deliberado."
+
+*Leitura proposta pelo a2:* **fica para rodada posterior, como pendência aberta
+com gatilho, e não é bloqueante para este GATE 2.** Confirmado por
+`git log 8e46372..HEAD --name-only` que `pranchas.py` não aparece em nenhum dos
+quatro commits (72b9987, 783b3c3, 3f92b39, 9ecebd2). A lacuna é de OMISSÃO, não
+de erro: nada desta feature chega ao PDF, logo nenhum número errado é emitido, e
+REQ-PROP-04 fica satisfeito por vacuidade — não há número desacompanhado de
+método porque não há número. Prazo em calendário não é cobrável por este
+pipeline; gatilho é. Registrado em `ruleset.yaml` v8 em
+`REQ-UI-01 > nota_de_escopo_v8` e `REQ-PROP-04 > nota_de_escopo_v8`, com três
+gatilhos que tornam a integração bloqueante: (i) release ao usuário final com o
+memorial apresentado como completo para esta feature; (ii) `pranchas.py` passar
+a emitir qualquer valor de propagação; (iii) o A7 rodar sobre esta feature com
+caso que confira o PDF.
+
+*Impacto se a leitura estiver errada:* se a integração for devida agora e for
+adiada, o engenheiro que assina a ART recebe um memorial que **silencia** sobre
+uma análise que viu na tela — pior, sobre a única análise da feature que a NBR
+6122:2022 não prescreve. Ele pode concluir que o espraiamento foi considerado no
+documento assinado quando não foi. O risco é de expectativa e de rastreabilidade,
+não de número errado; nenhum valor incorreto é emitido em nenhuma hipótese.
+Se, ao contrário, a integração for feita sem os rótulos junto (o gatilho (ii)),
+o risco inverte de sinal e passa a ser violação direta de REQ-PROP-04 — método
+não rastreável em documento assinado, com diferença medida de até 37 % entre os
+dois métodos para a mesma camada.
