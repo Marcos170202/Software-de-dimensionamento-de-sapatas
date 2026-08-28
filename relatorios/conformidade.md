@@ -172,3 +172,192 @@ encontrada nas correções de citação normativa nem na extração de
 Recomendação de dívida técnica (não bloqueante para este GATE): fechar D1 com
 um teste de regressão específico para o mutante condicional à razão de lados,
 como já sinalizado por a6.
+
+## Adendo — 2026-08-28: corte de espraiamento por camada (GATE 3 pós-GATE 2,
+nota 4,60, terceira rodada, 0 achados ALTA)
+
+Escopo: `calc_core/sapata_isolada/geotecnia.py` (funções de propagação —
+`influencia_canto_retangulo`, `acrescimo_tensao_centro`,
+`acrescimo_tensao_2v1h`, `acrescimo_tensao`, `tensao_liquida_na_base`,
+`largura_equivalente`, `propagacao_em_profundidade`, `propagacao_comparada`),
+`calc_core/sapata_isolada/visual2d.py::PerfilCortes` (corte na tela) e o
+trecho de `recalques.py::AnaliseRecalque` tocado pela consolidação
+(REQ-PROP-07). Ruleset v8, `praticas_consagradas > PC-BOUSSINESQ-NEWMARK-
+canto-retangulo` (APROVADA) e `PC-ESPRAIAMENTO-2V1H`
+(APROVADA_COM_USO_RESTRITO), `requisitos_para_a4 > REQ-PROP-01..09`,
+`requisitos_para_a3 > REQ-UI-01..07`.
+
+### Ressalva de escopo herdada do a6, cumprida à risca
+`calc_core/sapata_isolada/pranchas.py` **não contém esta feature** — nenhum
+número de propagação por camada, rótulo de método ou aviso não-normativo
+desta feature chega ao memorial PDF; o único trecho de `pranchas.py` que se
+aproxima do assunto (linha 562, "BULBO DE TENSÕES (Boussinesq)") é o bulbo de
+**recalque** pré-existente, alimentado por `ResultadoRecalque.parcelas`
+(sempre Boussinesq fixo via `AnaliseRecalque.usar_boussinesq=True`), não pela
+`PropagacaoTensoes`/`FONTE_2V1H` desta feature — não há seletor de método ali
+e não há ambiguidade a rotular. Confirmado por grep (`espraiamento|2v1h|
+2V1H|2V:1H|propagacao` → zero ocorrências em `pranchas.py`, exceto a citação
+literal a "Boussinesq" da linha 562). **Nenhum caso de validação que confira
+o PDF é aqui declarado ALTA nem aprovado — é declarado DESCOBERTO**, conforme
+instrução explícita; a ausência já está registrada como pendência com
+gatilho (não bloqueante) em `ruleset.yaml > REQ-UI-01 > nota_de_escopo_v8` e
+não reprova este GATE 3.
+
+- **DESCOBERTO-01** — `pranchas.py` não emite o croqui de espraiamento por
+  camada, o rótulo do método (`prop.rotulo_metodo`) nem os dois avisos
+  permanentes (não-normativo / meio homogêneo) no memorial PDF. Trigger de
+  reabertura já registrado (gatilhos i/ii/iii de `REQ-UI-01`); o gatilho
+  (iii) — "o A7 rodar sobre esta feature" — **acaba de se cumprir com esta
+  própria validação**, então a pendência passa de "registrada" para
+  "confirmada por A7 nesta rodada" e deve entrar na próxima pauta de A3/A4,
+  sem bloquear o GATE 3 atual (a omissão não emite número errado — não emite
+  número algum).
+
+### Casos de referência recomputados de forma independente (não usam o
+código como oráculo)
+
+**Boussinesq/Newmark** — `acrescimo_tensao_centro` comparado a integração
+numérica direta e independente do núcleo pontual `3·q·z³/(2π·R⁵)` sobre o
+retângulo carregado (quadratura de Simpson própria, sem importar nada de
+`calc_core`, salvo o valor a comparar), em 3 geometrias (2×2, 2,5×4, 1,5×1,5)
+× 3 profundidades cada (9 combinações): diferença relativa **0,0000 %** em
+todos os pontos (ex.: a=2,5, b=4,0, z=2,5 m → integral = 88,276091 kPa,
+`calc_core` = 88,276091 kPa).
+
+`influencia_canto_retangulo(m,n)` conferida separadamente por integração
+numérica do canto (Simpson, malha própria) em 11 pares (m,n) de 0,1 a 10,0,
+incluindo o ramo crítico `m²n²>m²+n²+1` (m=n=2, 3, 5) e o limite assintótico
+m,n→∞ → 0,25 (I(10,10) = 0,249815, fisicamente correto: um plano infinito
+dividido em 4 quadrantes carrega q/4 por quadrante): diferença **0,0000** em
+todos os 11 pares. **Nota metodológica:** uma primeira tentativa desta
+verificação usou uma tabela de Newmark reconstituída de memória, que se
+revelou **inconsistente** (I(5,5)=0,3367 excede o limite físico de 0,25) —
+descartada e substituída pela integração numérica direta, que não depende de
+memorização de tabela.
+
+**2V:1H** — forma fechada `q·a·b/((a+z)(b+z))` recomputada à parte e
+comparada a `acrescimo_tensao_2v1h` nas mesmas 9 combinações: diferença
+**0,0e+00** em todas.
+
+### Equilíbrio e invariância (verificação física direta, independe de
+bibliografia)
+
+- z=0 → Δσ = q exatamente, nos dois métodos, nas 3 geometrias: **confirmado**.
+- Equilíbrio vertical exato do 2V:1H, `Δσ·(a+z)(b+z) = q·a·b`, em 5
+  profundidades × 3 geometrias (15 pontos): erro relativo **0,0** (ou
+  1,1e-16, ruído de ponto flutuante) em todos.
+- Δσ estritamente decrescente com z, nos dois métodos, e largura equivalente
+  (`a_eq`) estritamente crescente com z, nas 3 geometrias: **confirmado** em
+  8 profundidades por geometria (z de 0 a 20 m).
+- z→∞: Δσ→0 nos dois métodos (checado em z=1e6 m): **confirmado**.
+
+Todos os valores acima batem, ponto a ponto, com o que já está documentado
+em `ruleset.yaml > PC-BOUSSINESQ-NEWMARK-canto-retangulo > checagem_numerica`
+e `PC-ESPRAIAMENTO-2V1H > checagem_numerica` (I(1,1)=0,17522; equilíbrio
+exato; contorno em z=0) — recomputados aqui de forma independente, não
+aceitos por citação.
+
+### REQ-PROP-03(A) — sem veredito
+
+Grep em `geotecnia.py` e no bloco `PerfilCortes` de `visual2d.py` por
+PASSA/aprovado/reprovado/falha/cor de reprovação: **nenhuma ocorrência** fora
+de comentários/docstrings que **proíbem** essas construções. A rampa de cor
+do tronco (`cor_hex`, vermelho = mais Δσ) é reaproveitada de `MapaMomentos` e
+é escala de magnitude, não veredito — documentado como tal na própria
+docstring de `_espraiamento`. `test_resultado_nao_carrega_nenhum_veredito`
+(já existente) roda e passa, e a inspeção manual dos campos de
+`PropagacaoTensoes`/`PontoPropagacao`/`CamadaPropagacao` confirma ausência de
+qualquer campo de aprovação/limite. **Condição da aprovação de
+`PC-ESPRAIAMENTO-2V1H` cumprida**, não apenas estilo.
+
+### `PC-ESPRAIAMENTO-2V1H` uso restrito respeitado
+
+- `AnaliseRecalque.__init__` mantém `usar_boussinesq: bool = True` como
+  default (`recalques.py:239`).
+- Grep em todo o repositório por `usar_boussinesq`: o único caminho de
+  produção que instancia `AnaliseRecalque` é `sapata.py:919`, sem passar o
+  parâmetro (default prevalece); as únicas ocorrências de
+  `usar_boussinesq=False` estão em `tests/test_propagacao_tensoes.py`
+  (testes que travam justamente esse comportamento).
+- Grep por `fonte_espraiamento` em todo `calc_core/` e `ui/`: confinado a
+  `visual2d.py` (núcleo do widget) e `ui/completo/visualizacao.py` (seletor
+  de tela) — nenhum caminho liga a escolha de método do corte a
+  `AnaliseRecalque` nem a `Sapata`/capacidade de carga.
+- `tests/test_propagacao_tensoes.py::test_recalque_continua_com_boussinesq_por_default`
+  e `::test_propagacao_nao_expoe_seletor_de_recalque` (REQ-PROP-05) — **ambos
+  passam**; o segundo inspeciona a assinatura de `propagacao_em_profundidade`
+  (sem `usar_boussinesq`) e o código-fonte de `AnaliseRecalque._delta_sigma`
+  (sem chamar `propagacao_em_profundidade`), continuam protegendo a fronteira.
+
+### Rastreabilidade normativa
+
+Toda função pública nova/tocada em `geotecnia.py` carrega `[pratica: PC-*]`
+(nunca `[rule:]`): `influencia_canto_retangulo`, `acrescimo_tensao_centro`,
+`acrescimo_tensao_2v1h`, `acrescimo_tensao`, `tensao_liquida_na_base`,
+`largura_equivalente`, `propagacao_em_profundidade`, `propagacao_comparada` —
+confirmado por inspeção via AST (não apenas grep de texto). `visual2d.py`
+(`_espraiamento`) e `recalques.py` (`_delta_sigma`) citam a prática aplicável
+no docstring. Único `[rule:]` remanescente nestes três arquivos é o
+pré-existente e não relacionado (`Solo.fs_deslizamento`,
+NBR6122-6.2.1.1.2, PENDENTE_HUMANO, fora do escopo desta feature).
+
+### Suíte completa
+
+`pytest tests/` rodado num venv Python 3.12 com tkinter (permite incluir os
+testes de `visual2d.py`): **308/308 passando**, batendo com o número
+declarado pelo a6 na v8 do ruleset. Isolando
+`tests/test_propagacao_tensoes.py`: **166/166 passando**.
+`ruff check --select E9 calc_core/ ui/`: sem erros (mesmo critério das
+rodadas anteriores; `ruff check` completo, sem `--select`, aponta 52 avisos
+de estilo `UP045`/`Optional`→`X | None`, pré-existentes e fora do escopo
+desta feature — não é regressão introduzida por ela).
+
+### Render real (Xvfb + tkinter, `canvas.postscript()` → PNG via
+Ghostscript)
+
+Sapata 3,00×0,90 m sobre perfil de 4 camadas (aterro/areia média/argila
+mole/areia compacta), N.A. em 3,00 m, carga excêntrica (My=150 kN·m) — mesmo
+tipo de caso já usado pelo a6 nas rodadas de GATE 2, mas renderizado nesta
+rodada, de novo, por este agente.
+
+- **Corte X, Boussinesq:** rótulos por interface `a_eq = 3.00 m` / `a_eq =
+  4.79 m` / `a_eq = 7.24 m` e `q = 124.8 kPa` / `q = 43.1 kPa` / `q = 17.7
+  kPa` — nunca "L". Os dois avisos permanentes (não-normativo, meio
+  homogêneo) presentes, rótulo de método `Boussinesq/Newmark (método não
+  normativo) · q_líq 125 kPa` e a ressalva "leitura geométrica ILUSTRATIVA"
+  específica do Boussinesq, todos no bloco fixo do topo. Tronco contido no
+  canvas.
+- **Corte Y, 2V:1H + bulbo combinados:** rótulo de método `Espraiamento
+  2V:1H — 26,57° (método não normativo) · q_líq 125 kPa` com a ressalva
+  específica ("subestima Δσ na faixa rasa... superestima abaixo de ~1,9·B,
+  onde a comparação... inverte de sinal"), rótulos `b_eq` (nunca `a_eq` nem
+  "L", corretamente trocado por estar em corte Y) por interface. Tronco e
+  isolinhas do bulbo contidos no canvas, sem sobreposição ilegível.
+- Nenhum texto de veredito (PASSA/aprovado/reprovado) em nenhum dos 150/170
+  itens desenhados no canvas, nas duas configurações — lista de textos
+  extraída programaticamente do canvas, não só inspeção visual.
+
+Imagens em
+`/tmp/claude-0/-home-user-Software-de-dimensionamento-de-sapatas/08dfb96e-3dcd-5ce8-8489-4cf432c45335/scratchpad/a7_check_boussinesq.png`
+e `a7_check_2v1h.png` (scratchpad da sessão, não versionadas).
+
+### Veredito — GATE 3
+
+**APROVADO**, com uma pendência DESCOBERTA (não bloqueante, já registrada com
+gatilho no ruleset v8) devolvida a A3/A4 para a próxima pauta.
+
+- 100 % dos casos de criticidade ALTA passaram: os 9+9 confrontos numéricos
+  independentes (Boussinesq e 2V:1H), os 11 pares de `influencia_canto_
+  retangulo`, os 15 pontos de equilíbrio vertical exato do 2V:1H, a ausência
+  de veredito (REQ-PROP-03(A)), o uso restrito do 2V:1H (REQ-PROP-05) e a
+  suíte completa (308/308).
+- 0 casos MÉDIA/BAIXA reprovados nesta rodada; a única pendência encontrada
+  (DESCOBERTO-01, ausência no PDF) é de natureza diferente — omissão
+  documentada, não erro — e por instrução explícita desta rodada **não pode
+  ser classificada como ALTA reprovada** enquanto a seção não existir no
+  memorial; ela é reportada como confirmação do gatilho (iii) já previsto em
+  `REQ-UI-01 > nota_de_escopo_v8`.
+- Nenhum defeito de cálculo, equilíbrio violado ou veredito indevido
+  encontrado — reconfirma, sem depender do relato do a6, o histórico desta
+  feature. Nenhuma regressão real identificada; nada devolvido a A4/A5 além
+  do já registrado.
