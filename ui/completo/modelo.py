@@ -52,6 +52,13 @@ def construir_modelo_visual(sapata: Sapata, res: ResultadoSapata) -> dict:
         "nivel_agua": perfil.nivel_agua if perfil is not None else None,
         "armaduras": armaduras,
         "q_liquido": q_liquido,
+        # Pressão TOTAL de serviço na base [kPa], já pronta em
+        # `ResultadoSapata.q_servico` (a4, commit 783b3c3). Passagem simples,
+        # sem cálculo: existe SEMPRE (mesmo com `verificar_recalque=False` ou
+        # perfil ausente), ao contrário de `q_liquido` acima, que só existe
+        # quando `res.recalques is not None`. É o que `_propagacao_atual`
+        # (visual2d.py) passa para `geotecnia.propagacao_em_profundidade`.
+        "q_servico": res.q_servico,
         # Objeto `Solo` inteiro (não um número derivado): o corte de
         # espraiamento por camada (`visual2d.PerfilCortes._espraiamento`)
         # chama `geotecnia.propagacao_em_profundidade(solo, ...)` — a UI só

@@ -264,25 +264,42 @@ class AbaPerfilGeologico(ttk.Frame):
             side="left", padx=4)
         ttk.Separator(barra, orient="vertical").pack(side="left", fill="y",
                                                         padx=6)
-        # Espraiamento por camada (q1/q2/q3, L1/L2/L3) — corte alternativo ao
-        # bulbo acima, sobre o MESMO perfil de solo natural já desenhado
-        # (nunca lastro/reforço, ver ruleset REQ-UI-03). Não influencia
-        # recalque nem verificação alguma (REQ-UI-04).
+        # Espraiamento por camada (q_i, a_eq,i/b_eq,i — REQ-UI-07) — corte
+        # alternativo ao bulbo acima, sobre o MESMO perfil de solo natural já
+        # desenhado (nunca lastro/reforço, ver ruleset REQ-UI-03). Não
+        # influencia recalque nem verificação alguma (REQ-UI-04).
         self.v_espraiamento = tk.BooleanVar(value=False)
         ttk.Checkbutton(barra, text="Espraiamento por camada",
                         variable=self.v_espraiamento,
-                        command=lambda: self.painel.alternar(
-                            "mostrar_espraiamento",
-                            self.v_espraiamento.get())).pack(side="left",
-                                                              padx=4)
-        ttk.Button(barra, text="Boussinesq",
-                   command=lambda: self.painel.definir_fonte_espraiamento(
-                       FONTE_BOUSSINESQ)).pack(side="left", padx=2)
-        ttk.Button(barra, text="2V:1H",
-                   command=lambda: self.painel.definir_fonte_espraiamento(
-                       FONTE_2V1H)).pack(side="left", padx=2)
+                        command=self._alternar_espraiamento).pack(
+            side="left", padx=4)
+        # a6, achado 9: dois `ttk.Button` sem estado visível (nada indicava
+        # qual método estava ativo) e habilitados mesmo com o checkbox acima
+        # desmarcado. `ttk.Radiobutton` ligados a uma `StringVar` mostram o
+        # método corrente pela própria seleção, e ficam desabilitados junto
+        # com o checkbox.
+        self.v_fonte_espraiamento = tk.StringVar(value=FONTE_BOUSSINESQ)
+        self._radios_espraiamento: list[ttk.Radiobutton] = []
+        for rotulo, valor in (("Boussinesq", FONTE_BOUSSINESQ),
+                              ("2V:1H", FONTE_2V1H)):
+            rb = ttk.Radiobutton(
+                barra, text=rotulo, value=valor,
+                variable=self.v_fonte_espraiamento,
+                command=self._mudar_fonte_espraiamento,
+                state="disabled")
+            rb.pack(side="left", padx=2)
+            self._radios_espraiamento.append(rb)
         canvas = _canvas(self)
         self.painel = PerfilCortes(canvas)
+
+    def _alternar_espraiamento(self) -> None:
+        ativo = self.v_espraiamento.get()
+        self.painel.alternar("mostrar_espraiamento", ativo)
+        for rb in self._radios_espraiamento:
+            rb.configure(state="normal" if ativo else "disabled")
+
+    def _mudar_fonte_espraiamento(self) -> None:
+        self.painel.definir_fonte_espraiamento(self.v_fonte_espraiamento.get())
 
     def _mudar_direcao(self, direcao: str) -> None:
         self.painel.definir_direcao(direcao)

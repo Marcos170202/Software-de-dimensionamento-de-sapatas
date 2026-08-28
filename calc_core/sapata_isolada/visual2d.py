@@ -15,6 +15,7 @@ from typing import Optional
 from .geotecnia import (
     AVISO_MEIO_HOMOGENEO,
     AVISO_NAO_NORMATIVO,
+    FONTE_2V1H,
     FONTE_BOUSSINESQ,
     ROTULO_FONTE,
     PropagacaoTensoes,
@@ -41,6 +42,18 @@ CORES_SUBSTRATO = {"granular": "#c79a2e", "coesivo": "#6f8c6b",
 # REQ-UI-01/REQ-UI-02 do ruleset).
 AVISO_BG = "#3a2a10"
 AVISO_FG = "#e2b53f"
+
+# REQ-UI-07(d): sob Boussinesq, a largura equivalente do tronco é LEITURA
+# GEOMÉTRICA ILUSTRATIVA (a solução elástica não tem tronco de espraiamento
+# nem largura carregada — ver `geotecnia.largura_equivalente` e o
+# `uso_autorizado` de `PC-BOUSSINESQ-NEWMARK-canto-retangulo`, item 1.b).
+# Texto FIXO de legenda da UI (não um valor calculado): não precisa vir do
+# núcleo. Sob 2V:1H a ressalva equivalente É calculada pelo núcleo (a largura
+# depende do método) e vem por `prop.avisos` — nunca duplicada aqui.
+RESSALVA_LARGURA_ILUSTRATIVA_BOUSSINESQ = (
+    "a_eq/b_eq sob Boussinesq: leitura geométrica ILUSTRATIVA, não a área de "
+    "um tronco real — a solução elástica não tem espraiamento nem largura "
+    "carregada.")
 
 
 def _escurecer(hexa: str, k: float = 0.32) -> str:
@@ -320,11 +333,16 @@ class PerfilCortes:
     MEIA_LARGURA = 1.25      # semilargura do corte, em múltiplos da dimensão
     PROFUNDIDADE = 2.6       # em múltiplos do menor lado
     N_GRADE = 61
-    # Faixa reservada no topo do corte para os dois avisos permanentes
-    # (REQ-UI-01/REQ-UI-02) quando o espraiamento por camada está ativo —
-    # generosa o bastante para os textos completos quebrarem em até duas
-    # linhas cada em larguras de canvas usuais (>= ~560 px).
-    FAIXA_AVISO_ESPRAIAMENTO = 84.0
+    # Piso da faixa reservada no topo do corte para os avisos permanentes
+    # (REQ-UI-01/REQ-UI-02) quando o espraiamento por camada está ativo. A
+    # ALTURA REAL é medida por `_medir_faixa_aviso` via `bbox()` dos textos de
+    # verdade (eles quebram em largura variável conforme o canvas) — este
+    # piso só evita uma faixa ridiculamente baixa se a medição falhar.
+    FAIXA_AVISO_MINIMA = 40.0
+    # Base vertical fixa do cabeçalho (título + subtítulo, `desenhar()`),
+    # antes de qualquer faixa de aviso. Uma só constante para `desenhar()` e
+    # `_espraiamento()` não divergirem sobre onde a faixa começa.
+    TOPO_CABECALHO = 66.0
 
     def __init__(self, canvas) -> None:
         self.canvas = canvas
@@ -335,13 +353,17 @@ class PerfilCortes:
         self.malha_mef = None
         self._cache_bulbo = None
         # ------------------------------------------------- espraiamento por camada
-        # Corte alternativo ao bulbo: pirâmide/tronco por Δσ nos LIMITES DE
-        # CAMADA (q1/q2/q3, L1/L2/L3 — REQ-UI-04). Estado independente do
-        # `fonte` do bulbo acima: aqui "fonte_espraiamento" escolhe entre
-        # Boussinesq/Newmark e 2V:1H (`calc_core.sapata_isolada.geotecnia`),
-        # nunca entre analítico e MEF.
+        # Corte alternativo ao bulbo: pirâmide/tronco por Δσ nas INTERFACES de
+        # camada (q_i, a_eq,i/b_eq,i — REQ-UI-07, ruleset v7). Estado
+        # independente do `fonte` do bulbo acima: aqui "fonte_espraiamento"
+        # escolhe entre Boussinesq/Newmark e 2V:1H
+        # (`calc_core.sapata_isolada.geotecnia`), nunca entre analítico e MEF.
         self.mostrar_espraiamento = False
         self.fonte_espraiamento = FONTE_BOUSSINESQ
+        # Mensagem de `ValueError` do núcleo na última chamada de
+        # `_propagacao_atual`, para a distinguir de "sem perfil/solo" na tela
+        # (a6, achado 5). `None` quando a última chamada não levantou nada.
+        self._erro_espraiamento: Optional[str] = None
         canvas.bind("<Configure>", lambda e: self.desenhar())
 
     def alternar(self, chave: str, valor: bool) -> None:
@@ -404,16 +426,48 @@ class PerfilCortes:
         prof_total = camadas[-1]["z_base"]
         dim = m["a"] if self.direcao == "X" else m["b"]
         transversal = m["b"] if self.direcao == "X" else m["a"]
+        eixo_val = "a" if self.direcao == "X" else "b"
         meia = dim * self.MEIA_LARGURA          # semilargura do corte, em metros
+
+        # Propagação de tensões calculada UMA vez por quadro (não uma para a
+        # geometria e outra para o desenho): tanto a semilargura do corte
+        # (item abaixo, a6 achado 6) quanto os rótulos de `_espraiamento`
+        # partem deste mesmo `PropagacaoTensoes`.
+        prop_espraiamento: Optional[PropagacaoTensoes] = None
+        self._erro_espraiamento = None
+        if self.mostrar_espraiamento:
+            try:
+                prop_espraiamento = self._propagacao_atual(
+                    m, self.fonte_espraiamento)
+            except ValueError as e:
+                self._erro_espraiamento = str(e)
+
+        # a6, achado 6: a largura do tronco de espraiamento nunca entrava na
+        # conta de `meia`/`esc`, e sob 2V:1H ela FACILMENTE excede a semi-
+        # largura do corte (a_eq/2 = (a+z)/2 cresce sem limite com z). Sem
+        # isto o polígono vazava ~50 px de cada lado do canvas. Usa-se a MAIOR
+        # largura equivalente prevista em qualquer interface (ela é
+        # estritamente crescente com z — REQ-PROP-03(F) — então o máximo é
+        # sempre na interface mais profunda calculada).
+        if prop_espraiamento is not None and prop_espraiamento.pontos:
+            larguras = [getattr(p, f"largura_equivalente_{eixo_val}")
+                       for p in prop_espraiamento.pontos]
+            larguras = [v for v in larguras if v is not None]
+            if larguras:
+                meia = max(meia, max(larguras) / 2.0)
 
         col_x, col_l, faixa_rotulos = 62.0, 22.0, 158.0
         corte_x0 = col_x + col_l + faixa_rotulos
         corte_x1 = W - 22.0
-        # reserva a faixa fixa dos dois avisos não normativos
-        # (REQ-UI-01/REQ-UI-02) quando o espraiamento por camada está ativo,
-        # para nunca sobrepor o cabeçalho nem a estratigrafia.
-        topo = 66.0 + (self.FAIXA_AVISO_ESPRAIAMENTO
+        # reserva a faixa dos avisos não normativos (REQ-UI-01/REQ-UI-02, e o
+        # rótulo do método/ressalva do 2V:1H — a6 achado 8) quando o
+        # espraiamento por camada está ativo, para nunca sobrepor o
+        # cabeçalho nem a estratigrafia. Altura MEDIDA (a6 achado 7), não
+        # estimada: os textos quebram em largura variável conforme W.
+        faixa_aviso = (self._medir_faixa_aviso(W, prop_espraiamento,
+                                               self._erro_espraiamento)
                        if self.mostrar_espraiamento else 0.0)
+        topo = self.TOPO_CABECALHO + faixa_aviso
         base = H - 52.0
 
         largura_corte = max(corte_x1 - corte_x0, 60.0)
@@ -494,7 +548,9 @@ class PerfilCortes:
             self._bulbo(m, px, ym, dim, transversal, hf, esc, base, W)
 
         if self.mostrar_espraiamento:
-            self._espraiamento(m, px, ym, dim, hf, base, W, topo)
+            self._espraiamento(m, px, ym, dim, hf, base, W, topo,
+                               prop_espraiamento, self._erro_espraiamento,
+                               corte_x0, corte_x1)
 
         extras = []
         if self.mostrar_bulbo:
@@ -595,42 +651,197 @@ class PerfilCortes:
                       text=legenda, fill="#7fd8e8", font=("Consolas", 8))
 
     # ------------------------------------------------- espraiamento por camada
-    def _propagacao_atual(self, m: dict) -> Optional[PropagacaoTensoes]:
+    def _propagacao_atual(self, m: dict, fonte: str
+                          ) -> Optional[PropagacaoTensoes]:
         """
         Chama a API do a4 (`geotecnia.propagacao_em_profundidade`) — nenhuma
         fórmula de propagação é reimplementada aqui [REQ-UI-06].
 
-        `q_aplicada` não está pronto no modelo (só `q_liquido`, que já
-        descontou o alívio de escavação em `AnaliseRecalque.q_liquido` —
-        `recalques.py:255-260`). Reconstituí-lo somando de volta a sobrecarga
-        geostática na cota da base (`solo.sobrecarga_no_nivel_da_base()`, o
-        mesmo método do núcleo que produziu o desconto) é o inverso exato,
-        sem perda, dessa subtração: `propagacao_em_profundidade` refaz
-        `max(0, q_aplicada - sobrecarga)` internamente e devolve o mesmo
-        `q_liquido` de onde partimos. Nenhuma fórmula de engenharia nova nasce
-        aqui — é a soma que desfaz a subtração que o núcleo já fez.
+        Função de (m, fonte): `fonte` viaja como PARÂMETRO explícito — nunca
+        lida de `self.fonte_espraiamento` por dentro do método — para poder
+        ser testada sem depender do estado do widget (a6, achado 10) e para
+        que um mutante que troque o parâmetro pelo campo de instância seja
+        pego por um teste que os fixa deliberadamente diferentes.
+
+        `m["q_servico"]` (a4, `ResultadoSapata.q_servico`, commit 783b3c3) é
+        a pressão TOTAL de serviço na base, pronta — substituiu a
+        reconstituição `q_liquido + sobrecarga_na_base` que existia aqui
+        antes (a6, achado 4): essa soma só existia quando
+        `res.recalques is not None` (falso diagnóstico de "sem perfil/solo"
+        com `verificar_recalque=False`) e não era uma inversa fiel quando
+        `AnaliseRecalque.q_liquido` saturava em zero. `q_servico` não tem
+        nenhuma dessas duas falhas — é calculado sempre.
+
+        Guardas de domínio do núcleo (`ValueError`) NÃO são engolidas aqui
+        (a6, achado 5): propagam para o chamador, que decide o que mostrar
+        na tela. Devolve None apenas quando não há dado suficiente para
+        SEQUER tentar a chamada (sem solo/perfil/geometria/q_servico) — essa
+        é a diferença de sentido entre "faltam dados" e "o núcleo recusou o
+        domínio".
         """
         solo = m.get("solo")
-        q_liquido = m.get("q_liquido")
         a, b = m.get("a"), m.get("b")
-        if solo is None or solo.perfil is None or q_liquido is None:
+        q_servico = m.get("q_servico")
+        if solo is None or solo.perfil is None:
             return None
-        if not a or not b:
+        if not a or not b or q_servico is None:
             return None
-        q_aplicada = q_liquido + solo.sobrecarga_no_nivel_da_base()
         z_max = 2.0 * min(a, b)   # REQ-UI-05 — mesmo teto de 2B do bulbo
-        try:
-            return propagacao_em_profundidade(
-                solo, a, b, q_aplicada, fonte=self.fonte_espraiamento,
-                z_max=z_max)
-        except ValueError:
-            return None
+        return propagacao_em_profundidade(
+            solo, a, b, q_servico, fonte=fonte, z_max=z_max)
 
-    def _espraiamento(self, m, px, ym, dim, hf, base, W, topo) -> None:
+    def _linhas_banner_espraiamento(self, prop: Optional[PropagacaoTensoes]
+                                    ) -> list[tuple[str, tuple, str]]:
         """
-        Corte em pirâmide/tronco: Δσ e a largura equivalente NOS LIMITES DE
-        CAMADA (q1/q2/q3, L1/L2/L3 do croqui clássico de espraiamento),
-        alternativa ao bulbo contínuo de isovalores de `_bulbo()`.
+        Sequência (texto, fonte, cor) do bloco FIXO do topo — REQ-UI-01/02 e
+        REQ-UI-07(d)/(f). A MESMA sequência alimenta `_medir_faixa_aviso` (só
+        mede, nunca desenha) e o desenho real em `_espraiamento`, para a
+        altura reservada em `desenhar()` bater exatamente com o que sai no
+        canvas — é o que resolve o `FAIXA_AVISO_ESPRAIAMENTO` fixo (a6,
+        achado 7).
+        """
+        linhas: list[tuple[str, tuple, str]] = [
+            (AVISO_NAO_NORMATIVO, ("Segoe UI Semibold", 8), AVISO_FG),
+            # REQ-UI-02 — "a maior armadilha visual desta tela": o campo é de
+            # meio homogêneo, mas as camadas ao lado são coloridas com suas
+            # propriedades reais. Permanente, não letra miúda.
+            (AVISO_MEIO_HOMOGENEO, ("Consolas", 7), AVISO_FG),
+        ]
+        # REQ-UI-07(f): o rótulo do método vem de `prop.rotulo_metodo` quando
+        # há `prop` — nunca de `ROTULO_FONTE.get(self.fonte_espraiamento)`
+        # direto (a6, achado 1). Só cai no fallback quando NÃO há prop (sem
+        # perfil/solo, ou erro do núcleo) — aí não existe outra fonte.
+        rotulo_metodo = (prop.rotulo_metodo if prop is not None
+                         else ROTULO_FONTE.get(self.fonte_espraiamento,
+                                               self.fonte_espraiamento))
+        q_txt = f" · q_líq {prop.q_liquida:.0f} kPa" if prop is not None else ""
+        linhas.append((f"{rotulo_metodo}{q_txt}", ("Consolas", 8, "bold"),
+                       "#f4f6f7"))
+
+        # a6, achado 8: a ressalva do MÉTODO EM USO é informação de
+        # segurança, não decoração — não pode ficar no rodapé (mesmo lugar
+        # que já colidiu com a coluna estratigráfica). Cada método tem a sua:
+        if self.fonte_espraiamento == FONTE_BOUSSINESQ:
+            linhas.append((RESSALVA_LARGURA_ILUSTRATIVA_BOUSSINESQ,
+                           ("Consolas", 7), AVISO_FG))
+        elif self.fonte_espraiamento == FONTE_2V1H:
+            ressalva = self._ressalva_2v1h(prop)
+            if ressalva is not None:
+                linhas.append((ressalva, ("Consolas", 7), AVISO_FG))
+        return linhas
+
+    @staticmethod
+    def _ressalva_2v1h(prop: Optional[PropagacaoTensoes]) -> Optional[str]:
+        """
+        A ressalva de subestimar/superestimar Δσ do 2V:1H já vem pronta do
+        núcleo em `prop.avisos` (`geotecnia.propagacao_em_profundidade`) —
+        nunca reescrita aqui [REQ-UI-06]. Por construção do núcleo, quando
+        `fonte == FONTE_2V1H` ela é sempre o PRIMEIRO aviso que sobra depois
+        de excluir os dois fixos (REQ-UI-01/02): é anexada antes da de
+        "pressão líquida nula", se as duas existirem.
+        """
+        if prop is None:
+            return None
+        extras = [av for av in prop.avisos
+                 if av not in (AVISO_NAO_NORMATIVO, AVISO_MEIO_HOMOGENEO)]
+        return extras[0] if extras else None
+
+    @staticmethod
+    def _sem_largura_definida(prop: Optional[PropagacaoTensoes],
+                              eixo_val: str) -> bool:
+        """
+        True quando `largura_equivalente_{a,b}` vem `None` em TODOS os
+        pontos — o caso de q_líq <= 0 (`geotecnia.largura_equivalente`
+        devolve `None` em todo ponto quando isso acontece). REQ-UI-07(e):
+        largura indefinida nunca vira número, então esse caso não desenha
+        tronco algum. Extraído em método próprio (staticmethod, sem `self`
+        além da assinatura) para ser testável sem Tk (a6, achado 10).
+        """
+        if prop is None or not prop.pontos:
+            return False
+        return all(getattr(p, f"largura_equivalente_{eixo_val}") is None
+                  for p in prop.pontos)
+
+    def _avisos_nao_promovidos(self, prop: Optional[PropagacaoTensoes]
+                               ) -> list[str]:
+        """`prop.avisos` menos os que já aparecem na faixa fixa do topo — os
+        dois permanentes (REQ-UI-01/02) e, sob 2V:1H, a ressalva específica
+        do método (a6, achado 8), para nunca repetir a mesma frase duas
+        vezes na tela."""
+        if prop is None:
+            return []
+        fixos = {AVISO_NAO_NORMATIVO, AVISO_MEIO_HOMOGENEO}
+        extras = [av for av in prop.avisos if av not in fixos]
+        if self.fonte_espraiamento == FONTE_2V1H and extras:
+            extras = extras[1:]      # o primeiro é a ressalva já promovida
+        return extras
+
+    def _mensagem_indisponivel(self, prop: Optional[PropagacaoTensoes],
+                               erro: Optional[str]) -> tuple[str, str]:
+        """
+        (texto, cor) para quando não há tronco a desenhar — três casos bem
+        distintos, que a versão anterior confundia num só letreiro genérico
+        (a6, achado 3):
+          1. `ValueError` do núcleo (guarda de domínio) — mostra `str(e)`,
+             em destaque, NUNCA a mensagem genérica de "sem perfil/solo"
+             (a6, achado 5);
+          2. sem dado suficiente para sequer chamar o núcleo (sem
+             perfil/solo/geometria) — mensagem genérica;
+          3. o núcleo respondeu mas não há o que desenhar (perfil termina
+             antes da base, profundidade excede o perfil, ou pressão líquida
+             nula — REQ-UI-07(e): largura indefinida NUNCA vira número, e
+             aqui é onde essa condição é tratada) — usa os avisos
+             ESPECÍFICOS que o próprio núcleo já produziu, não uma frase
+             nova inventada na UI [REQ-UI-06].
+        """
+        if erro is not None:
+            return erro, DESTAQUE
+        if prop is None:
+            return ("Sem perfil/solo suficiente para o espraiamento por "
+                    "camada.", TINTA_FRACA)
+        especificos = self._avisos_nao_promovidos(prop)
+        if especificos:
+            return ("\n".join(especificos), TINTA_FRACA)
+        return ("Sem limites de camada para propagar.", TINTA_FRACA)
+
+    def _medir_faixa_aviso(self, W: float, prop: Optional[PropagacaoTensoes],
+                           erro: Optional[str]) -> float:
+        """
+        Altura [px] necessária para os avisos fixos do topo, MEDIDA via
+        `bbox()` dos textos reais — não estimada (a6, achado 7:
+        `FAIXA_AVISO_ESPRAIAMENTO = 84.0` era um número mágico sem relação
+        com a altura real do texto, que quebra por `width=`). Os itens de
+        medição são criados fora da área visível e apagados antes do quadro
+        real ser desenhado.
+        """
+        c = self.canvas
+        largura_texto = max(W - 20, 160)
+        y = 0.0
+        itens = []
+        for texto, fonte, _cor in self._linhas_banner_espraiamento(prop):
+            item = c.create_text(-10_000, -10_000 + y, anchor="nw",
+                                 font=fonte, text=texto, width=largura_texto)
+            itens.append(item)
+            bbox = c.bbox(item)
+            altura = (bbox[3] - bbox[1]) if bbox else 12.0
+            y += altura + 3.0
+        for item in itens:
+            c.delete(item)
+        return max(y + 4.0, self.FAIXA_AVISO_MINIMA)
+
+    def _espraiamento(self, m, px, ym, dim, hf, base, W, topo,
+                      prop: Optional[PropagacaoTensoes],
+                      erro: Optional[str],
+                      corte_x0: float, corte_x1: float) -> None:
+        """
+        Corte em pirâmide/tronco: Δσ e a largura equivalente NAS INTERFACES
+        de camada (q_i, a_eq,i/b_eq,i — REQ-UI-07, ruleset v7), alternativa
+        ao bulbo contínuo de isovalores de `_bulbo()`.
+
+        `prop` e `erro` vêm PRONTOS de `desenhar()` (uma só chamada ao
+        núcleo por quadro — a mesma que já decidiu a semilargura do corte
+        para o tronco não vazar do canvas, a6achado 6), não recalculados
+        aqui.
 
         Fonte de dados: `PropagacaoTensoes` de `geotecnia.propagacao_em_
         profundidade` — [pratica: PC-BOUSSINESQ-NEWMARK-canto-retangulo] ou
@@ -640,60 +851,62 @@ class PerfilCortes:
         toda a parte do app, não uma paleta nova.
         """
         c = self.canvas
-        prop = self._propagacao_atual(m)
 
-        # REQ-UI-01/REQ-UI-02 — rótulos PERMANENTES (nunca só em tooltip ou
-        # popup) enquanto este corte estiver ativo. A faixa foi reservada em
-        # `desenhar()` (`topo += FAIXA_AVISO_ESPRAIAMENTO`); aqui as duas
-        # linhas se empilham por `bbox()`, para quebrar em 1-2 linhas sem se
-        # sobrepor em qualquer largura de canvas.
-        faixa_aviso_y0 = topo - self.FAIXA_AVISO_ESPRAIAMENTO
+        # REQ-UI-01/REQ-UI-02/REQ-UI-07(d)/(f) — bloco PERMANENTE (nunca só
+        # em tooltip ou popup) enquanto este corte estiver ativo. A faixa foi
+        # reservada em `desenhar()` com a MESMA sequência de linhas medida
+        # por `_medir_faixa_aviso`; aqui elas se empilham por `bbox()`.
+        faixa_aviso_y0 = self.TOPO_CABECALHO
         c.create_rectangle(0, faixa_aviso_y0, W, topo - 2, fill=AVISO_BG,
                            outline="")
         largura_texto = max(W - 20, 160)
-        item1 = c.create_text(10, faixa_aviso_y0 + 4, anchor="nw",
-                              fill=AVISO_FG, font=("Segoe UI Semibold", 8),
-                              text=AVISO_NAO_NORMATIVO, width=largura_texto)
-        y2 = (c.bbox(item1)[3] + 3) if c.bbox(item1) else faixa_aviso_y0 + 20
-        # REQ-UI-02 — "a maior armadilha visual desta tela": o campo é de
-        # meio homogêneo, mas as camadas ao lado são coloridas com suas
-        # propriedades reais. Igualmente permanente, não letra miúda.
-        item2 = c.create_text(10, y2, anchor="nw", fill=AVISO_FG,
-                              font=("Consolas", 7), text=AVISO_MEIO_HOMOGENEO,
-                              width=largura_texto)
-        # Método escolhido + q_líquida usada — empilhado na MESMA faixa fixa,
-        # não perto do desenho: se o bulbo por isovalores também estiver
-        # ligado, os dois textos de legenda (deste e de `_bulbo()`) ficam
-        # perto um do outro no corte e um comeria o outro.
-        y3 = (c.bbox(item2)[3] + 3) if c.bbox(item2) else y2 + 14
-        rotulo_metodo = ROTULO_FONTE.get(self.fonte_espraiamento,
-                                         self.fonte_espraiamento)
-        q_txt = (f" · q_líq {prop.q_liquida:.0f} kPa" if prop is not None
-                else "")
-        c.create_text(10, y3, anchor="nw", fill="#f4f6f7",
-                      font=("Consolas", 8, "bold"),
-                      text=f"{rotulo_metodo}{q_txt}", width=largura_texto)
+        y = faixa_aviso_y0 + 4.0
+        for texto, fonte, cor in self._linhas_banner_espraiamento(prop):
+            item = c.create_text(10, y, anchor="nw", fill=cor, font=fonte,
+                                 text=texto, width=largura_texto)
+            bbox = c.bbox(item)
+            y = (bbox[3] + 3.0) if bbox else y + 14.0
 
-        if prop is None or not prop.camadas:
-            c.create_text(px(0), (topo + base) / 2, fill=TINTA_FRACA,
-                          font=("Segoe UI", 10),
-                          text="Sem perfil/solo suficiente para o "
-                               "espraiamento por camada")
+        eixo_val = "a" if self.direcao == "X" else "b"
+        # REQ-UI-07(e): largura `None` (q_líq <= 0 → None em TODOS os pontos,
+        # por construção de `geotecnia.largura_equivalente`) NUNCA vira
+        # número — nem sequer um tronco é traçado nessa condição, para nunca
+        # tropeçar em rotular a dimensão da sapata como largura calculada
+        # (o antigo `... or dim`, a6/a2, achado E do ruleset v7).
+        sem_largura_definida = self._sem_largura_definida(prop, eixo_val)
+
+        if prop is None or not prop.camadas or sem_largura_definida:
+            texto, cor = self._mensagem_indisponivel(prop, erro)
+            c.create_text(px(0), (topo + base) / 2, fill=cor,
+                          font=("Segoe UI", 10), text=texto,
+                          width=max(W - 40, 160), justify="center")
             return
 
         def py(z_abaixo_base):
             return ym(hf + z_abaixo_base)
 
+        def clampx(x_px: float) -> float:
+            """Recorta a coordenada de pixel ao intervalo horizontal do
+            corte (a6, achado 6) — mesmo com a semilargura ampliada em
+            `desenhar()` para caber a_eq/b_eq no teto z_max, uma folga de
+            arredondamento não deve deixar o tronco vazar do canvas."""
+            return min(max(x_px, corte_x0), corte_x1)
+
         q_ref = max(prop.q_liquida, 1e-9)
-        eixo_val = "a" if self.direcao == "X" else "b"
 
         for indice, cam in enumerate(prop.camadas):
             pt_topo = prop.pontos[indice]
             pt_base = prop.pontos[indice + 1]
-            larg_topo = (getattr(pt_topo, f"largura_equivalente_{eixo_val}")
-                        or dim)
-            larg_base = (getattr(pt_base, f"largura_equivalente_{eixo_val}")
-                        or dim)
+            larg_topo_val = getattr(pt_topo, f"largura_equivalente_{eixo_val}")
+            larg_base_val = getattr(pt_base, f"largura_equivalente_{eixo_val}")
+            # Geometria do polígono: se a largura de UM ponto específico vier
+            # None num perfil onde os outros estão definidos (Δσ <= 0 muito
+            # localizado — não é o caso geral de q_líq <= 0, já tratado
+            # acima), cai para a largura do ponto vizinho válido, nunca para
+            # `dim` da sapata.
+            larg_topo = larg_topo_val if larg_topo_val is not None else (
+                larg_base_val if larg_base_val is not None else dim)
+            larg_base = larg_base_val if larg_base_val is not None else larg_topo
             y0, y1 = py(cam.z_topo), py(cam.z_base)
             if y0 > base:
                 break
@@ -702,41 +915,60 @@ class PerfilCortes:
             fracao = max(0.0, min(1.0, cam.delta_sigma_medio / q_ref))
             cor = cor_hex(fracao)
             c.create_polygon(
-                px(-larg_topo / 2), y0, px(larg_topo / 2), y0,
-                px(larg_base / 2), y1, px(-larg_base / 2), y1,
+                clampx(px(-larg_topo / 2)), y0, clampx(px(larg_topo / 2)), y0,
+                clampx(px(larg_base / 2)), y1, clampx(px(-larg_base / 2)), y1,
                 fill=cor, outline="#f4f6f7", width=1)
 
             # setas de espraiamento: bordas inclinadas com seta apontando
             # para fora/baixo, no mesmo espírito das isolinhas de _bulbo().
             for sinal in (-1, 1):
-                c.create_line(px(sinal * larg_topo / 2), y0,
-                              px(sinal * larg_base / 2), y1,
+                c.create_line(clampx(px(sinal * larg_topo / 2)), y0,
+                              clampx(px(sinal * larg_base / 2)), y1,
                               fill="#f4f6f7", width=1.2, dash=(4, 2),
                               arrow="last", arrowshape=(7, 8, 3))
 
-            c.create_line(px(-larg_base / 2), y1, px(larg_base / 2), y1,
+            c.create_line(clampx(px(-larg_base / 2)), y1,
+                          clampx(px(larg_base / 2)), y1,
                           fill="#20272c", width=1)
-            meio_y = (y0 + y1) / 2
-            rotulo_q = f"q{indice + 1} = {cam.delta_sigma_medio:.1f} kPa"
-            rotulo_l = f"L{indice + 1} = {larg_base:.2f} m"
-            c.create_text(px(0), meio_y - 6, fill="#1d2429",
-                          font=("Consolas", 8, "bold"), text=rotulo_q)
-            c.create_text(px(0), meio_y + 7, fill="#1d2429",
+
+        # REQ-UI-07(a)/(b): UM rótulo de tensão e UM de largura POR
+        # INTERFACE — não por camada. A interface interna entre a camada i e
+        # i+1 é COMPARTILHADA (`prop.pontos[i+1]` é ao mesmo tempo a base de
+        # uma e o topo da seguinte): desenhar o ponto 0 uma vez ANTES do
+        # laço e, dentro dele, só a base de cada camada, visita cada
+        # interface exatamente uma vez (a6, achado 2).
+        n_desenhadas = 0
+        for cam in prop.camadas:
+            if py(cam.z_topo) > base:
+                break
+            n_desenhadas += 1
+        pontos_visiveis = prop.pontos[:n_desenhadas + 1] if n_desenhadas else ()
+        for pt in pontos_visiveis:
+            y_pt = min(py(pt.z), base)
+            larg = getattr(pt, f"largura_equivalente_{eixo_val}")
+            rotulo_l = (f"{eixo_val}_eq = {larg:.2f} m" if larg is not None
+                       else f"{eixo_val}_eq = —")
+            c.create_text(clampx(px(0)) - 4, y_pt, anchor="e", fill="#f4f6f7",
+                          font=("Consolas", 7, "bold"),
+                          text=f"q = {pt.delta_sigma:.1f} kPa")
+            c.create_text(clampx(px(0)) + 4, y_pt, anchor="w", fill="#f4f6f7",
                           font=("Consolas", 7), text=rotulo_l)
 
         # Avisos extras específicos desta chamada (ex.: "pressão líquida
-        # nula", "profundidade pedida excede o perfil"), diferentes dos dois
-        # fixos já na faixa do topo. Ficam no rodapé, fixos ao canvas — não
-        # presos à profundidade do desenho, para nunca colidir com a legenda
-        # de `_bulbo()` nem com as isolinhas quando os dois estão ligados.
-        y_extra = base + 14
-        for aviso in prop.avisos:
-            if aviso in (AVISO_NAO_NORMATIVO, AVISO_MEIO_HOMOGENEO):
-                continue   # já fixos na faixa do topo — não repetir
-            c.create_text(10, y_extra, anchor="w", fill=TINTA_FRACA,
-                          font=("Consolas", 7), text=aviso,
-                          width=max(W - 200, 120))
-            y_extra += 12
+        # nula", "profundidade pedida excede o perfil"), diferentes dos já
+        # promovidos à faixa fixa do topo (REQ-UI-01/02 e, sob 2V:1H, a
+        # ressalva do método — a6, achado 8). Ancorado ABAIXO do maior
+        # `bbox()` já desenhado no canvas (a6, achado 6/9: `base + 14` fixo
+        # colidia com a coluna estratigráfica quando ela, ou o tronco
+        # alargado, desciam mais que o previsto) — não numa constante.
+        bbox_tudo = c.bbox("all")
+        y_extra = max(base + 14.0, (bbox_tudo[3] + 6.0) if bbox_tudo else base + 14.0)
+        for aviso in self._avisos_nao_promovidos(prop):
+            item = c.create_text(10, y_extra, anchor="nw", fill=TINTA_FRACA,
+                                 font=("Consolas", 7), text=aviso,
+                                 width=max(W - 200, 120))
+            bbox = c.bbox(item)
+            y_extra = (bbox[3] + 4.0) if bbox else y_extra + 12.0
 
     def _hachura(self, x, larg, y0, y1, tipo):
         c = self.canvas
