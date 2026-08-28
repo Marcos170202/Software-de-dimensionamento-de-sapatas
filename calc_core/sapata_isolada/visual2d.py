@@ -403,6 +403,36 @@ class PerfilCortes:
         return (max(self.canvas.winfo_width(), 10),
                 max(self.canvas.winfo_height(), 10))
 
+    @staticmethod
+    def _eixo_valor(direcao: str) -> str:
+        """'a' para corte X, 'b' para corte Y — fonte ÚNICA usada tanto pela
+        semilargura em `desenhar()` (`meia`/`_meia_com_tronco`) quanto pelos
+        rótulos em `_espraiamento` (`_rotulos_de_interface`), para as duas
+        nunca divergirem sobre qual dimensão da sapata está sendo cortada
+        (GATE 2 rodada 3, mutante M4: corte X rotulando b_eq)."""
+        return "a" if direcao == "X" else "b"
+
+    @staticmethod
+    def _meia_com_tronco(meia: float, prop: Optional[PropagacaoTensoes],
+                         eixo_val: str) -> float:
+        """Amplia a semilargura do corte (metros) para caber a MAIOR largura
+        equivalente prevista em qualquer interface do espraiamento — a6,
+        achado 6 (GATE 2 rodada 1): sob 2V:1H, a_eq/2 = (a+z)/2 cresce sem
+        limite com z e facilmente excede a semilargura padrão do corte
+        (`dim * MEIA_LARGURA`); sem isto o tronco vazava dezenas de pixels
+        de cada lado do canvas. Usa-se a MAIOR largura equivalente entre
+        todos os pontos (ela é estritamente crescente com z —
+        REQ-PROP-03(F) — então o máximo é sempre na interface mais profunda
+        calculada). Extraído em função pura (GATE 2 rodada 3, mutante MD)
+        para ser testável sem Tk/canvas."""
+        if prop is not None and prop.pontos:
+            larguras = [getattr(p, f"largura_equivalente_{eixo_val}")
+                       for p in prop.pontos]
+            larguras = [v for v in larguras if v is not None]
+            if larguras:
+                return max(meia, max(larguras) / 2.0)
+        return meia
+
     def desenhar(self) -> None:
         """
         Layout com escala ISOTRÓPICA: o corte usa o mesmo número de pixels por
@@ -426,7 +456,7 @@ class PerfilCortes:
         prof_total = camadas[-1]["z_base"]
         dim = m["a"] if self.direcao == "X" else m["b"]
         transversal = m["b"] if self.direcao == "X" else m["a"]
-        eixo_val = "a" if self.direcao == "X" else "b"
+        eixo_val = self._eixo_valor(self.direcao)
         meia = dim * self.MEIA_LARGURA          # semilargura do corte, em metros
 
         # Propagação de tensões calculada UMA vez por quadro (não uma para a
@@ -448,13 +478,10 @@ class PerfilCortes:
         # isto o polígono vazava ~50 px de cada lado do canvas. Usa-se a MAIOR
         # largura equivalente prevista em qualquer interface (ela é
         # estritamente crescente com z — REQ-PROP-03(F) — então o máximo é
-        # sempre na interface mais profunda calculada).
-        if prop_espraiamento is not None and prop_espraiamento.pontos:
-            larguras = [getattr(p, f"largura_equivalente_{eixo_val}")
-                       for p in prop_espraiamento.pontos]
-            larguras = [v for v in larguras if v is not None]
-            if larguras:
-                meia = max(meia, max(larguras) / 2.0)
+        # sempre na interface mais profunda calculada). Extraído para
+        # `_meia_com_tronco` (GATE 2 rodada 3, mutante MD) para ser testável
+        # sem Tk/canvas.
+        meia = self._meia_com_tronco(meia, prop_espraiamento, eixo_val)
 
         col_x, col_l, faixa_rotulos = 62.0, 22.0, 158.0
         corte_x0 = col_x + col_l + faixa_rotulos
@@ -767,13 +794,26 @@ class PerfilCortes:
         """`prop.avisos` menos os que já aparecem na faixa fixa do topo — os
         dois permanentes (REQ-UI-01/02) e, sob 2V:1H, a ressalva específica
         do método (a6, achado 8), para nunca repetir a mesma frase duas
-        vezes na tela."""
+        vezes na tela.
+
+        Chaveado por `prop.fonte` — a fonte que REALMENTE produziu
+        `prop.avisos` — nunca por `self.fonte_espraiamento` (GATE 2 rodada
+        3, defeito BAIXA de `:776`): os dois podem divergir (é exatamente o
+        que o mutante M5 simula, chamando o núcleo com uma fonte diferente
+        da que o widget acha que pediu), e nesse caso a versão antiga
+        descartava o item ERRADO — ou nenhum — por checar o campo errado.
+        Removido por IDENTIDADE de texto (o que `_ressalva_2v1h` devolveu),
+        não por posição (`extras[1:]`): se a ressalva não for o primeiro
+        item de `prop.avisos`, remover por posição descartaria um aviso
+        diferente da ressalva."""
         if prop is None:
             return []
         fixos = {AVISO_NAO_NORMATIVO, AVISO_MEIO_HOMOGENEO}
         extras = [av for av in prop.avisos if av not in fixos]
-        if self.fonte_espraiamento == FONTE_2V1H and extras:
-            extras = extras[1:]      # o primeiro é a ressalva já promovida
+        if prop.fonte == FONTE_2V1H:
+            ressalva = self._ressalva_2v1h(prop)
+            if ressalva is not None:
+                extras = [av for av in extras if av != ressalva]
         return extras
 
     def _mensagem_indisponivel(self, prop: Optional[PropagacaoTensoes],
@@ -829,6 +869,59 @@ class PerfilCortes:
             c.delete(item)
         return max(y + 4.0, self.FAIXA_AVISO_MINIMA)
 
+    @staticmethod
+    def _clampx(x_px: float, corte_x0: float, corte_x1: float) -> float:
+        """Recorta a coordenada de pixel ao intervalo horizontal do corte
+        (a6, achado 6) — mesmo com a semilargura ampliada em `desenhar()`
+        (`_meia_com_tronco`) para caber a_eq/b_eq no teto z_max, uma folga
+        de arredondamento não deve deixar o tronco vazar do canvas.
+        Extraído em função pura (GATE 2 rodada 3, mutante ME) para ser
+        testável sem Tk/canvas, além da verificação por render real."""
+        return min(max(x_px, corte_x0), corte_x1)
+
+    @staticmethod
+    def _pontos_visiveis(prop: PropagacaoTensoes, py, base: float
+                         ) -> tuple:
+        """Pontos de interface (`prop.pontos`) que cabem no corte desenhado
+        — REQ-UI-07(a)/(b): a interface interna entre a camada i e i+1 é
+        COMPARTILHADA (`prop.pontos[i+1]` é ao mesmo tempo a base de uma
+        camada e o topo da seguinte), por isso o corte inclui SEMPRE um
+        ponto A MAIS que o número de camadas visíveis: desenhar o ponto 0
+        uma vez antes do laço de camadas e, dentro dele, só a base de cada
+        camada, visita cada interface exatamente uma vez (a6, achado 2;
+        GATE 2 rodada 3, mutante MF: `prop.pontos[:n]` sem o `+ 1` perderia
+        o rótulo da última interface)."""
+        n_desenhadas = 0
+        for cam in prop.camadas:
+            if py(cam.z_topo) > base:
+                break
+            n_desenhadas += 1
+        return prop.pontos[:n_desenhadas + 1] if n_desenhadas else ()
+
+    @staticmethod
+    def _rotulos_de_interface(prop: PropagacaoTensoes, eixo_val: str,
+                              pontos_visiveis
+                              ) -> list[tuple[float, float, str, str]]:
+        """(z, delta_sigma, texto_q, texto_largura) por INTERFACE visível —
+        PURO, sem canvas. Extraído do laço de rótulos de `_espraiamento`
+        (REQ-UI-07(a)/(b), sugestão do a6/GATE 2 rodada 3) para poder testar
+        SÍMBOLO e VALOR de cada rótulo sem depender de Tk: mata os mutantes
+        MC (símbolo "L =" reintroduzido em vez de "{eixo}_eq ="), MA
+        (`pt.delta_sigma` — grandeza de PONTO/INTERFACE — trocado pela
+        média da CAMADA, `delta_sigma_medio`, que vive em outro universo de
+        índice, REQ-PROP-03(B)) e MB (`... or dim` reintroduzido na
+        largura, em vez de "—" para largura indefinida, REQ-UI-07(e)) só
+        testando esta lista de tuplas — nenhuma delas depende de
+        coordenada de pixel."""
+        rotulos = []
+        for pt in pontos_visiveis:
+            larg = getattr(pt, f"largura_equivalente_{eixo_val}")
+            rotulo_l = (f"{eixo_val}_eq = {larg:.2f} m" if larg is not None
+                       else f"{eixo_val}_eq = —")
+            texto_q = f"q = {pt.delta_sigma:.1f} kPa"
+            rotulos.append((pt.z, pt.delta_sigma, texto_q, rotulo_l))
+        return rotulos
+
     def _espraiamento(self, m, px, ym, dim, hf, base, W, topo,
                       prop: Optional[PropagacaoTensoes],
                       erro: Optional[str],
@@ -867,7 +960,7 @@ class PerfilCortes:
             bbox = c.bbox(item)
             y = (bbox[3] + 3.0) if bbox else y + 14.0
 
-        eixo_val = "a" if self.direcao == "X" else "b"
+        eixo_val = self._eixo_valor(self.direcao)
         # REQ-UI-07(e): largura `None` (q_líq <= 0 → None em TODOS os pontos,
         # por construção de `geotecnia.largura_equivalente`) NUNCA vira
         # número — nem sequer um tronco é traçado nessa condição, para nunca
@@ -877,20 +970,24 @@ class PerfilCortes:
 
         if prop is None or not prop.camadas or sem_largura_definida:
             texto, cor = self._mensagem_indisponivel(prop, erro)
-            c.create_text(px(0), (topo + base) / 2, fill=cor,
-                          font=("Segoe UI", 10), text=texto,
-                          width=max(W - 40, 160), justify="center")
+            # GATE 2 rodada 3, defeito MEDIA `:880`: ancorado no CENTRO do
+            # corte (`corte_x0`/`corte_x1`, o eixo do TRONCO) com a LARGURA
+            # do corte — antes a âncora usava `px(0)` (eixo do tronco,
+            # deslocado à direita pela coluna estratigráfica) mas a largura
+            # do CANVAS inteiro (`W - 40`), o que fazia a borda direita do
+            # texto vazar sempre ~90 px do canvas. Eixo e largura têm de vir
+            # do MESMO sistema de referência.
+            c.create_text((corte_x0 + corte_x1) / 2.0, (topo + base) / 2,
+                          fill=cor, font=("Segoe UI", 10), text=texto,
+                          width=max(corte_x1 - corte_x0 - 20.0, 160),
+                          justify="center")
             return
 
         def py(z_abaixo_base):
             return ym(hf + z_abaixo_base)
 
         def clampx(x_px: float) -> float:
-            """Recorta a coordenada de pixel ao intervalo horizontal do
-            corte (a6, achado 6) — mesmo com a semilargura ampliada em
-            `desenhar()` para caber a_eq/b_eq no teto z_max, uma folga de
-            arredondamento não deve deixar o tronco vazar do canvas."""
-            return min(max(x_px, corte_x0), corte_x1)
+            return self._clampx(x_px, corte_x0, corte_x1)
 
         q_ref = max(prop.q_liquida, 1e-9)
 
@@ -932,25 +1029,15 @@ class PerfilCortes:
                           fill="#20272c", width=1)
 
         # REQ-UI-07(a)/(b): UM rótulo de tensão e UM de largura POR
-        # INTERFACE — não por camada. A interface interna entre a camada i e
-        # i+1 é COMPARTILHADA (`prop.pontos[i+1]` é ao mesmo tempo a base de
-        # uma e o topo da seguinte): desenhar o ponto 0 uma vez ANTES do
-        # laço e, dentro dele, só a base de cada camada, visita cada
-        # interface exatamente uma vez (a6, achado 2).
-        n_desenhadas = 0
-        for cam in prop.camadas:
-            if py(cam.z_topo) > base:
-                break
-            n_desenhadas += 1
-        pontos_visiveis = prop.pontos[:n_desenhadas + 1] if n_desenhadas else ()
-        for pt in pontos_visiveis:
-            y_pt = min(py(pt.z), base)
-            larg = getattr(pt, f"largura_equivalente_{eixo_val}")
-            rotulo_l = (f"{eixo_val}_eq = {larg:.2f} m" if larg is not None
-                       else f"{eixo_val}_eq = —")
+        # INTERFACE — não por camada. `_pontos_visiveis`/`_rotulos_de_
+        # interface` (GATE 2 rodada 3) fazem a seleção e a formatação de
+        # texto fora do canvas, puras — aqui só se posiciona e desenha.
+        pontos_visiveis = self._pontos_visiveis(prop, py, base)
+        for z, _delta_sigma, texto_q, rotulo_l in self._rotulos_de_interface(
+                prop, eixo_val, pontos_visiveis):
+            y_pt = min(py(z), base)
             c.create_text(clampx(px(0)) - 4, y_pt, anchor="e", fill="#f4f6f7",
-                          font=("Consolas", 7, "bold"),
-                          text=f"q = {pt.delta_sigma:.1f} kPa")
+                          font=("Consolas", 7, "bold"), text=texto_q)
             c.create_text(clampx(px(0)) + 4, y_pt, anchor="w", fill="#f4f6f7",
                           font=("Consolas", 7), text=rotulo_l)
 
