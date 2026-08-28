@@ -426,3 +426,83 @@ disciplina, não para nova rodada — critério do próprio a6):
 **Liberado para o a7-validador.** Nenhum destes defeitos altera número
 produzido hoje pelo software; D1 é dívida de proteção contra regressão
 futura, não um resultado incorreto atual.
+
+## Adendo 2026-08-28 — corte de espraiamento por camada (pirâmide/tronco Boussinesq × 2V:1H)
+
+Também revisado por instâncias separadas de **a6-revisor** (subagente,
+sessão própria a cada rodada), sobre um pipeline completo
+a1→a2→a4→a3→a6, com o mesmo limite de 3 rodadas.
+
+**Origem:** pedido do usuário por uma visualização de "espraiamento" de
+tensões em corte, no estilo de diagrama trapezoidal clássico (q1>q2>q3,
+larguras crescendo com a profundidade). a1 confirmou busca negativa
+(Boussinesq/Newmark e 2V:1H não aparecem na NBR 6122:2022 nem na apostila
+Bastos); a2 aprovou as duas fórmulas como `praticas_consagradas` — a
+primeira sem restrição, a segunda (`PC-ESPRAIAMENTO-2V1H`)
+`APROVADA_COM_USO_RESTRITO`, proibida para recalque/capacidade de carga
+(subestima Δσ ~25% na faixa rasa, lado inseguro) — restrito a
+visualização/comparação.
+
+- **Rodada 1**: REPROVADO (nota 3,78, veto E1/E5) — o texto do ruleset v6
+  dizia "L1/L2/L3 = espessuras da camada"; o código desenhava a largura
+  equivalente do tronco sob o mesmo símbolo "L" (camada de espessura real
+  3,90 m exibida como "L2 = 6,69 m"); `q_i` exibido era a média da camada,
+  não o valor de interface (variação real de 9× resumida num único
+  número); `visual2d.py` com 0% de cobertura, 5/5 mutantes sobreviventes.
+- **Entre rodadas**: a2 reescreveu `REQ-PROP-03` na v7 do ruleset — "L"
+  abolido do croqui (colidia com 3 significados diferentes no repositório);
+  novos símbolos `a_eq,i`/`b_eq,i` (largura, por INTERFACE) e `h_i`
+  (espessura, por CAMADA, opcional); q exibido passa a ser o de interface.
+  a4 expôs `ResultadoSapata.q_servico` (pressão de serviço total, calculada
+  sempre) para eliminar uma reconstituição frágil (`q_líquido + sobrecarga`)
+  que causava diagnóstico falso com `verificar_recalque=False`.
+- **Rodada 2**: REPROVADO (nota 4,40, veto único em E5=3,0) — a substância
+  já estava certa (E1=4,5 E2=5,0), mas o caminho de DESENHO
+  (`desenhar()`/`_espraiamento()`) continuava com 0% de cobertura e 10/10
+  mutantes plantados pelo a6 sobreviviam, incluindo o retorno do símbolo
+  proibido "L". a6 aceitou um desvio do a3 (usar `PontoPropagacao.
+  delta_sigma` em vez de `CamadaPropagacao.delta_sigma_topo/base`, ambos
+  idênticos por construção — verificado em 184 pares, diferença 0,000e+00)
+  e despachou 3 correções textuais não bloqueantes ao a2 (ruleset v8).
+- **Rodada 3**: **APROVADO — nota final 4,60** (E1=4,6 E2=5,0 E3=4,5
+  E4=4,5 E5=4,2). Cinco métodos estáticos puros extraídos do caminho de
+  desenho (`_eixo_valor`, `_meia_com_tronco`, `_clampx`, `_pontos_visiveis`,
+  `_rotulos_de_interface`); os 10 mutantes da rodada 2 reproduzidos e
+  mortos pelo próprio a6, um a um, cada um pelo teste nominal da tabela
+  mutante→teste (sem morte por acidente); `desenhar()` 0%→89%,
+  `_espraiamento()` 0%→92% de cobertura; equivalência da refatoração
+  confirmada byte a byte (1528 itens de canvas idênticos, 8 cenários,
+  antes/depois da extração).
+
+**Defeitos remanescentes, todos não bloqueantes** (0 ALTA, 2 MÉDIA, 9
+BAIXA — critério do próprio a6, que também fixou o limite de 3 rodadas: se
+a rodada 3 entregasse os testes que matam os mutantes, o portão fecharia
+sem rodada 4 nem escalada; entregou):
+
+- **E1 (MÉDIA)**: dois mutantes de "fiação" (chamada, não lógica)
+  sobrevivem — apagar a chamada a `_meia_com_tronco` ou trocar `clampx` por
+  identidade não derruba nenhum teste, porque os helpers puros são
+  testados isoladamente mas não sua invocação real em `desenhar()`. Layout
+  apenas (o tronco voltaria a vazar do canvas sob 2V:1H); nenhum número
+  errado.
+- **E2 (MÉDIA)**: as duas correções desta rodada (âncora da mensagem de
+  erro; `_avisos_nao_promovidos` chaveado por `prop.fonte`) estão certas
+  mas sem teste — reversíveis em silêncio no próximo commit.
+- **E3–E9 (BAIXA)**: comentário de justificativa com erro de fato (o
+  próprio a6 corrigindo um engano seu da rodada anterior); dois achados
+  reincidentes de rodadas 1–2 explicitamente despriorizados (`... or dim`
+  morto na geometria; rótulo de largura fora do orçamento horizontal);
+  parâmetro não utilizado numa assinatura de 12 posicionais; um dublê de
+  canvas de teste cujo `delete()` é menos fiel que o real; um defeito
+  **pré-existente e não relacionado a esta feature** achado por render
+  (rótulo do nível d'água cortado ~30px fora do canvas, idêntico na base);
+  `tools/checar_rastreabilidade.py` ainda não existe (3ª rodada
+  consecutiva com a Camada 1 parcialmente manual).
+- **Memorial PDF**: `pranchas.py` não foi tocado em nenhuma das 3 rodadas
+  — a feature existe só na tela. Registrado como pendência COM GATILHO
+  (não bloqueante) na v8 do ruleset, não como omissão silenciosa.
+
+**Liberado para o a7-validador, com uma ressalva explícita do a6:** a
+feature está aprovada na superfície TELA. O memorial PDF não a contém —
+nenhum caso de validação que confira o PDF pode ser declarado ALTA
+enquanto a seção não existir; declarar como descoberto, não aprovado.
