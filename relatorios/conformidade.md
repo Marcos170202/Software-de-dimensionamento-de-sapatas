@@ -636,3 +636,104 @@ dois achados de baixa severidade para a próxima pauta de quem mantém
 GATE 3, A3 promova pelo menos os scripts dos itens 1, 2 e 6 desta rodada a
 testes permanentes em `tests/test_projeto_e_excel.py` — nenhum dos três
 tinha cobertura automática antes desta validação.
+
+## Adendo — 2026-08-29: repetição do GATE 3 pós-correção — **APROVADO**
+
+Fecha o ciclo do adendo anterior (item 2, `BUG` ALTA devolvido a A3).
+Entre um adendo e outro, A3 corrigiu `excel_import.py`
+(commit `42badce`, após uma revisão focada intermediária de a6 que achou
+mais 2 defeitos MÉDIA — cabeçalho não validado contra layout desatualizado,
+e lacunas de teste de fronteira de domínio — e cuja correção já veio
+embutida no mesmo commit): a aba "Perfil geotécnico" ganhou 4 colunas
+(`gamma_nat`, `gamma_sat` — obrigatórias; `phi`, `coesao` — opcionais) e
+uma validação de cabeçalho executada antes de qualquer leitura de dado.
+10 testes novos (93 → 103 no arquivo da feature).
+
+Escopo desta rodada: apenas o que mudou (`excel_import.py` e o próprio
+arquivo de teste). Os itens já confirmados **PASSOU** no adendo de
+2026-08-28 — item 1 (round-trip `.s7proj` tela-a-tela), item 3 (PDF vs.
+Excel), item 4 (N1), item 5 (REQ estrutural na UI) e item 6 (equilíbrio
+salvar/reabrir) — **não foram reabertos**: nada nesta correção pontual dá
+motivo concreto para desconfiá-los.
+
+### Item 2 revisitado — planilha vs. digitado à mão (ALTA) — **PASSOU**
+
+Reproduzi eu mesmo o experimento que reprovou a rodada anterior, sem me
+apoiar nos valores do despacho de correção:
+
+- Perfil de 1 camada com `gamma_nat=15,5`/`gamma_sat=19,3` (valores
+  fabricados por mim, diferentes tanto dos defaults 18,0/20,0 quanto dos
+  15,0/17,0 usados no teste automatizado da correção — para não coincidir
+  por acaso com o caso já coberto). Calculei o recalque (a) importando
+  uma planilha `.xlsx` fabricada com esses valores nas colunas novas e
+  (b) construindo a mesma `Camada` diretamente no núcleo, sem passar pela
+  planilha.
+- **Resultado: `recalque_total_mm` = `289.78425853131404` mm nos dois
+  casos — EXATAMENTE igual**, não só dentro de tolerância
+  (`asdict(resultado_importado) == asdict(resultado_manual)` → `True`).
+- Controle: recalculei o mesmo perfil com `gamma_nat`/`gamma_sat` nos
+  DEFAULTS do dataclass (`18,0`/`20,0` — o que a versão com bug produzia
+  em silêncio) → `270.71` mm. Confirma que a divergência de ~7% relatada
+  antes era real e que o fix a fecha de fato, não que o caso de teste
+  deixou de ser discriminante.
+- Repeti também o cenário citado no despacho como não-negociável:
+  reproduzi a planilha exata do relatório anterior — cabeçalho antigo de
+  9 colunas, linha com `nspt=8, Cc=0,45, e0=1,10, cv=0,02` — e confirmei
+  `ValueError` citando o cabeçalho, em vez da leitura silenciosa que
+  antes produziria `gamma_nat=8,0`/`gamma_sat=0,45`/`phi=1,1`/
+  `coesao=0,02` (o mecanismo exato de regressão que o a6 tinha achado
+  numa revisão intermediária, D1, já fechado antes desta rodada).
+- `phi`/`coesao` em branco → defaults do dataclass (`30,0`/`0,0`) sem
+  erro; preenchidos → repassados sem alteração. Continuam opcionais, sem
+  quebrar nada.
+- **Mutação própria, numa cópia isolada do arquivo** (não a mesma
+  mutação já documentada pelo a6/a3, refeita por mim de forma
+  independente): reverter a passagem de `gamma_nat`/`gamma_sat` a
+  `Camada(...)` derruba o teste de recalque (18,0 obtido em vez de 15,0);
+  remover a chamada a `_validar_cabecalho` derruba o teste de layout
+  antigo (`DID NOT RAISE ValueError`). Os dois mecanismos centrais do fix
+  são realmente o que protege os testes, não coincidência de dados.
+
+### Varredura por defeito novo nos arquivos tocados — **nenhum encontrado**
+
+`ruff check ui/completo/excel_import.py` limpo, idêntico ao baseline
+anterior à correção. Os 5 avisos `E402` de
+`tests/test_projeto_e_excel.py` são pré-existentes (confirmado rodando
+`ruff` sobre a versão do arquivo anterior a este diff) — não introduzidos
+pela correção. Dos 7 itens listados pela revisão focada intermediária de
+a6, os 2 obrigatórios antes desta rodada (validar cabeçalho; testes de
+domínio para `gamma_nat=0`/`gamma_sat` negativo/`phi` negativo) estão
+feitos e reverificados por mim; 1 foi adotado incidentalmente na forma
+sugerida (argumentos nomeados + `extras` tipado); 1 segue como débito
+BAIXA não bloqueante, já registrado (número mágico `13` em
+`_linha_em_branco`, em vez de `len(CABECALHO_PERFIL)`) — não agravado por
+este diff. Testados também, fora da suíte: aba só com cabeçalho (zero
+linhas) → erro claro; aba totalmente vazia → erro de cabeçalho; cabeçalho
+com espaço em branco extra por célula → tolerado de propósito
+(formatação, não estrutura).
+
+### Itens fora do escopo desta correção — mantidos sem reavaliar
+
+`excel_export.py` (`ok_direcao` recompõe a lógica do núcleo — MÉDIA) e
+`pranchas.py:340` ("CA-50" fixo no PDF — BAIXA): nenhum dos dois arquivos
+foi tocado por este diff (confirmado por `git diff --stat`); notas
+mantidas como estavam, sem reavaliação.
+
+### Suíte completa
+
+`pytest tests/ -q` (Xvfb, `CI=true`) → **411 passed** (103 só no arquivo
+da feature, de 93 antes da correção). Confere com o declarado no
+despacho.
+
+### Veredito — GATE 3
+
+**APROVADO.** O `BUG` ALTA do item 2 está fechado e reconfirmado por
+experimento independente — mesmo perfil, digitado e importado, mesmo
+recalque, dígito a dígito — não apenas relido do relatório de correção.
+O vetor de regressão que o motivaria a reaparecer numa próxima mudança de
+layout (planilha desatualizada lida em silêncio) também está fechado.
+Nenhum defeito novo nos 2 arquivos tocados. Portão fechado: 100% dos
+casos ALTA aprovados (item 1, 2 e 3), nenhum item pendente bloqueia,
+testes de equilíbrio (`asdict` exato) e proteção por mutação verdes.
+Veredito e evidência completa também em `relatorios/revisao_codigo.md`
+(mesmo adendo) e `relatorios/revisao_codigo.json`.
