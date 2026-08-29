@@ -255,9 +255,17 @@ def test_excel_modelo_round_trip_perfil_geotecnico(tmp_path):
     assert [c.nome for c in perfil.camadas] == ["Areia argilosa", "Argila mole"]
     assert perfil.camadas[0].tipo is TipoSubstrato.GRANULAR
     assert perfil.camadas[0].espessura == pytest.approx(2.0)
+    assert perfil.camadas[0].gamma_nat == pytest.approx(18.0)
+    assert perfil.camadas[0].gamma_sat == pytest.approx(20.0)
+    assert perfil.camadas[0].phi == pytest.approx(30.0)
+    assert perfil.camadas[0].coesao == pytest.approx(0.0)
     assert perfil.camadas[0].nspt == pytest.approx(12.0)
     assert perfil.camadas[0].Cc is None
     assert perfil.camadas[1].tipo is TipoSubstrato.COESIVO
+    assert perfil.camadas[1].gamma_nat == pytest.approx(16.0)
+    assert perfil.camadas[1].gamma_sat == pytest.approx(18.0)
+    assert perfil.camadas[1].phi == pytest.approx(22.0)
+    assert perfil.camadas[1].coesao == pytest.approx(15.0)
     assert perfil.camadas[1].Cc == pytest.approx(0.45)
     assert perfil.camadas[1].e0 == pytest.approx(1.10)
     assert perfil.camadas[1].cv == pytest.approx(0.02)
@@ -288,6 +296,234 @@ def test_excel_importado_alimenta_dimensionar_sem_excecao(tmp_path):
                     cobrimento=0.045)
     resultado = sapata.dimensionar()
     assert resultado.a > 0 and resultado.b > 0
+
+
+# --------------------------------------------------------------------------- #
+#  Excel — gamma_nat/gamma_sat OBRIGATÓRIOS, phi/coesao OPCIONAIS
+#
+#  Defeito confirmado pelo a7-validador em 2026-08-28 (GATE 3): a aba "Perfil
+#  geotécnico" não tinha colunas para gamma_nat/gamma_sat/phi/coesao — toda
+#  camada importada por Excel recebia em silêncio os defaults do dataclass
+#  `Camada` (gamma_nat=18.0, gamma_sat=20.0, phi=30.0, coesao=0.0), não
+#  importa o perfil real. Como gamma_nat/gamma_sat alimentam
+#  `PerfilGeotecnico.tensao_vertical_efetiva` (geotecnia.py:141), usada por
+#  `recalque_adensamento`, isso mudava um número do memorial (recalque) sem
+#  aviso — reproduzido no relatório com 117,62mm (perfil digitado na tela)
+#  vs. 109,65mm (mesmo perfil, importado por planilha), 6,8% de divergência.
+# --------------------------------------------------------------------------- #
+def test_excel_gamma_nat_gamma_sat_explicitos_e_diferentes_do_default_batem_com_recalque(
+        tmp_path):
+    """Mata o bug do GATE 3 por mutação: importa um perfil com gamma_nat/
+    gamma_sat EXPLÍCITOS e DIFERENTES dos defaults do dataclass `Camada`
+    (18.0/20.0) e confirma que (a) o `PerfilGeotecnico` resultante tem
+    exatamente esses valores, não os defaults, e (b) o recalque calculado a
+    partir dele bate EXATAMENTE (não "aproximadamente") com o mesmo perfil
+    montado à mão com os mesmos valores.
+
+    Reverter o fix (não passar gamma_nat/gamma_sat a `Camada` em
+    `importar_perfil_geotecnico`) faz este teste falhar: a camada importada
+    voltaria a usar os defaults (18.0/20.0), diferentes dos 15.0/17.0
+    digitados na planilha, e o recalque calculado divergiria do recalque de
+    referência (montado à mão)."""
+    caminho = tmp_path / "gamma_explicito.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    # gamma_nat=15.0, gamma_sat=17.0 — bem longe dos defaults 18.0/20.0.
+    ws.append(["Argila mole", "coesivo", 4.0, 15.0, 17.0, 22.0, 15.0, None,
+              0.45, 1.10, 0.02, None, 1.0])
+    livro.save(str(caminho))
+
+    perfil_importado = excel_import.importar_perfil_geotecnico(str(caminho))
+    camada = perfil_importado.camadas[0]
+    assert camada.gamma_nat == pytest.approx(15.0)
+    assert camada.gamma_sat == pytest.approx(17.0)
+    # nem os defaults do dataclass, para deixar a intenção do teste explícita.
+    assert camada.gamma_nat != pytest.approx(18.0)
+    assert camada.gamma_sat != pytest.approx(20.0)
+
+    perfil_referencia = PerfilGeotecnico(
+        camadas=[Camada(nome="Argila mole", espessura=4.0,
+                        tipo=TipoSubstrato.COESIVO, gamma_nat=15.0,
+                        gamma_sat=17.0, phi=22.0, coesao=15.0, Cc=0.45,
+                        e0=1.10, cv=0.02)],
+        nivel_agua=1.0)
+
+    solo_importado = Solo(sigma_adm=200.0, perfil=perfil_importado)
+    solo_referencia = Solo(sigma_adm=200.0, perfil=perfil_referencia)
+    pilar = Pilar(ap=0.4, bp=0.4)
+    casos = [CasoCarga("G", Esforcos(N=800.0))]
+    combinacoes = gerar_combinacoes(casos)
+
+    sapata_importada = Sapata(pilar, solo_importado, Concreto(fck=25.0),
+                              Aco(fyk=500.0), combinacoes, cobrimento=0.045,
+                              opcoes=OpcoesProjeto(verificar_recalque=True))
+    sapata_referencia = Sapata(pilar, solo_referencia, Concreto(fck=25.0),
+                               Aco(fyk=500.0), combinacoes, cobrimento=0.045,
+                               opcoes=OpcoesProjeto(verificar_recalque=True))
+
+    resultado_importado = sapata_importada.dimensionar()
+    resultado_referencia = sapata_referencia.dimensionar()
+    assert asdict(resultado_importado) == asdict(resultado_referencia)
+
+
+def test_excel_gamma_nat_vazio_e_recusado_citando_a_coluna(tmp_path):
+    """Prova que o caminho de default silencioso está FECHADO, não só
+    "menos provável": uma planilha sem gamma_nat (célula vazia) é recusada
+    com `ValueError` citando a coluna, em vez de deixar `Camada` aplicar o
+    default (18.0) sem avisar ninguém."""
+    caminho = tmp_path / "sem_gamma_nat.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, None, 20.0, None, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"gamma_nat.*obrigatória vazia"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
+
+
+def test_excel_gamma_sat_vazio_e_recusado_citando_a_coluna(tmp_path):
+    """Mesmo teste acima, mas para gamma_sat (a segunda metade do par
+    obrigatório) — as duas colunas têm de ser validadas independentemente,
+    não só a primeira."""
+    caminho = tmp_path / "sem_gamma_sat.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 18.0, None, None, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"gamma_sat.*obrigatória vazia"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
+
+
+def test_excel_phi_coesao_em_branco_continuam_aceitos_com_default_do_nucleo(
+        tmp_path):
+    """`phi`/`coesao` continuam OPCIONAIS: célula em branco não é recusada
+    — a camada resultante usa o default do próprio dataclass `Camada`
+    (phi=30.0, coesao=0.0), preservando o comportamento intencional (hoje
+    `Camada.phi`/`Camada.coesao` não alimentam nenhum cálculo do núcleo, ao
+    contrário de gamma_nat/gamma_sat — ver NOTA em excel_import.py)."""
+    caminho = tmp_path / "phi_coesao_em_branco.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    perfil = excel_import.importar_perfil_geotecnico(str(caminho))
+    camada = perfil.camadas[0]
+    assert camada.phi == pytest.approx(Camada(nome="x", espessura=1.0).phi)
+    assert camada.coesao == pytest.approx(
+        Camada(nome="x", espessura=1.0).coesao)
+
+
+def test_excel_phi_coesao_preenchidos_sao_repassados_a_camada(tmp_path):
+    caminho = tmp_path / "phi_coesao_preenchidos.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, 33.0, 8.0, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    perfil = excel_import.importar_perfil_geotecnico(str(caminho))
+    camada = perfil.camadas[0]
+    assert camada.phi == pytest.approx(33.0)
+    assert camada.coesao == pytest.approx(8.0)
+
+
+def test_excel_perfil_cabecalho_layout_antigo_e_recusado_nao_reinterpretado(
+        tmp_path):
+    """Defeito D1 da revisão focada do a6 (2026-08-28): antes da checagem de
+    cabeçalho, uma planilha do layout ANTIGO (9 colunas, sem gamma_nat/
+    gamma_sat/phi/coesao) era lida em silêncio pelo layout NOVO (13
+    colunas) — os valores caíam nas posições erradas (célula por ÍNDICE de
+    coluna) e viravam números de engenharia errados sem erro nenhum: uma
+    linha antiga com nspt=8, Cc=0.45, e0=1.10, cv=0.02 importava como
+    gamma_nat=8.0, gamma_sat=0.45, phi=1.1, coesao=0.02 — a MESMA classe de
+    bug que o a7-validador reprovou no GATE 3, só que disparada por versão
+    de arquivo desatualizada em vez de coluna ausente.
+
+    Reproduz exatamente esse cenário e confirma que agora dá `ValueError`
+    citando o cabeçalho, em vez de importar silenciosamente com os valores
+    nas posições erradas."""
+    caminho = tmp_path / "layout_antigo.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    cabecalho_antigo_9_colunas = ("camada", "tipo", "espessura (m)", "nspt",
+                                  "Cc", "e0", "cv (m²/ano)", "Es (kPa)",
+                                  "nível d'água (m)")
+    ws.append(cabecalho_antigo_9_colunas)
+    ws.append(["Argila mole", "coesivo", 4.0, 8, 0.45, 1.10, 0.02, None, 1.5])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"cabeçalho"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
+
+
+def test_excel_pilar_cabecalho_incompativel_e_recusado(tmp_path):
+    """Mesma checagem (`_validar_cabecalho`) na aba "Pilar e cargas" —
+    coluna fora de ordem/nome errado é recusado, não lido por índice às
+    cegas."""
+    caminho = tmp_path / "pilar_cabecalho_errado.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PILAR
+    ws.append(("ap (m)", "bp (m)", "caso", "N (kN)"))  # faltam Mx/My
+    ws.append([0.3, 0.3, "G", 500.0])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"cabeçalho"):
+        excel_import.importar_pilar_e_cargas(str(caminho))
+
+
+def test_excel_gamma_nat_zero_e_recusado_estrito(tmp_path):
+    """`gamma_nat` usa `estrito=True` (`> 0`, não `>= 0`) — mesmo
+    tratamento de `espessura`. gamma_nat=0.0 tem de ser recusado, não
+    aceito como "no limite"."""
+    caminho = tmp_path / "gamma_nat_zero.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 0.0, 20.0, None, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"gamma_nat.*fora do domínio"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
+
+
+def test_excel_gamma_sat_negativo_e_recusado(tmp_path):
+    caminho = tmp_path / "gamma_sat_negativo.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 18.0, -5.0, None, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"gamma_sat.*fora do domínio"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
+
+
+def test_excel_phi_negativo_e_recusado(tmp_path):
+    """`phi` é opcional, mas quando PREENCHIDO ainda precisa respeitar o
+    domínio (`>= 0`) — opcional não é sinônimo de sem validação."""
+    caminho = tmp_path / "phi_negativo.xlsx"
+    livro = openpyxl.Workbook()
+    ws = livro.active
+    ws.title = excel_import.ABA_PERFIL
+    ws.append(excel_import.CABECALHO_PERFIL)
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, -10.0, None, None, None,
+              None, None, None, None])
+    livro.save(str(caminho))
+    with pytest.raises(ValueError, match=r"phi.*fora do domínio"):
+        excel_import.importar_perfil_geotecnico(str(caminho))
 
 
 # --------------------------------------------------------------------------- #
@@ -439,7 +675,8 @@ def test_excel_tipo_substrato_invalido(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Camada X", "granito", 1.0, None, None, None, None, None, None])
+    ws.append(["Camada X", "granito", 1.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, None])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match="linha 2.*tipo"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -679,7 +916,8 @@ def test_excel_espessura_negativa_e_recusada(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Argila mole", "coesivo", -3.0, None, 0.45, 1.10, 0.02, None, 1.5])
+    ws.append(["Argila mole", "coesivo", -3.0, 16.0, 18.0, None, None, None,
+              0.45, 1.10, 0.02, None, 1.5])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"espessura.*fora do domínio"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -691,7 +929,8 @@ def test_excel_nspt_negativo_e_recusado(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Areia", "granular", 2.0, -5.0, None, None, None, None, None])
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, -5.0, None,
+              None, None, None, None])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"nspt.*fora do domínio"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -703,7 +942,8 @@ def test_excel_nivel_agua_negativo_e_recusado(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Areia", "granular", 2.0, None, None, None, None, None, -1.5])
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, -1.5])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"nível d'água.*fora do domínio"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -758,8 +998,10 @@ def test_excel_nivel_agua_conflitante_entre_linhas_e_recusado(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Areia", "granular", 2.0, None, None, None, None, None, 1.5])
-    ws.append(["Argila", "coesivo", 3.0, None, 0.4, 1.0, 0.02, None, 2.5])
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, 1.5])
+    ws.append(["Argila", "coesivo", 3.0, 16.0, 18.0, None, None, None, 0.4,
+              1.0, 0.02, None, 2.5])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"conflita"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -957,7 +1199,8 @@ def test_excel_espessura_zero_e_recusada(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Argila mole", "coesivo", 0.0, None, 0.45, 1.10, 0.02, None, None])
+    ws.append(["Argila mole", "coesivo", 0.0, 16.0, 18.0, None, None, None,
+              0.45, 1.10, 0.02, None, None])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"espessura.*fora do domínio"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -1038,8 +1281,10 @@ def test_excel_nivel_agua_em_branco_na_primeira_linha_e_preenchido_depois_e_recu
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Areia", "granular", 2.0, None, None, None, None, None, None])
-    ws.append(["Argila", "coesivo", 3.0, None, 0.4, 1.0, 0.02, None, 2.5])
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, None])
+    ws.append(["Argila", "coesivo", 3.0, 16.0, 18.0, None, None, None, 0.4,
+              1.0, 0.02, None, 2.5])
     livro.save(str(caminho))
     with pytest.raises(ValueError, match=r"conflita"):
         excel_import.importar_perfil_geotecnico(str(caminho))
@@ -1053,8 +1298,10 @@ def test_excel_nivel_agua_em_branco_nas_duas_linhas_continua_aceito(tmp_path):
     ws = livro.active
     ws.title = excel_import.ABA_PERFIL
     ws.append(excel_import.CABECALHO_PERFIL)
-    ws.append(["Areia", "granular", 2.0, None, None, None, None, None, None])
-    ws.append(["Argila", "coesivo", 3.0, None, 0.4, 1.0, 0.02, None, None])
+    ws.append(["Areia", "granular", 2.0, 18.0, 20.0, None, None, None, None,
+              None, None, None, None])
+    ws.append(["Argila", "coesivo", 3.0, 16.0, 18.0, None, None, None, 0.4,
+              1.0, 0.02, None, None])
     livro.save(str(caminho))
     perfil = excel_import.importar_perfil_geotecnico(str(caminho))
     assert perfil.nivel_agua is None

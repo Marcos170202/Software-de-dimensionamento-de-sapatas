@@ -18,9 +18,10 @@ do que uma versão anterior deste docstring afirmava, NEM TODO construtor de
 negativa ou N_SPT negativo sem erro. Como este módulo é a FRONTEIRA de dados
 não confiáveis (planilha de terceiros), ele mesmo valida DOMÍNIO (não
 engenharia: só que o número esteja no intervalo em que faz sentido existir)
-antes de repassar ao construtor: espessura de camada tem de ser > 0;
-nspt/Cc/e0/cv/Es e nível d'água têm de ser >= 0 quando preenchidos. Isso não
-fere a regra "ui/ não calcula" — é validação de entrada, não cálculo. A
+antes de repassar ao construtor: espessura de camada e gamma_nat/gamma_sat
+têm de ser > 0; phi/coesao/nspt/Cc/e0/cv/Es e nível d'água têm de ser >= 0
+quando preenchidos. Isso não fere a regra "ui/ não calcula" — é validação
+de entrada, não cálculo. A
 validação de domínio dentro do próprio `calc_core` (`__post_init__` em
 `Camada`/`Solo`) é tarefa de outra rodada, de a4/a2.
 
@@ -52,16 +53,53 @@ Layout — aba "Perfil geotécnico"
 Cabeçalho na linha 1, dados a partir da linha 2, UMA LINHA POR CAMADA, na
 ORDEM DO TOPO PARA A BASE:
 
-    camada | tipo | espessura (m) | nspt | Cc | e0 | cv (m²/ano) | Es (kPa) | nível d'água (m)
+    camada | tipo | espessura (m) | gamma_nat (kN/m³) | gamma_sat (kN/m³) |
+    phi (graus) | coesao (kPa) | nspt | Cc | e0 | cv (m²/ano) | Es (kPa) |
+    nível d'água (m)
 
 `tipo` precisa casar com um valor de `TipoSubstrato` ("granular", "coesivo",
 "rocha", "aterro"); qualquer outro valor é rejeitado citando a linha e o
-valor recebido. `Cc`/`e0`/`cv`/`Es` são os parâmetros de adensamento/
-deformabilidade — só fazem sentido em camada coesiva (Cc/e0/cv) ou quando
-não se quer depender da correlação com o SPT (Es); podem ficar em branco
-nas demais linhas, e ficam em branco = lidos como `None`, nunca como zero.
-`nível d'água` só é lida da PRIMEIRA linha de dados (mesma convenção de
-`ap`/`bp` acima).
+valor recebido.
+
+`gamma_nat`/`gamma_sat` são OBRIGATÓRIOS (mesmo tratamento que `espessura`:
+número > 0) — ver a NOTA abaixo sobre por que estes dois campos, ao
+contrário de `phi`/`coesao`, não têm default silencioso aceitável.
+
+`phi`/`coesao` são OPCIONAIS: célula em branco = `None` passado a
+`Camada(...)`, que então aplica o próprio default do dataclass (mesmo
+tratamento que `nspt`/`Cc`/`e0`/`cv`/`Es` abaixo) — ver a mesma NOTA.
+
+`Cc`/`e0`/`cv`/`Es` são os parâmetros de adensamento/deformabilidade — só
+fazem sentido em camada coesiva (Cc/e0/cv) ou quando não se quer depender da
+correlação com o SPT (Es); podem ficar em branco nas demais linhas, e ficam
+em branco = lidos como `None`, nunca como zero. `nível d'água` só é lida da
+PRIMEIRA linha de dados (mesma convenção de `ap`/`bp` acima).
+
+NOTA (por que `gamma_nat`/`gamma_sat` são obrigatórios e `phi`/`coesao` não
+são — defeito confirmado pelo a7-validador em 2026-08-28, GATE 3): antes
+desta correção, a aba "Perfil geotécnico" não tinha NENHUMA coluna para
+`gamma_nat`/`gamma_sat`/`phi`/`coesao` — toda camada importada por Excel
+recebia em silêncio os defaults do dataclass `Camada` (gamma_nat=18.0,
+gamma_sat=20.0, phi=30.0, coesao=0.0), não importa o perfil real digitado
+pelo engenheiro. Isso é grave para `gamma_nat`/`gamma_sat` porque os dois
+alimentam `PerfilGeotecnico.tensao_vertical_efetiva`
+(`calc_core/sapata_isolada/geotecnia.py:141`: `sigma += z_seco * c.gamma_nat
++ z_sub * c.gamma_sat`), usada dentro de `recalque_adensamento` — um valor
+errado ali muda um número do memorial (recalque), sem aviso nenhum ao
+usuário. Já `phi`/`coesao` de `Camada` — confirmado por grep em
+`calc_core/sapata_isolada/`, 2026-08-28 — NÃO são lidos por nenhum cálculo
+implementado hoje: as únicas ocorrências fora da própria declaração da
+dataclass são `Solo.phi`/`Solo.coesao` (classe SEPARADA, que alimenta
+resistência ao deslizamento em `sapata.py:775`), não `Camada.phi`/
+`Camada.coesao`. Por isso `gamma_nat`/`gamma_sat` viraram colunas
+OBRIGATÓRIAS (fecham de vez o caminho do default silencioso para os dois
+campos com efeito numérico real) enquanto `phi`/`coesao` continuam
+OPCIONAIS, com o mesmo tratamento de "branco = None = default do núcleo"
+já usado para `nspt`/`Cc`/`e0`/`cv`/`Es`. Esta distinção é uma fotografia do
+estado ATUAL do núcleo, não uma garantia permanente: se/quando a4 ou a5
+passarem a consumir `Camada.phi`/`Camada.coesao` em algum cálculo, este
+módulo precisa ser revisitado para reavaliar se os dois devem virar
+obrigatórios também.
 
 NOTA DE UNIDADE (cv): a coluna usa m²/ano, a MESMA unidade que
 `calc_core.sapata_isolada.geotecnia.Camada.cv` espera (ver a docstring de
@@ -89,8 +127,10 @@ ABA_PERFIL = "Perfil geotécnico"
 ABA_INSTRUCOES = "Instruções"
 
 CABECALHO_PILAR = ("ap (m)", "bp (m)", "caso", "N (kN)", "Mx (kN·m)", "My (kN·m)")
-CABECALHO_PERFIL = ("camada", "tipo", "espessura (m)", "nspt", "Cc", "e0",
-                    "cv (m²/ano)", "Es (kPa)", "nível d'água (m)")
+CABECALHO_PERFIL = ("camada", "tipo", "espessura (m)", "gamma_nat (kN/m³)",
+                    "gamma_sat (kN/m³)", "phi (graus)", "coesao (kPa)",
+                    "nspt", "Cc", "e0", "cv (m²/ano)", "Es (kPa)",
+                    "nível d'água (m)")
 
 TIPOS_ACEITOS = [t.value for t in TipoSubstrato]
 
@@ -238,6 +278,33 @@ def _linha_em_branco(ws, linha: int, n_colunas: int) -> bool:
               for c in range(1, n_colunas + 1))
 
 
+def _validar_cabecalho(ws, cabecalho_esperado: tuple[str, ...]) -> None:
+    """Confere que a linha 1 da aba bate, célula a célula, com
+    `cabecalho_esperado` — ANTES de ler qualquer linha de dados (defeito
+    D1, revisão a6 de 2026-08-28).
+
+    Sem esta checagem, uma planilha de layout ANTIGO (menos colunas, ou
+    colunas em outra ordem) é lida em silêncio pelo layout NOVO: os valores
+    caem nas posições erradas (célula por ÍNDICE de coluna, não por nome) e
+    viram números de engenharia errados sem nenhum erro — exatamente a
+    classe de bug que motivou tornar `gamma_nat`/`gamma_sat` obrigatórios
+    (ver NOTA na docstring do módulo), só que disparada por versão de
+    arquivo desatualizada em vez de célula vazia. Levanta `ValueError`
+    citando a aba, o cabeçalho esperado e o que foi encontrado."""
+    encontrado = tuple(
+        (str(ws.cell(row=1, column=c).value).strip()
+         if not _vazia(ws.cell(row=1, column=c).value) else None)
+        for c in range(1, len(cabecalho_esperado) + 1))
+    if encontrado != cabecalho_esperado:
+        raise ValueError(
+            f"Aba {ws.title!r}: cabeçalho da linha 1 não bate com o "
+            "esperado — a planilha usa um layout desatualizado ou "
+            "incompatível. Esperado (nesta ordem): "
+            f"{cabecalho_esperado!r}. Encontrado: {encontrado!r}. Gere um "
+            "modelo novo com 'Gerar modelo de planilha...' e copie seus "
+            "dados para lá.")
+
+
 # --------------------------------------------------------------------------- #
 #  Importação
 # --------------------------------------------------------------------------- #
@@ -245,15 +312,18 @@ def importar_pilar_e_cargas(caminho) -> tuple[Pilar, list[CasoCarga]]:
     """Lê a aba "Pilar e cargas" e devolve (`Pilar`, lista de `CasoCarga`).
 
     Levanta `ValueError` (ou `AbaAusente`, sua subclasse) se a aba não
-    existir, se `ap`/`bp` faltarem na primeira linha de dados, se `N`
-    faltar em alguma linha, se `caso` faltar, se algum valor numérico não
-    puder ser convertido, ou se `ap`/`bp` aparecerem de novo, com valor
-    DIFERENTE do da primeira linha, numa linha seguinte — sempre citando
-    aba/linha/coluna.
+    existir, se o cabeçalho da linha 1 não bater com `CABECALHO_PILAR`
+    (layout desatualizado ou incompatível — checado ANTES de qualquer linha
+    de dados, ver `_validar_cabecalho`), se `ap`/`bp` faltarem na primeira
+    linha de dados, se `N` faltar em alguma linha, se `caso` faltar, se
+    algum valor numérico não puder ser convertido, ou se `ap`/`bp`
+    aparecerem de novo, com valor DIFERENTE do da primeira linha, numa
+    linha seguinte — sempre citando aba/linha/coluna.
     """
     livro, livro_bruto = _abrir(caminho)
     ws = _aba(livro, ABA_PILAR)
     ws_bruto = livro_bruto[ABA_PILAR]
+    _validar_cabecalho(ws, CABECALHO_PILAR)
 
     ap: float | None = None
     bp: float | None = None
@@ -321,21 +391,26 @@ def importar_perfil_geotecnico(caminho) -> PerfilGeotecnico:
     """Lê a aba "Perfil geotécnico" e devolve o `PerfilGeotecnico` completo,
     na mesma ordem das linhas da planilha (topo para a base).
 
-    Levanta `AbaAusente` se a aba não existir, e `ValueError` para célula
-    obrigatória vazia, valor numérico inválido, fora do domínio esperado
-    (espessura <= 0; nspt/Cc/e0/cv/Es/nível d'água < 0), `tipo` fora do
-    enum `TipoSubstrato`, ou nível d'água conflitante entre linhas —
-    sempre citando aba/linha/coluna.
+    Levanta `AbaAusente` se a aba não existir, `ValueError` se o cabeçalho
+    da linha 1 não bater com `CABECALHO_PERFIL` (layout desatualizado ou
+    incompatível — checado ANTES de qualquer linha de dados, ver
+    `_validar_cabecalho`), e `ValueError` para célula obrigatória vazia
+    (inclui `gamma_nat`/`gamma_sat`, ver NOTA na docstring do módulo), valor
+    numérico inválido, fora do domínio esperado (espessura/gamma_nat/
+    gamma_sat <= 0; phi/coesao/nspt/Cc/e0/cv/Es/nível d'água < 0), `tipo`
+    fora do enum `TipoSubstrato`, ou nível d'água conflitante entre linhas
+    — sempre citando aba/linha/coluna.
     """
     livro, livro_bruto = _abrir(caminho)
     ws = _aba(livro, ABA_PERFIL)
     ws_bruto = livro_bruto[ABA_PERFIL]
+    _validar_cabecalho(ws, CABECALHO_PERFIL)
 
     nivel_agua: float | None = None
     primeira = True
     camadas: list[Camada] = []
     for linha in range(2, ws.max_row + 1):
-        if _linha_em_branco(ws, linha, 9):
+        if _linha_em_branco(ws, linha, 13):
             continue
         nome = _celula_texto(ws, ws_bruto, linha, 1, "camada", obrigatorio=True)
         tipo_txt = _celula_texto(ws, ws_bruto, linha, 2, "tipo", obrigatorio=True)
@@ -348,18 +423,26 @@ def importar_perfil_geotecnico(caminho) -> PerfilGeotecnico:
                 f"{TIPOS_ACEITOS}.") from erro
         espessura = _celula_float(ws, ws_bruto, linha, 3, "espessura (m)",
                                   obrigatorio=True, minimo=0, estrito=True)
-        nspt = _celula_float(ws, ws_bruto, linha, 4, "nspt",
+        gamma_nat = _celula_float(ws, ws_bruto, linha, 4, "gamma_nat (kN/m³)",
+                                  obrigatorio=True, minimo=0, estrito=True)
+        gamma_sat = _celula_float(ws, ws_bruto, linha, 5, "gamma_sat (kN/m³)",
+                                  obrigatorio=True, minimo=0, estrito=True)
+        phi = _celula_float(ws, ws_bruto, linha, 6, "phi (graus)",
+                            obrigatorio=False, minimo=0)
+        coesao = _celula_float(ws, ws_bruto, linha, 7, "coesao (kPa)",
+                               obrigatorio=False, minimo=0)
+        nspt = _celula_float(ws, ws_bruto, linha, 8, "nspt",
                              obrigatorio=False, minimo=0)
-        Cc = _celula_float(ws, ws_bruto, linha, 5, "Cc",
+        Cc = _celula_float(ws, ws_bruto, linha, 9, "Cc",
                            obrigatorio=False, minimo=0)
-        e0 = _celula_float(ws, ws_bruto, linha, 6, "e0",
+        e0 = _celula_float(ws, ws_bruto, linha, 10, "e0",
                            obrigatorio=False, minimo=0)
-        cv = _celula_float(ws, ws_bruto, linha, 7, "cv (m²/ano)",
+        cv = _celula_float(ws, ws_bruto, linha, 11, "cv (m²/ano)",
                            obrigatorio=False, minimo=0)
-        Es = _celula_float(ws, ws_bruto, linha, 8, "Es (kPa)",
+        Es = _celula_float(ws, ws_bruto, linha, 12, "Es (kPa)",
                            obrigatorio=False, minimo=0)
         if primeira:
-            nivel_agua = _celula_float(ws, ws_bruto, linha, 9,
+            nivel_agua = _celula_float(ws, ws_bruto, linha, 13,
                                        "nível d'água (m)", obrigatorio=False,
                                        minimo=0)
             primeira = False
@@ -378,10 +461,23 @@ def importar_perfil_geotecnico(caminho) -> PerfilGeotecnico:
             # já é, por definição, DIFERENTE de `None` → conflito) — o
             # bug era só chamar a função condicionalmente. Mesmo padrão
             # incondicional já usado para `ap`/`bp` acima.
-            _exigir_valor_repetido_igual(ws, ws_bruto, linha, 9,
+            _exigir_valor_repetido_igual(ws, ws_bruto, linha, 13,
                                          "nível d'água (m)", nivel_agua)
+        # `gamma_nat`/`gamma_sat` sempre passados (obrigatórios, nunca
+        # `None` neste ponto). `phi`/`coesao` só passados se preenchidos —
+        # célula em branco deixa `Camada` aplicar seu próprio default
+        # (mesmo padrão já usado para nspt/Cc/e0/cv/Es logo abaixo). Ver a
+        # NOTA na docstring do módulo sobre por que a obrigatoriedade dos
+        # dois grupos é diferente.
+        extras: dict[str, float] = {}
+        if phi is not None:
+            extras["phi"] = phi
+        if coesao is not None:
+            extras["coesao"] = coesao
         camadas.append(Camada(nome=nome, espessura=espessura, tipo=tipo,
-                              nspt=nspt, Cc=Cc, e0=e0, cv=cv, Es=Es))
+                              gamma_nat=gamma_nat, gamma_sat=gamma_sat,
+                              nspt=nspt, Cc=Cc, e0=e0, cv=cv, Es=Es,
+                              **extras))
 
     if not camadas:
         raise ValueError(f"Aba {ABA_PERFIL!r}: nenhuma camada encontrada.")
@@ -407,10 +503,10 @@ def gerar_modelo_importacao(caminho) -> None:
 
     ws_perfil = livro.create_sheet(ABA_PERFIL)
     ws_perfil.append(CABECALHO_PERFIL)
-    ws_perfil.append(["Areia argilosa", "granular", 2.0, 12, None, None,
-                      None, None, 1.5])
-    ws_perfil.append(["Argila mole", "coesivo", 3.0, None, 0.45, 1.10,
-                      0.02, None, None])
+    ws_perfil.append(["Areia argilosa", "granular", 2.0, 18.0, 20.0, 30.0,
+                      0.0, 12, None, None, None, None, 1.5])
+    ws_perfil.append(["Argila mole", "coesivo", 3.0, 16.0, 18.0, 22.0,
+                      15.0, None, 0.45, 1.10, 0.02, None, None])
     for cel in ws_perfil[1]:
         cel.font = Font(bold=True)
 
@@ -435,6 +531,13 @@ def gerar_modelo_importacao(caminho) -> None:
         "  camada: nome da camada (texto livre).",
         f"  tipo: um de {TIPOS_ACEITOS} (valores do enum TipoSubstrato).",
         "  espessura (m): espessura da camada, > 0.",
+        "  gamma_nat (kN/m³), gamma_sat (kN/m³): peso específico natural (acima do N.A.) e saturado (abaixo do N.A.) — OBRIGATÓRIOS, > 0.",
+        "    Alimentam diretamente a tensão vertical efetiva usada no cálculo de recalque por adensamento; não têm default seguro,",
+        "    por isso a importação recusa a linha se qualquer um dos dois estiver em branco (em vez de assumir um valor em silêncio).",
+        "  phi (graus), coesao (kPa): ângulo de atrito e coesão efetivos da camada — OPCIONAIS; em branco = usa o default do núcleo.",
+        "    Ao contrário de gamma_nat/gamma_sat, phi/coesao de CAMADA não entram em nenhum cálculo implementado hoje no núcleo",
+        "    (o ângulo de atrito e a coesão que alimentam a verificação de deslizamento vêm de Solo.phi/Solo.coesao, preenchidos",
+        "    na tela, não desta planilha) — preencher ou deixar em branco aqui não muda nenhum número do memorial atual.",
         "  nspt: N_SPT médio da camada (opcional).",
         "  Cc, e0: índice de compressão e índice de vazios inicial — só fazem sentido para camada coesiva; deixe em branco nas demais.",
         "  cv (m²/ano): coeficiente de adensamento — só para camada coesiva; deixe em branco nas demais.",
@@ -445,9 +548,9 @@ def gerar_modelo_importacao(caminho) -> None:
         "    Em branco na primeira linha = sem N.A. informado. Um valor DIFERENTE numa linha seguinte é um ERRO (a planilha",
         "    diz uma coisa, a importação usaria outra) — deixe em branco ou repita o mesmo valor.",
         "",
-        "Domínio dos valores: espessura tem de ser > 0; nspt/Cc/e0/cv/Es/nível d'água têm de ser >= 0 quando preenchidos.",
-        "Valores fora desse intervalo (ex.: espessura negativa por erro de digitação) são recusados na importação, não",
-        "entram em silêncio no cálculo.",
+        "Domínio dos valores: espessura/gamma_nat/gamma_sat têm de ser > 0; phi/coesao/nspt/Cc/e0/cv/Es/nível d'água têm de",
+        "ser >= 0 quando preenchidos. Valores fora desse intervalo (ex.: espessura negativa por erro de digitação) são",
+        "recusados na importação, não entram em silêncio no cálculo.",
         "",
         "Erros de preenchimento (célula obrigatória vazia, valor não numérico, valor lógico VERDADEIRO/FALSO onde se",
         "espera número, fórmula sem valor calculado, valor fora do domínio, tipo de substrato desconhecido, aba ausente)",
@@ -459,7 +562,8 @@ def gerar_modelo_importacao(caminho) -> None:
 
     for col, largura in zip("ABCDEF", (10, 10, 10, 10, 12, 12)):
         ws_pilar.column_dimensions[col].width = largura
-    for col, largura in zip("ABCDEFGHI", (18, 12, 14, 8, 8, 8, 12, 10, 16)):
+    for col, largura in zip("ABCDEFGHIJKLM",
+                            (18, 12, 14, 16, 16, 12, 12, 8, 8, 8, 12, 10, 16)):
         ws_perfil.column_dimensions[col].width = largura
 
     livro.save(caminho)
