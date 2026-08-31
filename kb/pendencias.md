@@ -689,3 +689,356 @@ Se, ao contrário, a integração for feita sem os rótulos junto (o gatilho (ii
 o risco inverte de sinal e passa a ser violação direta de REQ-PROP-04 — método
 não rastreável em documento assinado, com diferença medida de até 37 % entre os
 dois métodos para a mesma camada.
+
+---
+
+# RODADA 2026-08-31 (ruleset versão 9) — sigma_adm a partir de SPT e majoração por vento
+
+Sete pendências (V1 a V7) da auditoria das duas extrações do a1
+("2026-08-29 sigma_adm-SPT + majoracao por vento" e "2026-08-31
+Cintra/Aoki/Albiero"). Nenhuma é bloqueante para o que a v9 aprovou: todas
+foram desenhadas para que o software funcione sem elas, no lado conservador,
+até que um engenheiro decida. O que cada uma destrava é ALCANCE, não correção.
+
+**Contexto que vale para as sete.** A fonte Cintra/Aoki/Albiero (2011) foi
+ACEITA formalmente pelo a2 como `SECUNDARIA_NAO_NORMATIVA`, com o mesmo
+estatuto já dado à apostila do Bastos na v5: evidência de FORMULAÇÃO, nunca
+fonte de obrigatoriedade. A referência primária (TEIXEIRA, A.H., SEFE III,
+1996) continua AUSENTE do acervo, e assim também Vesic (1975), Terzaghi (1943),
+Skempton (1951), De Beer (1967), a ABNT NBR 6484 e a ABNT NBR 6502. Nada disso
+foi suprido de memória.
+
+---
+
+## V1 — Como se afere o piso FSg >= 1,6 da NBR 6122 §6.3.2 — PRIORIDADE BAIXA
+
+*Pergunta objetiva:* quando a tensão admissível é majorada por vento, o "fator
+de segurança global não pode ser inferior a 1,6" incide sobre o FSg EFETIVO
+depois da majoração (FSg/(1+k_v)) ou sobre o FSg de entrada?
+
+*Trecho literal da fonte* (NBR 6122:2022, §6.3.2, p. impressa 21 / PDF 33,
+conferido pelo a2 na camada de texto e em render a 300 dpi):
+
+> "os valores de tensão admissível de sapatas e tubulões e as cargas
+> admissíveis em estacas podem ser majorados em até 15 %. Quando esta majoração
+> for utilizada, o fator de segurança global não pode ser inferior a 1,6. Caso
+> a majoração não seja utilizada, podem ser aplicados todos os requisitos desta
+> Norma relativos ao valor do fator de segurança global."
+
+*Leitura proposta pelo a2 (ADOTADA na v9):* incide sobre o **FSg efetivo**,
+FSg/(1+k_v) >= 1,6. Fundamentos: (i) majorar sigma_adm em 15 % é, por
+identidade, dividir sigma_rup por FSg/1,15 — o fator de segurança global que
+existe depois da majoração É FSg/1,15, e não há terceira grandeza a que o 1,6
+possa se referir; (ii) a terceira frase do item só tem sentido por contraste —
+ela diz que, majorando, nem todos os requisitos de FSg da Tabela 1 seguem
+valendo tal e qual, e no lugar deles entra o piso de 1,6.
+
+*Correção de um erro do a1, que é o que fecha a decisão:* o a1 registrou que
+sob esta leitura "com FSg = 3,00 e 15 %, dá 2,61 >= 1,6, e a condição nunca
+ativa", e concluiu daí que a leitura tornaria a frase inútil. A conclusão é
+falsa: o a1 testou só FSg = 3,00, e a Tabela 1 tem três linhas. Com FSg = 2,00
+(semiempíricos ou analíticos acrescidos de duas ou mais provas de carga na fase
+de projeto) e k_v = 0,30, o efetivo é 1,538 < 1,6 — **a condição BINDA**, e
+binda justamente nas obras da lista dos 30 % (torres, silos, torres eólicas),
+onde o vento governa. Nesse caso o k_v máximo cai de 30 % para 25 %. A frase da
+Norma não é supérflua: é o que impede acumular dois benefícios (prova de carga
++ vento).
+
+*Leitura descartada:* "1,6 é piso independente, que autorizaria reduzir o FSg de
+origem até 1,6". Descartada porque anularia o teto explícito "em até 15 %"
+escrito na mesma frase, e porque permitiria majoração de 87,5 % contra um texto
+que diz "até 15 %".
+
+*Impacto se a leitura estiver errada:* **nenhum resultado inseguro em nenhuma
+hipótese.** A guarda (C4) só pode RECUSAR ou REDUZIR uma majoração, nunca criar
+uma. Se a leitura correta fosse a outra, o software terá sido conservador num
+único caso estreito (FSg = 2,00 com lista dos 30 %), oferecendo 25 % onde a
+Norma permitiria 30 %. Por isso a regra saiu APROVADA e não PENDENTE_HUMANO, e
+esta pendência é de confirmação interpretativa, não de bloqueio.
+
+---
+
+## V2 — O software deve oferecer a rota de VALORES DE CÁLCULO? — PRIORIDADE ALTA
+
+*Pergunta objetiva:* o software passa a oferecer a rota de valores de cálculo
+(tensão resistente de cálculo, gamma_m = 2,15 / 1,40 da Tabela 1, gamma_f = 1,4
+da nota c, e a majoração de 10 % do §6.3.3) como alternativa à rota de valores
+admissíveis que ele usa hoje — ou declara ao usuário que não a oferece?
+
+*Trecho literal* (NBR 6122:2022, §6.2.1.1.1, p. impressa 17, conferido
+visualmente pelo a2 a 400 dpi):
+
+> "A verificação da segurança pode ser feita com valores característicos e
+> fator de segurança global **ou** com valores de cálculo, obtidos pela
+> aplicação de coeficientes de ponderação aos valores característicos, devendo
+> ser obedecidos os valores da Tabela 1."
+
+*Precedente levantado pelo a2, e é o que sustenta a proposta:* o repositório usa
+HOJE, sem exceção, a rota de VALORES ADMISSÍVEIS.
+`calc_core/geotecnico/geometria.py:90,114` calcula
+`area_necessaria = N_total / entrada.sigma_adm` e verifica
+`tensao_atuante <= entrada.sigma_adm`; `sapata.py::_verificar_estabilidade`
+itera sobre `combs_els` (características) contra FS global; não há uma única
+ocorrência de gamma_m em `calc_core/geotecnico/`.
+
+*Leitura proposta pelo a2:* **não criar a segunda rota agora.** A v9 marca
+`NBR6122-6.3.3-majoracao-vento-valores-calculo` como PENDENTE_HUMANO por escopo,
+não por dificuldade de leitura — o item foi extraído e não tem ambiguidade.
+Implementar 6.3.3 exigiria implementar o método de valores de cálculo inteiro,
+e fazê-lo só para a majoração de vento instituiria um segundo padrão de
+segurança convivendo com o primeiro: exatamente a "colisão de método de
+segurança" que este pipeline existe para impedir. Se a resposta for SIM, esta
+pendência e a de `NBR6122-6.2.1.1.2-tracao-deslizamento-tombamento`
+(deslizamento/tombamento, aberta desde a v5) devem ser decididas **juntas**,
+porque são o mesmo problema aparecendo em dois lugares.
+
+*Impacto se a leitura estiver errada:* o usuário que trabalha por valores de
+cálculo (comum em escritórios que integram fundação e superestrutura no mesmo
+modelo) não é atendido, e pode ser tentado a converter à mão — que é a origem
+mais comum da mistura de métodos. Mitigação já exigida: o software deve DIZER
+que não oferece a rota, em vez de silenciar. Se, ao contrário, a rota for criada
+sem decidir junto o deslizamento/tombamento, o repositório passa a ter dois
+métodos de segurança parcialmente implementados, que é pior que ter um.
+
+---
+
+## V3 — Faixas e tolerâncias do método de Teixeira (1996) para areia — PRIORIDADE MÉDIA
+
+*Pergunta objetiva:* (i) quais faixas de N_SPT e de B delimitam
+`sigma_a = 0,05 + (1 + 0,4B)·N_spt/100`, já que a fonte não as declara em texto?
+(ii) que tolerância, se alguma, se admite em torno de h = 1,5 m e
+gamma = 18 kN/m³, que a dedução congela?
+
+*Trecho literal* (Cintra/Aoki/Albiero, 2011, impressa 113, lida integralmente
+pelo a2 a 200 dpi nesta rodada):
+
+> "Para areias, Teixeira (1996) desenvolve uma correlação, a partir da equação
+> de capacidade de carga de Terzaghi. Considerando sapatas quadradas de lado B
+> (em metros), apoiadas a 1,5 m de profundidade, em areia com peso específico
+> de 18 kN/m³ e ângulo de atrito interno dado por phi = raiz(20 N_spt) + 15°, e
+> com o fator de segurança 3, o autor obtém a seguinte expressão para a tensão
+> admissível: sigma_a = 0,05 + (1 + 0,4B) N_spt/100 (MPa)"
+
+A fonte NÃO declara faixa de N_SPT nem de B em texto. A Fig. 4.1 é desenhada
+com eixo N_SPT de 0 a 25 e curvas para B = 1, 2 e 3 m — indício, não declaração.
+
+*Leitura proposta pelo a2 (ADOTADA na v9, como guarda que RECUSA):*
+4 <= N_SPT <= 25 e 1,0 m <= B <= 3,0 m, lidos da extensão da Fig. 4.1 e
+marcados em código como `origem: extensao_da_Fig_4_1_nao_declarada_em_texto`;
+h = 1,5 m e gamma = 18 kN/m³ com **tolerância ZERO**.
+Justificativa da adoção: uma guarda que RECUSA só pode custar usabilidade,
+nunca segurança — errar para o lado restritivo é gratuito em risco. Ler a
+extensão de uma figura para BOUNDAR não é inventar dado (seria inventar se se
+lessem VALORES da curva, e nenhum foi lido).
+
+*Medição do a2 que sustenta a tolerância zero em h:* na equação de Terzaghi
+para areia a parcela q·Nq domina, e q = gamma·h. No caso típico (N_SPT = 15,
+B = 2,0 m, gamma = 18), variando só h: 0,5 m -> 225 kPa; 1,0 m -> 297 kPa;
+1,5 m -> 369 kPa; 2,0 m -> 441 kPa (+19,6 %); 3,0 m -> 586 kPa (+58,7 %). Em
+gamma, +-2 kN/m³ move o resultado +-11 %.
+
+*Impacto se a leitura estiver errada:* se as faixas adotadas forem estreitas
+demais, o software RECUSA casos que a fonte aceitaria — custo de usabilidade,
+sem risco de número errado, e o usuário vê a mensagem de recusa com o intervalo
+declarado (REQ-UI-SIGMA-03). Se, ao contrário, alguém afrouxar h ou gamma sem
+decisão registrada, o erro é grande e muda de sinal: h > 1,5 m subestima (~59 %
+em h = 3 m, conservador por acaso) e h < 1,5 m **superestima em até 39 %, do
+lado INSEGURO**.
+
+---
+
+## V4 — Mello (1975) sem FS demonstrável — PRIORIDADE BAIXA
+
+*Pergunta objetiva:* aceita-se usar `sigma_a = 0,1(sqrt(N_spt) - 1)` (MPa),
+4 <= N_SPT <= 16, sem conseguir demonstrar que o FS embutido atinge o piso de
+3,00 da Tabela 1, apoiando-se apenas no fato de estar publicada sob o título
+"métodos semiempíricos"?
+
+*Trecho literal* (Cintra/Aoki/Albiero, 2011, impressa 112):
+
+> "Mello (1975) relata o uso, na prática profissional, de outra correlação, sem
+> distinção de solo: sigma_a = 0,1 (raiz(N_spt) − 1) (MPa), com 4 <= N_spt <= 16."
+
+E, na mesma página, a advertência do próprio Mello (1975, p. 61) que os autores
+citam:
+
+> "é preciso analisar a origem e validade de tais *formulários de bolso* antes
+> de passar a aplicá-los inconscientemente e mesmo prejudicialmente em
+> condições que extravasam do campo experimental do qual decorreram"
+
+*Leitura proposta pelo a2 (ADOTADA na v9):* **PENDENTE_HUMANO, com uso apenas
+comparativo.** A diferença em relação às duas correlações aprovadas é
+substantiva e foi o critério usado para tratá-las "regra a regra": na regra
+N/50 o FS embutido é 3,0000 por **álgebra exata** sobre a dedução que a fonte
+imprime; em Teixeira-areia é 3,05 a 4,55 por **reconstrução numérica** do a2 a
+partir dos parâmetros congelados declarados; em Mello a fonte não declara FS,
+não imprime dedução, não diz de que teoria saiu e não distingue tipo de solo —
+não há por onde reconstruir. Aprovar por presunção seria fazer exatamente o que
+a Tabela 1 impede ao exigir "valores propostos no próprio processo **e** no
+mínimo 3,00".
+
+*Impacto se a leitura estiver errada:* no caso típico (N = 15) Mello dá 287 kPa,
+4 % abaixo da regra N/50 e 10 % abaixo de Teixeira — se o FS embutido dela for
+de fato < 3, o desvio nesse ponto é pequeno, mas não se sabe como se comporta
+nos extremos da faixa, e essa é justamente a informação que falta. Enquanto
+pendente, o valor É exibido como comparativo (cumprindo a obrigação de
+dispersão do §7.3.3) mas não pode ser selecionado como sigma_adm de projeto.
+
+---
+
+## V5 — Correlações N_SPT -> c e N_SPT -> phi sem domínio declarado — PRIORIDADE ALTA
+
+*Pergunta objetiva:* (i) que faixa de N_SPT e que tipo de solo delimitam
+`c = 10·N_spt` (kPa) e as duas correlações de phi, já que a fonte não declara
+nenhuma? (ii) qual das duas correlações de phi o software deve usar, ou deve
+oferecer as duas e exibir as duas respostas? (iii) que energia de referência do
+SPT se assume?
+
+*Trechos literais* (Cintra/Aoki/Albiero, 2011, impressas 45-46):
+
+> "Para a estimativa do valor da coesão não drenada, quando não dispomos de
+> resultados de ensaios de laboratório, Teixeira e Godoy (1996) sugerem a
+> seguinte correlação com o índice de resistência à penetração N_spt:
+> c = 10 N_spt (kPa)."
+
+> phi = 28° + 0,4 N_spt   (Godoy, 1983)
+> phi = raiz(20 N_spt) + 15°   (Teixeira, 1996)
+
+*Leitura proposta pelo a2 (ADOTADA na v9):* **PENDENTE_HUMANO**, e em
+consequência o caminho teórico aprovado na v9 recebe c e phi como **entrada
+direta do engenheiro**, em valores característicos, e NÃO os deriva de N_SPT.
+Duas razões independentes, qualquer uma bastando: (1) a NBR 6122:2022 §7.3.3 e
+a nota (a) da Tabela 1 tornam o domínio de validade uma **precondição
+normativa**, e a fonte não declara nenhum — nem faixa de N_SPT, nem tipo de
+solo, nem limite superior, nem energia do SPT; aqui, ao contrário do caso de
+Teixeira-areia, não há sequer figura de onde extrair um limite. (2) A fonte dá
+duas correlações de phi sem dizer qual preferir.
+
+*Medição do a2 que sustenta (2):* no caso típico (N_SPT = 15, B = 2,0 m,
+h = 1,5 m, quadrada, De Beer), a escolha entre as duas move sigma_adm de
+468 kPa (Teixeira, phi = 32,3°) para 592 kPa (Godoy, phi = 34,0°) — **26 %**. E
+com gamma = 19 kN/m³ o ramo de Godoy dá 624 kPa, que **sai da faixa plausível
+de 50-600 kPa**. Agravante: a própria fonte alterna entre as duas sem avisar —
+as âncoras do diagrama da Fig. 2.21 (phi = 31° e 35° para N_SPT = 8 e 18) só
+fecham com Godoy (31,2° e 35,2°), enquanto a fórmula de sigma_adm para areia
+usa Teixeira.
+
+*Nota sobre o que NÃO está em causa:* a transcrição está certa. O a2 conferiu em
+recorte próprio a 900 dpi que o vínculo do radical termina antes do "+", isto é,
+phi = sqrt(20·N_spt) + 15° e não sqrt(20·N_spt + 15) — o erro que o a1 declarou
+mais provável não ocorreu. A checagem dimensional NÃO pega esse erro (ambas as
+formas somam número puro a ângulo); só a leitura visual pega.
+
+*Impacto se a leitura estiver errada:* se estas correlações forem de fato
+seguras no domínio de uso comum, o software está exigindo do usuário parâmetros
+de ensaio que ele pode não ter — custo de usabilidade. Se forem aprovadas sem
+domínio, o risco é do outro lado: `c = 10·N_spt` com N_SPT = 40 daria
+c = 400 kPa, resistência não drenada implausível, e alimentaria um sigma_r
+irreal para dentro do caminho teórico sem nenhum alarme.
+
+---
+
+## V6 — "Ruptura local" por média aritmética e o diagrama da Fig. 2.21 — PRIORIDADE MÉDIA
+
+*Pergunta objetiva:* o software deve oferecer o modo intermediário "ruptura
+local"? Se sim, são necessárias DUAS decisões, não uma: (i) aceitar a média
+aritmética entre ruptura geral e puncionamento; e (ii) fixar a geometria das
+duas fronteiras da Fig. 2.21, que a fonte não escreve.
+
+*Trecho literal* (Cintra/Aoki/Albiero, 2011, impressa 34):
+
+> "Por isso, no puncionamento utilizamos a redução para 2/3 nos valores de
+> coesão e de tg phi proposta por Terzaghi, mas com os fatores de capacidade de
+> carga e de forma sugeridos por Vesic. Para ruptura local, **na ausência de
+> indicação específica na literatura**, calcularemos o valor médio de
+> capacidade de carga para as condições de ruptura geral e de puncionamento."
+
+E, sobre o diagrama (impressa 47): "**propomos** um diagrama para identificar o
+modo de ruptura em solos c-phi".
+
+*Leitura proposta pelo a2 (ADOTADA na v9):* **fica de fora deste escopo**, e o
+motivo não é o rótulo — rótulo resolveria o problema de honestidade. É que a
+média é **inseparável de um mecanismo que não existe**: ela só tem uso depois
+que alguém decidiu que o modo é "ruptura local", e quem decide isso na fonte é
+a Fig. 2.21, que publica as quatro âncoras (c = 50 e 100 kPa; phi = 31° e 35°)
+mas **não escreve a equação das retas divisórias**, não afirma que são retas
+ligando esses pontos e não diz a que região pertence um ponto sobre a
+fronteira. Aprovar a média sem o seletor seria aprovar meio mecanismo; aprovar
+o seletor exigiria inventar as retas. O a1 fez certo em não inferir a geometria
+do desenho.
+
+*Saída adotada, que não precisa de nenhum dos dois:* o modo de ruptura é
+**entrada declarada pelo usuário**, restrita a 'geral' ou 'puncionamento' — os
+dois modos que têm equação própria e domínio declarado. Sem terceira opção, e o
+software não infere.
+
+*Armadilha de nomenclatura que precisa sobreviver a esta decisão:* o que
+TERZAGHI chamou de "ruptura local" é o que esta fonte chama de PUNCIONAMENTO. O
+"ruptura local" do livro é um terceiro modo que não existe em Terzaghi. A
+interface não pode usar o termo "ruptura local" para nomear o puncionamento.
+
+*Impacto se a leitura estiver errada:* a média fica entre os dois extremos,
+logo o erro dela é limitado pelo intervalo [puncionamento, geral]. Mas escolher
+o MODO errado tem impacto grande, porque o puncionamento reduz c e tg phi a
+2/3 — e é exatamente essa escolha que a v9 devolve ao usuário em vez de
+automatizar.
+
+---
+
+## V7 — Contradição da fonte sobre peso específico saturado x submerso — PRIORIDADE ALTA (lado inseguro)
+
+*Pergunta objetiva:* na Tab. 2.5 (Godoy, 1972), a coluna "Saturada"
+(16-18 / 19-20 / 21 kN/m³) é o peso específico **saturado (total)** ou já é o
+**submerso**? Delas depende se o software deve ou não descontar o peso
+específico da água antes de usar gamma na equação de capacidade de carga.
+
+*Trecho literal* (Cintra/Aoki/Albiero, 2011, impressa 46, conferido pelo a1 a
+500 dpi com a margem esquerda inteira — não há um "não" na frase):
+
+> "No caso de areia saturada, o valor apresentado na Tab. 2.5 refere-se ao peso
+> específico submerso. Como para o cálculo de capacidade de carga precisamos
+> sempre do peso específico efetivo, é necessário descontar o peso específico
+> da água."
+
+As duas frases não podem valer ao mesmo tempo: se o valor já fosse submerso,
+não haveria o que descontar. E os valores 19/20/21 kN/m³ são ordens de grandeza
+de peso específico **saturado (total)**, não de submerso, que ficaria em
+9-11 kN/m³.
+
+*Leitura proposta pelo a2:* **NENHUMA — e é o desfecho correto.** O a2 CONFIRMA
+que o a1 agiu certo ao não escrever fórmula alguma de peso específico submerso
+a partir deste trecho: verificado que a entrada `CINTRA-2.9.3-*` de
+`kb/formulas.yaml` contém as duas tabelas e o campo
+`CONTRADICAO_DA_FONTE_NAO_RESOLVIDA`, e **nenhuma equação**. Não era papel do a1
+resolver a contradição, e não é papel do a2 resolvê-la sozinho: é decisão de
+engenharia sobre qual das duas frases da fonte prevalece.
+Consequência adotada na v9: `FB-CINTRA-2.9.3-pesos-especificos` fica
+**REJEITADA**, gamma passa a ser **entrada direta** com dois campos separados
+(acima e abaixo da cota de apoio) e a interface tem de declarar, com todas as
+letras, que abaixo do nível d'água o valor pedido é o EFETIVO (submerso).
+Nenhuma tabela de gamma é implementada.
+
+*Impacto se a leitura estiver errada:* aplicar 19-21 kN/m³ como se fosse efetivo
+abaixo do nível d'água erra gamma por um **fator de ~2**, nas parcelas de
+sobrecarga (q = gamma·h) e de peso próprio (½·gamma·B·N_gamma) da equação de
+capacidade de carga, **sempre do lado INSEGURO**. É o maior risco isolado
+identificado nesta rodada, e a mitigação (não implementar tabela nenhuma,
+exigir gamma efetivo declarado) o neutraliza sem depender da resposta.
+
+*Duas razões independentes que reforçam a rejeição, além da contradição:*
+(1) a classificação por faixa de N_SPT que as tabelas usam é atribuída pela
+fonte à ABNT NBR 6484/**2001**, norma AUSENTE do acervo e em edição possivelmente
+superada — enquanto a NBR 6122:2022 §4.3 torna obrigatório que a classificação
+venha da ABNT NBR 6502 e o N_SPT da ABNT NBR 6484, ambas ausentes; (2) a Tab.
+2.5 tem cinco classes de compacidade mas só três linhas de valores ("Fofa" e
+"Pouca Compacta" compartilham uma; "Compacta" e "Muito Compacta" compartilham
+outra), o que o a1 conferiu a 450 dpi não ser erro de transcrição.
+
+*Armadilha reafirmada, do tipo que volta:* a Tabela A.1 da NBR 6120:2019 traz
+colunas de peso específico aparente E de "ângulo de atrito interno" para linhas
+chamadas "Areia com umidade natural", "Argila" etc. **Não são parâmetros de solo
+de fundação**: são de material a granel armazenado (silos, funis), e o "ângulo
+de atrito interno" ali é definido em 3.10 da própria NBR 6120 como ângulo de
+REPOUSO de pilha solta. O anexo remete a Eurocode 1 Part 4 e AS 3774, que são
+normas de silo. Usar a Tabela A.1 como parâmetro geotécnico seria erro grave e
+do lado inseguro. Proibido em todo o repositório.

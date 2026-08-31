@@ -4,39 +4,92 @@
 # registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
 # registrada.
 #
-# Situação na versão 8 (idêntica à das versões 6 e 7 — nenhum status mudou):
-#   regras (normativas) ............ 14 APROVADA, 7 PENDENTE_HUMANO
-#   praticas_consagradas ........... 1 APROVADA, 1 APROVADA_COM_USO_RESTRITO
-#   escopo_amplo_em_conferencia .... 8 PENDENTE_HUMANO
+# Situação na versão 9:
+#   regras (normativas) ............ 19 APROVADA, 7 PENDENTE_HUMANO   (era 14/7)
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA                     (era 1/1/0/0)
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO               (inalterado)
 #
-# Alteração do ruleset invalida as aprovações de A6 e A7 (CLAUDE.md regra 5).
-# NA VERSÃO 8 ISSO VALE FORMALMENTE, e o efeito prático é NULO para a feature
-# do croqui de espraiamento: o GATE 2 da rodada 2 já está REPROVADO (nota 4,4,
-# veto em E5 = 3,0) — não há aprovação de A6 a invalidar — e o A7 nunca rodou
-# sobre ela. O próprio A6, ao despachar estes ajustes para o a2, registrou que
-# "ajuste de texto do ruleset NÃO deve reiniciar o ciclo de aprovação desta
-# feature". Para qualquer OUTRA feature a regra 5 vale sem atenuação, e o
-# alcance material desta versão é nulo lá também: nenhum registro fora dos três
-# itens abaixo foi tocado.
+# ===========================================================================
+# A VERSÃO 9 NÃO É EDITORIAL. Ao contrário da v8, ela MUDA conteúdo normativo:
+# acrescenta 5 regras (4 APROVADA, 1 PENDENTE_HUMANO), muda 1 status de
+# PENDENTE_HUMANO para APROVADA, acrescenta 10 formulações bibliográficas e
+# 19 requisitos de implementação, e AMPLIA O ESCOPO DO SOFTWARE — sigma_adm
+# deixa de ser exclusivamente dado de entrada e passa a poder ser deduzido.
 #
-# A VERSÃO 8 É EDITORIAL. Não muda fórmula, valor numérico, status, citação
-# normativa, `uso_autorizado` nem `nao_autorizado`. Muda três textos que
-# nomeavam artefatos de código que a implementação verificada não usa:
-#   - REQ-UI-07(a): fonte preferencial do q_i passa a ser
-#     `PontoPropagacao.delta_sigma`; `CamadaPropagacao.delta_sigma_topo/base`
-#     seguem VÁLIDAS e equivalentes (identidade documentada, não proibição).
-#     Verificada por execução própria do a2 (2 fontes x 3 geometrias, igualdade
-#     exata) além dos 184 pares do a6.
-#   - REQ-PROP-09(d): `ResultadoRecalque` -> `ResultadoSapata`. O objeto antigo
-#     é None exatamente no caso que o requisito existe para consertar
-#     (`verificar_recalque=False`); o campo seria inalcançável.
-#   - REQ-UI-01 / REQ-PROP-04: nova `nota_de_escopo_v8` registrando que a
-#     integração ao memorial PDF fica para rodada posterior, com três gatilhos
-#     de reabertura. Não relaxa nenhum requisito. Ver kb/pendencias.md > D1.
-# NENHUM requisito novo foi criado e nenhum existente foi relaxado. A nova
-# rodada de A6/A7, se houver, pode restringir-se ao mesmo escopo da v7.
+# CLAUDE.md REGRA 5 VALE AQUI SEM NENHUMA ATENUAÇÃO. As aprovações de A6
+# (GATE 2) e A7 (GATE 3) registradas em relatorios/ ficam INVALIDADAS para
+# tudo que toque sigma_adm. Nova rodada completa de A6 e A7 é OBRIGATÓRIA
+# antes de qualquer release que exponha os caminhos aprovados nesta versão.
+# Não há aqui, como houve na v8, despacho do a6 dizendo que o ajuste não
+# reinicia o ciclo — porque isto não é ajuste de texto.
+#
+# O QUE NÃO É AFETADO, e é a maior parte do que já estava validado: as regras
+# de NBR 6118 (materiais §8, ancoragem §9.3-9.4, cisalhamento §19.4, punção
+# §19.5, rigidez e flexão §22.6) e as de geometria da NBR 6122 (§7.6.1, §5.6,
+# §7.7.1) não foram tocadas por esta versão. As duas entradas antigas de
+# praticas_consagradas (PC-BOUSSINESQ-NEWMARK, PC-ESPRAIAMENTO-2V1H) e seus
+# requisitos REQ-PROP-* / REQ-UI-* também não.
+# ===========================================================================
+#
+# MUDANÇA DE STATUS NESTA VERSÃO — uma só, e com o bloqueio discharged:
+#   NBR6122-6.2.1.1.1-fatores-seguranca-tabela1: PENDENTE_HUMANO -> APROVADA.
+#   A v8 condicionava a aprovação a "exigir conferência visual antes de
+#   aprovar", porque o extrator lineariza a Tabela 1 (células mescladas). A
+#   conferência foi feita três vezes de forma independente: duas pelo a1 (300 e
+#   500 dpi) e uma pelo a2 nesta rodada (350 e 400 dpi, associação
+#   linha-coluna lida célula a célula, mais a camada de texto do PDF). Nenhum
+#   valor mudou. A outra causa da pendência ("necessária apenas se o software
+#   vier a deduzir sigma_adm de SPT/CPT — fora do escopo atual") caiu por si:
+#   passou a ser exatamente o escopo.
+#
+# REGRAS NOVAS (normativas, NBR 6122:2022):
+#   NBR6122-7.3.3-metodos-semiempiricos ................ APROVADA
+#   NBR6122-7.3.2-metodos-teoricos-condicao-2022 ....... APROVADA
+#   NBR6122-7.3-7.4-conjuncao-ELU-ELS .................. APROVADA
+#   NBR6122-6.3.2-majoracao-vento-valores-admissiveis .. APROVADA
+#   NBR6122-6.3.3-majoracao-vento-valores-calculo ...... PENDENTE_HUMANO
+#
+# FORMULAÇÕES BIBLIOGRÁFICAS NOVAS (Cintra/Aoki/Albiero 2011, NÃO normativas —
+# citam-se com [pratica: <id>], JAMAIS com [rule: <id>]):
+#   FB-CINTRA-TERZAGHI-VESIC-capacidade-de-carga ....... APROVADA_COM_USO_RESTRITO
+#   FB-CINTRA-4.1.1-sigma-adm-teorico-FS3 .............. APROVADA
+#   FB-REGRA-BRASILEIRA-Nspt-50-argila ................. APROVADA_COM_USO_RESTRITO
+#   FB-TEIXEIRA-1996-areia ............................. APROVADA_COM_USO_RESTRITO
+#   FB-MELLO-1975-sigma-adm-SPT ........................ PENDENTE_HUMANO
+#   FB-CINTRA-2.9.2-phi-por-Nspt ....................... PENDENTE_HUMANO
+#   FB-CINTRA-2.4-ruptura-local-media .................. PENDENTE_HUMANO
+#   FB-CINTRA-4.1.2b-CPT-e-4.1.3-boston ................ PENDENTE_HUMANO
+#   FB-CINTRA-2.9.4-diagrama-modo-de-ruptura ........... REJEITADA
+#   FB-CINTRA-2.9.3-pesos-especificos .................. REJEITADA
+#
+# REJEITADA é status criado na versão 9: extraído, auditado e RECUSADO — não é
+# pendência à espera de humano, é decisão tomada de não implementar. Para o
+# GATE 1 conta como resolvido. Para o a6, encontrar em código qualquer coisa
+# que implemente um id REJEITADA é veto.
+#
+# ACEITAÇÃO DE FONTE SECUNDÁRIA: o a2 aceitou formalmente CINTRA, AOKI e
+# ALBIERO, "Fundações Diretas: Projeto Geotécnico" (Oficina de Textos, 2011)
+# como fonte SECUNDARIA_NAO_NORMATIVA, mesmo estatuto dado à apostila do Bastos
+# na v5 — evidência de FORMULAÇÃO, nunca fonte de obrigatoriedade. Fecha a
+# lacuna do registro ACERVO-BUSCA-NEG-teixeira-1996. As referências primárias
+# (Teixeira 1996/SEFE III, Vesic 1975, Terzaghi 1943, Skempton 1951, De Beer
+# 1967, ABNT NBR 6484, ABNT NBR 6502) CONTINUAM AUSENTES do acervo.
+#
+# FILA HUMANA: sete pendências novas, V1 a V7, em kb/pendencias.md. Nenhuma é
+# bloqueante para o que a v9 aprovou — todas foram desenhadas para que o
+# software funcione sem elas, no lado conservador. O que destravam é ALCANCE.
+# Prioridade ALTA: V2 (rota de valores de cálculo), V5 (domínio das correlações
+# N_SPT -> c e phi) e V7 (peso específico saturado x submerso, lado inseguro).
+#
+# FERRAMENTA CRIADA NESTA RODADA: tools/checar_dimensoes.py, que a2-verificador
+# .md pressupunha e que não existia no repositório. 18 casos com pint, três
+# mutantes plantados e rejeitados, cinco correlações declaradas não homogêneas
+# com o motivo caso a caso.
 #
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-0788be48e719baf3059ed458dfc9ee1242c55a0fe5e685a7bf74f518cf57d8bd  ruleset.yaml
+56f1282b23da45e7164d2e18ebafebee1c0b2f1e317ad0090787fbbe35f277cb  ruleset.yaml
