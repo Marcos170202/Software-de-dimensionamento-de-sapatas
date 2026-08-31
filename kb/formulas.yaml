@@ -389,3 +389,827 @@ formulas:
       passada_2: "render da página PDF 33 a 300 dpi — os 10 % e a ausência de lista de obras e de piso de FS conferidos na imagem"
       divergencia: false
     status: NORMATIVO_PROSA_AGUARDA_A2
+
+  # ===========================================================================
+  # RODADA 2026-08-31 — FONTE SECUNDÁRIA, NÃO NORMATIVA
+  #
+  #   CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. "Fundações Diretas: Projeto
+  #   Geotécnico". São Paulo: Oficina de Textos, 2011.
+  #   (arquivo Fundacoes_Diretas_Projeto_Geotecnico_Jos.pdf na raiz do repo)
+  #
+  # Fornecida pelo usuário para fechar as lacunas dos registros
+  # ACERVO-BUSCA-NEG-teixeira-1996 e ACERVO-BUSCA-NEG-correlacoes-spt: a NBR
+  # 6122 EXIGE método teórico e semiempírico (§7.3.2, §7.3.3) mas não reproduz
+  # nenhuma equação nem correlação. Esta é a fonte da formulação; a norma
+  # continua sendo a fonte da obrigatoriedade. As duas coisas não se
+  # substituem.
+  #
+  # NENHUMA destas fórmulas pode virar regra APROVADA no ruleset com base
+  # apenas nesta fonte, e nenhuma pode ser citada em memorial como requisito
+  # normativo.
+  #
+  # ATENÇÃO À EDIÇÃO: o livro é de 2011 e se refere à NBR 6122:2010 e à NBR
+  # 8681:2003. O acervo tem NBR 6122:2022 e NBR 8681:2025. Toda remissão a
+  # número de item feita pelo livro precisa ser reconferida pelo a2.
+  #
+  # MÉTODO DE LEITURA: as 142 páginas do PDF são imagem escaneada pura —
+  # page.get_text() devolve string vazia em TODAS elas, e
+  # tools/decodificar_nbr.py NÃO se aplica (ele decodifica CMap deslocado de
+  # texto real, não faz OCR). Portanto 100% leitura visual, em duas passadas
+  # independentes (página inteira a 160 dpi e recorte a 400–900 dpi).
+  #
+  # MAPEAMENTO DE PÁGINA: a página impressa 33 foi ESCANEADA DUAS VEZES (PDF 32
+  # e PDF 33 — imagens de hashes diferentes, mesmo conteúdo), por isso o
+  # deslocamento impressa↔PDF muda ao longo do arquivo. Cada registro carrega
+  # os dois números, conferidos na própria imagem.
+  # ===========================================================================
+
+  - id: CINTRA-2.2.4-terzaghi-capacidade-de-carga
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas: Projeto Geotécnico. Oficina de Textos, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.4 Superposição de efeitos (com 2.2.1, 2.2.2 e 2.2.3)"
+    pagina: "impressas 28 e 29 (PDF 27 e 28)"
+    clausula_ref: CINTRA-2.2.1-2.2.4-terzaghi-equacao-geral
+    titulo: "Equação de capacidade de carga de Terzaghi (1943) por superposição de efeitos, e os fatores Nc e Nq em forma fechada"
+    latex: '\sigma_r = c\,N_c + q\,N_q + \tfrac{1}{2}\,\gamma\,B\,N_\gamma'
+    sympy: "Eq(sigma_r, c*N_c + q*N_q + gamma*B*N_gamma/2)"
+    formulas_auxiliares:
+      N_c_forma_fechada:
+        latex: 'N_c = \cot\phi\left[e^{\pi\,\mathrm{tg}\,\phi}\,\mathrm{tg}^2\!\left(45^\circ + \phi/2\right) - 1\right]'
+        sympy: "Eq(N_c, cot(phi)*(exp(pi*tan(phi))*tan(rad(45) + phi/2)**2 - 1))"
+        origem: "Prandtl (1921, apud Terzaghi e Peck, 1967), item 2.2.1"
+      N_q_forma_fechada:
+        latex: 'N_q = e^{\pi\,\mathrm{tg}\,\phi}\,\mathrm{tg}^2\!\left(45^\circ + \phi/2\right)'
+        sympy: "Eq(N_q, exp(pi*tan(phi))*tan(rad(45) + phi/2)**2)"
+        origem: "Reisnner (1924, apud Terzaghi e Peck, 1967), item 2.2.2"
+      relacao_entre_Nc_e_Nq:
+        latex: 'N_c = (N_q - 1)\cot\phi'
+        sympy: "Eq(N_c, (N_q - 1)*cot(phi))"
+      N_gamma_SEM_SOLUCAO_ANALITICA:
+        latex: 'N_\gamma = \frac{4E_p}{\gamma B^2}\cos(\alpha - \phi)'
+        sympy: null
+        status: NAO_IMPLEMENTAVEL
+        motivo: >-
+          A fonte afirma textualmente que "não há solução analítica para
+          N_gamma". Esta expressão depende do empuxo passivo E_p, que a fonte
+          NÃO fornece, e de um ângulo alpha desconhecido que só se obtém
+          repetindo o cálculo até minimizar N_gamma. NÃO transformar em código.
+          Para obter N_gamma como número use a Tab. 2.2 de Vesic
+          (CINTRA-VESIC-tabela-2.2-fatores-capacidade-carga) ou a aproximação
+          de Caquot-Kérisel (CINTRA-2.3.1-vesic-N-gamma).
+    variaveis:
+      sigma_r: {descricao: "capacidade de carga do SISTEMA sapata-solo (tensão de ruptura)", unidade: "kPa", valor: null}
+      c: {descricao: "coesão do solo; na notação da fonte, geralmente o valor NÃO DRENADO", unidade: "kPa", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio, q = gamma*h", unidade: "kPa", valor: null}
+      gamma: {descricao: "peso específico; na notação da fonte é SEMPRE o peso específico EFETIVO. A fonte alerta que gamma acima e abaixo da cota da base podem ser diferentes apesar do mesmo símbolo", unidade: "kN/m3", valor: null}
+      B: {descricao: "largura da sapata (menor dimensão da base)", unidade: "m", valor: null}
+      h: {descricao: "profundidade de embutimento da sapata", unidade: "m", valor: null}
+      phi: {descricao: "ângulo de atrito interno; na notação da fonte, geralmente o valor NÃO DRENADO", unidade: "grau", valor: null}
+      N_c: {descricao: "fator de capacidade de carga da parcela de coesão; função apenas de phi", unidade: "adimensional", valor: null}
+      N_q: {descricao: "fator de capacidade de carga da parcela de sobrecarga; função apenas de phi", unidade: "adimensional", valor: null}
+      N_gamma: {descricao: "fator de capacidade de carga da parcela de peso específico; função apenas de phi; SEM solução analítica nesta fonte", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      DECLARADO EXPLICITAMENTE NA FONTE (item 2.2, impressa 26), e é o campo que
+      impede o uso indevido desta equação:
+      (1) SAPATA CORRIDA, com L >= 5B — o problema é tratado como bidimensional.
+      Sapata quadrada, retangular ou circular só entra pelos fatores de forma
+      SEMIEMPÍRICOS de 2.2.5 / Tab. 2.1 (ou Tab. 2.3 de De Beer).
+      (2) EMBUTIMENTO h <= B — é isso que autoriza desprezar a resistência ao
+      cisalhamento da camada acima da cota de apoio e trocá-la pela sobrecarga
+      q = gamma*h. Para h > B a substituição não está justificada pela fonte.
+      (3) MACIÇO RÍGIDO, RUPTURA GERAL. Solo fofo ou mole exige a redução de
+      2.2.6 (c* = 2c/3, tg phi* = 2 tg phi /3).
+      (4) SOLO HOMOGÊNEO. O caso estratificado é tratado em item separado (2.5,
+      impressas 36-40), NÃO extraído nesta rodada — não aplicar esta equação a
+      perfil estratificado.
+      (5) A própria fonte qualifica a equação de APROXIMADA, por ser
+      superposição de três casos particulares.
+    leitura_visual:
+      passada_1: "página PDF 28 (impressa 29) inteira a 160 dpi"
+      passada_2: "página PDF 27 (impressa 28) inteira a 160 dpi — Nc e Nq conferidos termo a termo"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.2.5-terzaghi-peck-fatores-de-forma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.5 Efeito da forma da sapata, com Tab. 2.1"
+    pagina: "impressas 30 e 31 (PDF 29 e 30)"
+    clausula_ref: CINTRA-2.2.5-fatores-forma-tab2.1
+    titulo: "Equação geral com fatores de forma, e Tab. 2.1 (fatores de forma de Terzaghi-Peck)"
+    latex: '\sigma_r = c\,N_c\,S_c + q\,N_q\,S_q + \tfrac{1}{2}\,\gamma\,B\,N_\gamma\,S_\gamma'
+    sympy: "Eq(sigma_r, c*N_c*S_c + q*N_q*S_q + gamma*B*N_gamma*S_gamma/2)"
+    tabela_2_1_fatores_de_forma_terzaghi_peck:
+      - {sapata: "Corrida (lado B)",       S_c: 1.0, S_q: 1, S_gamma: 1.0}
+      - {sapata: "Quadrada (B = L)",       S_c: 1.2, S_q: 1, S_gamma: 0.8}
+      - {sapata: "Circular (B = diâmetro)", S_c: 1.2, S_q: 1, S_gamma: 0.6}
+    variaveis:
+      S_c: {descricao: "fator de forma da parcela de coesão", unidade: "adimensional", valor: null}
+      S_q: {descricao: "fator de forma da parcela de sobrecarga", unidade: "adimensional", valor: null}
+      S_gamma: {descricao: "fator de forma da parcela de peso específico", unidade: "adimensional", valor: null}
+      B: {descricao: "lado da sapata corrida ou quadrada; DIÂMETRO no caso da sapata circular (declarado na própria Tab. 2.1)", unidade: "m", valor: null}
+    dominio_validade: >-
+      A Tab. 2.1 cobre APENAS TRÊS formas: corrida, quadrada e circular. NÃO HÁ
+      LINHA PARA SAPATA RETANGULAR (B != L). Não interpolar entre quadrada e
+      corrida — para retangular a fonte só oferece a Tab. 2.3 (De Beer/Vesic).
+      As duas equações semiempíricas originais de Terzaghi e Peck (1967) das
+      quais a Tab. 2.1 foi extraída têm domínio declarado ESTREITO: sapata
+      circular/quadrada "embutida em um SOLO COMPACTO OU RIJO". A fonte NÃO
+      declara se esse qualificador continua valendo na forma generalizada com
+      Sc/Sq/S_gamma — NAO_DECLARADO_NA_FONTE.
+      Usar a Tab. 2.1 com os fatores N de Terzaghi-Peck, e a Tab. 2.3 com os de
+      Vesic. A fonte não autoriza misturar os dois conjuntos.
+      Herda todas as restrições de CINTRA-2.2.4-terzaghi-capacidade-de-carga,
+      exceto a de sapata corrida — que é justamente o que os fatores de forma
+      relaxam.
+    leitura_visual:
+      passada_1: "página PDF 29 (impressa 30) a 160 dpi — equação geral"
+      passada_2: "página PDF 30 (impressa 31) a 160 dpi — Tab. 2.1 célula a célula"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.2.6-terzaghi-puncionamento
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.6 Ruptura por puncionamento"
+    pagina: "impressa 31 (PDF 30)"
+    clausula_ref: CINTRA-2.2.6-puncionamento-reducao-2-3
+    titulo: "Redução empírica de Terzaghi (1943) nos parâmetros de resistência, para ruptura por puncionamento"
+    latex: 'c^{*} = \tfrac{2}{3}c \;;\quad \mathrm{tg}\,\phi^{*} = \tfrac{2}{3}\,\mathrm{tg}\,\phi \;;\quad \sigma^{\prime}_r = c^{*}N^{\prime}_c S_c + q\,N^{\prime}_q S_q + \tfrac{1}{2}\gamma B N^{\prime}_\gamma S_\gamma'
+    sympy: "[Eq(c_est, Rational(2,3)*c), Eq(tan(phi_est), Rational(2,3)*tan(phi)), Eq(sigma_r_linha, c_est*Nc_linha*S_c + q*Nq_linha*S_q + gamma*B*Ngamma_linha*S_gamma/2)]"
+    variaveis:
+      c_est: {descricao: "coesão reduzida c* = 2c/3", unidade: "kPa", valor: null}
+      phi_est: {descricao: "ângulo de atrito reduzido phi*, definido por tg phi* = (2/3) tg phi — NÃO por phi* = 2phi/3", unidade: "grau", valor: null}
+      Nc_linha: {descricao: "N'c, fator de capacidade de carga calculado com phi* (não com phi)", unidade: "adimensional", valor: null}
+      Nq_linha: {descricao: "N'q, calculado com phi*", unidade: "adimensional", valor: null}
+      Ngamma_linha: {descricao: "N'_gamma, calculado com phi*", unidade: "adimensional", valor: null}
+      sigma_r_linha: {descricao: "capacidade de carga aproximada na ruptura por puncionamento", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      SOLOS FOFOS OU MOLES, não passíveis de ruptura geral. A própria fonte
+      declara a redução como EMPÍRICA, adotada "na impossibilidade de realizar
+      um desenvolvimento teórico".
+      ARMADILHA DE NOMENCLATURA, explicitada pela fonte: o que Terzaghi chamou
+      de "ruptura local" é o que este livro chama de PUNCIONAMENTO. Neste livro
+      "ruptura local" é um terceiro modo, intermediário, que NÃO tem equação
+      própria — ver CINTRA-2.4-procedimento-adotado-pelos-autores.
+      ATENÇÃO À FORMA DA REDUÇÃO DE phi: a fonte reduz a TANGENTE, não o ângulo.
+      phi* = arctg( (2/3) tg phi ). Reduzir o ângulo diretamente daria valor
+      diferente e do lado INSEGURO para phi alto.
+      Os fatores de FORMA (Sc, Sq, S_gamma) NÃO são reduzidos — aparecem sem
+      linha na fonte. Só os fatores de capacidade de carga levam linha.
+    leitura_visual:
+      passada_1: "página PDF 30 (impressa 31) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida da posição das linhas (') em N'c, N'q, N'gamma contra Sc, Sq, Sgamma sem linha"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.3.1-vesic-N-gamma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.3.1 Ruptura geral (proposição de Vesic)"
+    pagina: "impressa 32 (PDF 31)"
+    clausula_ref: CINTRA-2.3.1-vesic-Ngamma-e-tabela-2.2
+    titulo: "Vesic (1975): expressão analítica aproximada de N_gamma, de Caquot e Kérisel (1953) — fecha a lacuna deixada por 2.2.4"
+    latex: 'N_\gamma \cong 2\,(N_q + 1)\,\mathrm{tg}\,\phi'
+    sympy: "Eq(N_gamma, 2*(N_q + 1)*tan(phi))"
+    variaveis:
+      N_gamma: {descricao: "fator de capacidade de carga da parcela de peso específico", unidade: "adimensional", valor: null}
+      N_q: {descricao: "fator de capacidade de carga da sobrecarga, pela forma fechada de 2.2.2", unidade: "adimensional", valor: null}
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Solos MAIS RÍGIDOS, PASSÍVEIS DE RUPTURA GERAL — declarado na fonte.
+      O sinal impresso é "≅" (aproximadamente igual), NÃO "=": é aproximação
+      analítica dos valores numéricos de Caquot e Kérisel (1953), não definição.
+      Válida com os fatores de forma de De Beer (Tab. 2.3), que é o conjunto
+      coerente proposto por Vesic; não misturar com a Tab. 2.1.
+      A fonte tabela os resultados de phi = 0 a 50 graus (Tab. 2.2) e não dá
+      valores nem regra fora dessa faixa.
+    observacao: >-
+      É esta expressão, e a Tab. 2.2 dela derivada, que tornam a equação de
+      Terzaghi IMPLEMENTÁVEL neste repositório. Sem ela, N_gamma só existiria
+      como curva da Fig. 2.9, que é gráfico e não é digitalizável.
+    leitura_visual:
+      passada_1: "página PDF 31 (impressa 32) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do sinal ≅ e do parêntese (N_q + 1)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-VESIC-tabela-2.2-fatores-capacidade-carga
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Tab. 2.2 - Fatores de capacidade de carga (Vesic, 1975)"
+    pagina: "impressa 33 (PDF 32 E PDF 33 — a página foi escaneada duas vezes)"
+    clausula_ref: CINTRA-2.3.1-vesic-Ngamma-e-tabela-2.2
+    titulo: "TABELA NUMÉRICA de Nc, Nq, N_gamma, Nq/Nc e tg phi para phi inteiro de 0 a 50 graus (Vesic, 1975)"
+    tipo: TABELA_NUMERICA
+    unidades: "todos os fatores adimensionais; phi em graus"
+    dominio_validade: >-
+      phi INTEIRO de 0 a 50 graus, passo de 1 grau. A fonte NÃO fornece valores
+      para phi > 50 graus e NÃO declara regra de interpolação entre linhas —
+      NAO_DECLARADO_NA_FONTE. Interpolar é decisão do a2, não da fonte.
+      Válida para RUPTURA GERAL. Para puncionamento, entrar na tabela com phi*
+      (de tg phi* = 2 tg phi / 3), obtendo N'c, N'q, N'_gamma — phi* em geral
+      NÃO é inteiro, o que reintroduz a questão da interpolação.
+      As colunas Nq/Nc e tg phi existem porque são exigidas pelos fatores de
+      forma de De Beer (Tab. 2.3).
+    inconsistencia_da_fonte: >-
+      Na linha phi = 0 a coluna Nq/Nc traz 0,20, mas 1,00/5,14 = 0,1946, que
+      arredondaria para 0,19. Conferido a 900 dpi em recorte dedicado: a fonte
+      IMPRIME 0,20. Transcrito como impresso, NÃO corrigido. O a2 decide entre
+      usar o valor impresso e recalcular o quociente. O impacto é pequeno
+      (afeta S_c de sapata retangular/quadrada em solo com phi = 0), mas o
+      caminho de argila não drenada é justamente phi = 0.
+    valores:
+      colunas: [phi_graus, N_c, N_q, N_gamma, Nq_sobre_Nc, tg_phi]
+      linhas:
+      - {phi:  0, Nc:    5.14, Nq:    1.00, N_gamma:    0.00, Nq_sobre_Nc: 0.20, tg_phi: 0.00}
+      - {phi:  1, Nc:    5.38, Nq:    1.09, N_gamma:    0.07, Nq_sobre_Nc: 0.20, tg_phi: 0.02}
+      - {phi:  2, Nc:    5.63, Nq:    1.20, N_gamma:    0.15, Nq_sobre_Nc: 0.21, tg_phi: 0.03}
+      - {phi:  3, Nc:    5.90, Nq:    1.31, N_gamma:    0.24, Nq_sobre_Nc: 0.22, tg_phi: 0.05}
+      - {phi:  4, Nc:    6.19, Nq:    1.43, N_gamma:    0.34, Nq_sobre_Nc: 0.23, tg_phi: 0.07}
+      - {phi:  5, Nc:    6.49, Nq:    1.57, N_gamma:    0.45, Nq_sobre_Nc: 0.24, tg_phi: 0.09}
+      - {phi:  6, Nc:    6.81, Nq:    1.72, N_gamma:    0.57, Nq_sobre_Nc: 0.25, tg_phi: 0.11}
+      - {phi:  7, Nc:    7.16, Nq:    1.88, N_gamma:    0.71, Nq_sobre_Nc: 0.26, tg_phi: 0.12}
+      - {phi:  8, Nc:    7.53, Nq:    2.06, N_gamma:    0.86, Nq_sobre_Nc: 0.27, tg_phi: 0.14}
+      - {phi:  9, Nc:    7.92, Nq:    2.25, N_gamma:    1.03, Nq_sobre_Nc: 0.28, tg_phi: 0.16}
+      - {phi: 10, Nc:    8.35, Nq:    2.47, N_gamma:    1.22, Nq_sobre_Nc: 0.30, tg_phi: 0.18}
+      - {phi: 11, Nc:    8.80, Nq:    2.71, N_gamma:    1.44, Nq_sobre_Nc: 0.31, tg_phi: 0.19}
+      - {phi: 12, Nc:    9.28, Nq:    2.97, N_gamma:    1.69, Nq_sobre_Nc: 0.32, tg_phi: 0.21}
+      - {phi: 13, Nc:    9.81, Nq:    3.26, N_gamma:    1.97, Nq_sobre_Nc: 0.33, tg_phi: 0.23}
+      - {phi: 14, Nc:   10.37, Nq:    3.59, N_gamma:    2.29, Nq_sobre_Nc: 0.35, tg_phi: 0.25}
+      - {phi: 15, Nc:   10.98, Nq:    3.94, N_gamma:    2.65, Nq_sobre_Nc: 0.36, tg_phi: 0.27}
+      - {phi: 16, Nc:   11.63, Nq:    4.34, N_gamma:    3.06, Nq_sobre_Nc: 0.37, tg_phi: 0.29}
+      - {phi: 17, Nc:   12.34, Nq:    4.77, N_gamma:    3.53, Nq_sobre_Nc: 0.39, tg_phi: 0.31}
+      - {phi: 18, Nc:   13.10, Nq:    5.26, N_gamma:    4.07, Nq_sobre_Nc: 0.40, tg_phi: 0.32}
+      - {phi: 19, Nc:   13.93, Nq:    5.80, N_gamma:    4.68, Nq_sobre_Nc: 0.42, tg_phi: 0.34}
+      - {phi: 20, Nc:   14.83, Nq:    6.40, N_gamma:    5.39, Nq_sobre_Nc: 0.43, tg_phi: 0.36}
+      - {phi: 21, Nc:   15.82, Nq:    7.07, N_gamma:    6.20, Nq_sobre_Nc: 0.45, tg_phi: 0.38}
+      - {phi: 22, Nc:   16.88, Nq:    7.82, N_gamma:    7.13, Nq_sobre_Nc: 0.46, tg_phi: 0.40}
+      - {phi: 23, Nc:   18.05, Nq:    8.66, N_gamma:    8.20, Nq_sobre_Nc: 0.48, tg_phi: 0.42}
+      - {phi: 24, Nc:   19.32, Nq:    9.60, N_gamma:    9.44, Nq_sobre_Nc: 0.50, tg_phi: 0.45}
+      - {phi: 25, Nc:   20.72, Nq:   10.66, N_gamma:   10.88, Nq_sobre_Nc: 0.51, tg_phi: 0.47}
+      - {phi: 26, Nc:   22.25, Nq:   11.85, N_gamma:   12.54, Nq_sobre_Nc: 0.53, tg_phi: 0.49}
+      - {phi: 27, Nc:   23.94, Nq:   13.20, N_gamma:   14.47, Nq_sobre_Nc: 0.55, tg_phi: 0.51}
+      - {phi: 28, Nc:   25.80, Nq:   14.72, N_gamma:   16.72, Nq_sobre_Nc: 0.57, tg_phi: 0.53}
+      - {phi: 29, Nc:   27.86, Nq:   16.44, N_gamma:   19.34, Nq_sobre_Nc: 0.59, tg_phi: 0.55}
+      - {phi: 30, Nc:   30.14, Nq:   18.40, N_gamma:   22.40, Nq_sobre_Nc: 0.61, tg_phi: 0.58}
+      - {phi: 31, Nc:   32.67, Nq:   20.63, N_gamma:   25.99, Nq_sobre_Nc: 0.63, tg_phi: 0.60}
+      - {phi: 32, Nc:   35.49, Nq:   23.18, N_gamma:   30.22, Nq_sobre_Nc: 0.65, tg_phi: 0.62}
+      - {phi: 33, Nc:   38.64, Nq:   26.09, N_gamma:   35.19, Nq_sobre_Nc: 0.68, tg_phi: 0.65}
+      - {phi: 34, Nc:   42.16, Nq:   29.44, N_gamma:   41.06, Nq_sobre_Nc: 0.70, tg_phi: 0.67}
+      - {phi: 35, Nc:   46.12, Nq:   33.30, N_gamma:   48.03, Nq_sobre_Nc: 0.72, tg_phi: 0.70}
+      - {phi: 36, Nc:   50.59, Nq:   37.75, N_gamma:   56.31, Nq_sobre_Nc: 0.75, tg_phi: 0.73}
+      - {phi: 37, Nc:   55.63, Nq:   42.92, N_gamma:   66.19, Nq_sobre_Nc: 0.77, tg_phi: 0.75}
+      - {phi: 38, Nc:   61.35, Nq:   48.93, N_gamma:   78.03, Nq_sobre_Nc: 0.80, tg_phi: 0.78}
+      - {phi: 39, Nc:   67.87, Nq:   55.96, N_gamma:   92.25, Nq_sobre_Nc: 0.82, tg_phi: 0.81}
+      - {phi: 40, Nc:   75.31, Nq:   64.20, N_gamma:  109.41, Nq_sobre_Nc: 0.85, tg_phi: 0.84}
+      - {phi: 41, Nc:   83.86, Nq:   73.90, N_gamma:  130.22, Nq_sobre_Nc: 0.88, tg_phi: 0.87}
+      - {phi: 42, Nc:   93.71, Nq:   85.38, N_gamma:  155.55, Nq_sobre_Nc: 0.91, tg_phi: 0.90}
+      - {phi: 43, Nc:  105.11, Nq:   99.02, N_gamma:  186.54, Nq_sobre_Nc: 0.94, tg_phi: 0.93}
+      - {phi: 44, Nc:  118.37, Nq:  115.31, N_gamma:  224.64, Nq_sobre_Nc: 0.97, tg_phi: 0.97}
+      - {phi: 45, Nc:  133.88, Nq:  134.88, N_gamma:  271.76, Nq_sobre_Nc: 1.01, tg_phi: 1.00}
+      - {phi: 46, Nc:  152.10, Nq:  158.51, N_gamma:  330.35, Nq_sobre_Nc: 1.04, tg_phi: 1.04}
+      - {phi: 47, Nc:  173.64, Nq:  187.21, N_gamma:  403.67, Nq_sobre_Nc: 1.08, tg_phi: 1.07}
+      - {phi: 48, Nc:  199.26, Nq:  222.31, N_gamma:  496.01, Nq_sobre_Nc: 1.12, tg_phi: 1.11}
+      - {phi: 49, Nc:  229.93, Nq:  265.51, N_gamma:  613.16, Nq_sobre_Nc: 1.15, tg_phi: 1.15}
+      - {phi: 50, Nc:  266.89, Nq:  319.07, N_gamma:  762.89, Nq_sobre_Nc: 1.20, tg_phi: 1.19}
+    leitura_visual:
+      passada_1: "página PDF 32 (impressa 33) inteira a 160 dpi — 51 linhas x 5 colunas"
+      passada_2: "recortes dedicados das duas metades da tabela a 400 dpi (x 40-260 e x 250-465, y 70-560 em pontos), mais recorte das três primeiras linhas a 900 dpi"
+      passada_3_extra: "página PDF 33 — segundo escaneamento independente da MESMA página impressa 33, lido a 160 dpi; conteúdo idêntico"
+      divergencia: false
+      observacao_sobre_as_passadas: >-
+        As 51 linhas foram lidas integralmente nas duas passadas e conferidas
+        valor a valor, sem nenhuma divergência. A coluna phi da metade esquerda
+        aparece esmaecida no escaneamento, mas é a sequência 0..25 e foi
+        confirmada pela sequência da metade direita (26..50).
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-Tab2.3-de-beer-fatores-de-forma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Tab. 2.3 - Fatores de forma (De Beer, 1967, apud Vesic, 1975)"
+    pagina: "impressa 33 (PDF 32 e 33)"
+    clausula_ref: CINTRA-Tab2.3-fatores-forma-de-beer
+    titulo: "Fatores de forma de De Beer — dependem de phi e de B/L, e COBREM sapata retangular"
+    tabela:
+      - sapata: "Corrida"
+        S_c: {latex: '1{,}00', sympy: "1"}
+        S_q: {latex: '1{,}00', sympy: "1"}
+        S_gamma: {latex: '1{,}00', sympy: "1"}
+      - sapata: "Retangular"
+        S_c: {latex: '1 + \frac{B}{L}\cdot\frac{N_q}{N_c}', sympy: "1 + (B/L)*(N_q/N_c)"}
+        S_q: {latex: '1 + \frac{B}{L}\,\mathrm{tg}\,\phi', sympy: "1 + (B/L)*tan(phi)"}
+        S_gamma: {latex: '1 - 0{,}4\,\frac{B}{L}', sympy: "1 - Rational(2,5)*(B/L)"}
+      - sapata: "Circular ou Quadrada"
+        S_c: {latex: '1 + \frac{N_q}{N_c}', sympy: "1 + (N_q/N_c)"}
+        S_q: {latex: '1 + \mathrm{tg}\,\phi', sympy: "1 + tan(phi)"}
+        S_gamma: {latex: '0{,}60', sympy: "Rational(3,5)"}
+    variaveis:
+      B: {descricao: "menor dimensão da base (a fonte NÃO declara explicitamente a orientação nesta tabela)", unidade: "m", valor: null}
+      L: {descricao: "maior dimensão da base", unidade: "m", valor: null}
+      N_q: {descricao: "da Tab. 2.2, para o phi do solo", unidade: "adimensional", valor: null}
+      N_c: {descricao: "da Tab. 2.2, para o phi do solo", unidade: "adimensional", valor: null}
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Este é o único conjunto de fatores de forma desta fonte que COBRE SAPATA
+      RETANGULAR. Deve ser usado com os fatores N de Vesic (Tab. 2.2), não com
+      os de Terzaghi-Peck.
+      NAO_DECLARADO_NA_FONTE: a orientação de B e L (qual é o menor lado) não é
+      declarada nesta tabela; e não há restrição declarada de faixa de B/L.
+      Coerência interna verificada: a linha "Circular ou Quadrada" é o limite
+      B/L = 1 das expressões da linha "Retangular" nas três colunas — inclusive
+      S_gamma, pois 1 - 0,4(1) = 0,60.
+    leitura_visual:
+      passada_1: "página PDF 32 (impressa 33) a 160 dpi"
+      passada_2: "recorte dedicado da Tab. 2.3 a 400 dpi (y 560-700 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.4.1-skempton-argila-nao-drenada
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.4.1 Método de Skempton"
+    pagina: "impressas 34 e 35 (PDF 34 e 35)"
+    clausula_ref: CINTRA-2.4.1-metodo-de-skempton
+    titulo: "Skempton (1951) para argila saturada não drenada (phi = 0)"
+    latex: '\sigma_r = c\,N_c\,S_c + q \;;\quad S_c = 1 + 0{,}2\,\frac{B}{L}'
+    sympy: "[Eq(sigma_r, c*N_c*S_c + q), Eq(S_c, 1 + Rational(1,5)*(B/L))]"
+    variaveis:
+      c: {descricao: "coesão não drenada", unidade: "kPa", valor: null}
+      N_c: {descricao: "fator de capacidade de carga, FUNÇÃO DE h/B — dado apenas pelo GRÁFICO da Fig. 2.10, não digitalizado", unidade: "adimensional", valor: null}
+      S_c: {descricao: "fator de forma de Skempton", unidade: "adimensional", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio", unidade: "kPa", valor: null}
+      B: {descricao: "menor dimensão da base", unidade: "m", valor: null}
+      L: {descricao: "maior dimensão da base", unidade: "m", valor: null}
+    dominio_validade: >-
+      ARGILA SATURADA em condição NÃO DRENADA, phi = 0. É essa condição que
+      permite Nq = 1 e N_gamma = 0 e reduz a equação de Terzaghi a c*Nc*Sc + q.
+      Fora dela a simplificação NÃO vale.
+      N_c NÃO ESTÁ DISPONÍVEL COMO NÚMERO NESTA FONTE: depende de h/B e só
+      aparece na Fig. 2.10, que é gráfico (curva cheia para sapata corrida,
+      curva tracejada para quadrada/circular já com o fator de forma embutido),
+      com h/B de 0 a 6. NÃO foi digitalizado — ver
+      CINTRA-2.4.1-metodo-de-skempton, campo consequencia.
+      Único valor numérico de N_c impresso em texto na fonte: N_c = 6, usado na
+      dedução de Teixeira (1996) para sapata na SUPERFÍCIE (item 4.1.2 a),
+      impressa 112).
+      A fonte oferece DOIS caminhos alternativos e mutuamente exclusivos para
+      sapata quadrada/circular: (a) usar a curva cheia e multiplicar por
+      S_c = 1,2; ou (b) ler a curva tracejada, que JÁ inclui o fator de forma.
+      Aplicar os dois seria contar S_c duas vezes.
+    leitura_visual:
+      passada_1: "página PDF 34 (impressa 34) a 160 dpi"
+      passada_2: "página PDF 35 (impressa 35) a 160 dpi — continuação e Fig. 2.10"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.4.2-meyerhof-dimensoes-efetivas
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.4.2 Método de Meyerhof"
+    pagina: "impressa 35 (PDF 35)"
+    clausula_ref: CINTRA-2.4.2-meyerhof-area-efetiva
+    titulo: "Meyerhof (1953): dimensões fictícias (área efetiva) para carga vertical excêntrica"
+    latex: "B' = B - 2\\,e_B \\;;\\quad L' = L - 2\\,e_L"
+    sympy: "[Eq(B_linha, B - 2*e_B), Eq(L_linha, L - 2*e_L)]"
+    variaveis:
+      B_linha: {descricao: "largura fictícia (efetiva) a usar NO CÁLCULO DE CAPACIDADE DE CARGA", unidade: "m", valor: null}
+      L_linha: {descricao: "comprimento fictício (efetivo)", unidade: "m", valor: null}
+      B: {descricao: "largura real da base", unidade: "m", valor: null}
+      L: {descricao: "comprimento real da base", unidade: "m", valor: null}
+      e_B: {descricao: "excentricidade da carga na direção do lado B", unidade: "m", valor: null}
+      e_L: {descricao: "excentricidade da carga na direção do lado L", unidade: "m", valor: null}
+    dominio_validade: >-
+      CARGA VERTICAL EXCÊNTRICA. A substituição é autorizada pela fonte APENAS
+      "nos cálculos de capacidade de carga" — NÃO para dimensionamento
+      estrutural nem para cálculo de recalque.
+      NAO_DECLARADO_NA_FONTE, e cada um destes é um buraco real:
+      (a) nenhum limite de excentricidade (não há menção a e <= B/6 nem a núcleo
+      central); (b) o que fazer quando 2e_B >= B, isto é B' <= 0; (c) se e_B e
+      e_L são de valores característicos ou de cálculo; (d) se o método de
+      Meyerhof propriamente dito está sendo adotado — a fonte apenas o REMETE a
+      Vargas (1978) e Velloso e Lopes (1996) e NÃO reproduz suas equações.
+      FORA DO ESCOPO MÍNIMO do CLAUDE.md (carga centrada). Registrado porque
+      calc_core/sapata_isolada/ já trata excentricidade sem auditoria
+      geotécnica.
+    leitura_visual:
+      passada_1: "página PDF 35 (impressa 35) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do fator 2 e dos subscritos B e L"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ---------------------------------------------------------------------------
+  # CORRELAÇÕES N_SPT -> PARÂMETROS DO SOLO (item 2.9 do livro)
+  # Fecham a lacuna do registro ACERVO-BUSCA-NEG-correlacoes-spt.
+  # ---------------------------------------------------------------------------
+
+  - id: CINTRA-2.9.1-coesao-por-Nspt
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.1 Coesão"
+    pagina: "impressa 45 (PDF 45)"
+    clausula_ref: CINTRA-2.9.1-coesao-teixeira-godoy-1996
+    titulo: "Teixeira e Godoy (1996): coesão não drenada a partir do N_SPT"
+    latex: 'c = 10\,N_{spt} \quad (\mathrm{kPa})'
+    sympy: "Eq(c, 10*N_spt)"
+    variaveis:
+      c: {descricao: "coesão NÃO DRENADA", unidade: "kPa", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    dominio_validade: >-
+      COESÃO NÃO DRENADA. Condição de uso declarada na fonte: "quando não
+      dispomos de resultados de ensaios de laboratório" — é estimativa de
+      recurso, não substituto de ensaio.
+      NAO_DECLARADO_NA_FONTE: faixa de validade de N_spt, tipo de argila,
+      limite superior de c, e energia de referência do SPT. Nenhum desses é
+      declarado. O contexto do item 2.9 (solos saturados, argilas moles) sugere
+      solo fino, mas a fonte NÃO restringe textualmente.
+    observacao: >-
+      Idêntica à forma c = 0,01*N_spt (MPa) usada na dedução de Teixeira (1996)
+      na impressa 112 — 10 kPa = 0,01 MPa. Consistência interna da fonte
+      confirmada nas duas páginas.
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 45) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 60-470, y 220-300 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.9.2-angulo-de-atrito-por-Nspt
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.2 Ângulo de atrito"
+    pagina: "impressa 45 (PDF 45)"
+    clausula_ref: CINTRA-2.9.2-angulo-de-atrito-godoy-e-teixeira
+    titulo: "Duas correlações N_SPT -> ângulo de atrito: Godoy (1983) e Teixeira (1996)"
+    correlacoes:
+      godoy_1983:
+        latex: '\phi = 28^\circ + 0{,}4\,N_{spt}'
+        sympy: "Eq(phi, 28 + Rational(2,5)*N_spt)"
+      teixeira_1996:
+        latex: '\phi = \sqrt{20\,N_{spt}} + 15^\circ'
+        sympy: "Eq(phi, sqrt(20*N_spt) + 15)"
+    variaveis:
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    dominio_validade: >-
+      A FONTE DECLARA DOIS DOMÍNIOS QUE NÃO COINCIDEM, NO MESMO ITEM:
+      (1) o parágrafo de abertura de 2.9.2 trata do ângulo de atrito interno da
+      AREIA e remete ao ábaco da Fig. 2.20 (Mello, 1971), que exige a tensão
+      vertical EFETIVA na cota do ensaio e distingue areia fina, areia grossa e
+      conjunto — é GRÁFICO, não digitalizado;
+      (2) as DUAS FÓRMULAS acima são introduzidas como "ainda para a estimativa
+      de phi, NA CONDIÇÃO NÃO DRENADA". A fonte NÃO repete a palavra "areia"
+      para elas e NÃO declara faixa de N_spt, tipo de solo nem limite superior
+      de phi. NAO_DECLARADO_NA_FONTE.
+      As duas fórmulas NÃO são equivalentes e divergem bastante: para
+      N_spt = 8, Godoy dá 31,2 graus e Teixeira 27,6 graus; para N_spt = 30,
+      Godoy dá 40,0 e Teixeira 39,5. A fonte NÃO diz qual preferir nem em que
+      caso — decisão do a2.
+    alerta_de_implementacao: >-
+      GEOMETRIA DO RADICAL CONFERIDA A 500 dpi EM DUAS PASSADAS: na fórmula de
+      Teixeira o radical cobre APENAS "20 N_spt"; o "+ 15 graus" está FORA do
+      radical. Ou seja phi = sqrt(20*N_spt) + 15, e NÃO sqrt(20*N_spt + 15).
+      Este é o erro de transcrição mais provável nesta fórmula, e por isso fica
+      registrado explicitamente.
+      Ambas as fórmulas retornam GRAUS e são dimensionalmente heterogêneas
+      (somam um número puro a um ângulo) — são empíricas, não homogêneas.
+    observacao: >-
+      A correlação de Teixeira é a MESMA que reaparece na impressa 113 como
+      insumo do método de Teixeira (1996) para sigma_adm em areia
+      (CINTRA-4.1.2a-teixeira-1996-areia). Transcrição idêntica nas duas
+      páginas, conferida.
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 45) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 60-470, y 380-470 em pontos) — extensão do radical conferida"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.9.3-tabelas-peso-especifico-e-classificacao
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.3 Peso específico — Tab. 2.4 e Tab. 2.5 (Godoy, 1972)"
+    pagina: "impressas 45 e 46 (PDF 45 e 46)"
+    clausula_ref: CINTRA-2.9.3-peso-especifico-e-classificacao-por-Nspt
+    titulo: "Consistência (argila) e compacidade (areia) por faixa de N_SPT, com peso específico — TABELAS, extraíveis"
+    tipo: TABELA_NUMERICA
+    tabela_2_4_solos_argilosos:
+      unidade_peso_especifico: "kN/m3"
+      linhas:
+        - {N_spt: "<= 2",  consistencia: "Muito Mole", gamma: 13}
+        - {N_spt: "3 - 5",  consistencia: "Mole",       gamma: 15}
+        - {N_spt: "6 - 10", consistencia: "Média",      gamma: 17}
+        - {N_spt: "11 - 19", consistencia: "Rija",      gamma: 19}
+        - {N_spt: ">= 20",  consistencia: "Dura",       gamma: 21}
+    tabela_2_5_solos_arenosos:
+      unidade_peso_especifico: "kN/m3"
+      estrutura_da_fonte: >-
+        A coluna Compacidade tem CINCO classes, mas a de peso específico tem
+        apenas TRÊS linhas de valores: "Fofa" e "Pouca Compacta" COMPARTILHAM
+        16/18/19, e "Compacta" e "Muito Compacta" COMPARTILHAM 18/20/21. Isso
+        está assim impresso (conferido a 450 dpi) e NÃO é erro de transcrição.
+        As linhas abaixo desdobram os pares para facilitar consulta; nenhum
+        valor foi interpolado ou inventado.
+      linhas:
+        - {N_spt: "< 5",    compacidade: "Fofa",                  seca: 16, umida: 18, saturada: 19}
+        - {N_spt: "5 - 8",   compacidade: "Pouca Compacta",        seca: 16, umida: 18, saturada: 19}
+        - {N_spt: "9 - 18",  compacidade: "Medianamente Compacta", seca: 17, umida: 19, saturada: 20}
+        - {N_spt: "19 - 40", compacidade: "Compacta",              seca: 18, umida: 20, saturada: 21}
+        - {N_spt: "> 40",   compacidade: "Muito Compacta",        seca: 18, umida: 20, saturada: 21}
+    dominio_validade: >-
+      Condição de uso declarada: "se não houver ensaios de laboratório" —
+      valores APROXIMADOS de recurso.
+      Tab. 2.4 SOMENTE para solos ARGILOSOS (consistência); Tab. 2.5 SOMENTE
+      para solos ARENOSOS (compacidade). A fonte NÃO cobre solos intermediários
+      (silte, areia argilosa, argila arenosa etc.).
+      As faixas de N_spt cobrem todos os inteiros, sem lacuna, nas duas tabelas.
+      A classificação por N_spt é atribuída pela fonte à ABNT NBR 6484/2001 —
+      norma AUSENTE do acervo deste repositório, e em edição de 2001,
+      possivelmente superada.
+    CONTRADICAO_DA_FONTE_NAO_RESOLVIDA: >-
+      O parágrafo sob a Tab. 2.5 afirma, literalmente: "No caso de areia
+      saturada, o valor apresentado na Tab. 2.5 refere-se ao peso específico
+      submerso. Como para o cálculo de capacidade de carga precisamos sempre do
+      peso específico efetivo, é necessário descontar o peso específico da
+      água."
+      As duas frases não podem valer ao mesmo tempo: se o valor JÁ fosse
+      submerso, não haveria o que descontar. Além disso 19/20/21 kN/m3 são
+      ordens de grandeza de peso específico SATURADO (total); submerso ficaria
+      em torno de 9 a 11 kN/m3.
+      Conferido a 500 dpi com a margem esquerda inteira: NÃO há um "não" na
+      frase — o texto é esse mesmo.
+      NENHUMA fórmula de peso específico submerso foi escrita a partir deste
+      trecho, e eu NÃO escolhi entre as duas leituras. DECISÃO DO a2.
+      IMPACTO: aplicar a leitura errada muda gamma por um fator de ~2 nas
+      parcelas de sobrecarga e de peso próprio da equação de capacidade de
+      carga — e é do lado INSEGURO usar 19-21 kN/m3 como se fosse efetivo
+      abaixo do nível d'água.
+    leitura_visual:
+      passada_1: "páginas PDF 45 e 46 inteiras a 160 dpi"
+      passada_2: "recorte da Tab. 2.5 e do parágrafo seguinte a 450 dpi (x 150-470, y 470-700); recorte do parágrafo com margem esquerda a 500 dpi (x 95-480, y 610-690)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ---------------------------------------------------------------------------
+  # TENSÃO ADMISSÍVEL (Cap. 4 do livro)
+  # Fecham a lacuna do registro ACERVO-BUSCA-NEG-teixeira-1996.
+  # ---------------------------------------------------------------------------
+
+  - id: CINTRA-4.1.1-tensao-admissivel-metodo-teorico
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.1 Métodos teóricos"
+    pagina: "impressa 111 (PDF 112)"
+    clausula_ref: CINTRA-4.1.1-metodos-teoricos-FS-3
+    titulo: "Tensão admissível pelo caminho teórico: capacidade de carga dividida pelo fator de segurança global 3,0"
+    latex: '\sigma_a \le \dfrac{\sigma_r}{3{,}0}'
+    sympy: "Le(sigma_a, sigma_r/Rational(3,1))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "kPa", valor: null}
+      sigma_r: {descricao: "VALOR MÉDIO da capacidade de carga, pela fórmula de Terzaghi com os fatores sugeridos por Vesic", unidade: "kPa", valor: null}
+      FS: {descricao: "fator de segurança global", unidade: "adimensional", valor: 3.0}
+    dominio_validade: >-
+      Método de valores admissíveis (fator de segurança global), verificação de
+      ELU. FS = 3,0 vale "na ausência de prova de carga" (declarado na fonte).
+      sigma_r é o VALOR MÉDIO da capacidade de carga — a fonte insiste nisso
+      (impressa 108: o conceito de FS global "é inerente ao valor médio de
+      resistência"), citando Cintra e Aoki (2010, p. 39-40).
+      Este resultado ainda precisa ser confrontado com o ELS (recalque): ver
+      impressa 108, "sigma_a -> rho <= rho_a".
+    coerencia_com_a_norma: >-
+      NÃO CONFLITA com o que já está em kb: NBR 6122:2022 Tabela 1, linha
+      "Analíticos", FSg = 3,00 (registro
+      NBR6122-6.2.1.1.1-tabela1-confirmada-visual). O livro cita a numeração da
+      edição 2010 e escreve "NRB 6122/2010" (typo do original).
+    leitura_visual:
+      passada_1: "página PDF 112 (impressa 111) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do denominador 3,0"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-sigma-adm-SPT-Nspt-50
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 Métodos semiempíricos, alínea a) SPT"
+    pagina: "impressa 112 (PDF 113)"
+    clausula_ref: CINTRA-4.1.2a-sigma-adm-SPT-regra-Nspt-50
+    titulo: "Regra brasileira sigma_a = N_spt/50 + q (MPa), e a dedução de Teixeira (1996) que a sustenta"
+    latex: '\sigma_a = \dfrac{N_{spt}}{50} + q \quad (\mathrm{MPa}) \qquad \text{com } 5 \le N_{spt} \le 20'
+    sympy: "Eq(sigma_a, N_spt/50 + q)"
+    deducao_de_teixeira_1996:
+      latex: '\sigma_r = c\,N_c \;,\; N_c = 6 \;,\; c = 0{,}01N_{spt}\,(\mathrm{MPa}) \;,\; FS = 3 \;\Rightarrow\; \sigma_a = \frac{0{,}01\,N_{spt}\cdot 6}{3} = 0{,}02\,N_{spt} = \frac{N_{spt}}{50}'
+      sympy: "Eq(sigma_a, (Rational(1,100)*N_spt*6)/3)"
+      condicoes_da_deducao: >-
+        Sapatas RETANGULARES apoiadas na SUPERFÍCIE de terrenos PURAMENTE
+        ARGILOSOS, capacidade de carga pelo método de Skempton (1951) com
+        N_c = 6, c = 0,01*N_spt (MPa) e fator de segurança 3.
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      N_spt: {descricao: "VALOR MÉDIO no bulbo de tensões (não o valor na cota de apoio)", unidade: "adimensional (golpes)", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio. PARCELA FACULTATIVA — a fonte diz que 'pode ou não ser considerada'", unidade: "MPa", valor: null}
+      N_spt_min: {descricao: "limite inferior explícito da faixa de validade", unidade: "adimensional", valor: 5}
+      N_spt_max: {descricao: "limite superior explícito da faixa de validade", unidade: "adimensional", valor: 20}
+      FS_embutido: {descricao: "fator de segurança já embutido no divisor 50", unidade: "adimensional", valor: 3}
+    dominio_validade: >-
+      FAIXA EXPLÍCITA E ESTREITA, DECLARADA NA FONTE: 5 <= N_spt <= 20. Fora
+      dela a fonte NÃO autoriza a fórmula.
+      DOMÍNIO DA DEDUÇÃO, também declarado: sapatas RETANGULARES, apoiadas na
+      SUPERFÍCIE (h = 0), em terreno PURAMENTE ARGILOSO, via Skempton (1951)
+      com N_c = 6, c = 0,01*N_spt (MPa) e FS = 3.
+      N_spt é o VALOR MÉDIO NO BULBO DE TENSÕES.
+      Unidade de saída MPa; q tem de entrar em MPa.
+      O FS = 3 JÁ ESTÁ EMBUTIDO no divisor 50. Aplicar de novo o FSg = 3,00 da
+      Tabela 1 da NBR 6122 sobre este resultado seria DUPLA CONTAGEM — ver o
+      conflito registrado em
+      CINTRA-4.1.2-conflito-FS-embutido-vs-NBR6122-Tabela1.
+    incoerencia_interna_da_fonte: >-
+      A dedução vale para sapata na SUPERFÍCIE (h = 0), mas a fórmula carrega um
+      termo "+ q" de sobrecarga, que só existe se h > 0 — e a fonte ainda torna
+      q facultativo. A fonte NÃO concilia as duas coisas. Registrado sem
+      resolução.
+    alerta_de_atribuicao: >-
+      A fonte apresenta sigma_a = N_spt/50 como "regra CONHECIDA NO MEIO TÉCNICO
+      BRASILEIRO", e NÃO como "o método de Teixeira". O papel de Teixeira (1996)
+      aqui é o de ter DEMONSTRADO a regra para um caso particular. Rotular esta
+      fórmula no memorial como "método de Teixeira (1996)" seria impreciso em
+      relação a esta fonte. O método de Teixeira propriamente dito é o de areia
+      (CINTRA-4.1.2a-teixeira-1996-areia).
+    leitura_visual:
+      passada_1: "página PDF 113 (impressa 112) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 120-480, y 250-310 em pontos) — divisor 50, termo +q e faixa 5..20 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-mello-1975
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 alínea a) SPT — correlação de Mello (1975)"
+    pagina: "impressa 112 (PDF 113)"
+    clausula_ref: CINTRA-4.1.2a-mello-1975-sigma-adm-SPT
+    titulo: "Mello (1975): tensão admissível a partir do N_SPT, sem distinção de tipo de solo"
+    latex: '\sigma_a = 0{,}1\left(\sqrt{N_{spt}} - 1\right) \quad (\mathrm{MPa}) \qquad \text{com } 4 \le N_{spt} \le 16'
+    sympy: "Eq(sigma_a, Rational(1,10)*(sqrt(N_spt) - 1))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+      N_spt_min: {descricao: "limite inferior explícito", unidade: "adimensional", valor: 4}
+      N_spt_max: {descricao: "limite superior explícito", unidade: "adimensional", valor: 16}
+    dominio_validade: >-
+      Faixa explícita: 4 <= N_spt <= 16 — DIFERENTE da faixa 5..20 da regra
+      N_spt/50. Não confundir as duas faixas.
+      "SEM DISTINÇÃO DE SOLO" — a fonte declara explicitamente que esta
+      correlação não separa argila de areia. Saída em MPa.
+      NAO_DECLARADO_NA_FONTE: profundidade, dimensão da sapata, se N_spt é média
+      no bulbo ou valor na cota, e se há fator de segurança embutido (por estar
+      sob o título "métodos semiempíricos" presume-se que sim, mas a fonte NÃO
+      afirma isso para esta fórmula em particular).
+      Nota: o radical cobre apenas N_spt; o "-1" está fora dele, e o fator 0,1
+      multiplica o parêntese inteiro. Conferido a 500 dpi.
+    advertencia_da_propria_fonte: >-
+      A mesma página traz a advertência de Mello (1975, p. 61), citada pelos
+      autores, que se aplica a TODAS as correlações desta seção e deveria
+      acompanhar qualquer uso delas no memorial: "é preciso analisar a origem e
+      validade de tais FORMULÁRIOS DE BOLSO antes de passar a aplicá-los
+      inconscientemente e mesmo prejudicialmente em condições que extravasam do
+      campo experimental do qual decorreram". Os autores acrescentam que "é
+      sempre questionável a aplicabilidade de correlações empíricas desse tipo"
+      e remetem a Hachich e Nader (1992).
+    leitura_visual:
+      passada_1: "página PDF 113 (impressa 112) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 120-480, y 540-640 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-teixeira-1996-areia
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 alínea a) SPT — correlação de Teixeira (1996) para areia, com Fig. 4.1"
+    pagina: "impressa 113 (PDF 114)"
+    clausula_ref: CINTRA-4.1.2a-teixeira-1996-sigma-adm-areia
+    titulo: "MÉTODO DE TEIXEIRA (1996) para sapata em AREIA — o achado que fecha ACERVO-BUSCA-NEG-teixeira-1996"
+    latex: '\sigma_a = 0{,}05 + \left(1 + 0{,}4\,B\right)\dfrac{N_{spt}}{100} \quad (\mathrm{MPa})'
+    sympy: "Eq(sigma_a, Rational(1,20) + (1 + Rational(2,5)*B)*N_spt/100)"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      B: {descricao: "LADO da sapata QUADRADA, EM METROS. A fórmula NÃO é adimensional: o coeficiente 0,4 carrega unidade 1/m", unidade: "m", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    constantes_do_metodo:
+      termo_constante_MPa: 0.05
+      coeficiente_de_B_por_metro: 0.4
+      divisor: 100
+    parametros_FIXOS_embutidos_na_deducao:
+      profundidade_de_apoio_m: 1.5
+      peso_especifico_da_areia_kN_m3: 18
+      correlacao_de_phi_usada: "phi = sqrt(20*N_spt) + 15 graus (a de TEIXEIRA, não a de Godoy)"
+      capacidade_de_carga_base: "equação de TERZAGHI"
+      fator_de_seguranca_embutido: 3
+    dominio_validade: >-
+      DOMÍNIO MUITO ESTREITO E INTEIRAMENTE DECLARADO NA FONTE — este é o campo
+      que impede o software de aplicar a fórmula fora do lugar:
+      (1) solo AREIA;
+      (2) sapata QUADRADA de lado B, com B EM METROS;
+      (3) profundidade de apoio FIXA em 1,5 m — NÃO é variável da fórmula, é
+      hipótese congelada na dedução;
+      (4) peso específico da areia FIXO em 18 kN/m3 — idem;
+      (5) phi obtido pela correlação de Teixeira, phi = sqrt(20*N_spt) + 15
+      graus;
+      (6) fator de segurança 3 JÁ EMBUTIDO;
+      (7) capacidade de carga calculada por TERZAGHI.
+      A fonte NÃO declara faixa de validade de N_spt para esta fórmula; a Fig.
+      4.1 é desenhada de N_spt = 0 a 25, o que é INDÍCIO e não declaração.
+      A fonte também NÃO declara faixa de B; a Fig. 4.1 mostra apenas B = 1, 2
+      e 3 m.
+      Extrapolar profundidade, peso específico, forma retangular, ou B fora de
+      1 a 3 m, é sair do domínio declarado.
+    figura_associada: >-
+      Fig. 4.1 "Tensão admissível em função de B e de N_spt - sapatas em areia
+      (Teixeira, 1996)" é um GRÁFICO: eixo vertical sigma_a (MPa) de 0 a 0,6;
+      eixo horizontal N_spt de 0 a 25; três retas cheias rotuladas B = 1 m,
+      B = 2 m e B = 3 m; e uma linha TRACEJADA que a fonte identifica como
+      "valores de experiência prática em São Paulo, relatados por Vargas
+      (1951)", correndo entre as retas de B = 1 m e B = 2 m. A curva de Vargas
+      NÃO foi digitalizada.
+    conferencia_de_leitura: >-
+      INTERPRETAÇÃO minha, registrada como conferência de leitura da fórmula e
+      NÃO como caso de teste homologado: para B = 2 m e N_spt = 10,
+      sigma_a = 0,05 + (1 + 0,8)*10/100 = 0,23 MPa, compatível com a Fig. 4.1.
+    leitura_visual:
+      passada_1: "página PDF 114 (impressa 113) inteira a 160 dpi"
+      passada_2: "recorte a 550 dpi (x 100-480, y 150-260 em pontos) — termo 0,05, coeficiente 0,4B e divisor 100 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2b-sigma-adm-CPT
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 Métodos semiempíricos, alínea b) CPT"
+    pagina: "impressa 113 (PDF 114)"
+    clausula_ref: CINTRA-4.1.2b-CPT-teixeira-godoy-1996
+    titulo: "Teixeira e Godoy (1996): tensão admissível a partir da resistência de ponta do CPT"
+    correlacoes:
+      argila:
+        latex: '\sigma_a = \dfrac{q_c}{10} \le 4{,}0\ \mathrm{MPa}'
+        sympy: "Eq(sigma_a, Min(q_c/10, 4))"
+      areia:
+        latex: '\sigma_a = \dfrac{q_c}{15} \le 4{,}0\ \mathrm{MPa}'
+        sympy: "Eq(sigma_a, Min(q_c/15, 4))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      q_c: {descricao: "resistência de ponta do CPT, VALOR MÉDIO no bulbo de tensões", unidade: "MPa", valor: null}
+      q_c_minimo: {descricao: "condição explícita de aplicabilidade", unidade: "MPa", valor: 1.5}
+      teto: {descricao: "teto explícito da tensão admissível nas duas correlações", unidade: "MPa", valor: 4.0}
+    dominio_validade: >-
+      Ensaio CPT (NÃO SPT). Condição explícita q_c >= 1,5 MPa e teto explícito
+      sigma_a <= 4,0 MPa nas duas correlações.
+      q_c é o VALOR MÉDIO NO BULBO DE TENSÕES.
+      Divisor 10 para ARGILA e 15 para AREIA — não trocar.
+      NAO_DECLARADO_NA_FONTE: profundidade, dimensão e forma da sapata, e se o
+      fator de segurança está embutido (presumível pelo contexto de 4.1.2, mas
+      não afirmado).
+      FORA DO CAMINHO CRÍTICO ATUAL: o repositório não tem entrada de dados de
+      CPT, apenas de SPT. Registrado para completude do §7.3.3 da NBR 6122, que
+      cita "SPT, CPT etc.".
+    leitura_visual:
+      passada_1: "página PDF 114 (impressa 113) inteira a 160 dpi"
+      passada_2: "recorte a 550 dpi (x 100-480, y 590-700 em pontos) — divisores 10 e 15, teto 4,0 e piso 1,5 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.3-criterio-de-boston-placa
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.3 — critério de obras da cidade de Boston"
+    pagina: "impressa 115 (PDF 116)"
+    clausula_ref: CINTRA-4.1.3-prova-de-carga-em-placa-boston
+    titulo: "Critério de Boston para tensão admissível a partir de prova de carga em placa"
+    latex: '\sigma_a \le \min\left\{\sigma_{10}\;;\;\dfrac{\sigma_{25}}{2}\right\}'
+    sympy: "Le(sigma_a, Min(sigma_10, sigma_25/2))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "kPa", valor: null}
+      sigma_10: {descricao: "tensão na curva tensão x recalque da PLACA correspondente a 10 mm de recalque", unidade: "kPa", valor: null}
+      sigma_25: {descricao: "tensão na curva tensão x recalque da PLACA correspondente a 25 mm de recalque; é a tensão de ruptura convencional", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      Prova de carga em placa. Os recalques de 10 mm e 25 mm são DA PLACA, não
+      da sapata; a extrapolação placa -> sapata é tratada em capítulo separado
+      (Cap. 3), NÃO extraído nesta rodada.
+      DEFEITO DE APLICAÇÃO REGISTRADO PELA PRÓPRIA FONTE, e que é advertência e
+      não condição de validade: o critério foi desenvolvido para PLACA QUADRADA
+      DE 0,30 m DE LADO e é usado no Brasil desde 1955 "SEM NENHUMA ADAPTAÇÃO"
+      para a placa circular de 0,80 m de diâmetro usual aqui.
+      O denominador 2 corresponde ao fator de segurança sobre a ruptura
+      convencional; o critério de sigma_10 corresponde a fixar recalque
+      admissível de 10 mm para a placa.
+      Segundo Teixeira e Godoy (1996), sigma_25/2 é SEMPRE mais rigoroso do que
+      sigma_10 — ou seja, o mínimo tende a ser sempre o segundo termo.
+    nao_confundir: >-
+      O "FS = 2" deste critério NÃO é o FSg = 2,00 da Tabela 1 da NBR 6122:2022.
+      O da norma vale para "semiempíricos ou analíticos ACRESCIDOS DE DUAS OU
+      MAIS PROVAS DE CARGA executadas na fase de projeto"; este é o denominador
+      do critério de Boston sobre a curva da placa. Ver
+      CINTRA-4.1.2-conflito-FS-embutido-vs-NBR6122-Tabela1.
+      FORA DO CAMINHO CRÍTICO ATUAL: o repositório não tem entrada de curva de
+      prova de carga.
+    leitura_visual:
+      passada_1: "página PDF 116 (impressa 115) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida da chave com os dois termos e do denominador 2"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
