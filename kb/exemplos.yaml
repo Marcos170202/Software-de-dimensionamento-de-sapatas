@@ -1,0 +1,152 @@
+# kb/exemplos.yaml — produzido pelo a1-bibliotecario.
+#
+# Exercicios resolvidos da bibliografia, virados em casos de teste: entradas,
+# saidas esperadas e — o campo que mais importa — as HIPOTESES DO AUTOR.
+# As hipoteses do autor quase sempre divergem da norma; registra-las e o que
+# evita que o a7-validador acuse falso positivo depois.
+#
+# NENHUM caso aqui e regra APROVADA. Sao casos de conferencia numerica.
+#
+# Arquivo criado na rodada 2026-09-01 ("cunha de solo lateral"). Nasce com UM
+# caso, porque foi o unico exercicio do acervo que QUANTIFICA o peso de solo
+# sobre a sapata — e o resultado da rodada foi busca negativa para a cunha.
+# NAO tratar a cobertura deste arquivo como completa.
+
+exemplos:
+  - id: BASTOS-ex9-gtot-prisma-uniforme
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT.
+    item: "1.12.5 Exemplo 9 - Sapata Associada"
+    pagina: "PDF 101 e 102 (impressas 97 e 98)"
+    clausula_ref: BASTOS-nota20-peso-solo-nao-causa-flexao
+    titulo: >-
+      O UNICO exercicio do acervo que calcula numericamente o peso de solo sobre
+      a sapata — e ele usa PRISMA VERTICAL UNIFORME (gamma x altura), nao cunha
+    relevancia_para_a_rodada: >-
+      Este caso e a evidencia numerica que sustenta a busca negativa da rodada
+      2026-09-01: quando o acervo precisa de um numero para o solo sobre a
+      sapata, ele usa uma sobrecarga uniforme gamma_solo x h aplicada em TODA a
+      area da base, sem projecao lateral, sem angulo e sem volume excedente a
+      projecao da sapata. Ver ACERVO-BUSCA-NEG-cunha-de-solo-lateral.
+
+    enunciado_transcrito: |
+      1.12.5 Exemplo 9 - Sapata Associada
+      Projetar uma sapata associada para dois pilares (Figura 1.145), sendo: N1 = 900 kN ; N2 = 1.560 kN ; concreto C20 ; aco CA-50 ; gamma_solo = 1.925 kgf/m3 (peso especifico do solo) ; carga atuante de 500 kgf/m2 sobre o piso final acima da sapata ; phi_,pil = 12,5 mm ; c = 4,0 cm ; distancia de 2,08 m entre a base inferior da sapata e o piso final ; Padm = 191,5 kPa = 0,1915 MPa ; coeficientes de ponderacao: gamma_f = gamma_c = 1,4 , gamma_s = 1,15.
+      Resolucao
+      Neste exemplo, a carga relativa ao peso proprio da sapata sera considerada simplificadamente com o peso especifico do solo, e somada a carga atuante sobre o piso acima da sapata:
+      g_tot = (g_solo + g_sap) + g_piso = (2,08 . 1925) + 500 = 4.504 kgf/m2 = 45,04 kPa
+      a) Dimensoes da sapata
+      Para fins de calculo, a tensao admissivel do solo sera diminuida da carga total que atua sobre a sapata (g_tot), de modo que a tensao admissivel liquida do solo e:
+      P_adm,liq = P_adm - g_tot = 191,5 - 45,04 = 146,5 kPa = 146,5 kN/m2 = 0,1465 MPa
+
+    entradas:
+      N1: {valor: 900, unidade: "kN", descricao: "carga do pilar P1 (30 x 45 cm, na divisa)"}
+      N2: {valor: 1560, unidade: "kN", descricao: "carga do pilar P2 (circular, diametro 40 cm)"}
+      l_cc: {valor: 6.10, unidade: "m", descricao: "distancia entre os eixos dos pilares"}
+      l_1: {valor: 0.175, unidade: "m", descricao: "distancia do eixo de P1 a divisa (metade dos 35 cm? a fonte da 17,5 cm na Fig. 1.145)"}
+      gamma_solo: {valor: 1925, unidade: "kgf/m3", descricao: "peso especifico do solo"}
+      g_piso: {valor: 500, unidade: "kgf/m2", descricao: "carga atuante sobre o piso final acima da sapata"}
+      h_total: {valor: 2.08, unidade: "m", descricao: "distancia entre a base INFERIOR da sapata e o piso final"}
+      P_adm: {valor: 191.5, unidade: "kPa", descricao: "tensao admissivel do solo (dado de entrada, nao calculado)"}
+      gamma_f: {valor: 1.4, unidade: "adimensional"}
+      gamma_c: {valor: 1.4, unidade: "adimensional"}
+      gamma_s: {valor: 1.15, unidade: "adimensional"}
+      concreto: "C20"
+      aco: "CA-50"
+
+    saidas_esperadas:
+      g_tot: {valor: 45.04, unidade: "kPa", origem: "(2,08 x 1925) + 500 = 4.504 kgf/m2"}
+      P_adm_liq: {valor: 146.5, unidade: "kPa", origem: "191,5 - 45,04 = 146,46, arredondado pelo autor para 146,5"}
+      S_sap: {valor: 16.8, unidade: "m2", origem: "(900 + 1560)/146,5 = 16,79"}
+      x_barra: {valor: 3.87, unidade: "m", origem: "1560/(900+1560) x 6,10 = 3,868"}
+      A_calculado: {valor: 8.09, unidade: "m", origem: "2 x (0,175 + 3,87)"}
+      A_adotado: {valor: 8.10, unidade: "m"}
+      B_calculado: {valor: 2.07, unidade: "m", origem: "16,8/8,10 = 2,074"}
+      B_adotado: {valor: 2.10, unidade: "m"}
+      p: {valor: 0.01446, unidade: "kN/cm2", origem: "(900+1560)/(810 x 210)"}
+      p_B: {valor: 3.037, unidade: "kN/cm", origem: "0,01446 x 210"}
+
+    hipoteses_do_autor:
+      - id: HA-1
+        hipotese: >-
+          O PESO PROPRIO DO CONCRETO DA SAPATA E CONTADO COM O PESO ESPECIFICO
+          DO SOLO. Texto literal: "a carga relativa ao peso proprio da sapata
+          sera considerada simplificadamente com o peso especifico do solo".
+        divergencia_da_norma: >-
+          Do LADO INSEGURO em relacao ao peso real: 1.925 kgf/m3 (aprox. 18,9
+          kN/m3) contra os 25 kN/m3 do concreto armado da NBR 6120. O autor
+          subestima a parcela de concreto para simplificar a conta. NAO
+          REPRODUZIR ESSA SIMPLIFICACAO EM calc_core sem decisao explicita.
+      - id: HA-2
+        hipotese: >-
+          O SOLIDO DE SOLO CONSIDERADO E UM PRISMA VERTICAL UNIFORME de altura
+          2,08 m (base inferior da sapata ate o piso final) e area igual a area
+          da base da sapata. g_tot e uma sobrecarga uniforme em kPa aplicada em
+          toda a base.
+        divergencia_da_norma: >-
+          Nao ha divergencia com norma porque nenhuma norma do acervo prescreve
+          isso. E O PONTO CENTRAL DESTA RODADA: nao ha projecao lateral, nao ha
+          angulo com a horizontal, nao ha volume excedente a projecao da
+          sapata. A fonte NAO conhece o conceito de cunha de solo lateral.
+      - id: HA-3
+        hipotese: >-
+          A altura usada e medida ate o PISO FINAL acima da sapata, nao ate o
+          terreno natural, e a carga de 500 kgf/m2 do piso e somada a mesma
+          parcela g_tot.
+        divergencia_da_norma: >-
+          Mistura, numa unica grandeza, peso proprio de concreto (permanente),
+          peso de solo (permanente) e carga de piso (que pode ter parcela
+          variavel). A NBR 8681 exige coeficientes de ponderacao distintos por
+          natureza da acao; o exemplo trata tudo como uma sobrecarga unica em
+          valor caracteristico.
+      - id: HA-4
+        hipotese: >-
+          O metodo adotado e o da TENSAO ADMISSIVEL LIQUIDA (P_adm,liq = P_adm -
+          g_tot), e NAO o do fator majorador K_maj (Eqs. 1.6 e 1.7) usado na
+          maioria dos outros exemplos da mesma apostila.
+        divergencia_da_norma: >-
+          A propria fonte usa DOIS metodos diferentes para a mesma finalidade em
+          exemplos diferentes. Nao sao equivalentes numericamente. Um validador
+          que espere K_maj neste exemplo acusa falso positivo.
+      - id: HA-5
+        hipotese: >-
+          A conversao adotada e 1 kgf/m2 = 0,01 kPa (isto e, g = 10 m/s2):
+          4.504 kgf/m2 -> 45,04 kPa exatos.
+        divergencia_da_norma: "Arredondamento de conversao. Com g = 9,80665 dariam 44,17 kPa."
+      - id: HA-6
+        hipotese: >-
+          Arredondamentos de dimensao para cima e para multiplos de 10 cm:
+          A = 8,09 -> 8,10 m ; B = 2,07 -> 2,10 m. P_adm,liq = 146,46 -> 146,5.
+        divergencia_da_norma: "Pratica de projeto, nao regra. Tolerancia numerica do teste deve absorver isso."
+      - id: HA-7
+        hipotese: >-
+          A pressao p usada para os esforcos de flexao EXCLUI g_tot: "sem
+          considerar o peso da sapata e do solo sobre a sapata, pois essas
+          cargas transferem-se diretamente sem causar flexao na sapata".
+        divergencia_da_norma: >-
+          Coerente com a nota de rodape 20 da mesma apostila (registro
+          BASTOS-nota20-peso-solo-nao-causa-flexao), que reconhece existir a
+          pratica oposta em outras publicacoes. ATENCAO: g_tot entra no
+          dimensionamento GEOTECNICO (area da base) e sai do dimensionamento
+          ESTRUTURAL (flexao) — dois usos diferentes da mesma grandeza no mesmo
+          exercicio. Qualquer implementacao futura de cunha herda esse problema.
+
+    escopo: >-
+      SAPATA ASSOCIADA (dois pilares, um deles na divisa) — esta FORA do escopo
+      minimo auditado de calc_core/geotecnico/ (sapata isolada, carga centrada,
+      solo homogeneo) e tambem fora do escopo de calc_core/sapata_isolada/.
+      Registrado como caso de conferencia da PARCELA g_tot, nao como caso de
+      teste do dimensionamento completo.
+
+    leitura_visual:
+      passada_1: "paginas PDF 101 e 102 inteiras a 170 dpi"
+      passada_2: "recorte a 420 dpi da regiao de g_tot e P_adm,liq na PDF 102 + releitura do enunciado na camada de texto da PDF 101; todos os numeros reconferidos por recalculo (2,08 x 1925 = 4004; +500 = 4504; 191,5 - 45,04 = 146,46; 2460/146,5 = 16,79; 1560/2460 x 6,10 = 3,868; 2 x (0,175+3,87) = 8,09; 16,8/8,10 = 2,074; 2460/(810x210) = 0,014462; 0,01446 x 210 = 3,0366)"
+      divergencia: false
+
+    status: NAO_NORMATIVO_AGUARDA_A2
+    hash_de: "sha256(enunciado_transcrito, utf-8)"
+    hash: "sha256:875768b06610dd7b4fba192acaf9a801e9398244ad7f41fcf704f2c3d24aed35"
+    rodada: "2026-09-01 cunha de solo lateral"

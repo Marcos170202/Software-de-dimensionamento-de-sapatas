@@ -1213,3 +1213,99 @@ formulas:
       passada_2: "mesma página, conferência dirigida da chave com os dois termos e do denominador 2"
       divergencia: false
     status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ===========================================================================
+  # RODADA 2026-09-01 — "CUNHA DE SOLO LATERAL" (peso de solo sobre as abas
+  # alargadas da sapata enterrada).
+  #
+  # RESULTADO DA RODADA: BUSCA NEGATIVA. Nenhuma fonte do acervo publica a
+  # geometria nem a equacao desse solido. Entram aqui apenas (a) um MARCADOR DE
+  # AUSENCIA, para que a lacuna fique visivel e nao seja preenchida de memoria,
+  # e (b) a unica formula real que o acervo oferece sobre peso de solo sobre a
+  # sapata, que e um coeficiente global e NAO uma geometria.
+  # Ver kb/clausulas.jsonl: ACERVO-BUSCA-NEG-cunha-de-solo-lateral.
+  # ===========================================================================
+
+  - id: CUNHA-SOLO-LATERAL-SEM-FONTE
+    norma: "NENHUMA — marcador de ausencia"
+    fonte_tipo: INEXISTENTE_NO_ACERVO
+    item: "n/a"
+    pagina: "n/a"
+    clausula_ref: ACERVO-BUSCA-NEG-cunha-de-solo-lateral
+    titulo: >-
+      MARCADOR DE AUSENCIA — peso da cunha de solo lateral (tronco de piramide
+      sobre as abas alargadas da sapata). NAO HA FONTE NO ACERVO.
+    latex: null
+    sympy: null
+    variaveis: null
+    dominio_validade: "SEM_FONTE_NO_ACERVO"
+    o_que_faltaria_para_existir: >-
+      Para que esta entrada pudesse ser preenchida seria preciso, de uma fonte
+      publicada e citavel: (1) a definicao geometrica da fronteira do solido —
+      de onde parte, onde termina, se e tronco de piramide, tronco de cone ou
+      prisma escalonado; (2) o VALOR ou a regra de escolha do angulo de projecao
+      com a horizontal, que e o unico parametro nao dedutivel da geometria da
+      sapata; (3) o dominio de validade — tipo de solo, se vale para solo
+      reaterrado ou so para solo natural nao remexido, se depende da
+      compactacao do reaterro; (4) a declaracao de em QUAIS verificacoes o peso
+      entra (tensao no solo, tombamento, deslizamento, flexao) e com que sinal.
+      Nenhum desses quatro itens existe no acervo.
+    proibicao_explicita: >-
+      NAO PREENCHER ESTA ENTRADA POR MEMORIA NEM POR DEDUCAO A PARTIR DO NOME
+      DOS CAMPOS DE INTERFACE DE UM SOFTWARE DE TERCEIROS (goskip.dev). Rotulo
+      de campo nao e equacao. Regra 1 do a1-bibliotecario.
+    status: SEM_FONTE_NO_ACERVO
+    rodada: "2026-09-01 cunha de solo lateral"
+
+  - id: BASTOS-1.6.3-eq1.6-1.7-Kmaj
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.6.3 — equacoes 1.6 e 1.7"
+    pagina: "PDF 24 (impressa 20)"
+    clausula_ref: BASTOS-1.6.3-Kmaj-peso-solo-sobre-sapata
+    titulo: >-
+      Area da base da sapata com o coeficiente K_maj, que estima em BLOCO o peso
+      proprio da sapata MAIS o solo sobre a sapata
+    formas:
+      geral_eq_1_6:
+        latex: 'S_{sap} = \dfrac{K_{maj}\,N_{gk} + N_{qk}}{P_{adm}}'
+        sympy: "Eq(S_sap, (K_maj*N_gk + N_qk)/P_adm)"
+        observacao: "K_maj multiplica APENAS a parcela permanente."
+      simplificada_eq_1_7:
+        latex: 'S_{sap} = \dfrac{1{,}05\,N_{g+q,k}}{P_{adm}}'
+        sympy: "Eq(S_sap, 1.05*N_gq_k/P_adm)"
+        observacao: >-
+          Forma para quando as parcelas permanente e variavel NAO forem
+          conhecidas. Aqui o 1,05 multiplica a CARGA TOTAL. Nao trocar com a
+          Eq. 1.6.
+    variaveis:
+      S_sap: {descricao: "area de apoio (base) da sapata", unidade: "m2", valor: null}
+      N_gk: {descricao: "carga vertical devida as acoes permanentes, valor caracteristico", unidade: "kN", valor: null}
+      N_qk: {descricao: "carga vertical devida as acoes variaveis, valor caracteristico", unidade: "kN", valor: null}
+      N_gq_k: {descricao: "carga vertical total caracteristica (permanente + variavel), usada na Eq. 1.7", unidade: "kN", valor: null}
+      K_maj: {descricao: "coeficiente majorador da carga vertical das acoes permanentes; estima peso proprio da sapata + solo sobre a sapata", unidade: "adimensional", valor: null}
+      P_adm: {descricao: "tensao admissivel do solo", unidade: "kPa", valor: null}
+    valores_declarados_na_fonte:
+      K_maj_sapata_flexivel: 1.05
+      K_maj_sapata_rigida_min: 1.05
+      K_maj_sapata_rigida_max: 1.10
+      fator_sobre_carga_total_quando_parcelas_desconhecidas: 1.05
+      piso_normativo_NBR6122_5_6: "5 % da carga vertical permanente (citado literalmente pela fonte)"
+      atribuicao: "A faixa 1,05-1,10 e atribuida pela fonte a Campos (ref. [15] da apostila), NAO a norma."
+    dominio_validade: >-
+      Estimativa PRELIMINAR das dimensoes em planta de sapata isolada com carga
+      centrada, em valores caracteristicos (nao majorados por gamma_f),
+      comparada a tensao admissivel do solo.
+      NAO_DECLARADO_NA_FONTE: qual parcela de K_maj corresponde ao concreto e
+      qual ao solo; altura de solo; peso especifico do solo; geometria do
+      volume de solo. K_maj e ADIMENSIONAL e GLOBAL.
+      NAO E MODELO DE CUNHA e nao pode ser usado para calibrar ou validar um:
+      uma cunha lateral sobre abas largas em sapata rasa produziria acrescimo
+      muito superior aos 5-10 % desta faixa, o que evidencia que os dois
+      modelos nao sao mutuamente compativeis.
+    leitura_visual:
+      passada_1: "pagina PDF 24 inteira a 170 dpi — Eq. 1.6, lista de variaveis e paragrafo do K_maj"
+      passada_2: "recortes a 420 e 430 dpi das regioes das duas equacoes — conferido S_sap = (K_maj N_gk + N_qk)/P_adm e S_sap = 1,05 N_(g+q,k)/P_adm; conferidos os valores 1,05 e 1,10 e a citacao literal do 5 % da NBR 6122 §5.6"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+    rodada: "2026-09-01 cunha de solo lateral"
