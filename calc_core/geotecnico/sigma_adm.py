@@ -34,6 +34,8 @@ o sigma_adm do projeto é do engenheiro (REQ-SIGMA-05).
 """
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from calc_core.geotecnico.capacidade import capacidade_de_carga
 from calc_core.geotecnico.dominio import ForaDoDominioError
 from calc_core.geotecnico.seguranca import (
@@ -191,7 +193,7 @@ def semiempirico_spt(
     recusas: list[RecusaDeMetodo] = []
     ultima_recusa: ForaDoDominioError | None = None
 
-    tentativas = (
+    tentativas: tuple[tuple[str, str, Callable[[], ResultadoSigmaAdmELU]], ...] = (
         (NOME_REGRA_50, "FB-REGRA-BRASILEIRA-Nspt-50-argila",
          lambda: regra_brasileira_nspt_50_argila(
              N_spt_medio_bulbo=entrada.N_spt,
