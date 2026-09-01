@@ -854,3 +854,221 @@ insegurança alcançável em produção, ou deixa uma afirmação normativa sem
 verificação executável. Detalhe da reprodução numérica completa (scripts,
 valores, comparação com tabelas publicadas) em
 `relatorios/conformidade.md`, mesmo adendo.
+
+---
+
+## Adendo — GATE 3, `ui/completo/dialogo_sigma_adm.py` (UI de σ_adm a
+partir de SPT), commit `e597087`
+
+O adendo acima aprovou o MOTOR (`calc_core/geotecnico/sigma_adm.py` +
+`vento.py`). Este adendo é sobre a TELA que o expõe — um GATE 3 separado,
+por cima de um GATE 2 que teve uma saga fora do padrão e merece registro
+completo antes do veredito.
+
+### A saga, para quem só vai ler este parágrafo
+
+Ciclo antigo (3 rodadas, todas REPROVADAS): o diálogo guardava um estado
+intermediário "selecionado, pronto para usar" (`_valor_final_kPa` e
+companhia) entre o clique que MOSTRAVA um resultado e o clique que o
+USAVA. Cada rodada de correção fechava o gatilho relatado (primeiro só o
+painel de vento, depois só alguns campos) sem eliminar a CLASSE do
+defeito — sempre sobrava um widget novo, ou esquecido, fora da lista de
+invalidação. Decisão humana registrada no pedido de trabalho, e não do
+a6: em vez de uma quarta rodada de patch, REDESENHAR o modelo de estado.
+O redesenho (commit `78dbb31`) eliminou o cache por completo — cada card
+de resultado carrega seu próprio `ResultadoSigmaAdmELU`/
+`ResultadoMajoracaoVento` por FECHAMENTO do botão "Usar...", fisicamente
+destruído junto com o card sempre que a entrada muda. Ciclo novo, 3
+rodadas até fechar: (1) rótulo ELU faltando na tela principal + D-03
+(recusas múltiplas do semiempírico não chegando à tela) — corrigidos;
+(2) card sobrevivendo a mudança de ENTRADA sem recalcular, D-01 (`fb17c55`)
+— corrigido para os cards base; (3) o MESMO problema nos widgets de VENTO,
+D-04 (`e597087`) — corrigido, extensão do mesmo mecanismo. GATE 2 rodada 3
+(final) aprovou com nota 4,7, sem veto, registrando D-05 (cobertura de
+teste, não bloqueante) para eu avaliar aqui.
+
+### O que verifiquei por conta própria, sem me apoiar nos testes existentes
+
+**1. Reprodução end-to-end, script próprio, dois cenários reais**
+(`/tmp/.../scratchpad/repro_e2e.py`, não relido de `tests/
+test_ui_sigma_adm.py`): instanciei `DialogoSigmaAdm` sob Xvfb, preenchi os
+campos como um engenheiro preencheria, e invoquei os `command=` dos
+botões reais da árvore de widgets (não chamei os métodos internos
+diretamente) — a mesma via que um clique do usuário aciona.
+- **(a) Caminho teórico, argila** (c=25 kPa, φ=18°, B=2,5×L=3,0 m,
+  h=1,8 m, γ=17/17 kN/m³, retangular, geral, não-drenado, homogêneo
+  declarado): `resultado_kPa` do diálogo bateu EXATAMENTE (diferença
+  `< 1e-9`) com `teorico_terzaghi_vesic` chamado diretamente com os
+  mesmos parâmetros; `resultado_info["rotulo_ELU"]` bateu com
+  `resultado.rotulo_ELU` do núcleo.
+- **(a2) Mesmo caso, majorado por vento** (ação principal marcada, tipo
+  de obra da lista dos 30 %, k_v=0,20): cliquei "Calcular majoração..."
+  e depois "Usar valor majorado →" nos botões reais do card; o valor
+  bateu exatamente com `majoracao_admissivel` chamada direta, e a regra
+  `NBR6122-6.3.2-majoracao-vento-valores-admissiveis` apareceu em
+  `resultado_info["regras"]`, confirmando a união de regras do D-02 (não
+  só as do método base).
+- **(b) Caminho semiempírico, argila** (N_SPT=10, B=2,0 m, quadrada,
+  h=1,5 m, γ=17 kN/m³, declaração regional marcada): o número de cards
+  desenhados bateu com `len(semiempirico_spt(...).resultados)`; o botão
+  "Usar este valor →" do primeiro card entregou exatamente o
+  `sigma_adm_ELU_kPa` e o `nome_do_metodo` do primeiro resultado do
+  núcleo chamado direto.
+
+Todos os campos foram lidos pela árvore de widgets de verdade (busca
+recursiva por `ttk.Button` com o texto do rótulo, não por atributo
+interno), então esta reprodução também confirma, de passagem, que os
+botões certos existem na tela com o texto certo.
+
+**2. D-05 — investiguei os dois mutantes eu mesmo, independentemente do
+relato do a6.**
+
+*Mutante MP* (`break` logo após invalidar a primeira `saida` viva em
+`_invalidar_todas_saidas_vento`): apliquei a mutação real no arquivo,
+rodei a suíte completa sob Xvfb — **560 passed, mutante sobrevive**,
+confirmando o relato do a6. Fui além do que o a6 relatou: escrevi um
+script (`repro_d05.py`) que desenha DOIS cards majorados simultaneamente
+(argila e areia, `semiempirico_spt`), muda `k_v` uma vez sem recalcular,
+e verifica os DOIS botões "Usar valor majorado →". Com o mutante
+aplicado, o botão do PRIMEIRO card é destruído corretamente mas o do
+SEGUNDO sobrevive — reproduzi o defeito exato que o mutante introduziria
+em produção. Restaurei o arquivo original e rodei o mesmo script: os
+DOIS botões são destruídos, confirmando que o mecanismo real (não
+mutado) está correto — o gap é só de COBERTURA DE TESTE, não de
+comportamento.
+
+*Mutante MJ* (remoção da guarda `if not saida.winfo_exists(): continue`):
+apliquei a mutação real, rodei a suíte completa — **560 passed, mutante
+sobrevive**, confirmando o relato do a6. Fui além do relato outra vez:
+construí um script (`repro_d05_mj2.py`) com DOIS cards em ABAS
+diferentes (teórico e semiempírico) — o card da aba teórica é destruído
+por D-01 (mudei `t_B` sem recalcular), deixando sua `saida` de vento
+MORTA na lista `self._saidas_vento`, na frente da `saida` VIVA do card
+semiempírico. Ao mudar `k_v` de novo, com o mutante aplicado: o Tkinter
+imprime `_tkinter.TclError: bad window path name ...` no
+`Exception in Tkinter callback` (stderr) e **engole a exceção** —
+`v_kv.set(...)` retorna normalmente, sem levantar nada capturável pelo
+chamador — e o `for` de `_invalidar_todas_saidas_vento` para NO MEIO,
+antes de alcançar a `saida` viva do segundo card: o botão "Usar valor
+majorado →" do card semiempírico, que já não corresponde ao `k_v`
+digitado, **continua na tela e continua funcional**. Isto é
+exatamente D-04 reaberto em silêncio, como o a6 alertou — só que
+demonstrei o vetor concreto (duas abas, uma delas invalidada por D-01
+primeiro) que o dispara, não apenas a mecânica genérica. Restaurei o
+arquivo original e rodei o mesmo script: sem exceção alguma, o botão do
+card vivo é corretamente destruído.
+
+**Minha avaliação, independente da do a6**: concordo que D-05 é MÉDIA,
+não bloqueante para este GATE 3. Três razões: (i) o código de PRODUÇÃO
+está correto — verifiquei os dois cenários (dois cards majorados
+simultâneos; card morto por D-01 na frente de um vivo na mesma lista) com
+o arquivo original, sem mutação, e os dois passam; (ii) os únicos vetores
+que reabririam o defeito são regressões FUTURAS de um mecanismo hoje
+correto, não um bug presente hoje na tela que um usuário possa acionar;
+(iii) o cenário MJ, se algum dia reaparecer, é seguro por default no
+sentido de "nunca maior que o real por acaso favorável" tanto quanto
+D-01/D-04 em geral, mas ainda assim reabriria uma ALTA (majoração
+obsoleta com regra normativa citada incorretamente) SEM aviso na tela —
+por isso registro como pendência de PRIORIDADE, não como item cosmético:
+os dois scripts que escrevi (`repro_d05.py`, `repro_d05_mj2.py`) já
+provam a propriedade que falta e podem virar
+`test_invalidar_vento_atinge_todos_os_cards_nao_so_o_primeiro` e
+`test_invalidar_vento_nao_para_num_frame_ja_destruido_por_outro_caminho`
+em `tests/test_ui_sigma_adm.py` com custo baixo — recomendo que a próxima
+rodada de polimento os adicione antes de qualquer refatoração futura de
+`_invalidar_todas_saidas_vento`.
+
+**3. REQ-UI-SIGMA-01 a 06 — releitura própria do texto no `ruleset.yaml`
+cruzada com o código atual, item por item** (não apenas os que motivaram
+correção):
+- **01** (rótulo de ELU, nunca "tensão admissível"): `resultado.rotulo_ELU`
+  é exibido em `_card_resultado` (linha 845) e a majoração inline reusa
+  `majoracao.rotulo_ELU` (linha 1069) — confirmado por leitura, nenhuma
+  ocorrência de "tensão admissível" como rótulo nesta tela.
+- **02** (fonte não normativa + advertência de "formulários de bolso"):
+  `resultado.rotulo_fonte` (= `ROTULO_FONTE_NAO_NORMATIVA` do núcleo) é
+  exibido linha 848; `ADVERTENCIA_FORMULARIOS_DE_BOLSO` vem embutida em
+  `resultado.avisos` desde `calc_core/geotecnico/semiempirico.py` (linha
+  241/395) e é exibida junto dos demais avisos (linha 857-862) — não
+  redigida na UI, só repassada, como o requisito exige.
+- **03** (recusa com parâmetro/valor/intervalo/fonte, distinguindo força
+  DECLARADO_EM_TEXTO de ADOTADO_DA_EXTENSAO_DE_FIGURA; card por recusa
+  quando nenhum método se aplica): `_texto_recusa`/`_texto_recusa_metodo`
+  formatam exatamente esses campos; `_ROTULOS_DE_FORCA` distingue os dois
+  níveis; `_calcular_semiempirico` itera `erro.recusas` (não só os campos
+  degradados da exceção) desenhando um card por item — confirmado por
+  leitura de código, D-03 fechado permanece fechado.
+- **04** (dois campos de gamma, aviso de efetivo-vs-saturado, proibição
+  de classificar solo por N_SPT): `t_gamma_acima`/`t_gamma_abaixo` são
+  campos distintos com `AVISO_GAMMA_EFETIVO` visível entre eles; busquei
+  por qualquer rótulo de classificação de solo ("medianamente compacta"
+  etc.) nesta tela — nenhum.
+- **05** (todas as correlações aplicáveis lado a lado, sem escolha
+  automática; dispersão exibida quando houver mais de um resultado; vento
+  nunca infere a ação principal; FSg efetivo e teto exibidos; lista de
+  sete tipos de obra por Combobox fechado): confirmado por leitura de
+  `_calcular_semiempirico` (um card por resultado E por recusa, dispersão
+  condicional) e `_calcular_vento_no_card` (`teto`/`FSg_efetivo` sempre
+  exibidos juntos, `principal` lido do widget, nunca inferido); a lista de
+  obras vem de `TIPOS_DE_OBRA_DOS_30_POR_CENTO` do núcleo, `Combobox`
+  `state="readonly"`.
+- **06** (declaração regional sem default afirmativo; aviso de escopo):
+  `self.s_regional = tk.BooleanVar(value=False)` (linha 726) — sem
+  default afirmativo, confirmado; e confirmei que a guarda é FUNCIONAL,
+  não só de UX — `calc_core/geotecnico/semiempirico.py` chama
+  `_exigir_declaracao_regional` internamente nos dois caminhos (linhas
+  238/367), então mesmo se a UI algum dia deixasse passar `True` por
+  engano, o núcleo recusaria de qualquer forma; `AVISO_ESCOPO_SIGMA_ADM`
+  é um `ttk.Label` incondicional no topo de `_montar` (`pack(fill="x")`
+  antes do `Notebook`), sempre visível, não dentro de aba alguma que
+  possa ficar escondida.
+
+Os seis estão cumpridos hoje, não só os que motivaram correção nas
+rodadas anteriores.
+
+**4. Contaminação do motor mínimo — confirmação independente.**
+`git log --oneline -- calc_core/geotecnico/geometria.py ui/app_desktop.py`
+ao longo de TODA a saga (do commit anterior a `e4e6bdb` até `e597087`,
+cobrindo as 12 commits desta feature, motor + UI) mostra um único commit
+para cada arquivo: o commit original (`07bb880`), anterior a esta
+feature inteira — nenhum commit da saga tocou nenhum dos dois.
+`git diff` de `calc_core/modelos.py` no mesmo intervalo não tem uma única
+linha removida (`grep "^-"` vazio) — é estritamente aditivo, 9 dataclasses
+novas, `EntradaSapataCentrada`/`ResultadoGeometria`/`Verificacao`
+byte-idênticas. `dialogo_sigma_adm.py` importa só de
+`calc_core.geotecnico.{dominio,seguranca,semiempirico,sigma_adm,vento}` e
+`calc_core.modelos` — nenhum import de `geometria.py`, e `geometria.py`
+não importa nada da árvore nova (só `restricoes` e `modelos`). Suíte
+completa: `CI=true xvfb-run -a pytest tests/ -q` → **560 passed**,
+confirmando o número citado no pedido de trabalho — rodei eu mesmo, não
+reli o resultado de ninguém.
+
+**5. BAIXA reincidentes — confirmação independente, não bloqueantes.**
+Confirmei os quatro por grep direto: dois `messagebox.showerror(...)`
+sem `parent=self` (linhas 672 e 790 de `dialogo_sigma_adm.py`); `self.v_kv
+= tk.StringVar(value=f"{K_V_DEFAULT:g}")` usa formatação `:g` (linha
+958); `tools/checar_rastreabilidade.py` ausente de `tools/` (só existem
+`checar_dimensoes.py` e `decodificar_nbr.py`); F541 (`f"\n  Referências
+cruzadas:"`, f-string sem placeholder) em
+`calc_core/sapata_isolada/relatorio.py:257` — arquivo do motor AMPLO não
+tocado por esta feature, pré-existente. Nenhum dos quatro altera um
+número, um rótulo normativo ou uma guarda de domínio — concordo que são
+não bloqueantes, pendência de uma rodada de polimento futura junto com o
+D-05.
+
+### Veredito — GATE 3 (UI)
+
+**APROVADO.** Os dois cenários end-to-end (teórico com e sem vento,
+semiempírico) reproduzidos por script próprio, clicando nos botões reais
+da árvore de widgets, batem exatamente com o núcleo chamado direto. Os
+seis REQ-UI-SIGMA foram relidos e cruzados com o código linha a linha,
+não só os que motivaram correção. D-05 foi investigado além do relato do
+a6 (dois cenários adicionais próprios, incluindo o vetor concreto de
+duas abas que reabre a D-04 em silêncio) e confirmado como MÉDIA não
+bloqueante — o mecanismo de produção está correto, o gap é só de
+regressão futura sem teste que a pegue; registrado com recomendação
+específica de dois testes para a próxima rodada. Nenhuma contaminação do
+motor mínimo (`geometria.py`/`app_desktop.py` intocados, import
+unidirecional, `modelos.py` estritamente aditivo). Suíte completa
+verde (560 passed) sob as mesmas condições do CI (Xvfb, `CI=true`). Os
+quatro reincidentes BAIXA são pendência de polimento, não bloqueio.
