@@ -163,15 +163,15 @@ padrão que o núcleo pede de "parâmetro novo aparece na UI sozinho").
 Isto cobre exatamente os 13 campos do teórico (c, phi, B, L, h,
 gamma_acima, gamma_abaixo, forma, modo, natureza, homogêneo, n_provas,
 provas_projeto) e os 9 do semiempírico (N_SPT, B, forma, solo, h,
-gamma, considerar_q, q, regional) sem listar nenhum deles aqui — e
-DELIBERADAMENTE não inclui os controles de vento (`v_vento_principal`,
-`v_tipo_obra`, `v_kv`), que são montados por `_montar_vento` DEPOIS
-desta varredura: a mini-seção de vento de cada card já resolve sua
-própria invalidação por closure/releitura no clique (ver REDESENHO
-acima) — não há cache algum ali para "esquecer de invalidar" por
-mudança de k_v/tipo de obra fora de um recálculo explícito daquela
-seção, que é o cenário coberto por
-`test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card`.
+gamma, considerar_q, q, regional) sem listar nenhum deles aqui. Os
+controles de vento (`v_vento_principal`, `v_tipo_obra`, `v_kv`) NÃO
+entram nesta vigilância — eles são montados por `_montar_vento` DEPOIS
+desta varredura e não pertencem a `frame_resultado_teorico`/
+`frame_resultado_semi` — mas ganham a SUA PRÓPRIA vigilância separada
+na rodada seguinte (ver D-04 abaixo). Não confundir as duas: esta
+(`_vigiar_entradas`) reage a mudança nos parâmetros de ENTRADA do
+cálculo base (N_SPT, B, L, h, γ, ...); D-04 reage a mudança na
+DECLARAÇÃO de vento (k_v, tipo de obra, vento principal).
 
 `_invalidar_resultado` (o callback do trace) não apaga a tela em
 silêncio: troca o conteúdo de `frame_resultado_teorico`/
@@ -189,6 +189,55 @@ comportamento de HOJE, antes desta correção — nunca a entrega de um
 valor errado, porque o valor entregue continua vindo sempre do
 `ResultadoSigmaAdmELU` fechado por closure no botão do card que
 efetivamente está na tela.
+
+D-04 DO GATE 2 (rodada 2 pós-redesenho — ÚLTIMA lacuna da MESMA classe
+de defeito do D-01, desta vez nos controles de vento). O parágrafo
+"não há cache algum ali para esquecer de invalidar", que existia aqui
+antes desta rodada, estava ERRADO na prática: embora
+`_calcular_vento_no_card` de fato releia `v_kv`/`v_tipo_obra`/
+`v_vento_principal` do zero A CADA CLIQUE em "Calcular majoração..."
+(isso continua verdadeiro e não muda), o CARD que aquele clique desenha
+— com o botão "Usar valor majorado →" fechado por closure sobre o
+`ResultadoMajoracaoVento` daquele clique — sobrevive INTACTO a uma
+mudança posterior em qualquer um dos três widgets, exatamente como um
+card do caminho base sobrevivia a uma mudança de N_SPT/B/... antes do
+D-01. Três cenários reproduzidos e confirmados: (1) recalcular com
+k_v=0,15 (345 kPa), mudar k_v para 0,02 sem recalcular → botão ainda
+entrega 345 kPa; (2) calcular com "vento é ação principal" marcado
+(345 kPa, regra `NBR6122-6.3.2-majoracao-vento-valores-admissiveis` no
+resultado), DESMARCAR sem recalcular → botão ainda entrega 345 kPa COM
+aquela regra citada, mesmo a condição que a autoriza tendo acabado de
+ser negada na tela; (3) trocar o tipo de obra (muda o teto de 30% para
+15%) sem recalcular → botão entrega o valor calculado sob o teto
+antigo.
+
+A correção reusa a MESMA estratégia do D-01 — vigiar por `trace_add` e
+destruir o widget que carrega o botão "Usar..." obsoleto —, mas
+aplicada a uma unidade diferente: não há um `frame_resultado_*` único
+para o vento (cada card tem o seu próprio `saida`, criado por
+`_secao_vento_no_card`), então `self._saidas_vento` é uma LISTA de
+todo `saida` atualmente desenhado (populada por `_secao_vento_no_card`
+a cada card novo). `_vigiar_vento` registra um único `trace_add` em
+cada um dos três `tk.Variable` de vento; o callback,
+`_invalidar_todas_saidas_vento`, percorre a lista inteira, descarta as
+`saida`s cujo widget já não existe (cards destruídos por um recálculo
+do caminho base, D-01) e, em cada `saida` viva com conteúdo, troca o
+conteúdo (incluindo o botão "Usar valor majorado →", que morre junto)
+por `_AVISO_VENTO_ALTERADO` — um aviso deliberadamente DIFERENTE de
+`_AVISO_ENTRADAS_ALTERADAS`, para o engenheiro não confundir qual das
+duas coisas precisa refazer (a entrada do cálculo base ou a declaração
+de vento). `_alternar_vento` (que só habilita/desabilita o combobox de
+tipo de obra) não foi tocado — a invalidação é um `trace_add` KV/tipo
+de obra/vento_principal independente, registrado à parte, por isso o
+comentário antigo sobre "não há trace_add algum aqui" em
+`_montar_vento` deixou de ser verdadeiro e foi corrigido.
+
+`test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card`
+(citado acima, na versão anterior desta docstring, como prova de que o
+botão "Usar valor majorado →" sobrevivia de propósito) foi reescrito —
+o comportamento que ele afirmava era exatamente o D-04: ver
+`test_editar_kv_sem_recalcular_invalida_o_botao_majorado_do_card` em
+`tests/test_ui_sigma_adm.py`.
 """
 from __future__ import annotations
 
@@ -252,6 +301,16 @@ _AVISO_ENTRADAS_ALTERADAS = (
     "ENTRADAS ALTERADAS DESDE ESTE CÁLCULO — recalcule antes de usar. "
     "Nenhum botão \"Usar\" desta aba corresponde mais aos valores "
     "digitados agora (D-01, GATE 2)."
+)
+
+_AVISO_VENTO_ALTERADO = (
+    "DECLARAÇÃO DE VENTO ALTERADA DESDE ESTA MAJORAÇÃO — recalcule a "
+    "majoração por vento antes de usar (botão \"Calcular majoração por "
+    "vento...\" acima). Nenhum botão \"Usar valor majorado →\" corresponde "
+    "mais a k_v/tipo de obra/vento-é-ação-principal como estão marcados "
+    "agora (D-04, GATE 2) — isto é diferente de mudar B/N_SPT/h/...: o "
+    "valor BASE deste card continua válido, só a majoração precisa ser "
+    "refeita."
 )
 
 _ROTULOS_DE_FORCA = {
@@ -388,6 +447,16 @@ class DialogoSigmaAdm(tk.Toplevel):
         `ROTULO_FONTE_NAO_NORMATIVA` sempre que ele ainda for válido (ver
         `formulario.py::_abrir_calculadora_sigma_adm` e
         `_ao_editar_sigma_adm`)."""
+
+        self._saidas_vento: list[ttk.Frame] = []
+        """Todo `saida` (o `ttk.Frame` de `_secao_vento_no_card`) que
+        atualmente carrega — ou pode vir a carregar — uma majoração por
+        vento desenhada, de QUALQUER card, QUALQUER aba. Populada por
+        `_secao_vento_no_card` a cada card novo; podada (nunca precisa
+        ser limpa manualmente) por `_invalidar_todas_saidas_vento`, que
+        descarta as entradas cujo widget já não existe — o caso normal
+        quando um recálculo do caminho base (D-01) destrói o card, e a
+        `saida` de vento junto com ele (D-04)."""
 
         self._montar()
 
@@ -807,7 +876,13 @@ class DialogoSigmaAdm(tk.Toplevel):
         objeto exato do card — no instante do clique; o botão "Usar valor
         majorado →" que aparece depois fecha por closure sobre o
         `ResultadoMajoracaoVento` que aquela MESMA chamada acabou de
-        calcular, nunca sobre um valor de um clique anterior."""
+        calcular, nunca sobre um valor de um clique anterior.
+
+        `saida` é registrada em `self._saidas_vento` (D-04, GATE 2 rodada
+        2 pós-redesenho): é essa lista que `_invalidar_todas_saidas_vento`
+        percorre quando `v_kv`/`v_tipo_obra`/`v_vento_principal` mudam —
+        sem este registro, um card já desenhado ficaria fora da
+        vigilância, exatamente o defeito que esta rodada fecha."""
         vento = ttk.LabelFrame(
             pai_card, text="Majoração por vento sobre este valor "
                            "(opcional) — NBR 6122:2022 §6.3.2")
@@ -818,6 +893,7 @@ class DialogoSigmaAdm(tk.Toplevel):
             command=lambda r=resultado, s=saida: self._calcular_vento_no_card(r, s)
         ).pack(anchor="w", padx=6, pady=(6, 2))
         saida.pack(fill="x", padx=6, pady=(0, 6))
+        self._saidas_vento.append(saida)
 
     def _card_recusa(self, pai: tk.Misc, texto: str) -> None:
         f = ttk.LabelFrame(pai, text="Recusado — fora do domínio")
@@ -833,10 +909,17 @@ class DialogoSigmaAdm(tk.Toplevel):
         Não há botão "Calcular"/"Selecionar" neste painel: o cálculo em
         si acontece dentro de cada card (`_secao_vento_no_card` /
         `_calcular_vento_no_card`), que lê estes widgets no instante do
-        clique. Por isso não existe `_invalidar_vento` nem `trace_add`/
-        `bind` algum aqui: não há valor de majoração cacheado neste
-        painel para ficar obsoleto — ver REDESENHO na docstring do
-        módulo."""
+        clique — isso não mudou.
+
+        O que MUDOU (D-04, GATE 2 rodada 2 pós-redesenho): embora não
+        haja cache algum PARA O CÁLCULO em si (cada clique em "Calcular
+        majoração..." relê tudo do zero, como sempre), o CARD que aquele
+        clique desenha sobrevive a uma mudança posterior destes widgets
+        — e esse card carrega um botão "Usar valor majorado →" fechado
+        sobre um resultado que já não corresponde ao que está marcado
+        aqui. `_vigiar_vento`, chamado no fim deste método, registra o
+        `trace_add` que fecha essa lacuna — ver `_invalidar_todas_
+        saidas_vento` e `self._saidas_vento`."""
         f = ttk.LabelFrame(pai, text="Declaração para majoração por vento "
                                       "(opcional) — NBR 6122:2022 §6.3.2")
         f.pack(fill="x", padx=10, pady=(4, 4))
@@ -875,6 +958,57 @@ class DialogoSigmaAdm(tk.Toplevel):
         self.v_kv = tk.StringVar(value=f"{K_V_DEFAULT:g}")
         ttk.Entry(f, textvariable=self.v_kv, width=10).grid(
             row=5, column=0, sticky="w", padx=8, pady=(0, 8))
+
+        self._vigiar_vento()
+
+    def _vigiar_vento(self) -> None:
+        """D-04 (GATE 2, rodada 2 pós-redesenho): registra, em cada um dos
+        três `tk.Variable` compartilhados de vento (`v_vento_principal`,
+        `v_tipo_obra`, `v_kv`), um `trace_add` que invalida TODAS as
+        `saida` de vento atualmente na tela (`self._saidas_vento`) — mesmo
+        padrão de `_vigiar_entradas`/D-01, aplicado a uma unidade
+        diferente (uma LISTA de frames espalhados entre cards, em vez de
+        um `frame_resultado_*` único por aba). Chamado uma única vez, no
+        fim de `_montar_vento` — os três `tk.Variable` já existem nesse
+        ponto."""
+        for variavel in (self.v_vento_principal, self.v_tipo_obra, self.v_kv):
+            variavel.trace_add(
+                "write",
+                lambda *_ignorado: self._invalidar_todas_saidas_vento())
+
+    def _invalidar_todas_saidas_vento(self, *_ignorado: object) -> None:
+        """Callback de `_vigiar_vento` (D-04): percorre `self._saidas_vento`
+        — todo `saida` que algum card já desenhou, de qualquer aba — e,
+        para cada uma que ainda existir (um card pode ter sido destruído
+        por um recálculo do caminho base, D-01; essas são descartadas da
+        lista aqui, não tratadas como erro) e tiver algo desenhado
+        (majoração ou recusa de um clique anterior em "Calcular
+        majoração..."), destrói o conteúdo — o botão "Usar valor
+        majorado →", se houver, morre junto, mesma garantia estrutural do
+        REDESENHO — e desenha `_AVISO_VENTO_ALTERADO` no lugar. Não faz
+        nada com uma `saida` vazia (nunca calculada) nem repete o aviso se
+        ele já for o único conteúdo (evita destruir/recriar a cada tecla
+        digitada em k_v, mesmo padrão de `_invalidar_resultado`)."""
+        vivas: list[ttk.Frame] = []
+        for saida in self._saidas_vento:
+            if not saida.winfo_exists():
+                continue
+            vivas.append(saida)
+            filhos = saida.winfo_children()
+            if not filhos:
+                continue
+            if len(filhos) == 1 and getattr(
+                    filhos[0], "_aviso_vento_alterado", False):
+                continue
+            for filho in filhos:
+                filho.destroy()
+            aviso = ttk.Label(
+                saida, text=_AVISO_VENTO_ALTERADO, style="PainelFraco.TLabel",
+                wraplength=680, justify="left", foreground=tema.VERMELHO,
+                font=("Segoe UI", 9, "bold"), padding=(6, 6))
+            aviso._aviso_vento_alterado = True
+            aviso.pack(anchor="w", fill="x", padx=2, pady=2)
+        self._saidas_vento = vivas
 
     def _alternar_vento(self) -> None:
         self.combo_tipo_obra.configure(

@@ -84,6 +84,34 @@ def _botao(pai, texto: str):
     raise AssertionError(f"botão {texto!r} não encontrado em {pai!r}")
 
 
+def _frame_vento(card):
+    """Acha a mini-seção de vento (`ttk.LabelFrame`, texto começando com
+    "Majoração por vento") dentro de um card de resultado — a que
+    `_secao_vento_no_card` desenha junto de todo `_card_resultado`. Usada
+    pelos testes de D-04 (GATE 2, rodada 2 pós-redesenho) que precisam
+    passar pelo card DE VERDADE, em vez de um `ttk.Frame` avulso, para que
+    a `saida` fique registrada em `self._saidas_vento` e a vigilância de
+    `_vigiar_vento` se aplique a ela."""
+    from tkinter import ttk
+    for filho in card.winfo_children():
+        if isinstance(filho, ttk.LabelFrame) and str(
+                filho.cget("text")).startswith("Majoração por vento"):
+            return filho
+    raise AssertionError(f"seção de vento não encontrada em {card!r}")
+
+
+def _frame_saida_vento(vento):
+    """Acha o `ttk.Frame` `saida` (o filho que NÃO é `ttk.LabelFrame`)
+    dentro da mini-seção de vento de um card — onde `_calcular_vento_
+    no_card` desenha o resultado/recusa e onde `_invalidar_todas_saidas_
+    vento` (D-04) desenha `_AVISO_VENTO_ALTERADO`."""
+    from tkinter import ttk
+    for filho in vento.winfo_children():
+        if isinstance(filho, ttk.Frame) and not isinstance(filho, ttk.LabelFrame):
+            return filho
+    raise AssertionError(f"saída de vento não encontrada em {vento!r}")
+
+
 # --------------------------------------------------------------------------- #
 #  Testes puros — formatação de recusa (REQ-UI-SIGMA-03), sem Tk nenhum.
 # --------------------------------------------------------------------------- #
@@ -737,22 +765,22 @@ def test_recalcular_majoracao_apos_trocar_tipo_de_obra_atualiza_teto():
         root.destroy()
 
 
-def test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card():
-    """A propriedade central do REDESENHO, em uma frase: o que o botão
-    "Usar valor majorado →" entrega é SEMPRE o que está escrito no card
-    NO MOMENTO do clique — nunca recalculado às escondidas contra um
-    widget que mudou depois. Aqui, calcula-se a majoração com k_v = 0,15
-    (345 kPa), edita-se k_v para 0,05 SEM clicar em "Calcular" de novo, e
-    o botão "Usar valor majorado →" que já estava na tela — sem ser
-    recriado — continua entregando 345 kPa, exatamente o que o texto do
-    card ainda mostra (o card não foi recalculado, então "o que está na
-    tela" continua sendo 345 kPa; não há mentira entre tela e entrega).
-    Invocar o botão fecha o diálogo (mesmo padrão de qualquer botão
-    "Usar..." desta tela) — por isso este teste termina aqui, e o cenário
-    "recalcular troca o card" vive em outro teste, com outro diálogo."""
-    from tkinter import ttk
+def test_editar_kv_sem_recalcular_invalida_o_botao_majorado_do_card():
+    """D-04 (GATE 2, rodada 2 pós-redesenho) — MESMA classe de defeito do
+    D-01 (`test_mudar_campo_teorico_sem_recalcular_invalida_o_card` e
+    companhia), desta vez nos controles de vento: um card de majoração
+    sobrevivia intacto — botão "Usar valor majorado →" incluído — a uma
+    mudança em k_v que nunca chegou a disparar um novo clique em
+    "Calcular majoração...". Reproduz o cenário 1 relatado (k_v = 0,15 →
+    345 kPa, depois editado para 0,05 sem recalcular).
 
-    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+    Passa pelo card DE VERDADE (`_card_resultado`, não um `ttk.Frame`
+    avulso criado à parte pelo teste): é a `saida` que
+    `_secao_vento_no_card` cria e registra em `self._saidas_vento` que
+    precisa estar sob vigilância — um `ttk.Frame` solto, como o padrão
+    antigo desta suíte usava, nunca entraria em `_saidas_vento` e não
+    provaria nada sobre a correção."""
+    from ui.completo.dialogo_sigma_adm import _AVISO_VENTO_ALTERADO, DialogoSigmaAdm
 
     root = _tk_root()
     try:
@@ -763,19 +791,134 @@ def test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card():
             aplicabilidade_regional_declarada=True))
         resultado_300 = dispersao.resultados[0]
 
+        dialogo._card_resultado(dialogo.frame_resultado_semi, resultado_300)
+        card = dialogo.frame_resultado_semi.winfo_children()[0]
+        vento = _frame_vento(card)
+        saida = _frame_saida_vento(vento)
+
         dialogo.v_vento_principal.set(True)
         dialogo._alternar_vento()
         dialogo.v_kv.set("0.15")
+        _botao(vento, "Calcular majoração por vento...").invoke()
 
-        saida = ttk.Frame(dialogo)
-        dialogo._calcular_vento_no_card(resultado_300, saida)
+        botao_345 = _botao(saida, "Usar valor majorado →")
+        texto_345 = " ".join(
+            w.cget("text") for w in saida.winfo_children()
+            if "text" in w.keys())   # noqa: SIM118 — widget Tk, não dict
+        assert "345.0 kPa" in texto_345
+
+        # edita k_v SEM recalcular — o botão de 345 kPa não pode sobrar.
+        dialogo.v_kv.set("0.05")
+
+        assert botao_345.winfo_exists() == 0
+        filhos = saida.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_VENTO_ALTERADO
+        with pytest.raises(AssertionError):
+            _botao(saida, "Usar valor majorado →")
+        # nada foi "usado" a partir do card obsoleto.
+        assert dialogo.resultado_kPa is None
+
+        # o card BASE (valor sem vento) continua intacto — D-04 invalida só
+        # a majoração, não o card inteiro (D-01 continua um mecanismo à
+        # parte, sobre `frame_resultado_semi`, não tocado aqui).
+        _botao(card, "Usar este valor →")
+
+        # recalcular de novo, agora com k_v = 0,05, entrega o valor
+        # CORRETO (300 * 1,05 = 315) e o aviso desaparece.
+        _botao(vento, "Calcular majoração por vento...").invoke()
+        botao_315 = _botao(saida, "Usar valor majorado →")
+        botao_315.invoke()
+        assert dialogo.resultado_kPa == pytest.approx(300.0 * 1.05)
+    finally:
+        root.destroy()
+
+
+def test_desmarcar_vento_principal_sem_recalcular_invalida_o_botao_majorado():
+    """Cenário 2 relatado — o mais grave: calcular a majoração com "vento é
+    ação principal" MARCADO (345 kPa, regra
+    `NBR6122-6.3.2-majoracao-vento-valores-admissiveis` no resultado) e
+    depois DESMARCAR sem recalcular não pode deixar o botão "Usar valor
+    majorado →" entregando 345 kPa com aquela regra citada — a condição
+    que autoriza a majoração acabou de ser negada na tela."""
+    from ui.completo.dialogo_sigma_adm import _AVISO_VENTO_ALTERADO, DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True))
+        resultado_300 = dispersao.resultados[0]
+
+        dialogo._card_resultado(dialogo.frame_resultado_semi, resultado_300)
+        card = dialogo.frame_resultado_semi.winfo_children()[0]
+        vento = _frame_vento(card)
+        saida = _frame_saida_vento(vento)
+
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_kv.set("0.15")
+        _botao(vento, "Calcular majoração por vento...").invoke()
         botao_345 = _botao(saida, "Usar valor majorado →")
 
-        # edita k_v SEM recalcular — o widget na tela ainda mostra 345 kPa
-        dialogo.v_kv.set("0.05")
-        assert botao_345.winfo_exists() == 1   # ninguém destruiu o card
-        botao_345.invoke()
-        assert dialogo.resultado_kPa == pytest.approx(345.0)
+        # desmarca "vento é ação principal" SEM recalcular.
+        dialogo.v_vento_principal.set(False)
+        dialogo._alternar_vento()
+
+        assert botao_345.winfo_exists() == 0
+        filhos = saida.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_VENTO_ALTERADO
+        assert dialogo.resultado_kPa is None
+    finally:
+        root.destroy()
+
+
+def test_trocar_tipo_de_obra_sem_recalcular_invalida_o_botao_majorado():
+    """Cenário 3 relatado: trocar o tipo de obra (muda o teto de 30% para
+    15%) sem recalcular não pode deixar o botão "Usar valor majorado →"
+    entregando um valor calculado sob o teto antigo."""
+    from ui.completo.dialogo_sigma_adm import (
+        _AVISO_VENTO_ALTERADO,
+        _SEM_LISTA_FECHADA,
+        DialogoSigmaAdm,
+    )
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True))
+        resultado_300 = dispersao.resultados[0]
+
+        dialogo._card_resultado(dialogo.frame_resultado_semi, resultado_300)
+        card = dialogo.frame_resultado_semi.winfo_children()[0]
+        vento = _frame_vento(card)
+        saida = _frame_saida_vento(vento)
+
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_tipo_obra.set(TIPOS_DE_OBRA_DOS_30_POR_CENTO[0])
+        dialogo.v_kv.set("0.30")
+        _botao(vento, "Calcular majoração por vento...").invoke()
+        botao_390 = _botao(saida, "Usar valor majorado →")
+        texto_390 = " ".join(
+            w.cget("text") for w in saida.winfo_children()
+            if "text" in w.keys())   # noqa: SIM118 — widget Tk, não dict
+        assert "390.0 kPa" in texto_390
+
+        # troca o tipo de obra para o caso geral (teto 15%) SEM recalcular.
+        dialogo.v_tipo_obra.set(_SEM_LISTA_FECHADA)
+
+        assert botao_390.winfo_exists() == 0
+        filhos = saida.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_VENTO_ALTERADO
+        assert dialogo.resultado_kPa is None
     finally:
         root.destroy()
 
@@ -1158,8 +1301,19 @@ def test_mudar_vento_sem_recalcular_nao_invalida_o_card_teorico_ou_semi():
 #  majoração e o aviso literal do §6.3.2 sobre a verificação estrutural.
 # --------------------------------------------------------------------------- #
 def test_usar_majorado_inclui_regras_e_avisos_da_majoracao_de_vento():
+    """M11 (a6, GATE 2 rodada anterior) — mutante sobrevivente: a asserção
+    de avisos comparava contra `resultado_300.avisos` (o `ResultadoSigmaAdm
+    ELU` de BASE), que também aparece em `info["avisos"]` pelo caminho de
+    `_usar_base`/união — então a asserção passava mesmo se o laço que copia
+    os avisos da MAJORAÇÃO (`majoracao.avisos`, incluindo
+    `AVISO_VERIFICACAO_ESTRUTURAL`, literal do §6.3.2) fosse removido de
+    `_fechar_com_resultado`. Corrigido: computa o MESMO `ResultadoMajoracao
+    Vento` que `_calcular_vento_no_card` calculou (mesmos parâmetros,
+    função pura do núcleo) e checa `majoracao.avisos` — não
+    `resultado_300.avisos` — contra `info["avisos"]`."""
     from tkinter import ttk
 
+    from calc_core.geotecnico.vento import majoracao_admissivel
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -1180,6 +1334,18 @@ def test_usar_majorado_inclui_regras_e_avisos_da_majoracao_de_vento():
         botao_majorado = _botao(saida, "Usar valor majorado →")
         botao_majorado.invoke()
 
+        # o MESMO `ResultadoMajoracaoVento` que `_calcular_vento_no_card`
+        # calculou por trás do botão — recomputado aqui, de forma
+        # independente, só para servir de referência à asserção abaixo (a
+        # UI não recalcula nada; é o TESTE que reusa a função pura do
+        # núcleo para conferir o que a tela devolveu).
+        majoracao = majoracao_admissivel(
+            resultado_300.sigma_adm_ELU_kPa, FSg=resultado_300.FSg_efetivo,
+            vento_e_acao_variavel_principal=True,
+            tipo_de_obra_da_lista_dos_30_por_cento=False, k_v=0.15)
+        assert majoracao.avisos   # a fonte tem de ter ao menos um aviso
+        # próprio — senão a asserção abaixo não distingue nada.
+
         info = dialogo.resultado_info
         assert info["majorado_por_vento"] is True
         # a regra que AUTORIZA a majoração precisa estar presente — sem
@@ -1191,10 +1357,11 @@ def test_usar_majorado_inclui_regras_e_avisos_da_majoracao_de_vento():
         # não substituição).
         assert set(resultado_300.regras) <= set(info["regras"])
         # o aviso literal do §6.3.2 (verificação estrutural obrigatória)
-        # precisa ter chegado — é o mesmo texto que
-        # `ResultadoMajoracaoVento.avisos` carrega.
-        assert set(resultado_300.avisos) <= set(info["avisos"])
-        assert len(info["avisos"]) >= len(resultado_300.avisos)
+        # precisa ter chegado — é o do PRÓPRIO `ResultadoMajoracaoVento`
+        # (M11): checar só contra `resultado_300.avisos` (o de BASE) não
+        # provava que o laço de `majoracao.avisos` existe.
+        assert set(majoracao.avisos) <= set(info["avisos"])
+        assert len(info["avisos"]) >= len(majoracao.avisos)
         # sem duplicação: nenhum aviso repetido na lista final.
         assert len(info["avisos"]) == len(set(info["avisos"]))
         assert len(info["regras"]) == len(set(info["regras"]))
