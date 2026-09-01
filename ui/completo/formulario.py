@@ -16,6 +16,7 @@ from collections import Counter
 from dataclasses import replace
 from tkinter import messagebox, ttk
 
+from calc_core.modelos import ROTULO_ELU
 from calc_core.sapata_isolada.acoes import CasoCarga, Esforcos, Pilar
 from calc_core.sapata_isolada.geotecnia import (
     Camada,
@@ -291,6 +292,17 @@ class PainelEntrada(ttk.Frame):
         f = ttk.LabelFrame(pai, text="Solo de apoio")
         f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
         self.v_sigma_adm = self._campo(f, 0, "σ_adm [kPa]", "250")
+        # REQ-UI-SIGMA-01, metade "na tela principal" (a outra metade, no
+        # memorial exportado, já existia — ver `_atualizar_rotulo_sigma_
+        # adm_elu`): rótulo visível colado ao campo sempre que o valor ali
+        # ainda vier de um cálculo desta calculadora, na condição EXATA
+        # que já existe para `ultimo_sigma_adm_calculado` (D-02/MÉDIA #4
+        # do GATE 2, rodada 3).
+        self.lbl_sigma_adm_elu = ttk.Label(
+            f, text="", style="PainelFraco.TLabel", foreground=tema.AMARELO,
+            wraplength=250, justify="left")
+        self.lbl_sigma_adm_elu.grid(row=0, column=3, sticky="w", padx=(4, 8),
+                                     pady=2)
         # D-02 do GATE 2, rodada 3: `ultimo_sigma_adm_calculado` só pode
         # rotular o memorial (ROTULO_ELU/ROTULO_FONTE_NAO_NORMATIVA) se
         # `v_sigma_adm` ainda for EXATAMENTE o que o diálogo calculou — o
@@ -302,7 +314,9 @@ class PainelEntrada(ttk.Frame):
         # é a ÚNICA chamada que deve sobreviver — ela liga
         # `_preenchendo_sigma_adm_calculado` antes do `.set()` e desliga
         # depois, e o próprio callback pula a invalidação enquanto essa
-        # flag está ligada.
+        # flag está ligada. O mesmo callback também atualiza
+        # `lbl_sigma_adm_elu` — um único ponto para as duas metades do
+        # requisito.
         self.v_sigma_adm.trace_add("write", self._ao_editar_sigma_adm)
         ttk.Button(f, text="Calcular σ_adm a partir de SPT...",
                    command=self._abrir_calculadora_sigma_adm).grid(
@@ -401,6 +415,19 @@ class PainelEntrada(ttk.Frame):
             finally:
                 self._preenchendo_sigma_adm_calculado = False
             self.ultimo_sigma_adm_calculado = dialogo.resultado_info
+            self._atualizar_rotulo_sigma_adm_elu()
+
+    def _atualizar_rotulo_sigma_adm_elu(self) -> None:
+        """Metade "na tela principal" de REQ-UI-SIGMA-01 — a outra metade
+        (memorial exportado) já usava `ultimo_sigma_adm_calculado` desde
+        D-02. Chamada pelos dois pontos que mudam esse atributo
+        (`_abrir_calculadora_sigma_adm` quando preenche, `_ao_editar_
+        sigma_adm` quando invalida) para que o rótulo `ROTULO_ELU` ao
+        lado do campo `v_sigma_adm` nunca fique fora de sincronia com a
+        proveniência que o memorial vai usar."""
+        self.lbl_sigma_adm_elu.configure(
+            text=ROTULO_ELU if self.ultimo_sigma_adm_calculado is not None
+            else "")
 
     def _ao_editar_sigma_adm(self, *_args) -> None:
         """MÉDIA #4 do GATE 2, rodada 3: invalida a proveniência calculada
@@ -417,6 +444,7 @@ class PainelEntrada(ttk.Frame):
         if getattr(self, "_preenchendo_sigma_adm_calculado", False):
             return
         self.ultimo_sigma_adm_calculado = None
+        self._atualizar_rotulo_sigma_adm_elu()
 
     def _adicionar_camada(self) -> None:
         dialogo = DialogoCamada(self)

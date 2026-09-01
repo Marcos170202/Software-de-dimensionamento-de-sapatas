@@ -17,6 +17,22 @@ um `try/except TclError` (skip sem display), `root.withdraw()`, e
 `mock.patch("ui.completo.formulario.DialogoSigmaAdm", ...)` +
 `painel.wait_window = lambda w: None` para testar o formulário sem um
 loop de janela modal real.
+
+REDESENHO (rodada 4 do GATE 2 — ver a docstring de
+`ui/completo/dialogo_sigma_adm.py`). O diálogo não guarda mais um
+"resultado ativo"/"valor final selecionado" em atributos de instância:
+cada card tem seu próprio botão "Usar este valor →" (`_usar_base`), e a
+majoração por vento é calculada e usada dentro do mesmo card
+(`_calcular_vento_no_card` + `_usar_majorado`). Os testes que antes
+chamavam `_selecionar`/`_selecionar_majorado`/`_usar` agora chamam
+`_usar_base`/`_usar_majorado` diretamente (equivalente a clicar no botão
+do card — o comando do botão É essa chamada, por `lambda r=resultado:
+self._usar_base(r)`), e os testes de invalidação de cache (D-01, MÉDIA
+#1/#2) foram reescritos para provar a propriedade estrutural nova: um
+card (e o botão que ele carrega) só existe na tela enquanto representar
+fielmente o último cálculo — recalcular DESTRÓI o card antigo
+(`winfo_exists()` vira falso), então não há como o botão de um resultado
+obsoleto ser clicado.
 """
 from __future__ import annotations
 
@@ -47,6 +63,26 @@ from calc_core.modelos import (
 # `test_projeto_e_excel.py` (seção "PainelEntrada é ttk.Frame..."): um
 # ambiente Python sem `tkinter` instalado não pode ter a coleta da suíte
 # INTEIRA abortada só porque este arquivo, em particular, testa telas.
+
+
+def _botao(pai, texto: str):
+    """Acha, entre os filhos DIRETOS de `pai`, o `ttk.Button` cujo texto é
+    EXATAMENTE `texto` — usado para localizar "Usar este valor →"/"Usar
+    valor majorado →"/"Calcular majoração por vento..." dentro de um card,
+    em vez de chamar o método que o botão dispara por baixo dos panos.
+    Levanta se não achar: um card sem o botão esperado é, em si, uma
+    regressão do redesenho (cada card É dono do seu botão).
+
+    Import de `tkinter` LOCAL (não no topo do arquivo): mesmo motivo já
+    documentado para os imports de `ui.completo` — um ambiente sem
+    `tkinter` instalado não pode ter a coleta da suíte inteira abortada só
+    por causa deste arquivo de testes de tela."""
+    from tkinter import ttk
+    for filho in pai.winfo_children():
+        if isinstance(filho, ttk.Button) and filho.cget("text") == texto:
+            return filho
+    raise AssertionError(f"botão {texto!r} não encontrado em {pai!r}")
+
 
 # --------------------------------------------------------------------------- #
 #  Testes puros — formatação de recusa (REQ-UI-SIGMA-03), sem Tk nenhum.
@@ -162,18 +198,16 @@ def test_dialogo_teorico_bate_com_o_nucleo_e_carrega_rotulo_ELU():
             natureza_do_carregamento="drenado",
             solo_homogeneo_no_bulbo_declarado=True))
 
-        assert dialogo._resultado_ativo is None   # nada selecionado ainda
         # um único card de resultado foi desenhado (nenhum de recusa)
         filhos = dialogo.frame_resultado_teorico.winfo_children()
         assert len(filhos) == 1
         card = filhos[0]
         assert card.cget("text") == esperado.nome_do_metodo
 
-        # dispara a mesma ação do botão "Selecionar este valor →" dentro
-        # do card, sem precisar simular clique de mouse.
-        dialogo._selecionar(esperado)
-        assert dialogo._resultado_ativo is esperado
-        dialogo._usar()
+        # o card É dono do botão "Usar este valor →" — nenhum estado
+        # intermediário de "resultado ativo"/"selecionado" (REDESENHO).
+        botao_usar = _botao(card, "Usar este valor →")
+        botao_usar.invoke()
 
         assert dialogo.resultado_kPa == pytest.approx(esperado.sigma_adm_ELU_kPa)
         # REQ-UI-SIGMA-01: rótulo obrigatório colado ao número — nunca
@@ -203,7 +237,6 @@ def test_dialogo_teorico_sem_declaracao_de_homogeneidade_recusa_com_card():
         filhos = dialogo.frame_resultado_teorico.winfo_children()
         assert len(filhos) == 1
         assert filhos[0].cget("text") == "Recusado — fora do domínio"
-        assert dialogo._resultado_ativo is None
         assert dialogo.resultado_kPa is None
     finally:
         root.destroy()
@@ -253,11 +286,19 @@ def test_dialogo_semiempirico_argila_mostra_um_resultado_e_uma_recusa():
         root.destroy()
 
 
-def test_dialogo_semiempirico_sem_declaracao_regional_recusa_tudo():
-    """`aplicabilidade_regional_declarada=False` (default, sem afirmação)
-    é recusa em TODAS as correlações — `semiempirico_spt` levanta em vez
-    de devolver lista vazia (REQ-SIGMA-04), e a tela mostra um único card
-    de recusa em vez de travar silenciosamente."""
+def test_dialogo_semiempirico_sem_declaracao_regional_recusa_cada_metodo_com_seu_card():
+    """D-03 do GATE 2, rodada 3 — corrigido no núcleo desde a rodada 3
+    (`NenhumMetodoAplicavelError.recusas`), mas a TELA continuava
+    desenhando um card genérico com só a PRIMEIRA recusa
+    (`erro.parametro`/`erro.valor`, que a própria docstring do núcleo
+    avisa serem "visão degradada"). Com N_SPT=15/B=2/forma=quadrada/
+    solo='argila' e regional NÃO declarada, NENHUMA correlação se aplica
+    — mas por motivos DIFERENTES: a regra N/50 recusa pela falta da
+    declaração regional (guarda que ela alcança, já que N_SPT/solo/forma
+    passam); Teixeira recusa antes disso, no domínio de solo (exige
+    'areia', e a guarda de solo é anterior à de declaração regional
+    dentro do próprio método). A tela tem de desenhar um card POR
+    correlação candidata, cada um com o motivo que é dele."""
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -271,15 +312,23 @@ def test_dialogo_semiempirico_sem_declaracao_regional_recusa_tudo():
         dialogo._calcular_semiempirico()
 
         filhos = dialogo.frame_resultado_semi.winfo_children()
-        assert len(filhos) == 1
-        assert filhos[0].cget("text") == "Recusado — fora do domínio"
+        assert len(filhos) == 2   # uma correlação candidata, um card cada
+        assert all(f.cget("text") == "Recusado — fora do domínio"
+                   for f in filhos)
+
+        textos = [f.winfo_children()[0].cget("text") for f in filhos]
+        assert any("aplicabilidade_regional_declarada" in t for t in textos)
+        assert any("solo_declarado" in t for t in textos)
+        # os dois métodos aparecem nomeados, não só o parâmetro que falhou
+        assert any("NÃO SE APLICA" in t for t in textos)
+        assert dialogo.resultado_kPa is None
     finally:
         root.destroy()
 
 
 # --------------------------------------------------------------------------- #
 #  Majoração por vento (REQ-UI-SIGMA-05) — lista fechada, default que não
-#  majora, FSg efetivo exibido.
+#  majora, FSg efetivo exibido, calculada DENTRO do card (REDESENHO).
 # --------------------------------------------------------------------------- #
 def test_combobox_tipo_de_obra_e_lista_fechada_e_somente_leitura():
     from ui.completo.dialogo_sigma_adm import _SEM_LISTA_FECHADA, DialogoSigmaAdm
@@ -304,6 +353,8 @@ def test_vento_default_k_v_zero_e_identidade():
     """k_v = 0 (default, NUNCA inferido) tem de devolver o MESMO valor,
     mesmo que o usuário marque vento como ação principal — a Norma dá o
     teto, não o valor (REQ-SIGMA-10 / REQ-UI-SIGMA-05)."""
+    from tkinter import ttk
+
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -315,15 +366,16 @@ def test_vento_default_k_v_zero_e_identidade():
             forma="quadrada", modo_de_ruptura="geral",
             natureza_do_carregamento="drenado",
             solo_homogeneo_no_bulbo_declarado=True))
-        dialogo._selecionar(resultado)
         assert dialogo.v_kv.get() == "0"   # default que não majora
 
-        dialogo._calcular_vento()
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado, saida)
 
-        assert dialogo._resultado_vento is not None
-        assert dialogo._resultado_vento.sigma_adm_ELU_majorado_kPa == pytest.approx(
-            resultado.sigma_adm_ELU_kPa)
-        assert dialogo._resultado_vento.k_v_adotado == 0.0
+        botao_majorado = _botao(saida, "Usar valor majorado →")
+        botao_majorado.invoke()
+
+        assert dialogo.resultado_kPa == pytest.approx(resultado.sigma_adm_ELU_kPa)
+        assert dialogo.resultado_info["majorado_por_vento"] is True
     finally:
         root.destroy()
 
@@ -331,6 +383,8 @@ def test_vento_default_k_v_zero_e_identidade():
 def test_vento_majoracao_bate_com_a_checagem_numerica_do_ruleset():
     """300 kPa -> 345 kPa com k_v = 0,15, caso geral (mesmo número que
     `test_vento_majoracao.py::test_checagem_numerica_do_ruleset`)."""
+    from tkinter import ttk
+
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -348,45 +402,47 @@ def test_vento_majoracao_bate_com_a_checagem_numerica_do_ruleset():
         assert resultado_300.sigma_adm_ELU_kPa == pytest.approx(300.0)
         assert resultado_300.FSg_efetivo == pytest.approx(3.0)
 
-        dialogo._selecionar(resultado_300)
         dialogo.v_vento_principal.set(True)
         dialogo._alternar_vento()
         dialogo.v_tipo_obra.set(dialogo.v_tipo_obra.get())  # "Nenhum destes"
         dialogo.v_kv.set("0.15")
 
-        dialogo._calcular_vento()
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
 
-        assert dialogo._resultado_vento is not None
-        assert dialogo._resultado_vento.sigma_adm_ELU_majorado_kPa == pytest.approx(345.0)
-        assert str(dialogo.btn_selecionar_vento.cget("state")) == "normal"
+        botao_majorado = _botao(saida, "Usar valor majorado →")
+        botao_majorado.invoke()
 
-        dialogo._selecionar_majorado()
-        dialogo._usar()
         assert dialogo.resultado_kPa == pytest.approx(345.0)
         assert dialogo.resultado_info["majorado_por_vento"] is True
     finally:
         root.destroy()
 
 
-def test_vento_sem_resultado_selecionado_nao_calcula_nada():
-    from unittest import mock
+def test_calcular_vento_sem_fsg_mostra_recusa_sem_travar():
+    """Um `ResultadoSigmaAdmELU` sem `FSg_aplicado` nem `FS_embutido`
+    (síntese de teste — não ocorre nos dois caminhos aprovados da v9, mas
+    a tela não pode presumir) mostra a recusa dentro do card, sem botão
+    de uso algum e sem levantar exceção para fora do handler do botão."""
+    from tkinter import ttk
 
+    from calc_core.modelos import ResultadoSigmaAdmELU
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
     try:
         dialogo = DialogoSigmaAdm(root)
-        dialogo.v_kv.set("0.10")
-        dialogo.v_vento_principal.set(True)
-        # `_calcular_vento` chama `messagebox.showinfo` neste ramo — mockado
-        # para não abrir uma caixa de diálogo real esperando clique (mesmo
-        # padrão de `test_projeto_e_excel.py`).
-        with mock.patch("ui.completo.dialogo_sigma_adm.messagebox.showinfo"
-                        ) as mock_info:
-            dialogo._calcular_vento()
-        assert mock_info.called
-        assert dialogo._resultado_vento is None
-        assert str(dialogo.btn_selecionar_vento.cget("state")) == "disabled"
+        resultado_sem_fsg = ResultadoSigmaAdmELU(
+            sigma_adm_ELU_kPa=200.0, metodo="teorico", nome_do_metodo="x",
+            metodo_de_seguranca="admissivel", rotulo_ELU=ROTULO_ELU,
+            rotulo_fonte="fonte")
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_sem_fsg, saida)
+
+        textos = [w.cget("text") for w in saida.winfo_children()
+                  if "text" in w.keys()]
+        assert any("Sem FSg" in t for t in textos)
+        assert not any(isinstance(w, ttk.Button) for w in saida.winfo_children())
     finally:
         root.destroy()
 
@@ -430,17 +486,22 @@ def test_nenhum_resultado_exibe_classificacao_de_solo_por_nspt():
 
 
 # --------------------------------------------------------------------------- #
-#  Ligação com formulario.py — PREENCHE v_sigma_adm, nunca trava o campo.
+#  Ligação com formulario.py — PREENCHE v_sigma_adm, nunca trava o campo,
+#  e mostra ROTULO_ELU na TELA PRINCIPAL (REQ-UI-SIGMA-01, metade que
+#  faltava até a rodada 3 — a outra metade, no memorial exportado, já
+#  estava coberta).
 # --------------------------------------------------------------------------- #
 def test_abrir_calculadora_preenche_sigma_adm_sem_travar_o_campo():
     from unittest import mock
 
+    from calc_core.modelos import ROTULO_ELU as _ROTULO_ELU
     from ui.completo.formulario import PainelEntrada
 
     root = _tk_root()
     try:
         painel = PainelEntrada(root)
         painel.v_sigma_adm.set("250")
+        assert painel.lbl_sigma_adm_elu.cget("text") == ""
 
         class _DialogoFalso:
             def __init__(self, master):
@@ -453,12 +514,20 @@ def test_abrir_calculadora_preenche_sigma_adm_sem_travar_o_campo():
 
         assert painel.v_sigma_adm.get() == "345"
         assert painel.ultimo_sigma_adm_calculado == {"origem": "teste"}
+        # REQ-UI-SIGMA-01, metade "na tela principal": achado zero pela
+        # varredura do a6 na rodada 3 (`grep`-se por "ELU" em todos os
+        # widgets de PainelEntrada) — agora o rótulo aparece colado ao
+        # campo `v_sigma_adm` quando o valor ali vem de cálculo.
+        assert "ELU" in painel.lbl_sigma_adm_elu.cget("text")
+        assert painel.lbl_sigma_adm_elu.cget("text") == _ROTULO_ELU
 
         # o campo continua um Entry comum, editável — nunca travado
         # (NBR 6122 §7.2: sobreposição manual sempre disponível).
         painel.v_sigma_adm.set("999")
         assert painel.v_sigma_adm.get() == "999"
         assert painel.ler_solo().sigma_adm == pytest.approx(999.0)
+        # e a edição manual apaga o rótulo — não é mais um valor calculado.
+        assert painel.lbl_sigma_adm_elu.cget("text") == ""
     finally:
         root.destroy()
 
@@ -485,113 +554,204 @@ def test_abrir_calculadora_cancelada_nao_altera_sigma_adm():
 
         assert painel.v_sigma_adm.get() == "250"
         assert painel.ultimo_sigma_adm_calculado is None
+        assert painel.lbl_sigma_adm_elu.cget("text") == ""
     finally:
         root.destroy()
 
 
 # --------------------------------------------------------------------------- #
-#  D-01 (GATE 2, rodada 3) — desmarcar "vento é ação principal" DEPOIS de
-#  selecionar o valor MAJORADO não pode deixar `_usar()` devolver o número
-#  majorado em cache. MÉDIA #1/#2 (mesma causa-raiz) cobertas junto.
+#  REDESENHO (rodada 4) — a classe inteira de defeito que D-01/MÉDIA #1/#2
+#  reproduziam (cache "selecionado, pronto para usar" sobrevivendo a uma
+#  mudança de entrada) fica estruturalmente impossível: cada card só
+#  existe enquanto representar o último cálculo, e o botão que ele carrega
+#  morre junto com ele.
 # --------------------------------------------------------------------------- #
-def test_desmarcar_vento_principal_depois_de_selecionar_majorado_invalida():
-    """Reproduz EXATAMENTE a sequência do relato: selecionar um resultado,
-    marcar vento como principal, calcular a majoração, selecionar o
-    MAJORADO, DESMARCAR vento como principal — "Usar este valor →" não
-    pode mais devolver o número majorado (345 kPa); o botão fica
-    desabilitado até o engenheiro recalcular e escolher de novo."""
+def test_recalcular_semiempirico_apos_mudar_nspt_destroi_o_card_antigo():
+    """Reproduz EXATAMENTE a classe de defeito do relato original: N_SPT =
+    15 (300 kPa) calculado, depois N_SPT muda para 10 (200 kPa) e
+    recalcula-se — o card antigo (com o botão que entregaria 300 kPa) tem
+    de ter sido DESTRUÍDO (`winfo_exists()` falso), e o botão do card NOVO
+    tem de entregar exatamente o que a tela mostra agora (200 kPa), nunca
+    o valor antigo."""
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
     try:
         dialogo = DialogoSigmaAdm(root)
-        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
-            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
-            h_m=1.5, gamma_kN_m3=18.0,
-            aplicabilidade_regional_declarada=True))
-        resultado_300 = dispersao.resultados[0]
-        assert resultado_300.sigma_adm_ELU_kPa == pytest.approx(300.0)
+        dialogo.s_nspt.set("15")
+        dialogo.s_B.set("2.0")
+        dialogo.s_solo.set("argila")
+        dialogo.s_h.set("1.5")
+        dialogo.s_gamma.set("18")
+        dialogo.s_regional.set(True)
 
-        # (1) seleciona o resultado de 300 kPa
-        dialogo._selecionar(resultado_300)
+        dialogo._calcular_semiempirico()
+        # N_SPT=15/argila/regional=True: regra N/50 se aplica (300 kPa) E
+        # Teixeira recusa (solo != areia) — dois cards, um resultado e uma
+        # recusa (ver `test_dialogo_semiempirico_argila_mostra_um_
+        # resultado_e_uma_recusa`).
+        cartas_300 = dialogo.frame_resultado_semi.winfo_children()
+        assert len(cartas_300) == 2
+        card_300 = next(c for c in cartas_300
+                         if c.cget("text") != "Recusado — fora do domínio")
+        assert "300.0 kPa" in card_300.winfo_children()[0].cget("text")
+        botao_300 = _botao(card_300, "Usar este valor →")
 
-        # (2) marca vento como principal, k_v = 0,15, calcula
-        dialogo.v_vento_principal.set(True)
-        dialogo._alternar_vento()
-        dialogo.v_kv.set("0.15")
-        dialogo._calcular_vento()
-        assert dialogo._resultado_vento is not None
-        assert dialogo._resultado_vento.sigma_adm_ELU_majorado_kPa == pytest.approx(345.0)
+        # muda a entrada e recalcula — a mesma sequência que o a6 reproduziu
+        dialogo.s_nspt.set("10")
+        dialogo._calcular_semiempirico()
 
-        # (3) seleciona o valor MAJORADO
-        dialogo._selecionar_majorado()
-        assert dialogo._valor_final_kPa == pytest.approx(345.0)
-        assert dialogo._valor_final_e_majorado is True
-        assert str(dialogo.btn_usar.cget("state")) == "normal"
+        # o card (e o botão) de 300 kPa não existem mais na árvore de widgets
+        assert botao_300.winfo_exists() == 0
 
-        # (4) DESMARCA vento como ação principal — dispara `_alternar_vento`,
-        # que precisa invalidar o resultado majorado em cache.
-        dialogo.v_vento_principal.set(False)
-        dialogo._alternar_vento()
+        cartas_200 = dialogo.frame_resultado_semi.winfo_children()
+        assert len(cartas_200) == 2
+        card_200 = next(c for c in cartas_200
+                         if c.cget("text") != "Recusado — fora do domínio")
+        assert card_200 is not card_300
+        assert "200.0 kPa" in card_200.winfo_children()[0].cget("text")
+        botao_200 = _botao(card_200, "Usar este valor →")
+        botao_200.invoke()
 
-        # A guarda: nem o resultado de vento, nem o valor final majorado,
-        # sobrevivem à mudança de declaração.
-        assert dialogo._resultado_vento is None
-        assert dialogo._valor_final_e_majorado is False
-        assert str(dialogo.btn_selecionar_vento.cget("state")) == "disabled"
-        assert str(dialogo.btn_usar.cget("state")) == "disabled"
+        # "usar" entregou o valor do card ATUALMENTE na tela — nunca 300.
+        assert dialogo.resultado_kPa == pytest.approx(200.0)
+    finally:
+        root.destroy()
 
-        # (5) "Usar este valor →" não devolve mais 345 kPa (nem nenhum
-        # outro número — o botão está desabilitado, mas ainda assim
-        # `_usar()` chamado diretamente por engano não pode vazar o valor
-        # antigo: `_valor_final_kPa` já é `None`).
-        dialogo._usar()
+
+def test_recalcular_teorico_apos_mudar_B_com_novo_valor_recusado_nao_deixa_botao_antigo():
+    """Metade "domínio" do mesmo relato: B muda para um valor que o núcleo
+    RECUSA (aqui, phi extremo o bastante para violar a hipótese de Terzaghi
+    já testada em `test_texto_recusa_distingue_...`) — o card antigo, com
+    resultado válido, é destruído mesmo assim, e o card novo é de RECUSA,
+    sem botão "Usar" algum. Não pode sobrar um botão "Usar" de um cálculo
+    que não corresponde mais ao que está na tela."""
+    from tkinter import ttk
+
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.t_c.set("0")
+        dialogo.t_phi.set("30")
+        dialogo.t_B.set("2.0")
+        dialogo.t_L.set("2.0")
+        dialogo.t_h.set("1.5")
+        dialogo.t_gamma_acima.set("18")
+        dialogo.t_gamma_abaixo.set("18")
+        dialogo.t_homogeneo.set(True)
+
+        dialogo._calcular_teorico()
+        card_valido = dialogo.frame_resultado_teorico.winfo_children()[0]
+        botao_valido = _botao(card_valido, "Usar este valor →")
+
+        # phi = 60 graus é o mesmo valor que
+        # `test_texto_recusa_distingue_declarado_em_texto_de_extensao_de_
+        # figura` já trava como RECUSADO por Terzaghi.
+        dialogo.t_phi.set("60")
+        dialogo._calcular_teorico()
+
+        assert botao_valido.winfo_exists() == 0
+        filhos = dialogo.frame_resultado_teorico.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == "Recusado — fora do domínio"
+        assert not any(isinstance(w, ttk.Button)
+                        for w in filhos[0].winfo_children())
         assert dialogo.resultado_kPa is None
     finally:
         root.destroy()
 
 
-def test_recalcular_vento_com_kv_diferente_invalida_selecao_majorada_anterior():
-    """MÉDIA #1: mesma causa-raiz do D-01, mas pelo caminho "editar k_v e
-    recalcular" em vez de "desmarcar o checkbox" — o valor majorado
-    anterior (com o k_v velho) não pode sobreviver a um recálculo com um
-    k_v novo sem que o engenheiro selecione de novo."""
+def test_usar_base_de_um_card_nunca_depende_de_estado_de_outro_card():
+    """Contraprova estrutural do REDESENHO: com DOIS cards na tela ao mesmo
+    tempo (dispersão semiempírica — aqui simulada calculando dois perfis
+    válidos manualmente e desenhando os dois), o botão "Usar este valor →"
+    de cada um entrega exatamente o valor DAQUELE card, nunca do outro —
+    não existe "o card selecionado" global."""
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
     try:
         dialogo = DialogoSigmaAdm(root)
-        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+        resultado_argila = semiempirico_spt(EntradaSemiempiricaSPT(
             N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
             h_m=1.5, gamma_kN_m3=18.0,
-            aplicabilidade_regional_declarada=True))
-        resultado_300 = dispersao.resultados[0]
+            aplicabilidade_regional_declarada=True)).resultados[0]
+        resultado_areia = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="areia",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True)).resultados[0]
+        assert resultado_argila.sigma_adm_ELU_kPa != pytest.approx(
+            resultado_areia.sigma_adm_ELU_kPa)
 
-        dialogo._selecionar(resultado_300)
-        dialogo.v_vento_principal.set(True)
-        dialogo._alternar_vento()
-        dialogo.v_kv.set("0.15")
-        dialogo._calcular_vento()
-        dialogo._selecionar_majorado()
-        assert dialogo._valor_final_kPa == pytest.approx(345.0)
+        dialogo._card_resultado(dialogo.frame_resultado_semi, resultado_argila)
+        dialogo._card_resultado(dialogo.frame_resultado_semi, resultado_areia)
+        card_argila, card_areia = dialogo.frame_resultado_semi.winfo_children()
 
-        # edita k_v SEM clicar em "Calcular" de novo — o trace de escrita
-        # em `v_kv` já precisa invalidar sozinho.
-        dialogo.v_kv.set("0.05")
-
-        assert dialogo._resultado_vento is None
-        assert dialogo._valor_final_e_majorado is False
-        assert dialogo._valor_final_kPa is None
-        assert str(dialogo.btn_usar.cget("state")) == "disabled"
+        _botao(card_areia, "Usar este valor →").invoke()
+        assert dialogo.resultado_kPa == pytest.approx(
+            resultado_areia.sigma_adm_ELU_kPa)
     finally:
         root.destroy()
 
 
-def test_selecionar_valor_base_sobrevive_a_mudanca_em_campo_de_vento():
-    """Contraprova: um valor final que veio do card BASE (nunca passou
-    por `_selecionar_majorado`) não depende de campo algum de vento — ele
-    continua "pronto para usar" mesmo que o engenheiro mexa no k_v depois
-    (só o resultado de vento em si é zerado, não o valor final)."""
+def test_recalcular_majoracao_apos_trocar_tipo_de_obra_atualiza_teto():
+    """Não existe mais `_invalidar_vento`/`bind("<<ComboboxSelected>>",
+    ...)` para "esquecer" — `_calcular_vento_no_card` lê `self.v_tipo_obra`
+    NA HORA de cada clique em "Calcular majoração...". Este teste prova a
+    consequência observável: recalcular depois de trocar o tipo de obra
+    muda o teto de 30 % (lista fechada) para 15 % (caso geral) — se algum
+    dia a leitura do combo for trocada por um valor cacheado, este teste
+    falha."""
+    from tkinter import ttk
+
+    from ui.completo.dialogo_sigma_adm import _SEM_LISTA_FECHADA, DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True))
+        resultado_300 = dispersao.resultados[0]
+
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_tipo_obra.set(TIPOS_DE_OBRA_DOS_30_POR_CENTO[0])
+
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+        texto_30 = " ".join(
+            w.cget("text") for w in saida.winfo_children() if "text" in w.keys())
+        assert "0.3000" in texto_30
+
+        dialogo.v_tipo_obra.set(_SEM_LISTA_FECHADA)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+        texto_15 = " ".join(
+            w.cget("text") for w in saida.winfo_children() if "text" in w.keys())
+        assert "0.1500" in texto_15
+        assert "0.3000" not in texto_15
+    finally:
+        root.destroy()
+
+
+def test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card():
+    """A propriedade central do REDESENHO, em uma frase: o que o botão
+    "Usar valor majorado →" entrega é SEMPRE o que está escrito no card
+    NO MOMENTO do clique — nunca recalculado às escondidas contra um
+    widget que mudou depois. Aqui, calcula-se a majoração com k_v = 0,15
+    (345 kPa), edita-se k_v para 0,05 SEM clicar em "Calcular" de novo, e
+    o botão "Usar valor majorado →" que já estava na tela — sem ser
+    recriado — continua entregando 345 kPa, exatamente o que o texto do
+    card ainda mostra (o card não foi recalculado, então "o que está na
+    tela" continua sendo 345 kPa; não há mentira entre tela e entrega).
+    Invocar o botão fecha o diálogo (mesmo padrão de qualquer botão
+    "Usar..." desta tela) — por isso este teste termina aqui, e o cenário
+    "recalcular troca o card" vive em outro teste, com outro diálogo."""
+    from tkinter import ttk
+
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -602,14 +762,57 @@ def test_selecionar_valor_base_sobrevive_a_mudanca_em_campo_de_vento():
             h_m=1.5, gamma_kN_m3=18.0,
             aplicabilidade_regional_declarada=True))
         resultado_300 = dispersao.resultados[0]
-        dialogo._selecionar(resultado_300)
-        assert dialogo._valor_final_kPa == pytest.approx(300.0)
 
-        dialogo.v_kv.set("0.20")   # mexe num campo de vento, sem selecionar
-                                    # nenhum valor majorado
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_kv.set("0.15")
 
-        assert dialogo._valor_final_kPa == pytest.approx(300.0)
-        assert str(dialogo.btn_usar.cget("state")) == "normal"
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+        botao_345 = _botao(saida, "Usar valor majorado →")
+
+        # edita k_v SEM recalcular — o widget na tela ainda mostra 345 kPa
+        dialogo.v_kv.set("0.05")
+        assert botao_345.winfo_exists() == 1   # ninguém destruiu o card
+        botao_345.invoke()
+        assert dialogo.resultado_kPa == pytest.approx(345.0)
+    finally:
+        root.destroy()
+
+
+def test_recalcular_vento_apos_editar_kv_troca_o_card_pelo_que_reflete_o_novo_valor():
+    """Metade complementar do teste acima: recalcular EXPLICITAMENTE (novo
+    clique em "Calcular majoração...", aqui `_calcular_vento_no_card` de
+    novo) DEPOIS de editar k_v troca o card (e o botão) por um novo, que
+    reflete k_v = 0,05 — o antigo (345 kPa, k_v = 0,15) é destruído."""
+    from tkinter import ttk
+
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True))
+        resultado_300 = dispersao.resultados[0]
+
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_kv.set("0.15")
+
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+        botao_345 = _botao(saida, "Usar valor majorado →")
+
+        dialogo.v_kv.set("0.05")
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+
+        assert botao_345.winfo_exists() == 0
+        botao_novo = _botao(saida, "Usar valor majorado →")
+        botao_novo.invoke()
+        assert dialogo.resultado_kPa == pytest.approx(300.0 * 1.05)
     finally:
         root.destroy()
 
@@ -675,11 +878,11 @@ def test_campo_nspt_vazio_no_semiempirico_nao_produz_resultado_silencioso():
 
 
 # --------------------------------------------------------------------------- #
-#  D-02 (GATE 2, rodada 3) — proveniência sobrevive até `_usar()`, com o
-#  valor calculado incluído (`valor_kPa`), para o memorial poder conferir
-#  que ainda é válida.
+#  D-02 (GATE 2, rodada 3) — proveniência sobrevive até o clique em "Usar",
+#  com o valor calculado incluído (`valor_kPa`), para o memorial poder
+#  conferir que ainda é válida.
 # --------------------------------------------------------------------------- #
-def test_usar_grava_valor_kpa_na_proveniencia():
+def test_usar_base_grava_valor_kpa_na_proveniencia():
     from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
 
     root = _tk_root()
@@ -691,18 +894,19 @@ def test_usar_grava_valor_kpa_na_proveniencia():
             forma="quadrada", modo_de_ruptura="geral",
             natureza_do_carregamento="drenado",
             solo_homogeneo_no_bulbo_declarado=True))
-        dialogo._selecionar(resultado)
-        dialogo._usar()
+        dialogo._usar_base(resultado)
         assert dialogo.resultado_info["valor_kPa"] == pytest.approx(
             resultado.sigma_adm_ELU_kPa)
+        assert dialogo.resultado_info["majorado_por_vento"] is False
     finally:
         root.destroy()
 
 
 # --------------------------------------------------------------------------- #
-#  MÉDIA #4 (GATE 2, rodada 3) — `ultimo_sigma_adm_calculado` é invalidado
-#  em qualquer edição de `v_sigma_adm` que não seja o próprio preenchimento
-#  pelo diálogo (edição manual, `preencher_solo`).
+#  MÉDIA #4 (GATE 2, rodada 3) — `ultimo_sigma_adm_calculado` (e o rótulo
+#  visível `lbl_sigma_adm_elu`, novo nesta rodada) é invalidado em
+#  qualquer edição de `v_sigma_adm` que não seja o próprio preenchimento
+#  pelo diálogo.
 # --------------------------------------------------------------------------- #
 def test_editar_sigma_adm_manualmente_invalida_proveniencia():
     from unittest import mock
@@ -722,11 +926,13 @@ def test_editar_sigma_adm_manualmente_invalida_proveniencia():
         with mock.patch("ui.completo.formulario.DialogoSigmaAdm", _DialogoFalso):
             painel._abrir_calculadora_sigma_adm()
         assert painel.ultimo_sigma_adm_calculado is not None
+        assert painel.lbl_sigma_adm_elu.cget("text") != ""
 
         # edição manual, como se fosse o engenheiro digitando por cima
         # (NBR 6122 §7.2 — sobreposição sempre disponível)
         painel.v_sigma_adm.set("400")
         assert painel.ultimo_sigma_adm_calculado is None
+        assert painel.lbl_sigma_adm_elu.cget("text") == ""
     finally:
         root.destroy()
 
@@ -757,5 +963,6 @@ def test_preencher_solo_invalida_proveniencia_calculada():
         painel.preencher_solo(Solo(sigma_adm=180.0))
         assert painel.ultimo_sigma_adm_calculado is None
         assert painel.v_sigma_adm.get() == "180"
+        assert painel.lbl_sigma_adm_elu.cget("text") == ""
     finally:
         root.destroy()

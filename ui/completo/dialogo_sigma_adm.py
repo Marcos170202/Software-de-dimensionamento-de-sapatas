@@ -20,18 +20,81 @@ núcleo e formatam o que ela devolve — inclusive os textos de recusa
 só traduz o rótulo interno da força da guarda para uma frase legível
 (REQ-UI-SIGMA-03) — não decide nada sobre a recusa em si.
 
+REDESENHO DO MODELO DE ESTADO (rodada 4 — decisão humana registrada no
+pedido de trabalho, não do a6). Três rodadas seguidas de GATE 2
+reprovaram este diálogo pela MESMA causa-raiz: um estado intermediário
+"selecionado, pronto para usar" (`self._valor_final_kPa` +
+`self._valor_final_origem` + `self._valor_final_e_majorado`), preenchido
+no clique de um card e só CONSUMIDO num clique posterior em "Usar este
+valor →". Entre os dois cliques, qualquer mudança nas entradas (N_SPT, B,
+L, h, γ, forma, solo, modo de ruptura, e os próprios controles de vento)
+podia deixar esse cache respondendo por uma entrada que já não é a que
+está na tela — cada rodada de correção fechava o gatilho relatado
+(primeiro só o painel de vento, depois só alguns campos) sem eliminar a
+CLASSE do defeito, porque a estratégia era invalidar o cache reagindo a
+cada widget individualmente, e sempre sobrava algum widget novo (ou
+antigo, esquecido) fora da lista.
+
+A correção desta rodada ELIMINA o cache, em vez de tentar invalidá-lo
+completo: não existe mais `self._resultado_ativo`/`self._valor_final_*`.
+Cada card de resultado (`_card_resultado`) carrega o objeto imutável
+`ResultadoSigmaAdmELU` que a ELE pertence, por FECHAMENTO (closure) do
+próprio botão "Usar este valor →" — `_usar_base` — e não por um atributo
+de instância que sobrevive além do clique. Como todo o conteúdo de
+`frame_resultado_teorico`/`frame_resultado_semi` é destruído no primeiro
+passo de `_calcular_teorico`/`_calcular_semiempirico` (`for filho in
+...: filho.destroy()`), um card só existe na tela enquanto representar
+fielmente a última chamada ao núcleo — não há como um botão "Usar" de um
+card VELHO sobreviver a um recálculo, porque o card em si já foi
+destruído junto com o widget. É estruturalmente impossível "ver 160 kPa
+na tela e usar 300 kPa": o botão que entrega 300 kPa só existe enquanto
+o card que mostra 300 kPa também existir.
+
+O mesmo raciocínio se aplica à majoração por vento, que era o segundo
+estágio do cache antigo (`_selecionar_majorado`, `_invalidar_vento`, a
+lista crescente de `trace_add`/`bind` por widget de vento). Em vez de
+"Calcular teto e majoração" preencher um cache que "Selecionar valor
+majorado →" lê depois, cada card ganhou sua própria mini-seção de vento:
+o botão "Calcular majoração por vento..." (`_calcular_vento_no_card`) LÊ
+os controles de vento (compartilhados, mas nunca cacheados) NA HORA do
+clique e desenha o resultado ali mesmo, com o botão "Usar valor
+majorado →" já fechado por closure sobre o `ResultadoMajoracaoVento` que
+aquela MESMA chamada acabou de calcular — nunca um objeto guardado de um
+clique anterior. Não há `_invalidar_vento` porque não há nada para
+invalidar: mudar o k_v, a declaração de ação principal ou o tipo de obra
+não estraga estado algum, porque o próximo clique em "Calcular
+majoração..." (em qualquer card) sempre lê os widgets como estão NAQUELE
+INSTANTE — o problema de "esqueci de invalidar este widget novo" deixa de
+existir porque não há lista de widgets a vigiar.
+
+Esta é a opção (a) do pedido de trabalho ("botão Usar por card"), e não a
+opção (b) (um contador de versão de entrada com um botão único no
+rodapé): com (a) é estruturalmente impossível ficar obsoleto, porque não
+há intervalo de tempo entre "ver o resultado" e "usar o resultado" — o
+clique QUE mostra e o clique QUE usa são o mesmo par (card, botão). A
+opção (b) teria de continuar caçando "todo StringVar/BooleanVar de
+entrada" para o contador de versão, o que é exatamente o padrão que já
+falhou três vezes (a cada rodada aparecia um widget fora da lista); (a)
+não depende de enumerar entrada alguma.
+
 MAPEAMENTO DOS REQUISITOS, para conferência rápida:
 
 * REQ-UI-SIGMA-01 — `ROTULO_ELU` (constante do núcleo) aparece colado a
-  TODO número devolvido, em `_card_resultado` e no resumo final. Nunca
-  "tensão admissível" em rótulo algum desta tela.
+  TODO número devolvido, em `_card_resultado` e na majoração inline de
+  cada card. Nunca "tensão admissível" em rótulo algum desta tela.
 * REQ-UI-SIGMA-02 — `ROTULO_FONTE_NAO_NORMATIVA` e
   `ADVERTENCIA_FORMULARIOS_DE_BOLSO` (do núcleo) aparecem junto de cada
   resultado; nenhum texto de fonte é redigido aqui.
 * REQ-UI-SIGMA-03 — `_texto_recusa`/`_texto_recusa_metodo` mostram
   parâmetro, valor, intervalo e fonte, e distinguem DECLARADO_EM_TEXTO de
   ADOTADO_DA_EXTENSAO_DE_FIGURA (`_ROTULOS_DE_FORCA`). Nunca "erro de
-  cálculo" genérico.
+  cálculo" genérico. Quando NENHUM método semiempírico se aplica
+  (`NenhumMetodoAplicavelError`), `_calcular_semiempirico` desenha UM
+  CARD POR RECUSA (`erro.recusas`, na ordem de avaliação dos métodos) —
+  nunca só a primeira: os campos escalares herdados da exceção
+  (`erro.parametro` etc.) são, pela própria docstring do núcleo, "uma
+  visão DEGRADADA... nunca a recusa principal", e usá-los sozinhos era o
+  defeito D-03 da revisão a6 do GATE 2.
 * REQ-UI-SIGMA-04 — dois campos de gamma no caminho teórico
   (`t_gamma_acima`/`t_gamma_abaixo`), com `AVISO_GAMMA_EFETIVO` visível
   junto dos dois; nenhuma classificação de solo por N_SPT é exibida em
@@ -42,19 +105,20 @@ MAPEAMENTO DOS REQUISITOS, para conferência rápida:
   calculada pelo núcleo) é exibida quando houver mais de um valor. A
   seção de vento nunca infere `vento_e_acao_variavel_principal` e mostra
   o FSg efetivo (`ResultadoMajoracaoVento.FSg_efetivo`, do núcleo) e o
-  teto (`k_v_maximo_admissivel`, do núcleo) lado a lado com o controle.
-  A lista de sete tipos de obra vem de
-  `vento.TIPOS_DE_OBRA_DOS_30_POR_CENTO` e é exibida por `Combobox`
-  (`state="readonly"`), nunca como texto livre.
+  teto (`k_v_maximo_admissivel`, do núcleo) lado a lado com o controle,
+  agora embutidos em cada card (ver REDESENHO acima). A lista de sete
+  tipos de obra vem de `vento.TIPOS_DE_OBRA_DOS_30_POR_CENTO` e é exibida
+  por `Combobox` (`state="readonly"`), nunca como texto livre.
 * REQ-UI-SIGMA-06 — `DECLARACAO_REGIONAL_EXIGIDA` (checkbox sem default
   afirmativo, aba semiempírico — REQ-SIGMA-06 é obrigação do §7.3.3, o
   caminho teórico não tem campo correspondente no núcleo) e
   `AVISO_ESCOPO_SIGMA_ADM` (banner fixo no topo do diálogo).
 
-PROVENIÊNCIA NO MEMORIAL (D-02 do GATE 2, rodada 3 — revoga o adiamento
-documentado nas rodadas 1/2): `_usar` grava a proveniência do valor
-escolhido (método, `ROTULO_ELU`, `ROTULO_FONTE_NAO_NORMATIVA`, avisos,
-regras/práticas e o próprio `valor_kPa`) em `self.resultado_info`;
+PROVENIÊNCIA NO MEMORIAL (D-02 do GATE 2, rodada 3 — mantida neste
+redesenho). `_fechar_com_resultado` (chamada por `_usar_base`/
+`_usar_majorado`, nunca diretamente por um botão) grava a proveniência do
+valor escolhido (método, `ROTULO_ELU`, `ROTULO_FONTE_NAO_NORMATIVA`,
+avisos, regras/práticas e o próprio `valor_kPa`) em `self.resultado_info`;
 `formulario.py::_abrir_calculadora_sigma_adm` copia isso para
 `PainelEntrada.ultimo_sigma_adm_calculado`, que `ui.completo.app`/
 `ui.completo.resultado` agora repassam para
@@ -79,6 +143,7 @@ from calc_core.geotecnico.dominio import (
     DECLARADO_EM_TEXTO,
     DECLARADO_PELO_USUARIO,
     ForaDoDominioError,
+    NenhumMetodoAplicavelError,
 )
 from calc_core.geotecnico.seguranca import MetodoDeSegurancaError
 from calc_core.geotecnico.semiempirico import SOLO_AREIA, SOLO_ARGILA
@@ -213,7 +278,8 @@ def _texto_recusa_metodo(recusa: RecusaDeMetodo) -> str:
     """Mesma tradução de ``_texto_recusa``, para uma ``RecusaDeMetodo`` de
     ``ResultadoDispersaoSemiempirica.recusas`` (correlação fora do domínio,
     mas outra(s) podem ter passado — por isso aparece como card, não como
-    erro bloqueante)."""
+    erro bloqueante) OU de ``NenhumMetodoAplicavelError.recusas`` (nenhuma
+    correlação se aplicou — mesmo formato, um card por método)."""
     linhas = [
         f"{recusa.nome_do_metodo} — NÃO SE APLICA A ESTE CASO.",
         (f"{recusa.parametro} = {recusa.valor!r} fora do domínio declarado "
@@ -229,7 +295,14 @@ class DialogoSigmaAdm(tk.Toplevel):
     engenheiro em ``self.resultado_kPa`` — quem chama (``formulario.py``)
     é quem decide PREENCHER o campo ``v_sigma_adm`` com ele; o campo
     continua editável depois (NBR 6122 §7.2 — sobreposição manual sempre
-    disponível, nesta tela e em qualquer outra deste software)."""
+    disponível, nesta tela e em qualquer outra deste software).
+
+    Ver o REDESENHO documentado no topo do módulo: não há mais um
+    "resultado ativo"/"valor final" cacheado no diálogo. Cada card de
+    resultado é dono do seu próprio botão "Usar este valor →", e a
+    majoração por vento é calculada e usada dentro do mesmo card, sob
+    demanda, nunca guardada num atributo à espera de um segundo clique.
+    """
 
     def __init__(self, master: tk.Misc) -> None:
         super().__init__(master)
@@ -241,7 +314,9 @@ class DialogoSigmaAdm(tk.Toplevel):
         self.grab_set()
 
         self.resultado_kPa: float | None = None
-        """Preenchido só quando o usuário clica "Usar este valor →"."""
+        """Preenchido só quando o usuário clica em algum dos botões "Usar
+        este valor →"/"Usar valor majorado →" — a partir daí o diálogo
+        fecha (`self.destroy()`) no mesmo clique."""
 
         self.resultado_info: dict | None = None
         """Proveniência do valor escolhido — `formulario.py` guarda isto em
@@ -250,22 +325,6 @@ class DialogoSigmaAdm(tk.Toplevel):
         `ROTULO_FONTE_NAO_NORMATIVA` sempre que ele ainda for válido (ver
         `formulario.py::_abrir_calculadora_sigma_adm` e
         `_ao_editar_sigma_adm`)."""
-
-        self._resultado_ativo: ResultadoSigmaAdmELU | None = None
-        self._resultado_vento: ResultadoMajoracaoVento | None = None
-        self._valor_final_kPa: float | None = None
-        self._valor_final_origem: str = ""
-        self._valor_final_e_majorado: bool = False
-        """`True` só quando `_valor_final_kPa` veio de `_selecionar_majorado`
-        (MÉDIA #2 do GATE 2, rodada 3): antes desta flag,
-        `resultado_info["majorado_por_vento"]` era decidido comparando
-        `self._valor_final_kPa == self._resultado_vento.
-        sigma_adm_ELU_majorado_kPa` — comparação de ponto flutuante
-        (`==`) é frágil por definição, e ficou incorreta na prática depois
-        de `_invalidar_vento` passar a zerar `_resultado_vento` (a
-        comparação levantaria `AttributeError` em `None`, não só imprecisão
-        de arredondamento). Setar um booleano explícito no momento da
-        SELEÇÃO evita as duas classes de bug de uma vez."""
 
         self._montar()
 
@@ -281,7 +340,7 @@ class DialogoSigmaAdm(tk.Toplevel):
         self._montar_aba_semiempirico(notebook)
 
         self._montar_vento(self)
-        self._montar_resumo(self)
+        self._montar_rodape(self)
 
     def _area_rolavel(self, master: tk.Misc) -> ttk.Frame:
         """Canvas + scrollbar reaproveitando o padrão de
@@ -534,6 +593,20 @@ class DialogoSigmaAdm(tk.Toplevel):
 
         try:
             dispersao = semiempirico_spt(entrada)
+        except NenhumMetodoAplicavelError as erro:
+            # D-03 do GATE 2, rodada 3 (reincidente na TELA até agora, mesmo
+            # com o núcleo já corrigido): `erro.parametro`/`erro.valor`/
+            # `erro.intervalo`/`erro.fonte` são só a PRIMEIRA recusa — a
+            # própria docstring de `NenhumMetodoAplicavelError` avisa que é
+            # "uma visão DEGRADADA... nunca a recusa principal". O contrato
+            # do a4 é "um card por item": itera `erro.recusas` (uma por
+            # método candidato, na ordem de avaliação) e desenha um card
+            # para CADA uma — mesmo padrão já usado no caminho em que ao
+            # menos uma correlação se aplica (`dispersao.recusas`, abaixo).
+            for recusa in erro.recusas:
+                self._card_recusa(self.frame_resultado_semi,
+                                   _texto_recusa_metodo(recusa))
+            return
         except ForaDoDominioError as erro:
             self._card_recusa(self.frame_resultado_semi, _texto_recusa(erro))
             return
@@ -560,6 +633,11 @@ class DialogoSigmaAdm(tk.Toplevel):
     # ------------------------------------------------------------- cards
     def _card_resultado(self, pai: tk.Misc, resultado: ResultadoSigmaAdmELU
                          ) -> None:
+        """Um card = um `ResultadoSigmaAdmELU` imutável, dono do seu
+        próprio botão "Usar este valor →" e da sua própria mini-seção de
+        majoração por vento (ver REDESENHO na docstring do módulo). Nada
+        aqui é guardado em `self` para ser lido depois — tudo o que o
+        botão precisa já está fechado (closure) sobre `resultado`."""
         f = ttk.LabelFrame(pai, text=resultado.nome_do_metodo)
         f.pack(fill="x", padx=4, pady=4)
         ttk.Label(f, text=f"{resultado.sigma_adm_ELU_kPa:.1f} kPa",
@@ -583,9 +661,33 @@ class DialogoSigmaAdm(tk.Toplevel):
                       wraplength=700, justify="left",
                       font=("Segoe UI", 8)).pack(anchor="w", padx=8,
                                                   pady=(4, 4))
-        ttk.Button(f, text="Selecionar este valor →",
-                   command=lambda r=resultado: self._selecionar(r)).pack(
-            anchor="e", padx=8, pady=(2, 8))
+        ttk.Button(f, text="Usar este valor →",
+                   command=lambda r=resultado: self._usar_base(r)).pack(
+            anchor="e", padx=8, pady=(2, 4))
+
+        self._secao_vento_no_card(f, resultado)
+
+    def _secao_vento_no_card(self, pai_card: ttk.LabelFrame,
+                              resultado: ResultadoSigmaAdmELU) -> None:
+        """Mini-seção de majoração por vento embutida no card — parte do
+        MESMO fluxo imediato do card, não um segundo estágio (ver
+        REDESENHO). O botão "Calcular majoração..." lê os controles
+        compartilhados (`self.v_vento_principal`/`self.v_tipo_obra`/
+        `self.v_kv`, montados por `_montar_vento`) e ESTE `resultado` — o
+        objeto exato do card — no instante do clique; o botão "Usar valor
+        majorado →" que aparece depois fecha por closure sobre o
+        `ResultadoMajoracaoVento` que aquela MESMA chamada acabou de
+        calcular, nunca sobre um valor de um clique anterior."""
+        vento = ttk.LabelFrame(
+            pai_card, text="Majoração por vento sobre este valor "
+                           "(opcional) — NBR 6122:2022 §6.3.2")
+        vento.pack(fill="x", padx=8, pady=(0, 8))
+        saida = ttk.Frame(vento)
+        ttk.Button(
+            vento, text="Calcular majoração por vento...",
+            command=lambda r=resultado, s=saida: self._calcular_vento_no_card(r, s)
+        ).pack(anchor="w", padx=6, pady=(6, 2))
+        saida.pack(fill="x", padx=6, pady=(0, 6))
 
     def _card_recusa(self, pai: tk.Misc, texto: str) -> None:
         f = ttk.LabelFrame(pai, text="Recusado — fora do domínio")
@@ -596,130 +698,77 @@ class DialogoSigmaAdm(tk.Toplevel):
 
     # -------------------------------------------------------------- vento
     def _montar_vento(self, pai: tk.Misc) -> None:
-        f = ttk.LabelFrame(pai, text="Majoração por vento (opcional) — "
-                                      "NBR 6122:2022 §6.3.2")
+        """Controles COMPARTILHADOS da majoração por vento — só a
+        DECLARAÇÃO (vento é ação principal?, tipo de obra, k_v adotado).
+        Não há botão "Calcular"/"Selecionar" neste painel: o cálculo em
+        si acontece dentro de cada card (`_secao_vento_no_card` /
+        `_calcular_vento_no_card`), que lê estes widgets no instante do
+        clique. Por isso não existe `_invalidar_vento` nem `trace_add`/
+        `bind` algum aqui: não há valor de majoração cacheado neste
+        painel para ficar obsoleto — ver REDESENHO na docstring do
+        módulo."""
+        f = ttk.LabelFrame(pai, text="Declaração para majoração por vento "
+                                      "(opcional) — NBR 6122:2022 §6.3.2")
         f.pack(fill="x", padx=10, pady=(4, 4))
         f.columnconfigure(1, weight=1)
-
-        self.lbl_base_vento = ttk.Label(
-            f, text="Nenhum resultado selecionado ainda — clique "
-                    "\"Selecionar este valor →\" num dos cards acima para "
-                    "habilitar a majoração por vento sobre ele.",
-            style="PainelFraco.TLabel", wraplength=760, justify="left")
-        self.lbl_base_vento.grid(row=0, column=0, columnspan=3, sticky="w",
-                                  padx=8, pady=(6, 4))
 
         self.v_vento_principal = tk.BooleanVar(value=False)
         ttk.Checkbutton(
             f, text="Vento é a ação variável principal na combinação "
                     "estrutural que governa este caso",
             variable=self.v_vento_principal, command=self._alternar_vento
-        ).grid(row=1, column=0, columnspan=3, sticky="w", padx=8)
+        ).grid(row=0, column=0, columnspan=3, sticky="w", padx=8, pady=(6, 0))
         ttk.Label(f, text=AVISO_ACAO_PRINCIPAL_NAO_E_INFERIDA,
                   style="PainelFraco.TLabel", wraplength=760, justify="left",
-                  font=("Segoe UI", 8)).grid(row=2, column=0, columnspan=3,
+                  font=("Segoe UI", 8)).grid(row=1, column=0, columnspan=3,
                                               sticky="w", padx=8, pady=(0, 6))
 
         ttk.Label(f, text="Tipo de obra (lista FECHADA, §6.3.2)",
-                  style="PainelFraco.TLabel").grid(row=3, column=0, sticky="w",
+                  style="PainelFraco.TLabel").grid(row=2, column=0, sticky="w",
                                                     padx=8)
         opcoes_obra = [_SEM_LISTA_FECHADA, *TIPOS_DE_OBRA_DOS_30_POR_CENTO]
         self.v_tipo_obra = tk.StringVar(value=opcoes_obra[0])
         self.combo_tipo_obra = ttk.Combobox(
             f, textvariable=self.v_tipo_obra, state="disabled", width=52,
             values=opcoes_obra)
-        self.combo_tipo_obra.grid(row=4, column=0, columnspan=3, sticky="w",
+        self.combo_tipo_obra.grid(row=3, column=0, columnspan=3, sticky="w",
                                    padx=8, pady=(0, 6))
 
         ttk.Label(f, text="k_v adotado (0 = não majora; teto 0,15 ou 0,30 "
-                          "conforme o tipo de obra e o piso de FSg = 1,6)",
+                          "conforme o tipo de obra e o piso de FSg = 1,6) — "
+                          "lido de novo a cada clique em \"Calcular "
+                          "majoração...\" de qualquer card, nunca travado "
+                          "num valor antigo",
                   style="PainelFraco.TLabel", wraplength=760,
-                  justify="left").grid(row=5, column=0, columnspan=3,
+                  justify="left").grid(row=4, column=0, columnspan=3,
                                         sticky="w", padx=8)
         self.v_kv = tk.StringVar(value=f"{K_V_DEFAULT:g}")
         ttk.Entry(f, textvariable=self.v_kv, width=10).grid(
-            row=6, column=0, sticky="w", padx=8, pady=(0, 6))
-        # D-01 do GATE 2, rodada 3: qualquer widget que alimenta
-        # `_calcular_vento` — checkbox principal, combo de tipo de obra,
-        # ou o próprio k_v — precisa invalidar `_resultado_vento` (e, se
-        # for o caso, o valor "pronto para usar" majorado) assim que muda,
-        # nunca só quando o botão "Calcular" é clicado de novo. Ver
-        # `_invalidar_vento`.
-        self.v_kv.trace_add("write", self._invalidar_vento)
-        self.combo_tipo_obra.bind("<<ComboboxSelected>>", self._invalidar_vento)
-
-        ttk.Button(f, text="Calcular teto e majoração",
-                   command=self._calcular_vento).grid(
-            row=6, column=1, sticky="w", padx=8, pady=(0, 6))
-
-        self.lbl_resultado_vento = ttk.Label(
-            f, text="", style="PainelFraco.TLabel", wraplength=760,
-            justify="left")
-        self.lbl_resultado_vento.grid(row=7, column=0, columnspan=3,
-                                       sticky="w", padx=8, pady=(0, 4))
-
-        self.btn_selecionar_vento = ttk.Button(
-            f, text="Selecionar valor MAJORADO →", state="disabled",
-            command=self._selecionar_majorado)
-        self.btn_selecionar_vento.grid(row=8, column=0, sticky="w", padx=8,
-                                        pady=(0, 8))
+            row=5, column=0, sticky="w", padx=8, pady=(0, 8))
 
     def _alternar_vento(self) -> None:
         self.combo_tipo_obra.configure(
             state="readonly" if self.v_vento_principal.get() else "disabled")
-        self._invalidar_vento()
 
-    def _invalidar_vento(self, *_args) -> None:
-        """Zera qualquer resultado de majoração por vento já calculado, e
-        desabilita a seleção dele, sempre que um widget que ALIMENTA
-        `_calcular_vento` muda depois de um cálculo (D-01 do GATE 2,
-        rodada 3) — checkbox "vento é ação principal" (`_alternar_vento`),
-        combo de tipo de obra (`<<ComboboxSelected>>`), campo `k_v`
-        (`trace_add("write", ...)` em `v_kv`), e o início de todo novo
-        `_calcular_vento` (recalcular também invalida o resultado anterior
-        até o novo terminar).
+    def _calcular_vento_no_card(self, resultado: ResultadoSigmaAdmELU,
+                                 saida: ttk.Frame) -> None:
+        """Lê os controles de vento (compartilhados, nunca cacheados) e
+        ESTE `resultado` (o objeto do card que chamou, por closure) NO
+        INSTANTE do clique, e desenha a majoração ou a recusa dentro de
+        `saida`. Chamável de novo a qualquer momento — cada chamada relê
+        os widgets do zero, então mudar k_v/tipo de obra/declaração entre
+        dois cliques não deixa resíduo algum: o próximo clique já reflete
+        o estado atual, sem invalidação nenhuma para esquecer."""
+        for filho in saida.winfo_children():
+            filho.destroy()
 
-        Sem isto, a sequência que o a6-revisor reproduziu passava direto:
-        selecionar um resultado, marcar vento como ação principal,
-        calcular a majoração, selecionar o valor MAJORADO, DESMARCAR vento
-        como principal, e "Usar este valor →" ainda devolvia o número
-        majorado — `_resultado_vento`/`_valor_final_kPa` ficavam em cache,
-        nunca reconferidos contra a declaração atual. A guarda do núcleo
-        (C1: "se not vento_principal, exigir k_v == 0") está correta; o
-        problema era a TELA nunca chamá-la de novo.
-
-        Se o valor "pronto para usar" atual (`_valor_final_kPa`) veio da
-        majoração (`_valor_final_e_majorado`), ele TAMBÉM é invalidado — o
-        engenheiro tem de clicar "Calcular teto e majoração" de novo e
-        escolher explicitamente antes de poder usar qualquer valor. Um
-        valor final que veio do card BASE (sem vento) não depende de
-        nenhum destes campos e continua válido."""
-        self._resultado_vento = None
-        self.lbl_resultado_vento.configure(text="")
-        self.btn_selecionar_vento.configure(state="disabled")
-        if self._valor_final_e_majorado:
-            self._valor_final_kPa = None
-            self._valor_final_origem = ""
-            self._valor_final_e_majorado = False
-            self.btn_usar.configure(state="disabled")
-            self.lbl_resumo.configure(
-                text="A declaração de vento mudou depois da última "
-                     "majoração — clique \"Calcular teto e majoração\" e "
-                     "selecione o valor novamente antes de usar.")
-
-    def _calcular_vento(self) -> None:
-        self._invalidar_vento()
-        if self._resultado_ativo is None:
-            messagebox.showinfo(
-                "Nenhum valor selecionado",
-                "Selecione um resultado (aba Teórico ou Semiempírico) antes "
-                "de calcular a majoração por vento — o teto e a majoração "
-                "dependem do FSg por trás do valor escolhido.")
-            return
         try:
-            FSg = self._resultado_ativo.FSg_efetivo
+            FSg = resultado.FSg_efetivo
         except ValueError as erro:
-            messagebox.showerror("Sem FSg", str(erro))
+            ttk.Label(saida, text=f"Sem FSg: {erro}",
+                      style="PainelFraco.TLabel", foreground=tema.VERMELHO,
+                      wraplength=680, justify="left").pack(
+                anchor="w", pady=(2, 4))
             return
 
         principal = self.v_vento_principal.get()
@@ -727,114 +776,104 @@ class DialogoSigmaAdm(tk.Toplevel):
         try:
             k_v = _float(self.v_kv.get(), K_V_DEFAULT)
         except ValueError:
-            messagebox.showerror("Entrada inválida", "k_v deve ser numérico.")
+            ttk.Label(saida, text="k_v deve ser numérico.",
+                      style="PainelFraco.TLabel", foreground=tema.VERMELHO
+                      ).pack(anchor="w", pady=(2, 4))
             return
 
         try:
             teto = k_v_maximo_admissivel(
                 FSg=FSg, vento_e_acao_variavel_principal=principal,
                 tipo_de_obra_da_lista_dos_30_por_cento=lista_30)
-            resultado = majoracao_admissivel(
-                self._resultado_ativo.sigma_adm_ELU_kPa, FSg=FSg,
+            majoracao = majoracao_admissivel(
+                resultado.sigma_adm_ELU_kPa, FSg=FSg,
                 vento_e_acao_variavel_principal=principal,
                 tipo_de_obra_da_lista_dos_30_por_cento=lista_30, k_v=k_v)
         except (MajoracaoDeVentoError, ValueError) as erro:
-            self.lbl_resultado_vento.configure(
-                text=f"RECUSADO:\n{erro}", foreground=tema.VERMELHO)
+            ttk.Label(saida, text=f"RECUSADO:\n{erro}",
+                      style="PainelFraco.TLabel", foreground=tema.VERMELHO,
+                      wraplength=680, justify="left").pack(
+                anchor="w", pady=(2, 4))
             return
 
-        self._resultado_vento = resultado
         texto = (
             f"Teto k_v admissível para este caso: {teto:.4f}\n"
-            f"σ_adm,ELU base: {resultado.sigma_adm_ELU_base_kPa:.1f} kPa   →   "
-            f"majorado: {resultado.sigma_adm_ELU_majorado_kPa:.1f} kPa "
-            f"(k_v = {resultado.k_v_adotado:.4f})\n"
-            f"FSg efetivo pós-majoração: {resultado.FSg_efetivo:.3f} "
-            f"(piso exigido: 1,6)\n\n" + resultado.rotulo_ELU + "\n\n"
-            + "\n".join(f"• {a}" for a in resultado.avisos)
+            f"σ_adm,ELU base: {majoracao.sigma_adm_ELU_base_kPa:.1f} kPa   →   "
+            f"majorado: {majoracao.sigma_adm_ELU_majorado_kPa:.1f} kPa "
+            f"(k_v = {majoracao.k_v_adotado:.4f})\n"
+            f"FSg efetivo pós-majoração: {majoracao.FSg_efetivo:.3f} "
+            f"(piso exigido: 1,6)\n\n" + majoracao.rotulo_ELU + "\n\n"
+            + "\n".join(f"• {a}" for a in majoracao.avisos)
         )
-        self.lbl_resultado_vento.configure(text=texto, foreground=tema.TEXTO)
-        self.btn_selecionar_vento.configure(state="normal")
+        ttk.Label(saida, text=texto, style="PainelFraco.TLabel",
+                  wraplength=680, justify="left").pack(anchor="w", pady=(2, 4))
+        ttk.Button(
+            saida, text="Usar valor majorado →",
+            command=lambda r=resultado, m=majoracao: self._usar_majorado(r, m)
+        ).pack(anchor="e", pady=(2, 4))
 
-    # ------------------------------------------------------------- resumo
-    def _montar_resumo(self, pai: tk.Misc) -> None:
+    # ------------------------------------------------------------- rodapé
+    def _montar_rodape(self, pai: tk.Misc) -> None:
         f = ttk.Frame(pai, style="Painel.TFrame")
         f.pack(fill="x", padx=10, pady=(0, 10))
-        self.lbl_resumo = ttk.Label(
-            f, text="Nenhum valor selecionado ainda.",
-            style="Painel.TLabel", font=("Segoe UI", 9, "bold"),
-            wraplength=560, justify="left")
-        self.lbl_resumo.pack(side="left", fill="x", expand=True)
-        self.btn_usar = ttk.Button(f, text="Usar este valor →",
-                                    style="Acento.TButton", state="disabled",
-                                    command=self._usar)
-        self.btn_usar.pack(side="right", padx=(8, 0))
+        ttk.Label(
+            f, text="Cada resultado acima tem seu próprio botão \"Usar "
+                    "este valor →\" (base ou majorado por vento) — não há "
+                    "um valor \"selecionado\" à parte guardado nesta "
+                    "janela: o botão de um card sempre entrega exatamente "
+                    "o número mostrado NAQUELE card, no momento do "
+                    "clique.",
+            style="Painel.TLabel", wraplength=560, justify="left"
+        ).pack(side="left", fill="x", expand=True)
         ttk.Button(f, text="Fechar sem usar valor algum",
                    command=self.destroy).pack(side="right")
 
-    # -------------------------------------------------------------- seleção
-    def _selecionar(self, resultado: ResultadoSigmaAdmELU) -> None:
-        self._resultado_ativo = resultado
-        self._resultado_vento = None
-        self.lbl_resultado_vento.configure(text="")
-        self.btn_selecionar_vento.configure(state="disabled")
-        try:
-            fsg_txt = f"{resultado.FSg_efetivo:.3f}"
-        except ValueError:
-            fsg_txt = "indisponível"
-        self.lbl_base_vento.configure(
-            text=f"Resultado ativo para majoração por vento: "
-                 f"{resultado.nome_do_metodo} — σ_adm,ELU = "
-                 f"{resultado.sigma_adm_ELU_kPa:.1f} kPa, FSg efetivo = "
-                 f"{fsg_txt}.")
+    # -------------------------------------------------------------- usar
+    def _usar_base(self, resultado: ResultadoSigmaAdmELU) -> None:
+        """Comando do botão "Usar este valor →" de `_card_resultado` — sem
+        majoração de vento. `resultado` chega por closure do próprio
+        botão que este card criou; não há atributo intermediário para
+        ficar obsoleto entre a criação do card e este clique."""
+        self._fechar_com_resultado(
+            valor_kPa=resultado.sigma_adm_ELU_kPa,
+            origem=(f"{resultado.nome_do_metodo} — {ROTULO_ELU}, sem "
+                    "majoração de vento."),
+            base=resultado, majorado=False)
 
-        self._valor_final_kPa = resultado.sigma_adm_ELU_kPa
-        self._valor_final_origem = (
-            f"{resultado.nome_do_metodo} — {ROTULO_ELU}, sem majoração de "
-            "vento.")
-        self._valor_final_e_majorado = False
-        self._atualizar_resumo()
+    def _usar_majorado(self, resultado: ResultadoSigmaAdmELU,
+                        majoracao: ResultadoMajoracaoVento) -> None:
+        """Comando do botão "Usar valor majorado →" que
+        `_calcular_vento_no_card` desenha — `majoracao` é o
+        `ResultadoMajoracaoVento` que aquela MESMA chamada acabou de
+        calcular (closure), nunca um valor lido de um atributo preenchido
+        num clique anterior."""
+        self._fechar_com_resultado(
+            valor_kPa=majoracao.sigma_adm_ELU_majorado_kPa,
+            origem=(f"{resultado.nome_do_metodo} — {ROTULO_ELU}, "
+                    f"MAJORADA por vento (k_v = {majoracao.k_v_adotado:.4f}"
+                    ", NBR 6122 §6.3.2)."),
+            base=resultado, majorado=True)
 
-    def _selecionar_majorado(self) -> None:
-        if self._resultado_vento is None or self._resultado_ativo is None:
-            return
-        self._valor_final_kPa = self._resultado_vento.sigma_adm_ELU_majorado_kPa
-        self._valor_final_origem = (
-            f"{self._resultado_ativo.nome_do_metodo} — {ROTULO_ELU}, "
-            f"MAJORADA por vento (k_v = "
-            f"{self._resultado_vento.k_v_adotado:.4f}, NBR 6122 §6.3.2).")
-        # MÉDIA #2 do GATE 2, rodada 3: setado explicitamente AQUI, no
-        # momento da seleção — nunca recalculado depois comparando floats
-        # (`_valor_final_kPa == self._resultado_vento.
-        # sigma_adm_ELU_majorado_kPa`, o padrão antigo em `_usar`).
-        self._valor_final_e_majorado = True
-        self._atualizar_resumo()
-
-    def _atualizar_resumo(self) -> None:
-        assert self._valor_final_kPa is not None
-        self.lbl_resumo.configure(
-            text=f"Pronto para usar: {self._valor_final_kPa:.1f} kPa — "
-                 f"{self._valor_final_origem}")
-        self.btn_usar.configure(state="normal")
-
-    def _usar(self) -> None:
-        if self._valor_final_kPa is None:
-            return
-        self.resultado_kPa = self._valor_final_kPa
-        ativo = self._resultado_ativo
+    def _fechar_com_resultado(self, *, valor_kPa: float, origem: str,
+                               base: ResultadoSigmaAdmELU,
+                               majorado: bool) -> None:
+        """Único ponto de saída "com valor" do diálogo — grava
+        `resultado_kPa`/`resultado_info` (proveniência para o memorial,
+        D-02 do GATE 2 rodada 3) e fecha a janela no mesmo clique que a
+        chamou. `base` é sempre o `ResultadoSigmaAdmELU` do card de
+        origem, mesmo quando `majorado=True` (os avisos/regras/práticas
+        do método de base continuam se aplicando)."""
+        self.resultado_kPa = valor_kPa
         self.resultado_info = {
-            "valor_kPa": self._valor_final_kPa,
-            "origem": self._valor_final_origem,
-            "metodo": ativo.nome_do_metodo if ativo else "",
+            "valor_kPa": valor_kPa,
+            "origem": origem,
+            "metodo": base.nome_do_metodo,
             "rotulo_ELU": ROTULO_ELU,
             "rotulo_fonte": ROTULO_FONTE_NAO_NORMATIVA,
-            "avisos": list(ativo.avisos) if ativo else [],
-            "regras": list(ativo.regras) if ativo else [],
-            "praticas": list(ativo.praticas) if ativo else [],
-            # MÉDIA #2 do GATE 2, rodada 3: flag setada explicitamente em
-            # `_selecionar`/`_selecionar_majorado` — nunca mais um `==`
-            # entre floats para decidir proveniência.
-            "majorado_por_vento": self._valor_final_e_majorado,
+            "avisos": list(base.avisos),
+            "regras": list(base.regras),
+            "praticas": list(base.praticas),
+            "majorado_por_vento": majorado,
         }
         self.destroy()
 
