@@ -704,3 +704,153 @@ o motivou (D1) também está fechado, e nenhum defeito novo apareceu nos
 arquivos tocados. Detalhe completo (reprodução do experimento, mutação,
 veredito por item) em `relatorios/conformidade.md`, mesmo adendo, e em
 `relatorios/revisao_codigo.json`.
+
+## Adendo 2026-09-01 — σ_adm a partir de SPT/CPT (Terzaghi/Vesic teórico +
+## Teixeira 1996 semiempírico + majoração por vento): GATE 3 (a7) — **APROVADO**
+
+Feature sobre `ruleset.yaml` v9 (hash
+`sha256:56f1282b23da45e7164d2e18ebafebee1c0b2f1e317ad0090787fbbe35f277cb`,
+conferido contra `ruleset.lock` antes desta rodada — sem deriva desde a
+aprovação do GATE 2). Módulos novos:
+`calc_core/geotecnico/{dominio,seguranca,capacidade,semiempirico,sigma_adm,vento}.py`
+e acréscimo em `calc_core/modelos.py`; remoção de `sigma_adm_por_spt` em
+`calc_core/sapata_isolada/geotecnia.py`. GATE 2 (a6) aprovou na rodada 1/3,
+nota 4,72, sem veto, commit final `831753a` — detalhe completo em
+`relatorios/revisao_codigo.json`.
+
+**Duas rodadas de CI vermelho no meio do caminho**, ambas fechadas antes
+desta validação: `mypy --strict` falhando por tupla de lambdas sem
+anotação em `sigma_adm.py` (D-01, corrigido em `f2b43eb`) e `pyyaml`
+faltando em `requirements-dev.txt` — sem essa linha `pytest tests/`
+aborta na coleta de `tests/test_capacidade_carga_vesic.py`, que lê
+`kb/formulas.yaml` diretamente (corrigido em `3398aff`). Depois, um
+polimento não bloqueante D-04/D-05 (`831753a`): `assert` trocado por
+`if/raise AssertionError` explícito em `semiempirico_spt` (sobrevive a
+`python -O`, não muda a invariante) e docstring de `fator_Nq` distinguindo
+o valor matemático (1,00 exato em φ=0) do valor de ponto flutuante
+devolvido (0,9999999999999998) — nenhuma das duas mudanças altera número,
+guarda ou rótulo, confirmado por mim lendo o diff completo do commit.
+
+### O que eu validei de forma independente (não relida do relato do a2/a4/a6)
+
+1. **Fatores de capacidade em ângulos NÃO testados pelos agentes
+   anteriores** (evitei 0°, 20°, 30°, já cobertos): calculei à mão, com
+   script Python próprio a partir das equações clássicas de
+   Reissner/Prandtl/Caquot-Kérisel (não lidas de `kb/formulas.yaml` nem do
+   código), Nc/Nq/Nγ para φ = 15°, 35° e 45°, e comparei contra
+   `fator_Nq`/`fator_Nc`/`fator_N_gamma` de `capacidade.py`:
+   φ=15° → Nq=3,9411/Nc=10,9765/Nγ=2,6480; φ=35° →
+   Nq=33,2961/Nc=46,1236/Nγ=48,0288; φ=45° → Nq=134,8738/Nc=133,8738/
+   Nγ=271,7477 — batem com o código a mais de 10 casas decimais nos três
+   ângulos (mesma formulação fechada, como esperado) e conferem com os
+   valores publicados em tabelas de referência de Vesic (ex.: Das,
+   *Principles of Foundation Engineering* — Nq(45)=134,88, Nc(45)=133,88,
+   Nγ(45)=271,76). Testei também os dois extremos do domínio declarado: φ=50°
+   (Nq=319,06/Nc=266,88/Nγ=762,86, aceito) e φ=50,0001°/φ negativo
+   (`ForaDoDominioError`, recusado nos dois lados).
+2. **Caso completo de `teorico_terzaghi_vesic` ponta a ponta**, com
+   parâmetros realistas: (a) argila não drenada (φ=0, c=50 kPa,
+   B=2,0×L=2,5 m, h=1,5 m, γ=18 kN/m³) → σ_r=324,08 kPa, σ_adm_ELU=108,03
+   kPa (FSg=3,00) — ordem de grandeza plausível para argila média rasa;
+   (b) areia drenada (c=0, φ=32°, B=L=1,8 m, h=1,2 m, γ=19 kN/m³) →
+   σ_r=1168,63 kPa, σ_adm_ELU=389,54 kPa — plausível para areia
+   medianamente compacta. Recalculei as parcelas de cada caso à mão
+   (coesão, sobrecarga, peso, fatores de forma de De Beer) e bati com o
+   `memoria` devolvido pela função, dentro de arredondamento de última
+   casa.
+3. **Piso `FSg/(1+k_v) >= 1,6` de `vento.py`**, construído por mim: caso
+   que BINDA — FSg=2,00, lista fechada (teto 0,30), k_v=0,30 → FSg
+   efetivo=1,538 < 1,6, `majoracao_admissivel` RECUSA com
+   `MajoracaoDeVentoError` citando o k_v máximo correto (0,25);
+   `k_v_maximo_admissivel` devolve 0,25 de forma independente, e aplicar
+   k_v=0,25 passa com FSg efetivo exatamente 1,600. Caso que NÃO binda —
+   FSg=3,00, k_v=0,15 → passa, FSg efetivo=2,609, sem tocar o teto.
+4. **Não contaminação do motor mínimo** (`calc_core/geotecnico/
+   geometria.py`, usado por `ui/app_desktop.py`): `git log` confirma que
+   `geometria.py` não foi tocado desde o commit original (`07bb880`); o
+   diff de `calc_core/modelos.py` desde antes desta feature é
+   estritamente aditivo (9 classes novas, nenhuma alteração em
+   `EntradaSapataCentrada`/`ResultadoGeometria`); `ui/app_desktop.py` não
+   importa nenhum dos módulos novos (`sigma_adm` que aparece ali é o nome
+   do campo de entrada do engenheiro, não relacionado ao módulo novo).
+   Suíte completa: 385 testes passam num worktree com as mudanças (mais 1
+   falha causada por ausência de `tkinter` no Python 3.11 deste sandbox —
+   ambiental, pré-existente, alheia a este commit: confirmado que até
+   `ui/app_desktop.py`, do motor MÍNIMO original, já falharia ao importar
+   `tkinter` neste ambiente, então não é regressão desta feature). Rodada
+   isolada de `tests/test_geometria.py` (motor mínimo) e dos 5 arquivos de
+   teste da feature nova: **112 passed**, sem nenhuma mudança de
+   comportamento no motor mínimo.
+5. **REQ-SIGMA-09 — varredura própria, não só nos arquivos que o a6 já
+   olhou**: `grep -rn "sigma_adm" --include="*.py"` no repo inteiro,
+   filtrando as ocorrências que já têm o sufixo `_ELU`. Todas as
+   ocorrências restantes são (a) o campo de ENTRADA pré-existente do
+   motor mínimo e do motor amplo (`EntradaSapataCentrada.sigma_adm`,
+   `Solo.sigma_adm` em `calc_core/sapata_isolada/geotecnia.py`) — dado
+   informado pelo engenheiro, não devolvido por este código novo; (b)
+   docstrings/comentários dos módulos novos que EXPLICAM por que a saída
+   NÃO se chama `sigma_adm` sem sufixo (avisos corretos, não violações);
+   (c) nomes de variável em teste referentes ao campo de entrada
+   pré-existente. Os três dataclasses que este código novo devolve
+   (`ResultadoSigmaAdmELU`, `ResultadoDispersaoSemiempirica`,
+   `ResultadoMajoracaoVento`) têm 100% dos campos numéricos com sufixo
+   `_ELU` (`sigma_adm_ELU_kPa`, `sigma_adm_ELU_majorado_kPa`,
+   `sigma_adm_ELU_base_kPa`), confirmado por leitura de
+   `calc_core/modelos.py`. Nenhum código em `ui/` ou em
+   `calc_core/sapata_isolada/` consome ainda `teorico_terzaghi_vesic`,
+   `semiempirico_spt` ou `majoracao_admissivel` (só comentários apontando
+   para onde a próxima interface vai plugar) — logo não há hoje nenhum
+   ponto de consumo que possa descolar o rótulo do número.
+6. **Achados residuais do a6 (D-02, D-03, D-06) — decisão própria, não
+   herdada**: nenhum bloqueia o GATE 3.
+   - **D-02** (`exigir_ausencia_de_ponderacao(gamma_m_aplicado=...)` sem
+     chamador de produção): confirmei lendo `seguranca.py` que o único
+     chamador real de fato, `comparar_com_tensao_atuante`, passa apenas
+     `gamma_f_aplicado_na_acao`. Mas confirmei também que não existe, em
+     nenhum lugar do repositório, uma rota que produza um resultado em
+     "valores de cálculo" (gamma_m) para alimentar essa guarda — toda
+     função pública desta feature chama `exigir_metodo_admissivel`
+     primeiro, e o método `'calculo'` é recusado nos 5 pontos de entrada
+     (reconfirmei 2 deles eu mesmo). Guarda morta em produção, mas sem
+     vetor de insegurança alcançável hoje — BAIXA, registro para quando a
+     rota de cálculo existir, não bloqueante.
+   - **D-03** (~30 mudanças cosméticas de tipagem, `Optional[X]` →
+     `X | None`, no motor amplo NÃO auditado, misturadas ao commit
+     normativo): confirmei que são preservadoras de comportamento — toda
+     a suíte de `sapata_isolada/` (rigidez, flexão, planta travada,
+     propagação de tensões, pressão de serviço, sanidade, correções)
+     passa sem alteração de resultado. É débito de HIGIENE DE PROCESSO
+     (cosmética deveria ir em commit separado do normativo, especialmente
+     no motor que o CLAUDE.md marca como não auditado), não defeito de
+     comportamento — não bloqueante, registrado para a próxima rodada.
+   - **D-06** (`tools/checar_rastreabilidade.py` pressuposto por
+     `a2-verificador.md` mas ausente do repo): confirmei a ausência
+     (`ls tools/` só tem `checar_dimensoes.py` e `decodificar_nbr.py`). É
+     débito de INFRAESTRUTURA DE TOOLING — a rastreabilidade em si foi
+     verificada (pelo a6, com script AST ad hoc, 100%; por mim, por
+     amostragem manual de vários docstrings citando `[rule:]`/`[pratica:]`
+     com página e item). A ausência da ferramenta não é, em si, um
+     defeito nesta feature — é dívida geral do pipeline que deveria ter
+     sido criada há mais rodadas. Não bloqueante para este GATE 3, mas
+     deveria entrar no backlog de infraestrutura antes que outra feature
+     precise da mesma checagem manual.
+
+### Veredito — GATE 3
+
+**APROVADO.** Os seis pontos pedidos foram verificados por experimento
+independente, não por releitura do código ou do relato dos agentes
+anteriores: os fatores de capacidade em três ângulos novos batem com a
+formulação clássica e com tabelas publicadas independentes; os dois casos
+completos (argila e areia) produzem números de ordem de grandeza correta
+e parcelas que conferem à mão; o piso de vento binda e recusa exatamente
+onde deveria, e não binda onde não deveria; o motor mínimo
+(`geometria.py`, `ui/app_desktop.py`) está comprovadamente intocado, sem
+import cruzado e sem regressão na sua suíte; REQ-SIGMA-09 se sustenta numa
+varredura própria do repositório inteiro, não só dos arquivos que os
+agentes anteriores tocaram; e os três achados residuais (D-02, D-03, D-06)
+são, na minha avaliação independente, registro para rodadas futuras, não
+bloqueio deste portão — nenhum deles altera um número, abre um vetor de
+insegurança alcançável em produção, ou deixa uma afirmação normativa sem
+verificação executável. Detalhe da reprodução numérica completa (scripts,
+valores, comparação com tabelas publicadas) em
+`relatorios/conformidade.md`, mesmo adendo.

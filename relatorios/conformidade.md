@@ -737,3 +737,157 @@ casos ALTA aprovados (item 1, 2 e 3), nenhum item pendente bloqueia,
 testes de equilíbrio (`asdict` exato) e proteção por mutação verdes.
 Veredito e evidência completa também em `relatorios/revisao_codigo.md`
 (mesmo adendo) e `relatorios/revisao_codigo.json`.
+
+## Adendo 2026-09-01 — σ_adm a partir de SPT/CPT (Terzaghi/Vesic teórico +
+## Teixeira 1996 semiempírico + majoração por vento), GATE 3 (a7) — **APROVADO**
+
+Diferente da conformidade do escopo mínimo (seção inicial deste arquivo,
+sem exemplo de livro-texto disponível), esta feature tem verificação
+FÍSICA e ARITMÉTICA direta contra formulação clássica publicada — Vesic
+(1975) via Reissner/Prandtl/Caquot-Kérisel — o que permite um teste mais
+forte que "calculado à mão pelo próprio agente": as equações são
+conhecidas de forma independente de qualquer texto deste repositório.
+
+### Caso 1 — Fatores de capacidade em ângulos fora do que os agentes
+### anteriores já cobriram
+
+a2/a4/a6 verificaram φ=0°, 20°, 30° (153/153 células da Tab. 2.2 de Vesic
+dentro de tolerância) e os contornos do domínio. Escolhi φ=15°, 35° e
+45°, calculados por mim com script Python independente a partir das
+equações clássicas (não copiadas de `kb/formulas.yaml` nem do código):
+
+```
+Nq(phi) = e^(pi*tan(phi)) * tan(45 + phi/2)^2      (Reissner, 1924)
+Nc(phi) = (Nq(phi) - 1) / tan(phi)                  (Prandtl, 1921)
+Ngamma(phi) = 2*(Nq(phi) + 1)*tan(phi)              (Caquot-Kérisel/Vesic)
+```
+
+| φ | Nq (meu cálculo) | Nq (`capacidade.py`) | Nc (meu) | Nc (código) | Nγ (meu) | Nγ (código) |
+|---|---|---|---|---|---|---|
+| 15° | 3,9411 | 3,94115 | 10,9765 | 10,97651 | 2,6480 | 2,64795 |
+| 35° | 33,2961 | 33,29609 | 46,1236 | 46,12360 | 48,0288 | 48,02876 |
+| 45° | 134,8738 | 134,87384 | 133,8738 | 133,87384 | 271,7477 | 271,74768 |
+
+Batem em todas as casas que o meu script imprimiu (esperado — mesma
+formulação fechada). Conferi também contra tabelas de fatores de Vesic
+publicadas de forma independente deste projeto (ex. Das, *Principles of
+Foundation Engineering*): Nq(45°)=134,88, Nc(45°)=133,88, Nγ(45°)=271,76
+— batem. Testei os dois lados do limite do domínio declarado (0 a 50°):
+φ=50° aceito (Nq=319,06/Nc=266,88/Nγ=762,86); φ=50,0001° e φ negativo
+recusados com `ForaDoDominioError`.
+
+### Caso 2 — capacidade de carga teórica ponta a ponta, dois solos reais
+
+**Argila não drenada** (φ=0, c=50 kPa, sapata 2,0×2,5 m, h=1,5 m,
+γ=18 kN/m³, `natureza_do_carregamento='nao_drenado'`):
+
+```
+sigma_r = 324,08 kPa   (parcela coesão 297,08 + sobrecarga 27,00 + peso 0,00)
+sigma_adm_ELU = sigma_r / 3,00 = 108,03 kPa
+```
+
+Refiz as três parcelas à mão (Nc=5,14159 exato pelo ramo do limite,
+Sc=1+0,8·0,19452=1,15559, Sq=1, q=γ·h=27) e bati com o `memoria` da
+função. 108 kPa para argila média rasa é ordem de grandeza plausível
+(faixa usual de literatura para argila de consistência média: ~100-200
+kPa com FS=3).
+
+**Areia drenada** (c=0, φ=32°, sapata quadrada 1,8×1,8 m, h=1,2 m,
+γ=19 kN/m³, `natureza_do_carregamento='drenado'`):
+
+```
+sigma_r = 1168,63 kPa   (sobrecarga 858,63 + peso 310,00)
+sigma_adm_ELU = sigma_r / 3,00 = 389,54 kPa
+```
+
+Refiz a conta com Nq(32°)=23,1768, Sq=1+tan(32°)=1,62487, Nγ(32°)=30,2147,
+Sγ=0,60 (quadrada) — bati exatamente com o `memoria` da função. 390 kPa
+para areia medianamente compacta é plausível (faixa usual: 300-600 kPa
+com FS=3 para sapata rasa nessa ordem de dimensão/embutimento).
+
+### Caso 3 — piso `FSg/(1+k_v) >= 1,6` de `vento.py`
+
+Caso que BINDA, construído por mim: FSg=2,00 (linha das provas de carga),
+lista fechada de sete obras (teto 0,30), k_v=0,30 →
+`k_v_maximo_admissivel(...)` devolve **0,25** de forma independente do
+que a função de aplicação faz; `majoracao_admissivel(..., k_v=0,30)`
+**RECUSA** com `MajoracaoDeVentoError`, citando FSg efetivo=1,538<1,6 e o
+k_v máximo correto (0,25); aplicando k_v=0,25 o resultado passa com FSg
+efetivo exatamente **1,600** (o piso, não uma folga arbitrária).
+
+Caso que NÃO binda: FSg=3,00, k_v=0,15 → passa, FSg efetivo=2,609 —
+resultado majorado 345,0 kPa a partir de 300,0 kPa base, sem tocar o
+teto.
+
+### Caso 4 — motor mínimo intocado
+
+`git log --oneline -- calc_core/geotecnico/geometria.py` mostra um único
+commit desde sempre (`07bb880`, a implementação original) — nenhum
+commit desta feature tocou o arquivo. `git diff` de `calc_core/modelos.py`
+desde antes desta feature é estritamente aditivo (9 dataclasses novas,
+`EntradaSapataCentrada`/`ResultadoGeometria` inalteradas). `ui/
+app_desktop.py` não importa `sigma_adm.py`, `vento.py`, `capacidade.py`
+nem `semiempirico.py` — o único `sigma_adm` ali é o nome do campo de
+entrada digitado pelo engenheiro, presente desde a implementação
+original. Suíte isolada do motor mínimo + suíte da feature nova:
+`tests/test_capacidade_carga_vesic.py`, `test_geometria.py`,
+`test_metodo_de_seguranca.py`, `test_sigma_adm_semiempirico.py`,
+`test_vento_majoracao.py` → **112 passed**, sem alteração de
+comportamento no motor mínimo. Suíte completa do repositório (ignorando
+2 arquivos de teste que dependem de `ui.completo`, que por sua vez
+importa `tkinter` — ausente no Python 3.11 deste sandbox, uma limitação
+AMBIENTAL pré-existente e alheia a esta feature: até `ui/app_desktop.py`,
+do motor MÍNIMO original de antes desta feature, falharia ao importar
+`tkinter` neste mesmo ambiente): **385 passed, 1 failed** (a falha
+restante é a mesma cascata de importação de `tkinter`, disparada
+indiretamente por um teste de `ui/completo/` que importa outro módulo de
+teste do mesmo pacote — não uma regressão numérica).
+
+### Caso 5 — REQ-SIGMA-09, varredura própria
+
+`grep -rn "sigma_adm" --include="*.py"` no repositório inteiro, filtrando
+o que já tem sufixo `_ELU`. Toda ocorrência restante é ou (a) o campo de
+ENTRADA pré-existente (`Solo.sigma_adm`, `EntradaSapataCentrada.sigma_adm`
+— dado informado pelo engenheiro, não devolvido por esta feature), ou (b)
+docstring/comentário explicando por que a saída NÃO se chama assim, ou
+(c) variável de teste referente ao campo de entrada. Os três dataclasses
+que a feature devolve (`ResultadoSigmaAdmELU`, `ResultadoDispersaoSemiempirica`,
+`ResultadoMajoracaoVento`) têm 100% dos campos numéricos
+com sufixo `_ELU`. Nenhum consumidor em `ui/` ou `sapata_isolada/` ainda
+lê esses dataclasses — logo não há hoje um ponto de contato onde o
+rótulo poderia se perder no caminho até a tela.
+
+### Achados residuais do a6 (D-02, D-03, D-06) — avaliação independente
+
+Nenhum bloqueia GATE 3. D-02 (guarda `gamma_m_aplicado` sem chamador de
+produção): confirmado, mas sem vetor de insegurança alcançável — a rota
+de "valores de cálculo" que a acionaria não existe em nenhum lugar do
+repositório, e `exigir_metodo_admissivel` bloqueia essa rota em todo
+ponto de entrada público (reconfirmei 2 dos 5). D-03 (cosmética de
+tipagem no motor amplo não auditado, misturada ao commit normativo):
+confirmado que preserva comportamento (suíte completa de
+`sapata_isolada/` verde) — é débito de HIGIENE DE PROCESSO, não de
+comportamento. D-06 (`tools/checar_rastreabilidade.py` ausente):
+confirmada a ausência; a rastreabilidade em si foi checada por outros
+meios (script AST do a6, amostragem manual minha) — débito de
+INFRAESTRUTURA, não defeito da feature. Os três ficam registrados para
+rodadas futuras.
+
+### Veredito — GATE 3
+
+**APROVADO.** Todos os casos ALTA (fatores de capacidade contra
+formulação clássica e tabelas publicadas independentes; capacidade de
+carga ponta a ponta para argila e areia com ordem de grandeza plausível;
+piso de vento bindando e não bindando exatamente onde deveria) passaram
+por reprodução numérica independente, não por releitura de código ou de
+relato. Motor mínimo comprovadamente intocado e sem regressão. REQ-SIGMA-09
+verificado por varredura própria do repositório inteiro. Os três achados
+residuais do a6 (D-02, D-03, D-06) são registro para depois, não bloqueio
+— nenhum altera um número, abre vetor de insegurança alcançável em
+produção, ou deixa uma afirmação normativa sem verificação executável.
+Duas rodadas de CI vermelho no meio do caminho (mypy --strict; pyyaml
+faltando em `requirements-dev.txt`) foram corrigidas antes desta
+validação, e o polimento D-04/D-05 (commit `831753a`) foi conferido
+diff-a-diff: nenhuma mudança de número, guarda ou rótulo. Evidência
+completa e prosa equivalente também em `relatorios/revisao_codigo.md`,
+mesmo adendo.
