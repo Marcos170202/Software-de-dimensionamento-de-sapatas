@@ -109,7 +109,10 @@ def fator_Nq(phi_graus: float) -> float:
     [pratica: FB-CINTRA-TERZAGHI-VESIC-capacidade-de-carga] (origem)
 
     Domínio 0 <= φ <= 50°, extensão declarada da Tab. 2.2. Fora dele a função
-    RECUSA (REQ-SIGMA-07 a). Contorno: φ = 0 → Nq = 1,00 exato.
+    RECUSA (REQ-SIGMA-07 a). Contorno: φ = 0 → Nq = 1,00 matematicamente
+    (e^0 · tan²(45°) = 1·1); o valor de ponto flutuante devolvido é
+    0,9999999999999998 (erro de arredondamento de math.tan/math.exp em
+    ~1e-16, sem efeito prático — nit de docstring, D-05 da revisão a6).
     """
     _exigir_phi(phi_graus)
     phi = math.radians(phi_graus)

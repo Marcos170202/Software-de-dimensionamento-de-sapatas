@@ -236,7 +236,16 @@ def semiempirico_spt(
             ))
 
     if not resultados:
-        assert ultima_recusa is not None
+        # `assert` seria removido sob `python -O`, e um `raise None`
+        # resultante mascararia a recusa de domínio real atrás de um
+        # `TypeError` incompreensível (D-04, revisão a6 do GATE 2). A
+        # invariante (loop percorreu >=1 tentativa, então alguma exceção
+        # foi capturada) continua garantida por construção; aqui só
+        # trocamos a forma de expressá-la por uma que sobrevive a -O.
+        if ultima_recusa is None:
+            raise AssertionError(
+                "invariante violada: nenhum resultado e nenhuma recusa "
+                "registrada — 'tentativas' está vazia?")
         raise ultima_recusa
 
     return ResultadoDispersaoSemiempirica(
