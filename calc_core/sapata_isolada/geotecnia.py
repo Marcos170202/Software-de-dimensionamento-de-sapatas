@@ -12,7 +12,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 GAMMA_AGUA = 9.81  # kN/m3
 
@@ -46,19 +45,19 @@ class Camada:
     # --- resistência (estabilidade / capacidade de carga)
     phi: float = 30.0                         # ângulo de atrito efetivo [graus]
     coesao: float = 0.0                       # coesão efetiva [kPa]
-    nspt: Optional[float] = None              # N_SPT médio da camada
+    nspt: float | None = None              # N_SPT médio da camada
 
     # --- deformabilidade: solos granulares
-    Es: Optional[float] = None                # módulo de deformabilidade [kPa]
+    Es: float | None = None                # módulo de deformabilidade [kPa]
     nu: float = 0.30                          # coeficiente de Poisson
 
     # --- deformabilidade: solos coesivos
-    Cc: Optional[float] = None                # índice de compressão
-    Cs: Optional[float] = None                # índice de recompressão (~Cc/6)
-    e0: Optional[float] = None                # índice de vazios inicial
+    Cc: float | None = None                # índice de compressão
+    Cs: float | None = None                # índice de recompressão (~Cc/6)
+    e0: float | None = None                # índice de vazios inicial
     OCR: float = 1.0                          # razão de sobreadensamento
-    cv: Optional[float] = None                # coef. de adensamento [m2/ano]
-    C_alpha: Optional[float] = None           # coef. de compressão secundária
+    cv: float | None = None                # coef. de adensamento [m2/ano]
+    C_alpha: float | None = None           # coef. de compressão secundária
     drenagem_dupla: bool = True
 
     # --- correlação SPT -> Es (indicativa; NÃO substitui ensaio)
@@ -75,7 +74,7 @@ class Camada:
             return self.k_spt_MPa * self.nspt * 1000.0
         raise ValueError(f"Camada '{self.nome}': informe Es ou nspt.")
 
-    def modulo_deformabilidade_opcional(self) -> Optional[float]:
+    def modulo_deformabilidade_opcional(self) -> float | None:
         """Como modulo_deformabilidade(), mas devolve None se faltarem dados."""
         try:
             return self.modulo_deformabilidade()
@@ -99,7 +98,7 @@ class PerfilGeotecnico:
     """
 
     camadas: list[Camada] = field(default_factory=list)
-    nivel_agua: Optional[float] = None
+    nivel_agua: float | None = None
 
     # ------------------------------------------------------------------ acesso
     @property
@@ -352,7 +351,7 @@ class Solo:
     fs_deslizamento: float = 1.5
     fs_tombamento: float = 1.5
     coef_sigma_max_excentrico: float = 1.2  # majoração admitida no vértice
-    perfil: Optional[PerfilGeotecnico] = None
+    perfil: PerfilGeotecnico | None = None
 
     @property
     def atrito_base_rad(self) -> float:
@@ -365,16 +364,34 @@ class Solo:
         return self.gamma_solo * self.hf
 
 
-def sigma_adm_por_spt(nspt_medio: float, limite_MPa: float = 0.02) -> float:
-    """
-    Estimativa PRELIMINAR da tensão admissível [kPa] por correlação com o SPT
-    (regra usual: sigma_adm [MPa] ~ N/50, com 5 <= N <= 20).
-
-    ATENÇÃO: valor apenas indicativo para pré-dimensionamento. A NBR 6122:2019
-    exige investigação geotécnica e justificativa formal da tensão adotada.
-    """
-    n = max(5.0, min(20.0, nspt_medio))
-    return max(limite_MPa, n / 50.0) * 1000.0
+# --------------------------------------------------------------------------- #
+#  `sigma_adm_por_spt` FOI REMOVIDA nesta rodada (a4, v9 do ruleset).
+#
+#  Era a correlação SPT -> sigma_adm pré-existente deste módulo, jamais
+#  conferida contra fonte alguma, e o ruleset a marcou para SUBSTITUIÇÃO, não
+#  para validação a posteriori (`escopo_amplo_em_conferencia` >
+#  "sapata_isolada.geotecnia" > observacao, atualização de 2026-08-31).
+#  Três defeitos concretos, cada um proibido por um requisito da v9:
+#    - fórmula divergente da fonte aprovada: faltava a parcela "+ q" e havia um
+#      piso `limite_MPa = 0,02` sem procedência (REQ-SIGMA-13);
+#    - CLAMPAVA a entrada em 5..20 (`max(5, min(20, n))`) em vez de RECUSAR,
+#      devolvendo número plausível para N_SPT fora do domínio declarado pela
+#      fonte — exatamente a extrapolação silenciosa que REQ-SIGMA-04 proíbe;
+#    - citava "NBR 6122:2019", edição inexistente no acervo (é 2022).
+#
+#  SUBSTITUTA APROVADA E AUDITADA:
+#      calc_core.geotecnico.semiempirico.regra_brasileira_nspt_50_argila
+#      calc_core.geotecnico.semiempirico.teixeira_1996_areia
+#      calc_core.geotecnico.sigma_adm.semiempirico_spt   (as duas lado a lado)
+#  A saída de lá é a PARCELA DE ELU da tensão admissível, com guarda de domínio
+#  que recusa, FS embutido verificado em execução e rótulo de ELU obrigatório.
+#
+#  A remoção é deliberadamente RUIDOSA: nenhum chamador restava em calc_core/,
+#  ui/ ou tests/ (conferido por busca antes da remoção), e um import remanescente
+#  falha com ImportError em vez de continuar produzindo o número antigo ao lado
+#  do novo. Manter as duas convivendo seria manter duas respostas diferentes
+#  para a mesma pergunta, uma auditada e uma não.
+# --------------------------------------------------------------------------- #
 
 
 # --------------------------------------------------------------------------- #
@@ -389,7 +406,7 @@ def sigma_adm_por_spt(nspt_medio: float, limite_MPa: float = 0.02) -> float:
 #  capacidade de carga de camada subjacente. O a2 aprovou o NÚMERO, não uma
 #  verificação de projeto construída sobre ele.
 # --------------------------------------------------------------------------- #
-def tensao_liquida_na_base(q_aplicada: float, solo: "Solo") -> float:
+def tensao_liquida_na_base(q_aplicada: float, solo: Solo) -> float:
     """
     Pressão LÍQUIDA na base [kPa] = q aplicada − sobrecarga geostática na cota
     de assentamento (alívio da escavação), limitada a valores não negativos.
@@ -411,7 +428,7 @@ def tensao_liquida_na_base(q_aplicada: float, solo: "Solo") -> float:
 
 
 def largura_equivalente(q_liquida: float, a: float, b: float,
-                        delta_sigma: float) -> Optional[tuple[float, float]]:
+                        delta_sigma: float) -> tuple[float, float] | None:
     """
     Dimensões (a_eq, b_eq) [m] da área equivalente de espraiamento associada a
     um Δσ, para o traçado do tronco de espraiamento no corte.
@@ -492,8 +509,8 @@ class PontoPropagacao:
     z: float
     profundidade: float
     delta_sigma: float
-    largura_equivalente_a: Optional[float]
-    largura_equivalente_b: Optional[float]
+    largura_equivalente_a: float | None
+    largura_equivalente_b: float | None
     rotulo: str
     fonte: str
 
@@ -563,10 +580,10 @@ class PropagacaoTensoes:
     informativo: bool = True   # sempre True — REQ-PROP-03
 
 
-def propagacao_em_profundidade(solo: "Solo", a: float, b: float,
+def propagacao_em_profundidade(solo: Solo, a: float, b: float,
                                q_aplicada: float,
                                fonte: str = FONTE_BOUSSINESQ,
-                               z_max: Optional[float] = None
+                               z_max: float | None = None
                                ) -> PropagacaoTensoes:
     """
     Δσ nos limites de camada do perfil estratigráfico, abaixo da base da
@@ -714,8 +731,8 @@ def propagacao_em_profundidade(solo: "Solo", a: float, b: float,
         pontos=tuple(pontos), camadas=tuple(camadas), avisos=tuple(avisos))
 
 
-def propagacao_comparada(solo: "Solo", a: float, b: float, q_aplicada: float,
-                         z_max: Optional[float] = None
+def propagacao_comparada(solo: Solo, a: float, b: float, q_aplicada: float,
+                         z_max: float | None = None
                          ) -> dict[str, PropagacaoTensoes]:
     """
     Roda os DOIS métodos de propagação sobre o mesmo perfil e devolve ambos,
