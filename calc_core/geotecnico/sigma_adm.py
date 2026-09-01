@@ -37,7 +37,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from calc_core.geotecnico.capacidade import capacidade_de_carga
-from calc_core.geotecnico.dominio import ForaDoDominioError
+from calc_core.geotecnico.dominio import (
+    ForaDoDominioError,
+    NenhumMetodoAplicavelError,
+)
 from calc_core.geotecnico.seguranca import (
     ORIGEM_ANALITICA,
     exigir_metodo_admissivel,
@@ -184,14 +187,24 @@ def semiempirico_spt(
     PENDENTE_HUMANO e por isso não está implementada (ver o módulo
     ``geotecnico.semiempirico``).
 
-    Se NENHUMA correlação se aplicar, a função levanta ``ForaDoDominioError``
-    da última recusa em vez de devolver lista vazia: entrada sem método
-    aplicável é recusa, não resultado (REQ-SIGMA-04).
+    Se NENHUMA correlação se aplicar, a função levanta
+    ``NenhumMetodoAplicavelError`` (subclasse de ``ForaDoDominioError``) em vez
+    de devolver lista vazia: entrada sem método aplicável é recusa, não
+    resultado (REQ-SIGMA-04). A exceção carrega em ``.recusas`` a MESMA
+    ``tuple[RecusaDeMetodo, ...]`` que ``ResultadoDispersaoSemiempirica.recusas``
+    traria — uma entrada por correlação candidata, na ordem de avaliação, cada
+    uma com ``nome_do_metodo``, ``pratica``, ``parametro``, ``valor``,
+    ``intervalo``, ``fonte``, ``forca``, ``motivo``, ``apoio_no_ruleset`` e
+    ``sugestao``. Ou seja: o caminho "nenhuma se aplica" expõe exatamente a
+    mesma informação do caminho "ao menos uma se aplica", só que por exceção.
+    Reter só a última recusa era o defeito D-03 da revisão a6 do GATE 2 — com
+    N_SPT = 25 em argila, a recusa exibida era a de Teixeira ("solo 'argila'
+    fora do domínio") e a que explicava o caso ("N_SPT = 25 fora de 5 a 20",
+    da regra N/50) sumia.
     """
     exigir_metodo_admissivel(entrada.metodo_de_seguranca)
     resultados: list[ResultadoSigmaAdmELU] = []
     recusas: list[RecusaDeMetodo] = []
-    ultima_recusa: ForaDoDominioError | None = None
 
     tentativas: tuple[tuple[str, str, Callable[[], ResultadoSigmaAdmELU]], ...] = (
         (NOME_REGRA_50, "FB-REGRA-BRASILEIRA-Nspt-50-argila",
@@ -223,7 +236,6 @@ def semiempirico_spt(
         try:
             resultados.append(executar())
         except ForaDoDominioError as recusa:
-            ultima_recusa = recusa
             recusas.append(RecusaDeMetodo(
                 nome_do_metodo=nome,
                 pratica=pratica,
@@ -233,6 +245,8 @@ def semiempirico_spt(
                 fonte=recusa.fonte,
                 forca=recusa.forca,
                 motivo=recusa.mensagem,
+                apoio_no_ruleset=recusa.apoio_no_ruleset,
+                sugestao=recusa.sugestao,
             ))
 
     if not resultados:
@@ -242,11 +256,14 @@ def semiempirico_spt(
         # invariante (loop percorreu >=1 tentativa, então alguma exceção
         # foi capturada) continua garantida por construção; aqui só
         # trocamos a forma de expressá-la por uma que sobrevive a -O.
-        if ultima_recusa is None:
+        if not recusas:
             raise AssertionError(
                 "invariante violada: nenhum resultado e nenhuma recusa "
                 "registrada — 'tentativas' está vazia?")
-        raise ultima_recusa
+        # TODAS as recusas viajam, não a última (D-03): a exceção herda de
+        # ForaDoDominioError, então quem só trata "algo foi recusado" segue
+        # funcionando, e quem quer os detalhes lê `.recusas`.
+        raise NenhumMetodoAplicavelError.de_recusas(recusas)
 
     return ResultadoDispersaoSemiempirica(
         resultados=tuple(resultados),
@@ -257,6 +274,7 @@ def semiempirico_spt(
 
 __all__ = [
     "NOME_TEORICO",
+    "NenhumMetodoAplicavelError",
     "semiempirico_spt",
     "teorico_terzaghi_vesic",
 ]

@@ -103,6 +103,9 @@ class AppSapataCompleto(tk.Tk):
         self._sapata: Sapata | None = None
         self._resultado: ResultadoSapata | None = None
         self._modelo: dict | None = None
+        self._proveniencia_sigma_adm: dict | None = None
+        """Snapshot de `PainelEntrada.ultimo_sigma_adm_calculado` no momento
+        do último `_calcular()` — ver ali e D-02 do GATE 2, rodada 3."""
 
         self._montar_menu()
         self._montar_topo()
@@ -270,12 +273,19 @@ class AppSapataCompleto(tk.Tk):
         self._sapata = sapata
         self._resultado = resultado
         self._modelo = construir_modelo_visual(sapata, resultado)
+        # D-02 do GATE 2, rodada 3: snapshot da proveniência de σ_adm NO
+        # MOMENTO deste cálculo — `PainelEntrada.ultimo_sigma_adm_calculado`
+        # já é `None` sempre que `v_sigma_adm` não é mais o que o diálogo
+        # calculou (ver `formulario.py::_ao_editar_sigma_adm`), então
+        # copiar a referência aqui é suficiente; não há necessidade de
+        # revalidar de novo nesta camada.
+        self._proveniencia_sigma_adm = self.formulario.ultimo_sigma_adm_calculado
 
         if not resultado.modo_verificacao:
             self.formulario.registrar_resultado_automatico(resultado)
 
         self.visualizacao.atualizar(sapata, resultado, self._modelo)
-        self.resultado.atualizar(sapata, resultado)
+        self.resultado.atualizar(sapata, resultado, self._proveniencia_sigma_adm)
         self._atualizar_status(sapata, resultado)
 
     def _atualizar_status(self, sapata: Sapata, resultado: ResultadoSapata) -> None:
@@ -400,6 +410,7 @@ class AppSapataCompleto(tk.Tk):
         self._sapata = None
         self._resultado = None
         self._modelo = None
+        self._proveniencia_sigma_adm = None
         self.resultado.limpar(mensagem)
         self.visualizacao.limpar(mensagem)
         self.status_esquerda.configure(text=mensagem)
@@ -554,8 +565,9 @@ class AppSapataCompleto(tk.Tk):
         if not caminho:
             return
         try:
-            excel_export.exportar_relatorio_excel(caminho, self._sapata,
-                                                   self._resultado)
+            excel_export.exportar_relatorio_excel(
+                caminho, self._sapata, self._resultado,
+                proveniencia_sigma_adm=self._proveniencia_sigma_adm)
         except Exception as erro:   # noqa: BLE001
             messagebox.showerror("Erro ao exportar Excel",
                                  f"{type(erro).__name__}: {erro}")
@@ -575,7 +587,9 @@ class AppSapataCompleto(tk.Tk):
         if not caminho:
             return
         try:
-            gerar_memorial_pdf(caminho, self._sapata, self._resultado, self._modelo)
+            gerar_memorial_pdf(
+                caminho, self._sapata, self._resultado, self._modelo,
+                proveniencia_sigma_adm=self._proveniencia_sigma_adm)
         except Exception as erro:   # noqa: BLE001 — mostra ao usuário, não trava
             messagebox.showerror("Erro ao exportar PDF",
                                  f"{type(erro).__name__}: {erro}")

@@ -32,12 +32,21 @@ def _fs(valor: float) -> object:
     return "inf" if valor == _INF else round(valor, 2)
 
 
-def exportar_relatorio_excel(caminho, sapata: Sapata, resultado: ResultadoSapata
-                             ) -> None:
+def exportar_relatorio_excel(caminho, sapata: Sapata, resultado: ResultadoSapata,
+                             proveniencia_sigma_adm: dict | None = None) -> None:
     """Escreve uma aba única, tabular, resumindo `resultado` — dimensões
     finais, classificação rígida/flexível, tensões por combinação (ou a
     crítica), armaduras por direção, verificações principais de estabilidade
     e punção, e o veredito geral (`resultado.aprovado`/`.reprovacoes`).
+
+    `proveniencia_sigma_adm`, se fornecido (mesmo dicionário que
+    `calc_core.sapata_isolada.relatorio.memorial` recebe — ver a docstring
+    de lá para o contrato completo e para quem decide validade), acrescenta
+    duas linhas logo abaixo de "Tensão admissível do solo" com
+    `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA` e a origem do cálculo (D-02
+    do GATE 2, rodada 3) — sem isto, um σ_adm calculado por
+    `DialogoSigmaAdm` chegava a esta planilha como um número nu, indistinto
+    de um valor digitado à mão a partir de investigação geotécnica.
     """
     livro = openpyxl.Workbook()
     ws = livro.active
@@ -71,6 +80,13 @@ def exportar_relatorio_excel(caminho, sapata: Sapata, resultado: ResultadoSapata
         linha("Situação geral", "Aço", f"CA-{sapata.aco.fyk:.0f}")
         linha("Situação geral", "Tensão admissível do solo",
              round(sapata.solo.sigma_adm, 0), "kPa")
+        if proveniencia_sigma_adm is not None:
+            linha("Situação geral", "  ↳ " + proveniencia_sigma_adm.get(
+                 "rotulo_ELU", ""), "", "")
+            linha("Situação geral", "  ↳ " + proveniencia_sigma_adm.get(
+                 "rotulo_fonte", ""), "", "")
+            linha("Situação geral", "  ↳ Origem do cálculo",
+                 proveniencia_sigma_adm.get("origem", ""), "")
 
     # ------------------------------------------------------------- geometria
     linha("Geometria", "a (direção X)", round(resultado.a, 3), "m")

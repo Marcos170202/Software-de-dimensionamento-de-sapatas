@@ -26,8 +26,26 @@ def _sec(txt: str) -> str:
 
 
 def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
-             detalhar_combinacoes: int = 6) -> str:
-    """Memorial de cálculo em texto puro."""
+             detalhar_combinacoes: int = 6,
+             proveniencia_sigma_adm: Optional[dict] = None) -> str:
+    """Memorial de cálculo em texto puro.
+
+    `proveniencia_sigma_adm`, se fornecido, é o dicionário que
+    `ui.completo.dialogo_sigma_adm.DialogoSigmaAdm._usar` monta quando o
+    engenheiro escolhe um σ_adm calculado (`calc_core.geotecnico.sigma_adm`)
+    em vez de digitar um valor — chaves esperadas: "origem" (texto livre já
+    pronto), "rotulo_ELU" e "rotulo_fonte" (as constantes `ROTULO_ELU`/
+    `ROTULO_FONTE_NAO_NORMATIVA` de `calc_core.modelos`, já formatadas).
+    D-02 do GATE 2, rodada 3: decidir SE esse dicionário ainda é válido
+    para o `sapata.solo.sigma_adm` que está sendo impresso (ou se ficou
+    obsoleto por uma edição manual do campo, ou por um projeto/planilha
+    carregado por cima) é responsabilidade de QUEM CHAMA
+    (`ui.completo.formulario.PainelEntrada.ultimo_sigma_adm_calculado`,
+    invalidado para `None` a cada edição que não seja o próprio
+    preenchimento pelo diálogo) — esta função só formata o que já chegou
+    pronto, sem juízo algum sobre proveniência (mesma regra "ui não
+    calcula" do `a3-interface.md`, aplicada aqui por simetria: nenhuma
+    parte deste módulo decide o que é ou não confiável, só imprime)."""
     L: list[str] = []
     L.append(_titulo("Memorial de cálculo - Sapata isolada"))
     L.append("Normas: ABNT NBR 6118:2023 e ABNT NBR 6122:2019")
@@ -48,6 +66,11 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
         L.append(f"  Cobrimento nominal .. {sapata.cobrimento*100:.1f} cm")
         L.append(f"  Tensão admissível ... {s.sigma_adm:.0f} kPa "
                  f"({s.sigma_adm/1000:.2f} MPa)")
+        if proveniencia_sigma_adm is not None:
+            L.append(f"    {proveniencia_sigma_adm.get('rotulo_ELU', '')}")
+            L.append(f"    {proveniencia_sigma_adm.get('rotulo_fonte', '')}")
+            L.append(f"    Origem do cálculo: "
+                     f"{proveniencia_sigma_adm.get('origem', '')}")
         L.append(f"  Cota de assentamento  {s.hf:.2f} m ; "
                  f"gamma_solo = {s.gamma_solo:.1f} kN/m³ ; phi' = {s.phi:.0f}°")
         L.append(f"  Combinações geradas .. {len(sapata.combinacoes)} "

@@ -762,6 +762,82 @@ def test_excel_export_traz_aviso_de_escopo(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+#  D-02 do GATE 2, rodada 3 — proveniência de σ_adm calculado (ROTULO_ELU/
+#  ROTULO_FONTE_NAO_NORMATIVA) chegando ao memorial/Excel, em vez de só
+#  preencher `v_sigma_adm` como um número nu (ver `dialogo_sigma_adm.py`,
+#  cabeçalho do módulo, e `ui.completo.formulario`).
+# --------------------------------------------------------------------------- #
+_PROVENIENCIA_FALSA = {
+    "valor_kPa": 250.0,
+    "origem": "regra brasileira N/50 — parcela de ELU, sem majoração de vento.",
+    "metodo": "regra brasileira N/50",
+    "rotulo_ELU": "ROTULO_ELU_DE_TESTE (parcela de ELU)",
+    "rotulo_fonte": "ROTULO_FONTE_NAO_NORMATIVA_DE_TESTE",
+    "avisos": [],
+    "regras": [],
+    "praticas": [],
+    "majorado_por_vento": False,
+}
+
+
+def test_excel_export_com_proveniencia_inclui_rotulos(tmp_path):
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+    caminho = tmp_path / "com_proveniencia.xlsx"
+    excel_export.exportar_relatorio_excel(
+        str(caminho), sapata, resultado,
+        proveniencia_sigma_adm=_PROVENIENCIA_FALSA)
+
+    livro = openpyxl.load_workbook(str(caminho))
+    ws = livro["Resumo"]
+    linhas = [str(c.value) for linha in ws.iter_rows(min_row=2) for c in linha
+             if c.value is not None]
+    texto = " ".join(linhas)
+    assert "ROTULO_ELU_DE_TESTE" in texto
+    assert "ROTULO_FONTE_NAO_NORMATIVA_DE_TESTE" in texto
+    assert "regra brasileira N/50" in texto
+
+
+def test_excel_export_sem_proveniencia_nao_inclui_rotulos(tmp_path):
+    """Mesma planilha, sem o parâmetro (o caso de um σ_adm digitado à
+    mão, ou de um σ_adm calculado mas depois editado/substituído por um
+    projeto carregado — ver MÉDIA #4) — nenhum rótulo aparece."""
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+    caminho = tmp_path / "sem_proveniencia.xlsx"
+    excel_export.exportar_relatorio_excel(str(caminho), sapata, resultado)
+
+    livro = openpyxl.load_workbook(str(caminho))
+    ws = livro["Resumo"]
+    linhas = [str(c.value) for linha in ws.iter_rows(min_row=2) for c in linha
+             if c.value is not None]
+    texto = " ".join(linhas)
+    assert "ROTULO_ELU_DE_TESTE" not in texto
+    assert "ROTULO_FONTE_NAO_NORMATIVA_DE_TESTE" not in texto
+
+
+def test_memorial_com_proveniencia_inclui_rotulos():
+    from calc_core.sapata_isolada.relatorio import memorial
+
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+
+    texto_sem = memorial(resultado, sapata)
+    assert "ROTULO_ELU_DE_TESTE" not in texto_sem
+
+    texto_com = memorial(resultado, sapata,
+                         proveniencia_sigma_adm=_PROVENIENCIA_FALSA)
+    assert "ROTULO_ELU_DE_TESTE" in texto_com
+    assert "ROTULO_FONTE_NAO_NORMATIVA_DE_TESTE" in texto_com
+    assert "regra brasileira N/50" in texto_com
+    # a linha de proveniência vem logo junto da linha de "Tensão
+    # admissível", não solta em outro lugar do memorial.
+    idx_tensao = texto_com.index("Tensão admissível")
+    idx_rotulo = texto_com.index("ROTULO_ELU_DE_TESTE")
+    assert 0 < idx_rotulo - idx_tensao < 400
+
+
+# --------------------------------------------------------------------------- #
 #  Mutantes M3/M6/M8 do GATE 2, rodada 1 — cada teste abaixo MATA um dos três
 #  mutantes que sobreviveram à suíte anterior (332 passed mesmo com o bug
 #  presente). Ver relatorios/revisao_codigo.json, "mutation_testing".
@@ -2046,3 +2122,249 @@ def test_cinco_handlers_por_cinco_secoes_invalidas_nunca_falham_em_silencio(
                     "(corrompida), mas não mostrou diálogo de ERRO "
                     f"(showinfo={mock_info.called}).")
         restaurar()
+
+
+# --------------------------------------------------------------------------- #
+#  Edição de camada do perfil geotécnico (`DialogoCamada`/`_editar_camada`):
+#  até aqui, `_secao_solo`/`tree_camadas` só permitiam ADICIONAR (no fim da
+#  lista) ou REMOVER — corrigir um valor exigia apagar e recriar a camada,
+#  perdendo a posição topo-para-base (significativa: `PerfilGeotecnico.
+#  camadas` é lida nessa ordem). `DialogoCamada` ganhou um parâmetro
+#  opcional `camada_inicial` (reaproveitado — nenhum diálogo paralelo) e
+#  `PainelEntrada._editar_camada` (duplo-clique na `tree_camadas`, ou botão
+#  "editar") SUBSTITUI a camada naquela posição em vez de acrescentar uma
+#  nova no fim.
+# --------------------------------------------------------------------------- #
+def test_dialogo_camada_preenche_campos_com_valores_da_camada_selecionada():
+    """Os `StringVar`/combobox do diálogo, ao abrir em modo edição, têm de
+    bater com a `Camada` passada em `camada_inicial` — inclusive o título
+    da janela, que deixa explícito que não é uma camada nova."""
+    tk = pytest.importorskip("tkinter")
+    from ui.completo.formulario import DialogoCamada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        camada = Camada(nome="Argila mole", espessura=3.0, tipo=TipoSubstrato.COESIVO,
+                        gamma_nat=15.0, gamma_sat=16.0, phi=22.0, coesao=15.0,
+                        nspt=6.0, Cc=0.45, Cs=0.08, e0=1.10, OCR=1.2, cv=0.9,
+                        C_alpha=0.01, drenagem_dupla=True)
+        dialogo = DialogoCamada(root, camada_inicial=camada)
+        assert dialogo.title() == "Editar camada"
+        assert dialogo._vars["nome"].get() == "Argila mole"
+        assert dialogo._vars["espessura"].get() == "3"
+        assert dialogo._vars["gamma_nat"].get() == "15"
+        assert dialogo._vars["gamma_sat"].get() == "16"
+        assert dialogo._vars["phi"].get() == "22"
+        assert dialogo._vars["coesao"].get() == "15"
+        assert dialogo._vars["nspt"].get() == "6"
+        assert dialogo.v_tipo.get() == "coesivo"
+        dialogo.destroy()
+
+        # sem `camada_inicial`: continua com o comportamento de "nova
+        # camada" (título e defaults antigos), para não regredir o
+        # caminho de "+ camada".
+        dialogo_novo = DialogoCamada(root)
+        assert dialogo_novo.title() == "Nova camada do perfil"
+        assert dialogo_novo._vars["nome"].get() == "Camada"
+        assert dialogo_novo._vars["espessura"].get() == "2.0"
+        dialogo_novo.destroy()
+    finally:
+        root.destroy()
+
+
+def test_dialogo_camada_edicao_preserva_campos_que_o_dialogo_nao_expoe():
+    """`_ok` em modo edição usa `dataclasses.replace(camada_inicial, ...)`
+    — os campos de deformabilidade que este diálogo não coleta (Cc, Cs,
+    e0, OCR, cv, C_alpha, drenagem_dupla, Es, nu, k_spt_MPa) não podem
+    voltar em silêncio ao default do dataclass só porque o usuário abriu o
+    diálogo para corrigir, por exemplo, a espessura de uma camada coesiva
+    importada do Excel (`_perfil_4_camadas`, camada "Argila mole")."""
+    tk = pytest.importorskip("tkinter")
+    from ui.completo.formulario import DialogoCamada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        camada_original = _perfil_4_camadas().camadas[2]   # "Argila mole"
+        assert camada_original.Cc == pytest.approx(0.45)   # pré-condição do teste
+
+        dialogo = DialogoCamada(root, camada_inicial=camada_original)
+        dialogo._vars["espessura"].set("4.5")   # única mudança do usuário
+        dialogo._ok()
+
+        assert dialogo.resultado is not None
+        editada = dialogo.resultado
+        assert editada.espessura == pytest.approx(4.5)
+        assert editada.nome == camada_original.nome
+        # campos que o diálogo não expõe: preservados do original, não
+        # voltaram ao default do dataclass (Cc default seria None).
+        assert editada.Cc == pytest.approx(camada_original.Cc)
+        assert editada.Cs == pytest.approx(camada_original.Cs)
+        assert editada.e0 == pytest.approx(camada_original.e0)
+        assert editada.OCR == pytest.approx(camada_original.OCR)
+        assert editada.cv == pytest.approx(camada_original.cv)
+        assert editada.C_alpha == pytest.approx(camada_original.C_alpha)
+        assert editada.drenagem_dupla == camada_original.drenagem_dupla
+
+        # e o original em si nunca foi mutado (dataclasses.replace cria um
+        # objeto novo).
+        assert camada_original.espessura == pytest.approx(3.0)
+    finally:
+        root.destroy()
+
+
+def test_dialogo_camada_cancelar_nao_seta_resultado_nem_altera_original():
+    """`_ok` só roda com o botão "Salvar"/"Adicionar" — "Cancelar" chama
+    `self.destroy()` puro (sem tocar em `self.resultado`), então
+    `resultado` continua `None` e a `Camada` original passada como
+    `camada_inicial` não é mutada mesmo que o usuário tenha digitado algo
+    nos campos antes de desistir."""
+    tk = pytest.importorskip("tkinter")
+    from ui.completo.formulario import DialogoCamada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        camada = Camada(nome="Argila mole", espessura=3.0, tipo=TipoSubstrato.COESIVO,
+                        gamma_nat=15.0, gamma_sat=16.0, phi=22.0, coesao=15.0)
+        dialogo = DialogoCamada(root, camada_inicial=camada)
+        dialogo._vars["nome"].set("nunca confirmado")
+        dialogo._vars["espessura"].set("999")
+        dialogo.destroy()   # mesmo comando do botão "Cancelar"
+
+        assert dialogo.resultado is None
+        assert camada.nome == "Argila mole"
+        assert camada.espessura == pytest.approx(3.0)
+    finally:
+        root.destroy()
+
+
+def test_editar_camada_substitui_na_posicao_preservando_ordem():
+    """`_editar_camada` (duplo-clique/botão "editar" na linha do MEIO da
+    lista) tem de trocar só aquela posição — nunca mover a camada editada
+    para o fim nem reordenar as demais, porque `PerfilGeotecnico.camadas`
+    é lida topo-para-base."""
+    tk = pytest.importorskip("tkinter")
+    from unittest import mock
+
+    from ui.completo.formulario import PainelEntrada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        painel = PainelEntrada(root)
+        painel.preencher_solo(Solo(sigma_adm=200.0, perfil=_perfil_4_camadas()))
+        nomes_antes = [c.nome for c in painel._camadas]
+        assert nomes_antes == ["Aterro", "Areia argilosa", "Argila mole",
+                               "Rocha alterada"]
+
+        camada_original_no_meio = painel._camadas[1]
+        item_id = painel.tree_camadas.get_children()[1]
+        painel.tree_camadas.selection_set(item_id)
+
+        camada_editada = Camada(
+            nome="Areia argilosa (revisada)", espessura=3.3,
+            tipo=TipoSubstrato.GRANULAR, gamma_nat=18.5, gamma_sat=20.0,
+            phi=32.0, coesao=0.0, nspt=14.0)
+
+        capturados: list = []
+
+        class _DialogoFalso:
+            def __init__(self, master, camada_inicial=None):
+                capturados.append(camada_inicial)
+                self.resultado = camada_editada
+
+        painel.wait_window = lambda w: None   # sem loop real de janela modal
+        with mock.patch("ui.completo.formulario.DialogoCamada", _DialogoFalso):
+            painel._editar_camada()
+
+        # o diálogo recebeu exatamente a camada que estava selecionada
+        assert capturados == [camada_original_no_meio]
+
+        nomes_depois = [c.nome for c in painel._camadas]
+        assert nomes_depois == ["Aterro", "Areia argilosa (revisada)",
+                                "Argila mole", "Rocha alterada"]
+        assert painel._camadas[1] is camada_editada
+
+        # a tree foi re-renderizada com o valor novo, na MESMA posição
+        valores_tree = [painel.tree_camadas.item(item, "values")[0]
+                        for item in painel.tree_camadas.get_children()]
+        assert valores_tree == nomes_depois
+    finally:
+        root.destroy()
+
+
+def test_editar_camada_sem_selecao_nao_faz_nada():
+    """Duplo-clique fora de qualquer linha (ou botão "editar" com a tree
+    sem seleção) não deve abrir diálogo nenhum — mesmo guard clause de
+    `_remover_camada`."""
+    tk = pytest.importorskip("tkinter")
+    from unittest import mock
+
+    from ui.completo.formulario import PainelEntrada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        painel = PainelEntrada(root)
+        painel.preencher_solo(Solo(sigma_adm=200.0, perfil=_perfil_4_camadas()))
+        assert not painel.tree_camadas.selection()
+
+        with mock.patch("ui.completo.formulario.DialogoCamada") as dialogo_mock:
+            painel._editar_camada()
+        assert not dialogo_mock.called
+        assert [c.nome for c in painel._camadas] == [
+            "Aterro", "Areia argilosa", "Argila mole", "Rocha alterada"]
+    finally:
+        root.destroy()
+
+
+def test_editar_camada_cancelada_nao_altera_lista():
+    """Cancelar o diálogo de edição (`resultado is None`) não pode alterar
+    nem a posição nem os valores de nenhuma camada da lista."""
+    tk = pytest.importorskip("tkinter")
+    from unittest import mock
+
+    from ui.completo.formulario import PainelEntrada
+
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        pytest.skip("sem display Tk disponível neste ambiente (Xvfb)")
+    try:
+        root.withdraw()
+        painel = PainelEntrada(root)
+        painel.preencher_solo(Solo(sigma_adm=200.0, perfil=_perfil_4_camadas()))
+        camadas_antes = list(painel._camadas)
+
+        item_id = painel.tree_camadas.get_children()[1]
+        painel.tree_camadas.selection_set(item_id)
+
+        class _DialogoCancelado:
+            def __init__(self, master, camada_inicial=None):
+                self.resultado = None
+
+        painel.wait_window = lambda w: None
+        with mock.patch("ui.completo.formulario.DialogoCamada", _DialogoCancelado):
+            painel._editar_camada()
+
+        assert painel._camadas == camadas_antes
+        assert painel._camadas[1] is camadas_antes[1]
+    finally:
+        root.destroy()

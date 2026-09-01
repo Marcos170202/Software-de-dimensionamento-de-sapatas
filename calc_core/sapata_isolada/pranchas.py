@@ -663,9 +663,14 @@ def paginas_memorial(pdf: PDF, texto: str, obra: str, projetista: str,
 # =========================================================================== #
 def gerar_memorial_pdf(caminho: str, sapata, res, modelo: dict,
                        obra: str = "Obra sem identificação",
-                       projetista: str = "—") -> str:
-    """Monta o PDF completo (fôrmas, armação, perfil e memorial)."""
-    texto = memorial(res, sapata)
+                       projetista: str = "—",
+                       proveniencia_sigma_adm: Optional[dict] = None) -> str:
+    """Monta o PDF completo (fôrmas, armação, perfil e memorial).
+
+    `proveniencia_sigma_adm` só repassa para `relatorio.memorial` — ver a
+    docstring de `memorial` sobre o contrato do dicionário e sobre quem
+    decide se ele ainda é válido (D-02 do GATE 2, rodada 3)."""
+    texto = memorial(res, sapata, proveniencia_sigma_adm=proveniencia_sigma_adm)
     # conta as folhas antes de desenhar, para o carimbo trazer "n/total"
     n_memorial = max(1, math.ceil(len(texto.split("\n")) / 62))
     try:

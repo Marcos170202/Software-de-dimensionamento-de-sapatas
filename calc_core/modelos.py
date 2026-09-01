@@ -482,6 +482,13 @@ class RecusaDeMetodo:
     Existe para que a interface diga O QUÊ e POR QUÊ (REQ-UI-SIGMA-03) em vez
     de "erro de cálculo", e para que a recusa apareça ao lado dos métodos que
     se aplicam, em vez de sumir.
+
+    Uma instância = UM método recusado, e o motivo é a PRIMEIRA guarda que
+    falhou nesse método: as guardas seguintes do mesmo método não chegam a ser
+    avaliadas (a primeira levanta). Portanto ``parametro``/``intervalo``
+    descrevem uma condição SUFICIENTE para a recusa, não a lista completa das
+    condições que aquele método violaria — a interface não pode prometer
+    exaustividade dentro de um método.
     """
 
     nome_do_metodo: str
@@ -494,6 +501,16 @@ class RecusaDeMetodo:
     """``DECLARADO_EM_TEXTO`` ou ``ADOTADO_DA_EXTENSAO_DE_FIGURA``: os dois
     recusam, mas têm força diferente e o segundo é revisável (REQ-UI-SIGMA-03)."""
     motivo: str
+
+    apoio_no_ruleset: str = ""
+    """Campo do ``ruleset.yaml`` em que a guarda se apoia, copiado da exceção
+    de domínio que originou a recusa (REQ-SIGMA-04, para o a6 conferir uma a
+    uma). Default vazio só para não quebrar construções antigas por posição."""
+
+    sugestao: str = ""
+    """Texto de saída da recusa ("escolha outro método ou informe outro
+    N_SPT..."), copiado da exceção de domínio. Vazio quando a guarda não
+    publica sugestão."""
 
 
 @dataclass(frozen=True)

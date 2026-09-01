@@ -10,12 +10,18 @@ Famílias:
    que a análise dimensional não pega (REQ-SIGMA-03).
 4. METADADO EXECUTÁVEL — FS embutido devolvido e conferido em execução
    (REQ-SIGMA-02) e rótulo de ELU colado ao número (REQ-SIGMA-09).
+5. RECUSA TOTAL — nenhuma correlação aplicável: TODAS as recusas coletadas
+   viajam na exceção, uma por método, e não só a última (defeito D-03 da
+   revisão a6 do GATE 2, contra REQ-UI-SIGMA-03).
 """
+from dataclasses import fields
+
 import pytest
 
 from calc_core.geotecnico.dominio import (ADOTADO_DA_EXTENSAO_DE_FIGURA,
                                           DECLARADO_EM_TEXTO,
-                                          ForaDoDominioError)
+                                          ForaDoDominioError,
+                                          NenhumMetodoAplicavelError)
 from calc_core.geotecnico.seguranca import (MetodoDeSegurancaError,
                                             fator_de_seguranca_global)
 from calc_core.geotecnico.semiempirico import (FS_EMBUTIDO_REGRA_50,
@@ -304,3 +310,121 @@ def test_dispersao_recusa_quando_nenhuma_correlacao_se_aplica():
         semiempirico_spt(_caso(N_spt=40.0))
     with pytest.raises(ForaDoDominioError):
         semiempirico_spt(_caso(solo_declarado="silte"))
+
+
+# --- 6. Nenhuma correlação aplicável: TODAS as recusas (D-03) --------------
+
+def test_nenhum_metodo_aplicavel_traz_uma_recusa_por_metodo_e_nao_so_a_ultima():
+    """D-03: N_SPT = 25 em argila recusa as DUAS, e as DUAS têm de aparecer.
+
+    É o próprio exemplo de REQ-UI-SIGMA-03: a recusa que explica o caso é a
+    da regra N/50 (N_SPT fora de 5 a 20) e ela era descartada porque Teixeira,
+    avaliado depois, recusava por solo. Agora as duas viajam na exceção.
+    """
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        semiempirico_spt(_caso(N_spt=25.0, solo_declarado="argila"))
+    recusas = erro.value.recusas
+    assert len(recusas) == 2
+
+    por_pratica = {r.pratica: r for r in recusas}
+    regra_50 = por_pratica["FB-REGRA-BRASILEIRA-Nspt-50-argila"]
+    assert regra_50.parametro == "N_spt_medio_bulbo"
+    assert regra_50.valor == 25.0
+    assert "5.0 a 20.0" in regra_50.intervalo
+    assert regra_50.forca == DECLARADO_EM_TEXTO
+    assert regra_50.fonte and regra_50.motivo and regra_50.sugestao
+    assert "REQ-SIGMA-04" in regra_50.apoio_no_ruleset
+
+    teixeira = por_pratica["FB-TEIXEIRA-1996-areia"]
+    assert teixeira.parametro == "solo_declarado"
+    assert teixeira.valor == "argila"
+    assert "'areia'" in teixeira.intervalo
+
+    # ordem = ordem de avaliação, e não ranking de relevância
+    assert [r.pratica for r in recusas] == ["FB-REGRA-BRASILEIRA-Nspt-50-argila",
+                                            "FB-TEIXEIRA-1996-areia"]
+
+
+def test_mensagem_da_recusa_total_enumera_todos_os_metodos():
+    """Quem só imprime a exceção já deixa de perder recusa (D-03)."""
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        semiempirico_spt(_caso(N_spt=25.0, solo_declarado="argila"))
+    texto = str(erro.value)
+    assert "N_spt_medio_bulbo" in texto and "5.0 a 20.0" in texto
+    assert "solo_declarado" in texto and "'areia'" in texto
+    for recusa in erro.value.recusas:
+        assert recusa.nome_do_metodo in texto
+    assert "erro de cálculo" not in texto.lower()
+
+
+def test_recusa_total_com_nspt_fora_das_duas_faixas():
+    """N_SPT = 40 está fora de 5-20 (N/50) E de 4-25 (Teixeira).
+
+    As duas recusas têm FORÇA diferente — declarada em texto contra adotada
+    da extensão da figura — e REQ-UI-SIGMA-03 exige distingui-las na tela;
+    logo as duas precisam chegar lá.
+    """
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        semiempirico_spt(_caso(N_spt=40.0, solo_declarado="areia"))
+    recusas = erro.value.recusas
+    assert len(recusas) == 2
+    por_pratica = {r.pratica: r for r in recusas}
+    assert por_pratica["FB-REGRA-BRASILEIRA-Nspt-50-argila"].parametro == \
+        "N_spt_medio_bulbo"
+    teixeira = por_pratica["FB-TEIXEIRA-1996-areia"]
+    assert teixeira.parametro == "N_spt"
+    assert teixeira.valor == 40.0
+    assert teixeira.forca == ADOTADO_DA_EXTENSAO_DE_FIGURA
+    assert {r.forca for r in recusas} == {DECLARADO_EM_TEXTO,
+                                          ADOTADO_DA_EXTENSAO_DE_FIGURA}
+
+
+def test_recusa_total_por_falta_de_declaracao_regional_nomeia_as_duas():
+    """Sem declaração regional (default), as duas correlações recusam por ela.
+
+    Aqui a declaração é a PRIMEIRA guarda a falhar em ambas — é o caso em que
+    a causa real fica visível nas duas entradas da lista.
+    """
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        semiempirico_spt(_caso(N_spt=15.0, solo_declarado="argila",
+                               aplicabilidade_regional_declarada=False))
+    recusas = erro.value.recusas
+    assert len(recusas) == 2
+    assert recusas[0].parametro == "aplicabilidade_regional_declarada"
+    assert recusas[1].parametro == "solo_declarado"   # Teixeira para antes
+    assert "REQ-SIGMA-06" in recusas[0].apoio_no_ruleset
+
+
+def test_recusa_total_continua_capturavel_como_fora_do_dominio():
+    """Compatibilidade: quem só trata `ForaDoDominioError` não quebra.
+
+    Os campos escalares herdados espelham a PRIMEIRA recusa — visão
+    degradada, mantida só para consumidores antigos.
+    """
+    with pytest.raises(ForaDoDominioError) as erro:
+        semiempirico_spt(_caso(N_spt=25.0, solo_declarado="argila"))
+    assert isinstance(erro.value, NenhumMetodoAplicavelError)
+    primeira = erro.value.recusas[0]
+    assert erro.value.parametro == primeira.parametro
+    assert erro.value.valor == primeira.valor
+    assert erro.value.intervalo == primeira.intervalo
+    assert erro.value.forca == primeira.forca
+    assert erro.value.apoio_no_ruleset == primeira.apoio_no_ruleset
+
+
+def test_recusa_total_exige_ao_menos_uma_recusa():
+    """Exceção agregada vazia reintroduziria o silêncio que D-03 corrige."""
+    with pytest.raises(ValueError):
+        NenhumMetodoAplicavelError.de_recusas([])
+
+
+def test_recusas_do_caminho_com_resultado_tem_os_mesmos_campos_do_sem_resultado():
+    """Mesma estrutura nos dois caminhos — a tela formata com o mesmo código."""
+    com_resultado = semiempirico_spt(_caso()).recusas[0]
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        semiempirico_spt(_caso(N_spt=25.0, solo_declarado="argila"))
+    sem_resultado = erro.value.recusas[0]
+    assert type(com_resultado) is type(sem_resultado)
+    assert {f.name for f in fields(com_resultado)} == {
+        "nome_do_metodo", "pratica", "parametro", "valor", "intervalo",
+        "fonte", "forca", "motivo", "apoio_no_ruleset", "sugestao"}

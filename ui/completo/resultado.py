@@ -234,13 +234,20 @@ class PainelResultado(ttk.Frame):
         self.texto_alertas.configure(state="disabled")
 
     # -------------------------------------------------------------- atualizar
-    def atualizar(self, sapata: Sapata, res: ResultadoSapata) -> None:
+    def atualizar(self, sapata: Sapata, res: ResultadoSapata,
+                  proveniencia_sigma_adm: dict | None = None) -> None:
+        """`proveniencia_sigma_adm` só é repassado ao memorial em texto
+        (D-02 do GATE 2, rodada 3) — ver a docstring de
+        `calc_core.sapata_isolada.relatorio.memorial` para o contrato do
+        dicionário. `app.py::_calcular` é quem decide o que passar aqui
+        (snapshot de `PainelEntrada.ultimo_sigma_adm_calculado` no momento
+        do cálculo); nada nesta classe julga validade."""
         self._atualizar_cabecalho(res)
         self._atualizar_tiles(res)
         self._atualizar_verificacoes(res)
         self._atualizar_armaduras(res)
         self._atualizar_recalques(res)
-        self._atualizar_memorial(sapata, res)
+        self._atualizar_memorial(sapata, res, proveniencia_sigma_adm)
         self._atualizar_alertas(res)
 
     def _atualizar_cabecalho(self, res: ResultadoSapata) -> None:
@@ -397,8 +404,9 @@ class PainelResultado(ttk.Frame):
                 f"{pc.sigma_v0:.1f}", f"{pc.delta_sigma:.1f}",
                 f"{pc.recalque_mm:.2f}"))
 
-    def _atualizar_memorial(self, sapata: Sapata, res: ResultadoSapata) -> None:
-        texto = memorial(res, sapata)
+    def _atualizar_memorial(self, sapata: Sapata, res: ResultadoSapata,
+                            proveniencia_sigma_adm: dict | None = None) -> None:
+        texto = memorial(res, sapata, proveniencia_sigma_adm=proveniencia_sigma_adm)
         self.texto_memorial.configure(state="normal")
         self.texto_memorial.delete("1.0", "end")
         self.texto_memorial.insert("1.0", texto)

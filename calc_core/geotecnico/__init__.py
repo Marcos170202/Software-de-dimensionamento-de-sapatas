@@ -16,7 +16,10 @@ from calc_core.geotecnico.capacidade import (
                                              phi_reduzido_de_puncionamento,
                                              validar_entrada_capacidade,
 )
-from calc_core.geotecnico.dominio import ForaDoDominioError
+from calc_core.geotecnico.dominio import (
+                                             ForaDoDominioError,
+                                             NenhumMetodoAplicavelError,
+)
 from calc_core.geotecnico.geometria import dimensionar_sapata_carga_centrada
 from calc_core.geotecnico.restricoes import verificar_dimensao_minima
 from calc_core.geotecnico.seguranca import (
@@ -39,6 +42,7 @@ __all__ = [
                                              "ForaDoDominioError",
                                              "MajoracaoDeVentoError",
                                              "MetodoDeSegurancaError",
+                                             "NenhumMetodoAplicavelError",
                                              "capacidade_de_carga",
                                              "comparar_com_tensao_atuante",
                                              "dimensionar_sapata_carga_centrada",

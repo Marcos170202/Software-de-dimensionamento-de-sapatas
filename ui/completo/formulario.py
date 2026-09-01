@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from collections import Counter
+from dataclasses import replace
 from tkinter import messagebox, ttk
 
 from calc_core.sapata_isolada.acoes import CasoCarga, Esforcos, Pilar
@@ -31,6 +32,7 @@ from calc_core.sapata_isolada.sapata import (
 )
 
 from . import tema
+from .dialogo_sigma_adm import DialogoSigmaAdm
 
 AGREGADOS = ["basalto", "diabasio", "granito", "gnaisse", "calcario", "arenito"]
 CATEGORIAS_FYK = ["250", "500", "600"]
@@ -55,12 +57,37 @@ def _int_opt(valor: str) -> int | None:
     return int(valor) if valor else None
 
 
-class DialogoCamada(tk.Toplevel):
-    """Coleta os parâmetros de uma camada do perfil geotécnico (`Camada`)."""
+def _texto_campo(valor: float | str | None) -> str:
+    """Formata um valor de `Camada` (float, str ou None) como texto para
+    pré-preencher um `StringVar` do diálogo de edição."""
+    if valor is None:
+        return ""
+    if isinstance(valor, float):
+        return f"{valor:g}"
+    return str(valor)
 
-    def __init__(self, master: tk.Misc) -> None:
+
+class DialogoCamada(tk.Toplevel):
+    """Coleta os parâmetros de uma camada do perfil geotécnico (`Camada`).
+
+    `camada_inicial`, se fornecida, faz o diálogo abrir em modo EDIÇÃO: os
+    campos vêm pré-preenchidos com os valores daquela camada (em vez dos
+    defaults fixos de "nova camada"), o título/botão mudam para deixar isso
+    explícito, e `_ok` usa `dataclasses.replace(camada_inicial, ...)` em vez
+    de construir um `Camada(...)` do zero — os campos que este diálogo NÃO
+    coleta (Es, nu, Cc, Cs, e0, OCR, cv, C_alpha, drenagem_dupla, k_spt_MPa)
+    são preservados como estavam, em vez de voltarem em silêncio ao default
+    do dataclass. Isso importa de verdade para uma camada coesiva que
+    chegou com Cc/e0/cv/Es de uma importação de Excel/projeto — editar só a
+    espessura, por exemplo, não pode apagar os parâmetros de adensamento
+    dela."""
+
+    def __init__(self, master: tk.Misc, camada_inicial: Camada | None = None
+                 ) -> None:
         super().__init__(master)
-        self.title("Nova camada do perfil")
+        self._camada_inicial = camada_inicial
+        self.title("Editar camada" if camada_inicial is not None
+                    else "Nova camada do perfil")
         self.configure(bg=tema.FUNDO_PAINEL)
         self.resultado: Camada | None = None
         self.transient(master)
@@ -80,7 +107,11 @@ class DialogoCamada(tk.Toplevel):
         for chave, rotulo, padrao in campos:
             ttk.Label(self, text=rotulo, style="PainelFraco.TLabel").grid(
                 row=linha, column=0, sticky="w", padx=8, pady=3)
-            var = tk.StringVar(value=padrao)
+            if camada_inicial is not None:
+                valor_inicial = _texto_campo(getattr(camada_inicial, chave))
+            else:
+                valor_inicial = padrao
+            var = tk.StringVar(value=valor_inicial)
             ttk.Entry(self, textvariable=var, width=16).grid(
                 row=linha, column=1, sticky="w", padx=8, pady=3)
             self._vars[chave] = var
@@ -88,7 +119,9 @@ class DialogoCamada(tk.Toplevel):
 
         ttk.Label(self, text="Tipo de substrato", style="PainelFraco.TLabel").grid(
             row=linha, column=0, sticky="w", padx=8, pady=3)
-        self.v_tipo = tk.StringVar(value=TIPOS_SUBSTRATO[0])
+        tipo_inicial = (camada_inicial.tipo.value if camada_inicial is not None
+                        else TIPOS_SUBSTRATO[0])
+        self.v_tipo = tk.StringVar(value=tipo_inicial)
         ttk.Combobox(self, textvariable=self.v_tipo, state="readonly", width=13,
                      values=TIPOS_SUBSTRATO).grid(row=linha, column=1, sticky="w",
                                                    padx=8, pady=3)
@@ -96,23 +129,28 @@ class DialogoCamada(tk.Toplevel):
 
         botoes = ttk.Frame(self)
         botoes.grid(row=linha, column=0, columnspan=2, pady=8)
-        ttk.Button(botoes, text="Adicionar", style="Acento.TButton",
+        texto_confirmar = "Salvar" if camada_inicial is not None else "Adicionar"
+        ttk.Button(botoes, text=texto_confirmar, style="Acento.TButton",
                    command=self._ok).pack(side="left", padx=4)
         ttk.Button(botoes, text="Cancelar", command=self.destroy).pack(
             side="left", padx=4)
 
     def _ok(self) -> None:
         try:
-            camada = Camada(
-                nome=self._vars["nome"].get() or "Camada",
-                espessura=_float(self._vars["espessura"].get(), 1.0),
-                tipo=TipoSubstrato(self.v_tipo.get()),
-                gamma_nat=_float(self._vars["gamma_nat"].get(), 18.0),
-                gamma_sat=_float(self._vars["gamma_sat"].get(), 20.0),
-                phi=_float(self._vars["phi"].get(), 28.0),
-                coesao=_float(self._vars["coesao"].get(), 0.0),
-                nspt=_float_opt(self._vars["nspt"].get()),
-            )
+            campos_editados = {
+                "nome": self._vars["nome"].get() or "Camada",
+                "espessura": _float(self._vars["espessura"].get(), 1.0),
+                "tipo": TipoSubstrato(self.v_tipo.get()),
+                "gamma_nat": _float(self._vars["gamma_nat"].get(), 18.0),
+                "gamma_sat": _float(self._vars["gamma_sat"].get(), 20.0),
+                "phi": _float(self._vars["phi"].get(), 28.0),
+                "coesao": _float(self._vars["coesao"].get(), 0.0),
+                "nspt": _float_opt(self._vars["nspt"].get()),
+            }
+            if self._camada_inicial is not None:
+                camada = replace(self._camada_inicial, **campos_editados)
+            else:
+                camada = Camada(**campos_editados)
         except ValueError as erro:
             messagebox.showerror("Camada inválida", str(erro), parent=self)
             return
@@ -131,6 +169,9 @@ class PainelEntrada(ttk.Frame):
         super().__init__(master, style="Painel.TFrame")
         self._camadas: list[Camada] = []
         self._arm: dict[str, dict] = {}
+        self._preenchendo_sigma_adm_calculado = False
+        """Guarda interna de `_abrir_calculadora_sigma_adm`/
+        `_ao_editar_sigma_adm` — ver docstrings dos dois."""
         self._montar_scroll()
 
     # ------------------------------------------------------------- estrutura
@@ -250,6 +291,22 @@ class PainelEntrada(ttk.Frame):
         f = ttk.LabelFrame(pai, text="Solo de apoio")
         f.grid(row=row, column=0, sticky="ew", padx=8, pady=4)
         self.v_sigma_adm = self._campo(f, 0, "σ_adm [kPa]", "250")
+        # D-02 do GATE 2, rodada 3: `ultimo_sigma_adm_calculado` só pode
+        # rotular o memorial (ROTULO_ELU/ROTULO_FONTE_NAO_NORMATIVA) se
+        # `v_sigma_adm` ainda for EXATAMENTE o que o diálogo calculou — o
+        # trace abaixo invalida (`None`) sempre que o texto do campo muda
+        # por QUALQUER via, inclusive teclado, "Abrir projeto..." e
+        # "Importar do Excel..." (`preencher_solo`, mais abaixo, só chama
+        # `.set()`, sem tratamento especial: o trace cobre os dois casos
+        # da MÉDIA #4 com o mesmo código). `_abrir_calculadora_sigma_adm`
+        # é a ÚNICA chamada que deve sobreviver — ela liga
+        # `_preenchendo_sigma_adm_calculado` antes do `.set()` e desliga
+        # depois, e o próprio callback pula a invalidação enquanto essa
+        # flag está ligada.
+        self.v_sigma_adm.trace_add("write", self._ao_editar_sigma_adm)
+        ttk.Button(f, text="Calcular σ_adm a partir de SPT...",
+                   command=self._abrir_calculadora_sigma_adm).grid(
+            row=0, column=2, sticky="w", padx=(0, 8), pady=2)
         self.v_hf = self._campo(f, 1, "Cota da base h_f [m]", "1.5")
         self.v_gamma_solo = self._campo(f, 2, "γ_solo [kN/m³]", "18")
         self.v_phi_solo = self._campo(f, 3, "φ' na base [graus]", "30")
@@ -257,7 +314,10 @@ class PainelEntrada(ttk.Frame):
         self.v_nivel_agua = self._campo(f, 5, "Nível d'água [m] (vazio = ausente)", "")
 
         ttk.Label(f, text="σ_adm sempre admite sobreposição manual pelo "
-                          "engenheiro (NBR 6122 §7.2).", style="PainelFraco.TLabel",
+                          "engenheiro (NBR 6122 §7.2) — inclusive depois de "
+                          "\"Calcular σ_adm a partir de SPT...\": o botão só "
+                          "PREENCHE este campo, nunca o trava.",
+                  style="PainelFraco.TLabel",
                   wraplength=260, justify="left").grid(
             row=6, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 6))
 
@@ -271,9 +331,17 @@ class PainelEntrada(ttk.Frame):
             self.tree_camadas.heading(c, text=rot)
             self.tree_camadas.column(c, width=larg, anchor="w")
         self.tree_camadas.grid(row=0, column=0, sticky="ew", padx=6, pady=(6, 2))
+        # Duplo-clique numa linha edita a camada daquela posição (padrão
+        # usual de Treeview no Tk); o botão "editar" cobre o mesmo caminho
+        # para quem prefere/precisa de mouse sem duplo-clique (acessibilidade
+        # e descoberta — nem todo usuário tenta duplo-clique por conta
+        # própria).
+        self.tree_camadas.bind("<Double-1>", self._editar_camada)
         botoes = ttk.Frame(cam)
         botoes.grid(row=1, column=0, sticky="w", padx=6, pady=(0, 6))
         ttk.Button(botoes, text="+ camada", command=self._adicionar_camada).pack(
+            side="left", padx=(0, 4))
+        ttk.Button(botoes, text="editar", command=self._editar_camada).pack(
             side="left", padx=(0, 4))
         ttk.Button(botoes, text="- remover", command=self._remover_camada).pack(
             side="left")
@@ -300,6 +368,56 @@ class PainelEntrada(ttk.Frame):
                 "dois motores deste software dimensiona esse caso. Não use o "
                 "resultado deste cálculo como fundação final.")
 
+    def _abrir_calculadora_sigma_adm(self) -> None:
+        """Abre `DialogoSigmaAdm` (teórico Terzaghi/Vesic + semiempírico SPT
+        + majoração por vento, todos calc_core.geotecnico) e, se o
+        engenheiro escolher um valor ("Usar este valor →"), PREENCHE
+        `v_sigma_adm` com ele — nunca substitui o campo por um widget
+        travado (NBR 6122 §7.2, mesma nota já fixa na tela). `ler_solo()`
+        continua lendo só o texto de `v_sigma_adm`, exatamente como para
+        qualquer valor digitado à mão: nenhuma conta acontece aqui, o
+        diálogo já devolve o número pronto.
+
+        `dialogo.resultado_info` guarda a proveniência (método, rótulos,
+        avisos, regras/práticas, `valor_kPa`) em
+        `self.ultimo_sigma_adm_calculado` — `ui.completo.app`/
+        `ui.completo.resultado` a repassam para o memorial/Excel do escopo
+        amplo (D-02 do GATE 2, rodada 3), que rotula a linha de σ_adm com
+        `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA` enquanto ela continuar
+        válida (ver `_ao_editar_sigma_adm`).
+
+        `self._preenchendo_sigma_adm_calculado` liga ANTES do `.set()` e
+        desliga logo depois: sem isto, o próprio `.set()` desta linha
+        dispararia o trace `_ao_editar_sigma_adm` (que existe para
+        invalidar `ultimo_sigma_adm_calculado` em qualquer OUTRA edição de
+        `v_sigma_adm`) e apagaria a proveniência no mesmo instante em que
+        ela é gravada."""
+        dialogo = DialogoSigmaAdm(self)
+        self.wait_window(dialogo)
+        if dialogo.resultado_kPa is not None:
+            self._preenchendo_sigma_adm_calculado = True
+            try:
+                self.v_sigma_adm.set(f"{dialogo.resultado_kPa:.10g}")
+            finally:
+                self._preenchendo_sigma_adm_calculado = False
+            self.ultimo_sigma_adm_calculado = dialogo.resultado_info
+
+    def _ao_editar_sigma_adm(self, *_args) -> None:
+        """MÉDIA #4 do GATE 2, rodada 3: invalida a proveniência calculada
+        assim que `v_sigma_adm` muda por qualquer via que não seja o
+        próprio preenchimento feito por `_abrir_calculadora_sigma_adm`
+        (edição manual pelo engenheiro NBR 6122 §7.2, "Abrir projeto...",
+        "Importar do Excel..." — `preencher_solo`, mais abaixo, não
+        precisa de tratamento especial: ela só chama `.set()`, e este
+        trace já cobre qualquer `.set()` de fora). Sem isto, D-02
+        rotularia como "calculado" (com `ROTULO_ELU`/
+        `ROTULO_FONTE_NAO_NORMATIVA`) um valor que na verdade foi
+        sobrescrito à mão por cima, ou que veio de um projeto carregado
+        sem relação alguma com o cálculo anterior."""
+        if getattr(self, "_preenchendo_sigma_adm_calculado", False):
+            return
+        self.ultimo_sigma_adm_calculado = None
+
     def _adicionar_camada(self) -> None:
         dialogo = DialogoCamada(self)
         self.wait_window(dialogo)
@@ -314,6 +432,26 @@ class PainelEntrada(ttk.Frame):
         indice = self.tree_camadas.index(selecao[0])
         del self._camadas[indice]
         self._atualizar_tree_camadas()
+
+    def _editar_camada(self, evento: tk.Event | None = None) -> None:
+        """Abre `DialogoCamada` preenchido com a `Camada` da linha
+        selecionada (duplo-clique na `tree_camadas`, ou botão "editar") e,
+        se confirmado, SUBSTITUI a camada naquela POSIÇÃO da lista — nunca
+        acrescenta uma nova no fim, porque a ordem topo-para-base de
+        `self._camadas` é significativa (`PerfilGeotecnico.camadas` é lida
+        nessa ordem). Sem seleção (duplo-clique fora de qualquer linha, ou
+        botão com a tree vazia), não faz nada — mesmo guard clause de
+        `_remover_camada`. Cancelar o diálogo (`dialogo.resultado is None`)
+        também não faz nada: a camada original permanece intacta."""
+        selecao = self.tree_camadas.selection()
+        if not selecao:
+            return
+        indice = self.tree_camadas.index(selecao[0])
+        dialogo = DialogoCamada(self, camada_inicial=self._camadas[indice])
+        self.wait_window(dialogo)
+        if dialogo.resultado is not None:
+            self._camadas[indice] = dialogo.resultado
+            self._atualizar_tree_camadas()
 
     def _atualizar_tree_camadas(self) -> None:
         self.tree_camadas.delete(*self.tree_camadas.get_children())
@@ -412,6 +550,15 @@ class PainelEntrada(ttk.Frame):
     # ------------------------------------------------------------------------
     _ultimo_automatico: ResultadoSapata | None = None
 
+    ultimo_sigma_adm_calculado: dict | None = None
+    """Proveniência (método, rótulos, avisos, regras/práticas, `valor_kPa`)
+    do último σ_adm preenchido por `_abrir_calculadora_sigma_adm` — `None`
+    sempre que `v_sigma_adm` mudou por qualquer outra via desde então
+    (`_ao_editar_sigma_adm`). `ui.completo.app` repassa isto para o
+    memorial/Excel do escopo amplo (D-02 do GATE 2, rodada 3): só quando
+    este atributo é `not None` a linha de σ_adm do memorial ganha
+    `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA`."""
+
     def registrar_resultado_automatico(self, res: ResultadoSapata) -> None:
         self._ultimo_automatico = res
 
@@ -453,6 +600,13 @@ class PainelEntrada(ttk.Frame):
         self.v_cobrimento.set(f"{cobrimento*100:.10g}")
 
     def preencher_solo(self, solo: Solo) -> None:
+        """`self.v_sigma_adm.set(...)` abaixo dispara
+        `_ao_editar_sigma_adm` (trace de escrita registrado em
+        `_secao_solo`) e zera `ultimo_sigma_adm_calculado` — MÉDIA #4 do
+        GATE 2, rodada 3: um projeto carregado (.s7proj ou Excel) nunca
+        tem relação com um cálculo de σ_adm feito ANTES de abri-lo, então
+        o memorial não pode seguir rotulando o valor antigo como
+        "calculado" depois desta chamada."""
         self.v_sigma_adm.set(f"{solo.sigma_adm:.10g}")
         self.v_hf.set(f"{solo.hf:.10g}")
         self.v_gamma_solo.set(f"{solo.gamma_solo:.10g}")
