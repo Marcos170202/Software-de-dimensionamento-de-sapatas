@@ -42,11 +42,15 @@ def exportar_relatorio_excel(caminho, sapata: Sapata, resultado: ResultadoSapata
     `proveniencia_sigma_adm`, se fornecido (mesmo dicionário que
     `calc_core.sapata_isolada.relatorio.memorial` recebe — ver a docstring
     de lá para o contrato completo e para quem decide validade), acrescenta
-    duas linhas logo abaixo de "Tensão admissível do solo" com
-    `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA` e a origem do cálculo (D-02
-    do GATE 2, rodada 3) — sem isto, um σ_adm calculado por
-    `DialogoSigmaAdm` chegava a esta planilha como um número nu, indistinto
-    de um valor digitado à mão a partir de investigação geotécnica.
+    linhas logo abaixo de "Tensão admissível do solo" com
+    `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA`, a origem do cálculo (D-02
+    do GATE 2, rodada 3) e os avisos do núcleo (D-03 do GATE 2, rodada do
+    redesenho + 1 — inclui a declaração regional do §7.3.3 (c) quando
+    aplicável, exigida no memorial por REQ-UI-SIGMA-06, e o aviso literal
+    do §6.3.2 quando o valor foi majorado por vento) — sem isto, um σ_adm
+    calculado por `DialogoSigmaAdm` chegava a esta planilha como um número
+    nu, indistinto de um valor digitado à mão a partir de investigação
+    geotécnica.
     """
     livro = openpyxl.Workbook()
     ws = livro.active
@@ -87,6 +91,8 @@ def exportar_relatorio_excel(caminho, sapata: Sapata, resultado: ResultadoSapata
                  "rotulo_fonte", ""), "", "")
             linha("Situação geral", "  ↳ Origem do cálculo",
                  proveniencia_sigma_adm.get("origem", ""), "")
+            for aviso in proveniencia_sigma_adm.get("avisos", None) or []:
+                linha("Situação geral", "  ↳ Aviso do núcleo", aviso, "")
 
     # ------------------------------------------------------------- geometria
     linha("Geometria", "a (direção X)", round(resultado.a, 3), "m")

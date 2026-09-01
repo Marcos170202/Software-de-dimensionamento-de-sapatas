@@ -838,6 +838,69 @@ def test_memorial_com_proveniencia_inclui_rotulos():
 
 
 # --------------------------------------------------------------------------- #
+#  D-03 do GATE 2 (rodada do redesenho + 1) — os AVISOS do núcleo (inclui a
+#  declaração regional do §7.3.3 (c) e, na majoração por vento, o texto
+#  literal do §6.3.2) precisam chegar ao MEMORIAL e ao EXCEL, não só à tela
+#  do diálogo (REQ-UI-SIGMA-06).
+# --------------------------------------------------------------------------- #
+_PROVENIENCIA_COM_AVISOS = {
+    **_PROVENIENCIA_FALSA,
+    "avisos": [
+        "AVISO_DECLARACAO_REGIONAL_DE_TESTE — aplicabilidade regional das "
+        "correlações declarada pelo engenheiro (§7.3.3 (c)).",
+        "AVISO_VENTO_DE_TESTE — em qualquer caso, deve ser feita a "
+        "verificação estrutural do elemento de fundação (§6.3.2).",
+    ],
+}
+
+
+def test_memorial_com_proveniencia_inclui_avisos_do_nucleo():
+    from calc_core.sapata_isolada.relatorio import memorial
+
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+
+    texto = memorial(resultado, sapata,
+                     proveniencia_sigma_adm=_PROVENIENCIA_COM_AVISOS)
+    assert "AVISO_DECLARACAO_REGIONAL_DE_TESTE" in texto
+    assert "AVISO_VENTO_DE_TESTE" in texto
+    # os avisos ficam junto do bloco de proveniência (mesma vizinhança de
+    # "Tensão admissível"), não soltos em outro lugar do memorial.
+    idx_tensao = texto.index("Tensão admissível")
+    idx_aviso = texto.index("AVISO_DECLARACAO_REGIONAL_DE_TESTE")
+    assert 0 < idx_aviso - idx_tensao < 600
+
+
+def test_memorial_sem_avisos_na_proveniencia_nao_quebra():
+    """`_PROVENIENCIA_FALSA` (avisos=[]) continua funcionando sem gerar
+    linha alguma de aviso — a chave é opcional, não obrigatória."""
+    from calc_core.sapata_isolada.relatorio import memorial
+
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+    texto = memorial(resultado, sapata,
+                     proveniencia_sigma_adm=_PROVENIENCIA_FALSA)
+    assert "Aviso do núcleo" not in texto
+
+
+def test_excel_export_com_proveniencia_inclui_avisos_do_nucleo(tmp_path):
+    sapata = _sapata_de(_dados_completos())
+    resultado = sapata.dimensionar()
+    caminho = tmp_path / "com_avisos.xlsx"
+    excel_export.exportar_relatorio_excel(
+        str(caminho), sapata, resultado,
+        proveniencia_sigma_adm=_PROVENIENCIA_COM_AVISOS)
+
+    livro = openpyxl.load_workbook(str(caminho))
+    ws = livro["Resumo"]
+    linhas = [str(c.value) for linha in ws.iter_rows(min_row=2) for c in linha
+             if c.value is not None]
+    texto = " ".join(linhas)
+    assert "AVISO_DECLARACAO_REGIONAL_DE_TESTE" in texto
+    assert "AVISO_VENTO_DE_TESTE" in texto
+
+
+# --------------------------------------------------------------------------- #
 #  Mutantes M3/M6/M8 do GATE 2, rodada 1 — cada teste abaixo MATA um dos três
 #  mutantes que sobreviveram à suíte anterior (332 passed mesmo com o bug
 #  presente). Ver relatorios/revisao_codigo.json, "mutation_testing".

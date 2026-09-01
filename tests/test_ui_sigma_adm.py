@@ -937,6 +937,294 @@ def test_editar_sigma_adm_manualmente_invalida_proveniencia():
         root.destroy()
 
 
+# --------------------------------------------------------------------------- #
+#  D-01 (GATE 2, rodada do redesenho + 1) — um card (com o botão "Usar
+#  este valor →" que carrega) sobrevivia a uma mudança de ENTRADA que
+#  nunca chegava a disparar um recálculo: reprodução exata do relato do
+#  a6 (N_SPT=15 -> 300 kPa calculado; N_SPT muda para 5 SEM clicar em
+#  "Calcular" de novo; o botão antigo continuava entregando 300 kPa, que
+#  já não corresponde a N_SPT=5).
+# --------------------------------------------------------------------------- #
+def test_mudar_nspt_sem_recalcular_invalida_o_card_e_o_botao_antigo():
+    """Reprodução EXATA do relato do a6: N_SPT=15 calculado (300,0 kPa,
+    botão "Usar este valor →" criado); N_SPT muda para "5" SEM clicar em
+    "Calcular" de novo. O card antigo (e o botão que entregaria 300 kPa,
+    +200 % do correto para N_SPT=5 = 100 kPa, sempre do lado inseguro)
+    precisa ter sido destruído, substituído por um aviso pedindo
+    recálculo — nunca continuar na tela entregando o valor velho."""
+    from ui.completo.dialogo_sigma_adm import (
+        _AVISO_ENTRADAS_ALTERADAS,
+        DialogoSigmaAdm,
+    )
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.s_nspt.set("15")
+        dialogo.s_B.set("2.0")
+        dialogo.s_forma.set("quadrada")
+        dialogo.s_solo.set("argila")
+        dialogo.s_h.set("1.5")
+        dialogo.s_gamma.set("18")
+        dialogo.s_regional.set(True)
+
+        dialogo._calcular_semiempirico()
+        card_300 = next(
+            c for c in dialogo.frame_resultado_semi.winfo_children()
+            if c.cget("text") != "Recusado — fora do domínio")
+        assert "300.0 kPa" in card_300.winfo_children()[0].cget("text")
+        botao_300 = _botao(card_300, "Usar este valor →")
+
+        # muda a entrada SEM clicar em "Calcular" de novo — o gatilho
+        # exato que o REDESENHO da rodada anterior não cobria.
+        dialogo.s_nspt.set("5")
+
+        # o card (e o botão) de 300 kPa não existem mais na árvore de
+        # widgets — nenhum botão "Usar" entrega mais 300 kPa.
+        assert botao_300.winfo_exists() == 0
+        filhos = dialogo.frame_resultado_semi.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_ENTRADAS_ALTERADAS
+        # nenhum botão "Usar" sobra em lugar nenhum do frame de resultado.
+        with pytest.raises(AssertionError):
+            _botao(dialogo.frame_resultado_semi, "Usar este valor →")
+        # continua None: nada foi (nem pode ser) "usado" a partir do card
+        # velho.
+        assert dialogo.resultado_kPa is None
+
+        # recalcular de novo faz o valor CORRETO aparecer (100 kPa para
+        # N_SPT=5 pela regra N/50) e o aviso desaparece.
+        dialogo._calcular_semiempirico()
+        card_100 = next(
+            c for c in dialogo.frame_resultado_semi.winfo_children()
+            if c.cget("text") != "Recusado — fora do domínio")
+        assert "100.0 kPa" in card_100.winfo_children()[0].cget("text")
+        botao_100 = _botao(card_100, "Usar este valor →")
+        botao_100.invoke()
+        assert dialogo.resultado_kPa == pytest.approx(100.0)
+    finally:
+        root.destroy()
+
+
+def test_mudar_campo_teorico_sem_recalcular_invalida_o_card():
+    """Mesma classe de defeito, caminho teórico — cobre um campo NUMÉRICO
+    comum (B) fora do caminho semiempírico já testado acima, provando que
+    a vigilância não é específica de uma aba só."""
+    from ui.completo.dialogo_sigma_adm import (
+        _AVISO_ENTRADAS_ALTERADAS,
+        DialogoSigmaAdm,
+    )
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.t_c.set("0")
+        dialogo.t_phi.set("30")
+        dialogo.t_B.set("2.0")
+        dialogo.t_L.set("2.0")
+        dialogo.t_h.set("1.5")
+        dialogo.t_gamma_acima.set("18")
+        dialogo.t_gamma_abaixo.set("18")
+        dialogo.t_homogeneo.set(True)
+
+        dialogo._calcular_teorico()
+        assert len(dialogo.frame_resultado_teorico.winfo_children()) == 1
+        botao_antigo = _botao(
+            dialogo.frame_resultado_teorico.winfo_children()[0],
+            "Usar este valor →")
+
+        dialogo.t_B.set("2.5")   # muda SEM recalcular
+
+        assert botao_antigo.winfo_exists() == 0
+        filhos = dialogo.frame_resultado_teorico.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_ENTRADAS_ALTERADAS
+        assert dialogo.resultado_kPa is None
+    finally:
+        root.destroy()
+
+
+def test_mudar_checkbox_homogeneo_sem_recalcular_invalida_o_card():
+    """Cobre especificamente um `BooleanVar` de Checkbutton (não um Entry
+    nem um Combobox) — `t_homogeneo` — para provar que a vigilância por
+    `trace_add` não depende do tipo de widget."""
+    from ui.completo.dialogo_sigma_adm import (
+        _AVISO_ENTRADAS_ALTERADAS,
+        DialogoSigmaAdm,
+    )
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.t_c.set("0")
+        dialogo.t_phi.set("30")
+        dialogo.t_B.set("2.0")
+        dialogo.t_L.set("2.0")
+        dialogo.t_h.set("1.5")
+        dialogo.t_gamma_acima.set("18")
+        dialogo.t_gamma_abaixo.set("18")
+        dialogo.t_homogeneo.set(True)
+
+        dialogo._calcular_teorico()
+        assert len(dialogo.frame_resultado_teorico.winfo_children()) == 1
+
+        dialogo.t_homogeneo.set(False)   # muda SEM recalcular
+
+        filhos = dialogo.frame_resultado_teorico.winfo_children()
+        assert len(filhos) == 1
+        assert filhos[0].cget("text") == _AVISO_ENTRADAS_ALTERADAS
+    finally:
+        root.destroy()
+
+
+def test_mudar_entrada_de_uma_aba_nao_invalida_o_card_da_outra():
+    """A vigilância é POR ABA (por frame de resultado) — mudar N_SPT não
+    pode apagar um card já calculado na aba teórico, e vice-versa."""
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.t_c.set("0")
+        dialogo.t_phi.set("30")
+        dialogo.t_B.set("2.0")
+        dialogo.t_L.set("2.0")
+        dialogo.t_h.set("1.5")
+        dialogo.t_gamma_acima.set("18")
+        dialogo.t_gamma_abaixo.set("18")
+        dialogo.t_homogeneo.set(True)
+        dialogo._calcular_teorico()
+        assert len(dialogo.frame_resultado_teorico.winfo_children()) == 1
+
+        dialogo.s_nspt.set("999")   # muda a OUTRA aba
+
+        # o card teórico continua intacto — mesmo objeto, mesmo botão.
+        filhos = dialogo.frame_resultado_teorico.winfo_children()
+        assert len(filhos) == 1
+        _botao(filhos[0], "Usar este valor →")   # ainda existe
+    finally:
+        root.destroy()
+
+
+def test_mudar_entrada_sem_calculo_previo_nao_desenha_aviso_nenhum():
+    """Sem card algum na tela ainda, mudar um campo não deve desenhar o
+    aviso "ENTRADAS ALTERADAS" — não há nada para invalidar."""
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.s_nspt.set("20")
+        assert dialogo.frame_resultado_semi.winfo_children() == []
+    finally:
+        root.destroy()
+
+
+def test_mudar_vento_sem_recalcular_nao_invalida_o_card_teorico_ou_semi():
+    """Fora de escopo desta correção (documentado no pedido de trabalho):
+    os controles de vento (`v_vento_principal`/`v_tipo_obra`/`v_kv`) não
+    fazem parte da vigilância dos frames de resultado principais — a
+    mini-seção de vento de cada card já resolve sua própria invalidação
+    por closure/releitura no clique (mecanismo intocado nesta rodada)."""
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dialogo.t_c.set("0")
+        dialogo.t_phi.set("30")
+        dialogo.t_B.set("2.0")
+        dialogo.t_L.set("2.0")
+        dialogo.t_h.set("1.5")
+        dialogo.t_gamma_acima.set("18")
+        dialogo.t_gamma_abaixo.set("18")
+        dialogo.t_homogeneo.set(True)
+        dialogo._calcular_teorico()
+
+        dialogo.v_vento_principal.set(True)
+        dialogo.v_kv.set("0.10")
+
+        filhos = dialogo.frame_resultado_teorico.winfo_children()
+        assert len(filhos) == 1
+        _botao(filhos[0], "Usar este valor →")   # ainda existe, intacto
+    finally:
+        root.destroy()
+
+
+# --------------------------------------------------------------------------- #
+#  D-02 (GATE 2, rodada do redesenho + 1) — `_usar_majorado` incluía as
+#  regras/avisos de `base` (`ResultadoSigmaAdmELU`) mas descartava os do
+#  PRÓPRIO `ResultadoMajoracaoVento` — perdendo a regra que AUTORIZA a
+#  majoração e o aviso literal do §6.3.2 sobre a verificação estrutural.
+# --------------------------------------------------------------------------- #
+def test_usar_majorado_inclui_regras_e_avisos_da_majoracao_de_vento():
+    from tkinter import ttk
+
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        dispersao = semiempirico_spt(EntradaSemiempiricaSPT(
+            N_spt=15.0, B_m=2.0, forma="quadrada", solo_declarado="argila",
+            h_m=1.5, gamma_kN_m3=18.0,
+            aplicabilidade_regional_declarada=True))
+        resultado_300 = dispersao.resultados[0]
+
+        dialogo.v_vento_principal.set(True)
+        dialogo._alternar_vento()
+        dialogo.v_kv.set("0.15")
+
+        saida = ttk.Frame(dialogo)
+        dialogo._calcular_vento_no_card(resultado_300, saida)
+        botao_majorado = _botao(saida, "Usar valor majorado →")
+        botao_majorado.invoke()
+
+        info = dialogo.resultado_info
+        assert info["majorado_por_vento"] is True
+        # a regra que AUTORIZA a majoração precisa estar presente — sem
+        # ela, o memorial cita o método de base como se a majoração não
+        # tivesse fundamento normativo próprio.
+        assert "NBR6122-6.3.2-majoracao-vento-valores-admissiveis" in \
+            info["regras"]
+        # as regras do método de BASE continuam presentes também (união,
+        # não substituição).
+        assert set(resultado_300.regras) <= set(info["regras"])
+        # o aviso literal do §6.3.2 (verificação estrutural obrigatória)
+        # precisa ter chegado — é o mesmo texto que
+        # `ResultadoMajoracaoVento.avisos` carrega.
+        assert set(resultado_300.avisos) <= set(info["avisos"])
+        assert len(info["avisos"]) >= len(resultado_300.avisos)
+        # sem duplicação: nenhum aviso repetido na lista final.
+        assert len(info["avisos"]) == len(set(info["avisos"]))
+        assert len(info["regras"]) == len(set(info["regras"]))
+    finally:
+        root.destroy()
+
+
+def test_usar_base_nao_inclui_regras_de_majoracao_alguma():
+    """Contraprova: `_usar_base` (sem vento) continua só com as
+    regras/avisos do método de base — não há `ResultadoMajoracaoVento`
+    algum envolvido nesse caminho."""
+    from ui.completo.dialogo_sigma_adm import DialogoSigmaAdm
+
+    root = _tk_root()
+    try:
+        dialogo = DialogoSigmaAdm(root)
+        resultado = teorico_terzaghi_vesic(EntradaCapacidadeCarga(
+            c_kPa=0.0, phi_graus=30.0, B_m=2.0, L_m=2.0, h_m=1.5,
+            gamma_acima_da_base_kN_m3=18.0, gamma_abaixo_da_base_kN_m3=18.0,
+            forma="quadrada", modo_de_ruptura="geral",
+            natureza_do_carregamento="drenado",
+            solo_homogeneo_no_bulbo_declarado=True))
+        dialogo._usar_base(resultado)
+        assert dialogo.resultado_info["regras"] == list(resultado.regras)
+        assert dialogo.resultado_info["avisos"] == list(resultado.avisos)
+        assert dialogo.resultado_info["majorado_por_vento"] is False
+    finally:
+        root.destroy()
+
+
 def test_preencher_solo_invalida_proveniencia_calculada():
     from unittest import mock
 

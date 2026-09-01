@@ -132,6 +132,63 @@ _ao_editar_sigma_adm` zera `ultimo_sigma_adm_calculado` assim que o campo
 do diálogo — edição manual, "Abrir projeto...", "Importar do Excel...").
 Um σ_adm digitado à mão (ou vindo de uma dessas duas importações)
 continua sem rótulo algum no memorial, exatamente como sempre foi.
+
+D-01 DO GATE 2 (rodada do redesenho + 1) — CASO NÃO COBERTO PELO
+REDESENHO ACIMA. O redesenho elimina "usar um card velho depois de
+RECALCULAR" (o card antigo é destruído no primeiro passo de
+`_calcular_teorico`/`_calcular_semiempirico`). Mas um card sobrevive
+intacto — botão "Usar este valor →" incluído — a uma mudança de ENTRADA
+que NUNCA chega a disparar um recálculo: o engenheiro calcula com
+N_SPT=15 (card mostra 300,0 kPa), muda o campo N_SPT para "5" e NÃO
+clica em "Calcular" de novo — o botão antigo continua na tela e, se
+clicado, entrega 300,0 kPa, que já não corresponde a nenhum campo
+digitado (o valor correto seria 100,0 kPa; erro de +200 %, sempre do
+lado inseguro, porque "esquecer de recalcular" nunca produz um valor
+maior do que o real por acaso favorável).
+
+A correção NÃO reintroduz o cache antigo (isto continua sendo do card,
+por closure — `_card_resultado`/`_usar_base` não mudaram). O que muda é
+que cada card agora se OUVE destruir assim que qualquer campo de
+ENTRADA da aba que o gerou muda, mesmo sem recálculo algum:
+`_vigiar_entradas_da_aba` regista um `trace_add("write", ...)` em TODA
+`StringVar`/`BooleanVar` que a construção de `_montar_aba_teorico`/
+`_montar_aba_semiempirico` cria e amarra a `self` (isto é, todo campo
+que seguiu o padrão já existente `self.t_xxx = self._campo(...)`/
+`self._combo(...)` ou `tk.BooleanVar(...)` direto) — a lista de vars
+observadas é obtida por DIFERENÇA de `vars(self)` antes/depois de cada
+`_montar_aba_*`, não por enumeração manual campo a campo: um campo novo
+adicionado nessas duas abas, no futuro, entra na vigilância sozinho,
+contanto que seja atribuído a `self` como os demais já são (mesmo
+padrão que o núcleo pede de "parâmetro novo aparece na UI sozinho").
+Isto cobre exatamente os 13 campos do teórico (c, phi, B, L, h,
+gamma_acima, gamma_abaixo, forma, modo, natureza, homogêneo, n_provas,
+provas_projeto) e os 9 do semiempírico (N_SPT, B, forma, solo, h,
+gamma, considerar_q, q, regional) sem listar nenhum deles aqui — e
+DELIBERADAMENTE não inclui os controles de vento (`v_vento_principal`,
+`v_tipo_obra`, `v_kv`), que são montados por `_montar_vento` DEPOIS
+desta varredura: a mini-seção de vento de cada card já resolve sua
+própria invalidação por closure/releitura no clique (ver REDESENHO
+acima) — não há cache algum ali para "esquecer de invalidar" por
+mudança de k_v/tipo de obra fora de um recálculo explícito daquela
+seção, que é o cenário coberto por
+`test_editar_kv_sem_recalcular_botao_ja_visivel_entrega_o_que_esta_no_card`.
+
+`_invalidar_resultado` (o callback do trace) não apaga a tela em
+silêncio: troca o conteúdo de `frame_resultado_teorico`/
+`frame_resultado_semi` — se houver algo lá — por um único aviso,
+`_AVISO_ENTRADAS_ALTERADAS`, explicando que as entradas mudaram e que é
+preciso recalcular; o botão "Usar este valor →" (ou "Usar valor
+majorado →") do card antigo é destruído junto, pela mesma razão
+estrutural do REDESENHO: não sobrevive widget nenhum do card velho.
+
+Esta abordagem por diferença de `vars(self)` é segura por construção,
+ao contrário do cache antigo: esquecer de atribuir um campo futuro a
+`self` (ou atribuí-lo fora da janela de `_montar_aba_*` observada)
+produz, no PIOR caso, um card que não é invalidado quando deveria — o
+comportamento de HOJE, antes desta correção — nunca a entrega de um
+valor errado, porque o valor entregue continua vindo sempre do
+`ResultadoSigmaAdmELU` fechado por closure no botão do card que
+efetivamente está na tela.
 """
 from __future__ import annotations
 
@@ -190,6 +247,12 @@ AVISO_GAMMA_EFETIVO = (
 )
 
 _SEM_LISTA_FECHADA = "Nenhum destes — caso geral (majoração até 15 %)"
+
+_AVISO_ENTRADAS_ALTERADAS = (
+    "ENTRADAS ALTERADAS DESDE ESTE CÁLCULO — recalcule antes de usar. "
+    "Nenhum botão \"Usar\" desta aba corresponde mais aos valores "
+    "digitados agora (D-01, GATE 2)."
+)
 
 _ROTULOS_DE_FORCA = {
     DECLARADO_EM_TEXTO: (
@@ -336,11 +399,78 @@ class DialogoSigmaAdm(tk.Toplevel):
 
         notebook = ttk.Notebook(self)
         notebook.pack(fill="both", expand=True, padx=10, pady=(8, 4))
-        self._montar_aba_teorico(notebook)
-        self._montar_aba_semiempirico(notebook)
+
+        # D-01 (GATE 2, rodada do redesenho + 1): cada `_montar_aba_*`
+        # atribui todo campo de entrada a `self` (`self.t_xxx`/`self.s_xxx`
+        # — mesmo padrão de sempre). Vigiar essas variáveis por DIFERENÇA
+        # de `vars(self)` antes/depois de cada chamada — em vez de listar
+        # campo por campo aqui — é o que torna esta vigilância robusta a
+        # um campo novo esquecido (ver docstring do módulo, seção D-01).
+        vars_teorico = self._construir_e_capturar_variaveis(
+            lambda: self._montar_aba_teorico(notebook))
+        vars_semi = self._construir_e_capturar_variaveis(
+            lambda: self._montar_aba_semiempirico(notebook))
+        self._vigiar_entradas(vars_teorico, self.frame_resultado_teorico)
+        self._vigiar_entradas(vars_semi, self.frame_resultado_semi)
 
         self._montar_vento(self)
         self._montar_rodape(self)
+
+    def _construir_e_capturar_variaveis(self, construir) -> list[tk.Variable]:
+        """Chama `construir()` (um `_montar_aba_*`) e devolve toda
+        `tk.Variable` (StringVar/BooleanVar/...) que a chamada acabou de
+        atribuir a `self` — por diferença de `vars(self)` antes/depois,
+        não por lista manual (D-01). Só pega variáveis amarradas a `self`
+        porque é exatamente o padrão que `_campo`/`_combo`/os
+        `tk.BooleanVar(...)` das duas abas já seguem (`self.t_xxx = ...`/
+        `self.s_xxx = ...`) — uma variável local que não vire atributo de
+        `self` não entraria na vigilância, mas nenhum campo de entrada
+        desta tela é assim hoje."""
+        antes = set(vars(self))
+        construir()
+        return [valor for nome, valor in vars(self).items()
+                if nome not in antes and isinstance(valor, tk.Variable)]
+
+    def _vigiar_entradas(self, variaveis: list[tk.Variable],
+                          frame_resultado: ttk.Frame) -> None:
+        """Registra, em cada `variavel` de `variaveis`, um `trace_add`
+        que invalida `frame_resultado` (`_invalidar_resultado`) assim que
+        ela mudar — cobre Entry (via `textvariable`), Combobox (idem — o
+        `Combobox` já escreve na mesma `StringVar` quando o engenheiro
+        escolhe um item) e Checkbutton (via `variable`), sem distinguir o
+        tipo de widget: o que importa é que a VARIÁVEL mudou (D-01)."""
+        for variavel in variaveis:
+            variavel.trace_add(
+                "write",
+                lambda *_ignorado, fr=frame_resultado:
+                    self._invalidar_resultado(fr))
+
+    def _invalidar_resultado(self, frame_resultado: ttk.Frame,
+                              *_ignorado: object) -> None:
+        """Callback de `_vigiar_entradas` (D-01): se `frame_resultado`
+        tiver algum card (de resultado OU de recusa) desenhado a partir de
+        um cálculo anterior, destrói tudo — o(s) botão(ões) "Usar..." que
+        esses cards carregavam somem junto, mesma garantia estrutural do
+        REDESENHO (um botão "Usar" só existe enquanto o card que o
+        desenhou também existir) — e desenha, no lugar, um único aviso
+        pedindo para recalcular. Não faz nada se o frame já estiver vazio
+        (nada calculado ainda) ou se já for só o próprio aviso (evita
+        destruir/recriar o mesmo aviso a cada tecla digitada)."""
+        filhos = frame_resultado.winfo_children()
+        if not filhos:
+            return
+        if len(filhos) == 1 and getattr(
+                filhos[0], "_aviso_entradas_alteradas", False):
+            return
+        for filho in filhos:
+            filho.destroy()
+        aviso = ttk.Label(
+            frame_resultado, text=_AVISO_ENTRADAS_ALTERADAS,
+            style="PainelFraco.TLabel", wraplength=700, justify="left",
+            foreground=tema.VERMELHO, font=("Segoe UI", 9, "bold"),
+            padding=(8, 8))
+        aviso._aviso_entradas_alteradas = True
+        aviso.pack(anchor="w", fill="x", padx=4, pady=4)
 
     def _area_rolavel(self, master: tk.Misc) -> ttk.Frame:
         """Canvas + scrollbar reaproveitando o padrão de
@@ -852,17 +982,39 @@ class DialogoSigmaAdm(tk.Toplevel):
             origem=(f"{resultado.nome_do_metodo} — {ROTULO_ELU}, "
                     f"MAJORADA por vento (k_v = {majoracao.k_v_adotado:.4f}"
                     ", NBR 6122 §6.3.2)."),
-            base=resultado, majorado=True)
+            base=resultado, majorado=True, majoracao=majoracao)
 
     def _fechar_com_resultado(self, *, valor_kPa: float, origem: str,
                                base: ResultadoSigmaAdmELU,
-                               majorado: bool) -> None:
+                               majorado: bool,
+                               majoracao: ResultadoMajoracaoVento | None = None
+                               ) -> None:
         """Único ponto de saída "com valor" do diálogo — grava
         `resultado_kPa`/`resultado_info` (proveniência para o memorial,
         D-02 do GATE 2 rodada 3) e fecha a janela no mesmo clique que a
         chamou. `base` é sempre o `ResultadoSigmaAdmELU` do card de
         origem, mesmo quando `majorado=True` (os avisos/regras/práticas
-        do método de base continuam se aplicando)."""
+        do método de base continuam se aplicando).
+
+        D-02 do GATE 2 (rodada do redesenho + 1): quando `majoracao` vem
+        preenchida (`_usar_majorado`), as regras e os avisos do PRÓPRIO
+        `ResultadoMajoracaoVento` — inclusive a regra
+        `NBR6122-6.3.2-majoracao-vento-valores-admissiveis`, que é quem
+        AUTORIZA a majoração, e o aviso literal do §6.3.2 sobre a
+        verificação estrutural obrigatória — entram em `resultado_info`
+        em UNIÃO com os de `base` (sem duplicar), em vez de serem
+        descartados. `ResultadoMajoracaoVento` não tem campo `praticas`
+        próprio (a formulação bibliográfica é sempre a do método de
+        base)."""
+        regras = list(base.regras)
+        avisos = list(base.avisos)
+        if majoracao is not None:
+            for regra in majoracao.regras:
+                if regra not in regras:
+                    regras.append(regra)
+            for aviso in majoracao.avisos:
+                if aviso not in avisos:
+                    avisos.append(aviso)
         self.resultado_kPa = valor_kPa
         self.resultado_info = {
             "valor_kPa": valor_kPa,
@@ -870,8 +1022,8 @@ class DialogoSigmaAdm(tk.Toplevel):
             "metodo": base.nome_do_metodo,
             "rotulo_ELU": ROTULO_ELU,
             "rotulo_fonte": ROTULO_FONTE_NAO_NORMATIVA,
-            "avisos": list(base.avisos),
-            "regras": list(base.regras),
+            "avisos": avisos,
+            "regras": regras,
             "praticas": list(base.praticas),
             "majorado_por_vento": majorado,
         }

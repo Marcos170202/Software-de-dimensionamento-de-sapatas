@@ -45,7 +45,14 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
     preenchimento pelo diálogo) — esta função só formata o que já chegou
     pronto, sem juízo algum sobre proveniência (mesma regra "ui não
     calcula" do `a3-interface.md`, aplicada aqui por simetria: nenhuma
-    parte deste módulo decide o que é ou não confiável, só imprime)."""
+    parte deste módulo decide o que é ou não confiável, só imprime).
+
+    D-03 do GATE 2 (rodada do redesenho + 1): a chave "avisos" (lista de
+    texto já pronta pelo núcleo — inclui, quando aplicável, a declaração
+    de aplicabilidade regional do §7.3.3 (c) e, na majoração por vento, o
+    texto literal do §6.3.2 sobre a verificação estrutural obrigatória)
+    é impressa aqui também — REQ-UI-SIGMA-06 exige que a declaração
+    regional chegue ao MEMORIAL, não só à tela do diálogo."""
     L: list[str] = []
     L.append(_titulo("Memorial de cálculo - Sapata isolada"))
     L.append("Normas: ABNT NBR 6118:2023 e ABNT NBR 6122:2019")
@@ -71,6 +78,8 @@ def memorial(res: ResultadoSapata, sapata: Optional[Sapata] = None,
             L.append(f"    {proveniencia_sigma_adm.get('rotulo_fonte', '')}")
             L.append(f"    Origem do cálculo: "
                      f"{proveniencia_sigma_adm.get('origem', '')}")
+            for aviso in proveniencia_sigma_adm.get("avisos", None) or []:
+                L.append(f"    Aviso do núcleo: {aviso}")
         L.append(f"  Cota de assentamento  {s.hf:.2f} m ; "
                  f"gamma_solo = {s.gamma_solo:.1f} kN/m³ ; phi' = {s.phi:.0f}°")
         L.append(f"  Combinações geradas .. {len(sapata.combinacoes)} "
