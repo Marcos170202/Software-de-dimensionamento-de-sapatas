@@ -11,3 +11,10 @@ mypy>=1.10
 # indiretamente) e o README/CI instalam só este arquivo para rodar a suíte.
 # Sem esta linha, 'pytest tests/' aborta com erro de coleta em venv limpo.
 openpyxl>=3.1
+
+# tests/test_capacidade_carga_vesic.py lê kb/formulas.yaml diretamente (fixture
+# de validação da Tab. 2.2 de Vesic, REQ-SIGMA-11 do ruleset.yaml v9) — sem
+# esta linha, 'pytest tests/' aborta com erro de coleta em venv limpo (achado
+# em CI, não reproduzido localmente porque o ambiente de desenvolvimento já
+# tinha pyyaml instalado por outra dependência transitiva).
+pyyaml>=6.0
