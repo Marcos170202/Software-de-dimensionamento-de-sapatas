@@ -1020,3 +1020,59 @@ dois testes para a próxima rodada. Nenhuma contaminação do motor mínimo.
 Suíte completa verde (560 passed) sob as condições do CI. Reincidentes
 BAIXA confirmados e não bloqueantes. Detalhe completo dos experimentos
 também em `relatorios/revisao_codigo.md`, mesmo adendo.
+
+## Adendo — GATE 3, camada única de dados (REQ-UI-CAMADA-01..07, backlog
+## #12), commit `d8615cf` — **APROVADO**
+
+Portão sobre `ui/completo/formulario.py` (seção "Solo de apoio",
+derivação de γ_solo/φ'/c' na base a partir da camada em h_f) e
+`ui/completo/app.py` (`_importar_excel`, Ramo A/B) — GATE 2 fechou em 3
+rodadas (nota 4,4, sem veto; ver adendo em `relatorios/revisao_codigo.md`
+com o mesmo cabeçalho de data).
+
+Sete cenários reproduzidos por script próprio sob Xvfb
+(`DISPLAY=:99`, `/usr/bin/python3.12`), instanciando `PainelEntrada`/
+`AppSapataCompleto` de verdade e clicando nos comandos reais de
+"+ camada"/"editar"/"- remover" (`DialogoCamada` mockado só por ser
+`Toplevel` modal bloqueante):
+
+1. **End-to-end, 2 camadas** (Aterro acima + Areia abaixo do N.A.):
+   `v_gamma_solo`/`v_phi_solo`/`v_coesao` batem EXATAMENTE com
+   `Camada.gamma(abaixo_na)`/`.phi`/`.coesao` do núcleo chamado direto,
+   nos dois regimes (com e sem N.A.).
+2. **Segurança D1/REQ-05**: remover a última camada faz aparecer o aviso
+   de transição de γ_solo (troca de papel, lado inseguro se ignorado);
+   editar manualmente `v_phi_solo`/`v_coesao` **sem tocar em γ_solo**
+   confirma que o aviso PERSISTE byte-idêntico — o defeito que levou 2
+   rodadas do GATE 2 não voltou.
+3. **Ramo B do Excel, h_f em branco**: proveniência inválida, planilha
+   com camada divergente — a mensagem final de importação contém a linha
+   "ATENÇÃO — divergência" com os três pares (tela × camada), a mesma
+   correção DEF-01 que a rodada 2 tinha regredido.
+4. **Bibliografia**: `kb/exemplos.yaml` não tem exemplo com perfil em
+   camadas explícito (único caso, Bastos ex.9, usa sobrecarga uniforme) —
+   verificado e não aplicável, não descartado sem checar.
+5. **Invariância**: perfil homogêneo deriva o mesmo resultado em 5 pontos
+   de h_f distintos dentro da camada; dividir a mesma camada em duas
+   idênticas não muda a derivação em 6 pontos de h_f, incluindo nos dois
+   lados da interface artificial introduzida pela divisão.
+6. **Fronteira com o núcleo**: `Solo` derivado vs. digitado à mão com os
+   mesmos números são iguais (exceto `perfil`, esperado); com o MESMO
+   perfil nos dois lados, rodei `Sapata(...).dimensionar()` completo duas
+   vezes (γ/φ/coesao derivados vs. redigitados manualmente com o mesmo
+   texto) — `ResultadoSapata` idêntico em TODOS os campos do dataclass.
+7. **Guardas de recusa (C1 do `ruleset.yaml`)**: confirmei por execução
+   que `camada_em(-1.0)` do núcleo puro devolve a camada de FUNDO, e que
+   a UI recusa agir para h_f≤0, mantendo o estado anterior intocado (não
+   salta para a camada de fundo); desempates de interface (`z0<=z<z1`) e
+   de N.A. (`>` estrito) confirmados; extrapolação deriva mas avisa em
+   texto, nunca em silêncio.
+
+Suíte completa rodada por mim: `pytest -q` → **602 passed**, mesma
+contagem do GATE 2, `git status --short` limpo antes e depois (nenhuma
+alteração de repositório por esta validação).
+
+**Veredito: APROVADO.** Nenhum defeito encontrado nos sete cenários.
+Detalhe completo dos experimentos (inclusive os textos exatos capturados
+das mensagens/rótulos da UI) em `relatorios/revisao_codigo.md`, adendo
+"GATE 3, camada única de dados".

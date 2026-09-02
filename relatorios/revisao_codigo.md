@@ -1157,3 +1157,170 @@ condições do CI (Xvfb, `CI=true`, `/usr/bin/python3.12`). `calc_core/`
 intocado em toda a saga; `ler_solo()` byte-idêntico à v9.
 
 **Próximo passo do pipeline:** a7-validador (GATE 3).
+
+## Adendo 2026-09-02 — GATE 3, camada única de dados (REQ-UI-CAMADA-01..07,
+## backlog #12), commit `d8615cf` — **APROVADO**
+
+Validação independente do GATE 2 acima (mesma feature, portão diferente):
+não reli o relato do a6, rodei o software de ponta a ponta sob Xvfb
+(`DISPLAY=:99`, `/usr/bin/python3.12`) e conferi números contra o núcleo
+chamado direto. Scripts próprios em
+`/tmp/claude-0/.../scratchpad/valida_camada_e2e.py`,
+`valida_camada_guardas.py`, `valida_camada_excel.py` — nenhum deles chama
+`_derivar_solo_da_camada` isoladamente como atalho: instanciei
+`PainelEntrada`/`AppSapataCompleto` sob Tk real, preenchi `StringVar` de
+verdade e cliquei nos comandos reais de "+ camada"/"editar"/"- remover"
+(`DialogoCamada` mockado só porque é um `Toplevel` modal bloqueante — o
+mesmo padrão que `tests/test_ui_camada_derivada.py` já usa, não um atalho
+meu).
+
+### 1. Cenário end-to-end, 2 camadas (acima/abaixo do N.A.)
+
+Perfil Aterro(1,0 m, φ=28°, c=5 kPa, γ_nat=17/γ_sat=19) + Areia(2,0 m,
+φ=34°, c=0, γ_nat=18/γ_sat=20) cadastrado pelos botões reais. Com
+N.A.=1,20 m e h_f=1,50 m (abaixo do N.A.): `v_gamma_solo`/`v_phi_solo`/
+`v_coesao` = "20"/"34"/"0", batendo EXATAMENTE com
+`PerfilGeotecnico(camadas=[...], nivel_agua=1.20).camada_em(1.50)` e
+`Camada.gamma(abaixo_na=True)` chamados diretamente do núcleo, sem
+intermediação de UI (diferença zero, comparação de string). Rótulo contém
+"Areia", o radical "derivad" e a palavra "SATURADO" (Exigência 2 de
+REQ-UI-CAMADA-05). Removido o N.A. (h_f continua 1,50 m, agora acima de
+qualquer N.A.): `v_gamma_solo` muda para "18" = `gamma_nat`, também
+batendo com o núcleo puro.
+
+### 2. Cenário de segurança D1/REQ-05 (o que custou 2 rodadas do GATE 2)
+
+Perfil de uma camada (Areia), N.A.=1,20 m, h_f=1,50 m → deriva γ_sat="20".
+Removida a única camada pelo botão real "- remover": proveniência
+invalidada (`ultima_derivacao_de_camada is None`) e o rótulo passa a
+exibir o aviso obrigatório de transição ("γ_solo deixa de vir de uma
+camada do perfil... Abaixo do nível d'água o valor pedido é o peso
+específico EFETIVO... NÃO o saturado... erra gamma por um fator de ~2,
+SEMPRE DO LADO INSEGURO"); o número em `v_gamma_solo` continua "20"
+(o software avisa, não corrige). Editei manualmente `v_phi_solo` para
+"31" **sem tocar em `v_gamma_solo`**: o texto do aviso permaneceu
+BYTE-IDÊNTICO ao de antes da edição — não desapareceu. Repeti editando
+`v_coesao`: mesmo resultado. Este é exatamente o defeito D1 da rodada 1
+do GATE 2 (rótulo escrito fora do escritor único, apagado por qualquer
+edição manual subsequente) — confirmei com os próprios olhos que a
+correção da rodada 3 se sustenta.
+
+### 3. Cenário Ramo B da importação Excel (regressão da rodada 2)
+
+`AppSapataCompleto` real. `v_hf` deixado em BRANCO, os três campos
+digitados à mão (γ=22, φ'=40, c'=15 — proveniência inválida). Importei
+planilha `.xlsx` real (montada com `openpyxl`, abas "Pilar e cargas" +
+"Perfil geotécnico") com uma camada "Argila mole importada" bem diferente
+(γ=14, φ'=17°, c'=25 kPa). Após `_importar_excel()`: `v_hf` passa a
+mostrar "1.5" (o default silencioso de `ler_solo`, agora visível na
+tela); os três campos da tela permanecem 22/40/15 (Ramo B não sobrescreve
+— confirmado); e a mensagem final de `messagebox.showinfo` (capturada de
+verdade, não mockada com `MagicMock` cego) contém:
+
+```
+ATENÇÃO — divergência entre os valores da tela (mantidos, NBR 6122 §7.2)
+e a camada do perfil novo na cota h_f atual:
+  • γ_solo: tela = 22, camada "Argila mole importada" em h_f = 1.5 m = 14
+  • φ': tela = 40, camada "Argila mole importada" em h_f = 1.5 m = 17
+  • c': tela = 15, camada "Argila mole importada" em h_f = 1.5 m = 25
+```
+
+Exatamente o cenário que a regressão da rodada 2 silenciava (h_f em
+branco fazia `_hf_valido("")` devolver `None` ANTES de `preencher_solo`
+escrever o default) — confirmado que a correção DEF-01 (ler `v_hf` DEPOIS
+de `preencher_solo`) se sustenta com um perfil e valores diferentes dos
+usados pelos testes de `tests/test_ui_camada_derivada.py`.
+
+### 4. Consistência com exemplo da bibliografia
+
+Verificado `kb/exemplos.yaml` (152 linhas, um único caso —
+`BASTOS-ex9-gtot-prisma-uniforme`): usa sobrecarga uniforme
+`γ_solo × h`, sem perfil em camadas explícito com φ'/c'/γ na base. Não
+aplicável — não há exemplo do acervo com perfil em camadas explícito
+contra o qual conferir a derivação; registrado, não descartado sem
+verificação.
+
+### 5. Invariância física
+
+**Perfil homogêneo** (uma camada, φ=32°, c=3 kPa, γ_nat=17,5/γ_sat=19,5,
+5,0 m): derivei em h_f = 0,5/1,5/2,5/3,5/4,9 m — os três campos saem
+IDÊNTICOS ("17.5"/"32"/"3") nos cinco pontos, sem dependência espúria de
+h_f dentro da mesma camada.
+
+**Invariância de reparticionamento**: a mesma camada dividida em duas
+idênticas (2,0 m + 3,0 m, mesmos φ/c/γ) contra a original (5,0 m única) —
+testado em h_f = 0,5/1,5/1,9999/2,0/2,5/4,9 m (inclusive nos dois lados
+da interface artificial em 2,0 m introduzida pela divisão): os três
+campos batem exatamente entre as duas versões do perfil em todos os seis
+pontos.
+
+### 6. Fronteira com o núcleo intocada
+
+`ler_solo()` com proveniência derivada devolve `Solo(gamma_solo=18.0,
+phi=34.0, coesao=0.0, hf=1.5, ...)`. Um segundo `PainelEntrada`, com os
+MESMOS três valores digitados à mão (sem perfil, proveniência `None`),
+produz um `Solo` idêntico exceto no atributo `perfil` (esperado — um tem
+perfil cadastrado, o outro não). Fui além do pedido mínimo: montei um
+TERCEIRO cenário com o MESMO perfil nos dois lados — deriveis os três
+campos, rodei `Sapata(...).dimensionar()` completo (`gerar_combinacoes`,
+`ler_pilar`/`ler_materiais`/`ler_casos`/`ler_opcoes` reais, camadas com
+`nspt` para não estourar `_analisar_recalques`); depois redigitei
+MANUALMENTE, nos mesmos campos, o EXATO texto que a derivação já tinha
+escrito (isso invalida `ultima_derivacao_de_camada` — REQ-UI-CAMADA-03
+confirmado de novo, "vazio mesmo que os números coincidam") e rodei
+`dimensionar()` de novo. Comparei TODOS os campos do dataclass
+`ResultadoSapata` (via `dataclasses.fields`) entre as duas rodadas:
+**idênticos em cada campo**, prova de que a derivação não é um caminho de
+cálculo paralelo — é só conveniência de preenchimento de string, o núcleo
+nunca vê rótulo de proveniência.
+
+### 7. Guardas de recusa e desempates normativos (REQ-UI-CAMADA-02/01)
+
+Script à parte (`valida_camada_guardas.py`), porque é o ponto de segurança
+C1 do cabeçalho da v10 do `ruleset.yaml`. Confirmado por execução, não por
+leitura do código:
+- `camada_em(-1.0)` do núcleo, chamado direto, de fato devolve a camada de
+  FUNDO ("Areia") para uma cota negativa — reproduzi a premissa do achado
+  do a2 antes de testar a guarda.
+- Com um estado de derivação válido em h_f=0,5 m (camada "Aterro",
+  φ="28"), digitar "-1" em `v_hf` NÃO altera nem `ultima_derivacao_de_camada`
+  nem os três campos — permanecem em "Aterro"/0,5 m, provando que a
+  guarda (d) impede exatamente o salto para a camada de fundo que o núcleo
+  puro produziria.
+- h_f="0": mesma recusa, estado intocado.
+- Texto genuinamente não numérico ("abc", "", "1.e"): sem exceção, estado
+  intocado. `"1."` é diferente — `float("1.")==1.0` é um float Python
+  válido, então DERIVA normalmente (não é caso da guarda (b); só precisa
+  não quebrar, e não quebra).
+- N.A. com texto inválido ("x"): sem exceção, estado intocado.
+- Desempate de interface: h_f=1,0 m (exatamente na fronteira
+  Aterro/Areia) deriva da camada de BAIXO ("Areia"), confirmando
+  `z0 <= z < z1`.
+- Desempate N.A.: h_f == N.A. (1,20 m == 1,20 m) conta como ACIMA
+  (`abaixo_na=False`, γ_nat="18"), por ser `>` estrito.
+- Extrapolação: h_f=10,0 m contra um perfil de 3,0 m deriva (não trava)
+  com a camada de fundo ("Areia", φ="34"), e o rótulo avisa em texto —
+  "ATENÇÃO: h_f está ABAIXO da base do perfil cadastrado (profundidade
+  total 3 m)... por extrapolação" — nunca em silêncio.
+
+### 8. Suíte completa
+
+Rodei eu mesmo, não confiei no número relatado pelo a3/a6:
+`DISPLAY=:99 CI=true /usr/bin/python3.12 -m pytest -q` →
+**602 passed** (mesma contagem do adendo de GATE 2, sem regressão nem
+adição por mim). `git status --short` limpo antes e depois — nenhum
+arquivo do repositório foi tocado por esta validação.
+
+### Veredito — GATE 3
+
+**APROVADO.** Os sete cenários pedidos (end-to-end com 2 camadas, aviso de
+segurança persistente, Ramo B do Excel com h_f em branco, bibliografia
+— não aplicável e verificado como tal —, invariância homogênea e de
+reparticionamento, fronteira com o núcleo incluindo dimensionamento
+completo idêntico, guardas de recusa/desempates) foram reproduzidos por
+execução própria, sob Xvfb, clicando nos botões reais, e batem exatamente
+com o núcleo chamado direto. Nenhum defeito encontrado. 602/602 testes
+confirmados por mim mesmo. `calc_core/` não foi tocado por esta rodada
+(confirmado junto com o GATE 2 acima) e a fronteira `ler_solo()` continua
+sendo pura leitura de `StringVar`, sem preferência por proveniência —
+confirmado por dimensionamento completo idêntico entre os dois casos.
