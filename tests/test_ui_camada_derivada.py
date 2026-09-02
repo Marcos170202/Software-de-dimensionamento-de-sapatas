@@ -643,6 +643,157 @@ def test_nenhum_texto_chama_gamma_derivado_de_peso_do_maciço_sobrejacente():
 
 
 # =============================================================================
+#  D-01 do GATE 2, rodada 1 (a6-revisor sobre o commit 4ddc26b) — o aviso de
+#  transição de perfil vazio (REQ-UI-CAMADA-05, Exigência 1) tem de
+#  PERSISTIR através de edição manual de QUALQUER um dos três campos
+#  derivados, e só pode ser desligado por uma NOVA derivação bem-sucedida
+#  (perfil recomposto) ou por `preencher_solo` (regime novo,
+#  REQ-UI-CAMADA-04). A versão reprovada escrevia o aviso DIRETO no
+#  `Label` dentro de `_remover_camada`, fora de
+#  `_atualizar_rotulo_solo_derivado()` — um terceiro estado e um segundo
+#  escritor — e qualquer `.set()` subsequente em v_gamma_solo/v_phi_solo/
+#  v_coesao apagava o aviso via `_ao_editar_solo_derivado`, mesmo que
+#  γ_solo continuasse com o valor SATURADO (lado inseguro, medido pelo a6:
+#  +27% na sobrecarga na cota da base, tendendo a fator ~2).
+# =============================================================================
+@pytest.mark.parametrize("campo,valor", [("v_phi_solo", "40"),
+                                          ("v_coesao", "9"),
+                                          ("v_gamma_solo", "21")])
+def test_aviso_perfil_vazio_persiste_apos_edicao_manual_de_qualquer_campo(
+        campo, valor):
+    """Reproduz o cenário do defeito D-01: perfil com N.A. (γ derivado =
+    γ_sat), remover a última camada (aviso aparece corretamente), editar
+    manualmente UM dos três campos que NÃO seja necessariamente γ_solo — o
+    aviso tem de continuar visível e idêntico, não sumir."""
+    from ui.completo.formulario import PainelEntrada
+
+    root = _tk_root()
+    try:
+        painel = PainelEntrada(root)
+        _adicionar_camada_via_ui(painel, _camada_areia())
+        painel.v_nivel_agua.set("0.5")
+        painel.v_hf.set("1.5")
+        assert painel.ultima_derivacao_de_camada is not None
+        assert painel.ultima_derivacao_de_camada["abaixo_na"] is True
+
+        _remover_camada_via_ui(painel, 0)
+        aviso = painel.lbl_solo_derivado.cget("text")
+        assert aviso != ""
+        assert "sobrecarga" in aviso.lower()
+
+        # edição manual do campo (inclusive um que NÃO seja γ_solo) — o
+        # aviso é sobre um REGIME que já mudou, não sobre proveniência,
+        # e não pode ser apagado por esta via.
+        getattr(painel, campo).set(valor)
+
+        assert painel.ultima_derivacao_de_camada is None
+        assert painel.lbl_solo_derivado.cget("text") == aviso
+    finally:
+        root.destroy()
+
+
+def test_aviso_perfil_vazio_e_desligado_so_por_nova_derivacao_bem_sucedida():
+    """Complemento do D-01: só uma NOVA derivação bem-sucedida (perfil
+    recomposto) substitui o aviso de transição de perfil vazio — não a
+    edição manual dos três campos, que apenas invalida a proveniência sem
+    tocar no aviso."""
+    from ui.completo.formulario import PainelEntrada
+
+    root = _tk_root()
+    try:
+        painel = PainelEntrada(root)
+        _adicionar_camada_via_ui(painel, _camada_areia())
+        painel.v_hf.set("1.5")
+        _remover_camada_via_ui(painel, 0)
+        assert painel.lbl_solo_derivado.cget("text") != ""
+        assert painel._aviso_perfil_vazio is True
+
+        # perfil recomposto — a derivação seguinte tem de DESLIGAR o
+        # aviso e voltar ao texto normal de proveniência.
+        _adicionar_camada_via_ui(painel, _camada_aterro())
+        texto = painel.lbl_solo_derivado.cget("text")
+        assert painel._aviso_perfil_vazio is False
+        assert "derivad" in texto.lower()
+        assert "sobrecarga" not in texto.lower()
+        assert painel.ultima_derivacao_de_camada is not None
+    finally:
+        root.destroy()
+
+
+def test_preencher_solo_apaga_aviso_de_perfil_vazio_ativo():
+    """Decorrência do D-01: `preencher_solo` (carregamento de projeto ou
+    de Excel) é um regime NOVO — mesmo que o aviso de transição de perfil
+    vazio estivesse ativo antes da chamada, REQ-UI-CAMADA-04 exige rótulo
+    VAZIO (não o aviso residual) depois dela."""
+    from ui.completo.formulario import PainelEntrada
+
+    root = _tk_root()
+    try:
+        painel = PainelEntrada(root)
+        _adicionar_camada_via_ui(painel, _camada_areia())
+        painel.v_hf.set("1.5")
+        _remover_camada_via_ui(painel, 0)
+        assert painel.lbl_solo_derivado.cget("text") != ""
+
+        solo = Solo(sigma_adm=250.0, gamma_solo=15.0, hf=1.5, phi=22.0,
+                   coesao=7.0, perfil=None)
+        painel.preencher_solo(solo)
+
+        assert painel._aviso_perfil_vazio is False
+        assert painel.lbl_solo_derivado.cget("text") == ""
+    finally:
+        root.destroy()
+
+
+# =============================================================================
+#  D-02 do GATE 2, rodada 1 (a6-revisor) — cobertura de mutante: o gatilho
+#  `if self._camadas: self._derivar_solo_da_camada()` dentro de
+#  `_remover_camada` (REQ-UI-CAMADA-01, um dos três gatilhos NOMINALMENTE
+#  exigidos) não tinha nenhum teste que sobrevivesse à troca da chamada por
+#  `pass`. Este teste cobre especificamente o caso em que a camada
+#  removida NÃO contém h_f, mas a remoção desloca as fronteiras o
+#  suficiente para que a camada EM h_f mude.
+# =============================================================================
+def test_remover_camada_que_nao_contem_hf_mas_muda_camada_em_hf():
+    """Perfil de 3 camadas A(0-1m)/B(1-3m)/C(3-5m), h_f = 2,00 (dentro de
+    B). Remover A (que NÃO contém h_f) desloca B para 0-2m e C para
+    2-4m — h_f = 2,00 cai agora exatamente na nova fronteira B/C, que
+    pela convenção `z0 <= z < z1` (REQ-UI-CAMADA-01) pertence à camada DE
+    BAIXO: a camada em h_f muda de "B" para "C", e os três campos e o
+    rótulo têm de refletir "C", não continuar mostrando "B"."""
+    from ui.completo.formulario import PainelEntrada
+
+    root = _tk_root()
+    try:
+        painel = PainelEntrada(root)
+        camada_a = Camada(nome="A", espessura=1.0, phi=10.0, coesao=1.0,
+                          gamma_nat=15.0, gamma_sat=16.0)
+        camada_b = Camada(nome="B", espessura=2.0, phi=20.0, coesao=2.0,
+                          gamma_nat=17.0, gamma_sat=18.0)
+        camada_c = Camada(nome="C", espessura=2.0, phi=30.0, coesao=3.0,
+                          gamma_nat=19.0, gamma_sat=20.0)
+        _adicionar_camada_via_ui(painel, camada_a)
+        _adicionar_camada_via_ui(painel, camada_b)
+        _adicionar_camada_via_ui(painel, camada_c)
+
+        painel.v_hf.set("2.0")
+        assert painel.ultima_derivacao_de_camada["nome_camada"] == "B"
+        assert painel.v_phi_solo.get() == "20"
+
+        _remover_camada_via_ui(painel, 0)   # remove "A" — não contém h_f
+
+        assert [c.nome for c in painel._camadas] == ["B", "C"]
+        assert painel.ultima_derivacao_de_camada is not None
+        assert painel.ultima_derivacao_de_camada["nome_camada"] == "C"
+        assert painel.v_phi_solo.get() == "30"
+        assert painel.v_coesao.get() == "3"
+        texto = painel.lbl_solo_derivado.cget("text")
+        assert "C" in texto
+    finally:
+        root.destroy()
+
+
+# =============================================================================
 #  REQ-UI-CAMADA-06 — importação de perfil por Excel não é carregamento de
 #  arquivo (`ui/completo/app.py::_importar_excel`)
 # =============================================================================

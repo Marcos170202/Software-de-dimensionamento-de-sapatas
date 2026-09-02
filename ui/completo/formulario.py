@@ -73,6 +73,48 @@ def _int_opt(valor: str) -> int | None:
     return int(valor) if valor else None
 
 
+def _hf_valido(texto: str) -> float | None:
+    """Único ponto que decide se um texto de h_f serve de base para
+    DERIVAR (REQ-UI-CAMADA-02): em branco, não numérico ("1.", "1.e" —
+    estados normais de digitação) ou <= 0 devolvem `None`, sem exceção.
+    Usa `_float_opt`, nunca `float()` cru, para aceitar vírgula decimal
+    como o resto da tela.
+
+    Devolve o `float` só quando válido — NUNCA o default silencioso de
+    1,5 m que `ler_solo`/`_float(..., 1.5)` usam para alimentar o núcleo
+    quando o campo está vazio. Esse default é correto para `ler_solo()`
+    (o núcleo precisa de um número), mas usá-lo AQUI inventaria uma
+    proveniência que o usuário não digitou (REQ-UI-CAMADA-02(b)).
+
+    Reaproveitado por `_derivar_solo_da_camada` (edição interativa) e por
+    `ui.completo.app::_importar_excel` (Ramo B, D-04 do GATE 2 desta
+    rodada) — a guarda existe num único lugar, não duas cópias que podem
+    divergir."""
+    try:
+        hf = _float_opt(texto)
+    except ValueError:
+        return None
+    if hf is None or hf <= 0:
+        return None
+    return hf
+
+
+def _camada_e_abaixo_na(perfil: PerfilGeotecnico, hf: float) -> tuple[Camada, bool]:
+    """Único ponto que decide, para uma cota h_f já validada, qual camada
+    do perfil vale e se ela está abaixo do N.A. (REQ-UI-CAMADA-01,
+    desempates normativos: interface pertence à camada DE BAIXO —
+    `camada_em` já implementa `z0 <= z < z1`; h_f == N.A. conta como
+    ACIMA, por ser `>` estrito). `abaixo_na` decide entre `gamma_nat` e
+    `gamma_sat` em `Camada.gamma(abaixo_na)`.
+
+    Reaproveitado por `_derivar_solo_da_camada` e por
+    `ui.completo.app::_importar_excel` (Ramo B) para eliminar a segunda
+    cópia da regra normativa (D-03 do GATE 2 desta rodada)."""
+    camada = perfil.camada_em(hf)
+    abaixo_na = perfil.nivel_agua is not None and hf > perfil.nivel_agua
+    return camada, abaixo_na
+
+
 def _texto_campo(valor: float | str | None) -> str:
     """Formata um valor de `Camada` (float, str ou None) como texto para
     pré-preencher um `StringVar` do diálogo de edição."""
@@ -364,11 +406,19 @@ class PainelEntrada(ttk.Frame):
         # calculado`/`_ao_editar_sigma_adm`/`lbl_sigma_adm_elu` acima:
         # rótulo discreto que só `_atualizar_rotulo_solo_derivado()`
         # escreve, ligado à proveniência conjunta dos três campos.
+        #
+        # D-05 do GATE 2, rodada 1 (a6): linha PRÓPRIA abaixo dos três
+        # campos derivados (γ_solo/φ'/c', linhas 2-4), com `columnspan`
+        # cobrindo a largura toda — mesmo padrão do rótulo fixo do §7.2
+        # logo abaixo (`row=7`). Colado DENTRO da grade dos três campos
+        # (como nesta linha antes da correção) fazia o texto longo
+        # (derivado+saturado+extrapolado, ou o aviso de perfil vazio)
+        # empurrar os campos de 25px para ~93px de espaçamento entre si.
         self.lbl_solo_derivado = ttk.Label(
             f, text="", style="PainelFraco.TLabel", foreground=tema.AMARELO,
-            wraplength=250, justify="left")
-        self.lbl_solo_derivado.grid(row=2, column=2, columnspan=2, rowspan=3,
-                                     sticky="w", padx=(4, 8), pady=2)
+            wraplength=440, justify="left")
+        self.lbl_solo_derivado.grid(row=6, column=0, columnspan=2,
+                                     sticky="w", padx=8, pady=(2, 2))
         # GATILHOS, lista FECHADA (REQ-UI-CAMADA-01): as duas cotas que
         # decidem qual camada vale disparam a derivação...
         self.v_hf.trace_add("write", self._derivar_solo_da_camada)
@@ -388,10 +438,10 @@ class PainelEntrada(ttk.Frame):
                           "PREENCHE este campo, nunca o trava.",
                   style="PainelFraco.TLabel",
                   wraplength=260, justify="left").grid(
-            row=6, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 6))
+            row=7, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 6))
 
         cam = ttk.LabelFrame(f, text="Perfil em camadas (opcional — recalques)")
-        cam.grid(row=7, column=0, columnspan=2, sticky="ew", padx=6, pady=(0, 6))
+        cam.grid(row=8, column=0, columnspan=2, sticky="ew", padx=6, pady=(0, 6))
         cam.columnconfigure(0, weight=1)
         cols = ("nome", "espessura", "tipo")
         self.tree_camadas = ttk.Treeview(cam, columns=cols, show="headings",
@@ -416,7 +466,7 @@ class PainelEntrada(ttk.Frame):
             side="left")
 
         expansivo_colapsivel = ttk.Frame(f)
-        expansivo_colapsivel.grid(row=8, column=0, columnspan=2, sticky="w",
+        expansivo_colapsivel.grid(row=9, column=0, columnspan=2, sticky="w",
                                    padx=8, pady=(2, 8))
         self.solo_expansivo = tk.BooleanVar(value=False)
         self.solo_colapsivel = tk.BooleanVar(value=False)
@@ -509,16 +559,33 @@ class PainelEntrada(ttk.Frame):
     # reaproveitada, não reinventada (REQ-UI-CAMADA-03).
     # --------------------------------------------------------------------
     def _atualizar_rotulo_solo_derivado(self) -> None:
-        """Único ponto que escreve `lbl_solo_derivado` — chamado tanto por
-        `_derivar_solo_da_camada` (quando preenche) quanto por
-        `_ao_editar_solo_derivado`/`_remover_camada` (quando invalida),
-        para que o rótulo e `ultima_derivacao_de_camada` nunca saiam de
-        sincronia (REQ-UI-CAMADA-03). Só dois estados possíveis: texto
-        vazio (proveniência inválida) ou um texto que contém o radical
-        "derivad", o nome exato da camada e o h_f usado — nunca mais do
-        que isso (REQ-UI-CAMADA-05, Exigência 3: nada de "peso do maciço
-        sobrejacente" ou equivalente)."""
+        """Único ponto que escreve `lbl_solo_derivado` — chamado por
+        `_derivar_solo_da_camada` (quando preenche), por
+        `_ao_editar_solo_derivado`/`preencher_solo` (quando invalidam) e
+        por `_remover_camada` (quando invalida E, potencialmente, liga o
+        aviso de transição de perfil vazio), para que o rótulo e
+        `ultima_derivacao_de_camada` nunca saiam de sincronia
+        (REQ-UI-CAMADA-03).
+
+        D-01 do GATE 2, rodada 1 (a6): os "dois estados" de proveniência
+        continuam valendo (texto vazio / texto com o radical "derivad"),
+        mas há um terceiro CANAL, ortogonal à proveniência —
+        `self._aviso_perfil_vazio` — que este método CONSULTA e
+        PRIORIZA sobre o estado "vazio" normal. Esse aviso não é sobre de
+        onde vieram os três campos, é sobre uma mudança de REGIME
+        (γ_solo deixou de ser γ de uma camada e passou a valer como
+        sobrecarga na cota da base, REQ-UI-CAMADA-05 Exigência 1) que
+        continua valendo até haver perfil de novo — inclusive através de
+        edições manuais nos três campos, que só afetam a proveniência,
+        não o regime. Por isso ele só é desligado por uma NOVA derivação
+        bem-sucedida (`info is not None` abaixo), nunca por
+        `_ao_editar_solo_derivado`."""
         info = self.ultima_derivacao_de_camada
+        if info is not None:
+            self._aviso_perfil_vazio = False
+        elif getattr(self, "_aviso_perfil_vazio", False):
+            self.lbl_solo_derivado.configure(text=AVISO_TRANSICAO_PERFIL_VAZIO)
+            return
         if info is None:
             self.lbl_solo_derivado.configure(text="")
             return
@@ -569,11 +636,8 @@ class PainelEntrada(ttk.Frame):
             return
         if not self._camadas:
             return
-        try:
-            hf = _float_opt(self.v_hf.get())
-        except ValueError:
-            return
-        if hf is None or hf <= 0:
+        hf = _hf_valido(self.v_hf.get())
+        if hf is None:
             return
         try:
             nivel_agua = _float_opt(self.v_nivel_agua.get())
@@ -582,8 +646,7 @@ class PainelEntrada(ttk.Frame):
 
         perfil = PerfilGeotecnico(camadas=list(self._camadas),
                                   nivel_agua=nivel_agua)
-        camada = perfil.camada_em(hf)
-        abaixo_na = nivel_agua is not None and hf > nivel_agua
+        camada, abaixo_na = _camada_e_abaixo_na(perfil, hf)
         extrapolada = hf > perfil.profundidade_total
 
         self._preenchendo_solo_derivado = True
@@ -626,6 +689,13 @@ class PainelEntrada(ttk.Frame):
             self._derivar_solo_da_camada()
 
     def _remover_camada(self) -> None:
+        """D-02 do GATE 2, rodada 1 (a6): a chamada a `_derivar_solo_da_
+        camada()` abaixo (ramo `if self._camadas`) é um dos três gatilhos
+        NOMINALMENTE exigidos por REQ-UI-CAMADA-01 — cobre inclusive o
+        caso em que a camada removida NÃO continha h_f, mas a remoção
+        desloca as fronteiras o bastante para que a camada EM h_f mude
+        (ver `test_remover_camada_que_nao_contem_hf_mas_muda_camada_em_
+        hf`)."""
         selecao = self.tree_camadas.selection()
         if not selecao:
             return
@@ -639,8 +709,22 @@ class PainelEntrada(ttk.Frame):
             # estando a proveniência válida — γ_solo troca de papel. Aviso
             # passivo (nunca `messagebox`), e o NÚMERO em v_gamma_solo não
             # é tocado: quem decide é o engenheiro.
+            #
+            # D-01 do GATE 2, rodada 1 (a6): o aviso NÃO é escrito
+            # diretamente no `Label` aqui — isso criava um terceiro
+            # estado (proveniência `None` com rótulo cheio) e um segundo
+            # escritor, e qualquer edição manual SUBSEQUENTE de
+            # QUALQUER um dos três campos apagava o aviso via
+            # `_ao_editar_solo_derivado` mesmo que γ_solo continuasse
+            # intocado (regressão do lado inseguro medida pelo a6: γ_sat
+            # sobrevivendo rotulado como se nada tivesse mudado). Em vez
+            # disso, liga a flag `_aviso_perfil_vazio` e delega ao ÚNICO
+            # escritor do rótulo — que agora CONSULTA essa flag e a
+            # prioriza sobre o estado "vazio" normal, e só a desliga
+            # numa nova derivação bem-sucedida.
             self.ultima_derivacao_de_camada = None
-            self.lbl_solo_derivado.configure(text=AVISO_TRANSICAO_PERFIL_VAZIO)
+            self._aviso_perfil_vazio = True
+            self._atualizar_rotulo_solo_derivado()
 
     def _editar_camada(self, evento: tk.Event | None = None) -> None:
         """Abre `DialogoCamada` preenchido com a `Camada` da linha
@@ -780,6 +864,20 @@ class PainelEntrada(ttk.Frame):
     preenchimento de campo — NÃO é repassado a `ler_solo()` nem ao
     memorial/PDF/Excel (REQ-UI-CAMADA-07): o núcleo só vê o número final."""
 
+    _aviso_perfil_vazio: bool = False
+    """D-01 do GATE 2, rodada 1 (a6): canal PRÓPRIO, ortogonal à
+    proveniência, para o aviso de transição de perfil vazio (REQ-UI-
+    CAMADA-05, Exigência 1). Ligado por `_remover_camada` quando a
+    remoção esvazia `self._camadas` estando a proveniência válida;
+    consultado e priorizado por `_atualizar_rotulo_solo_derivado` sobre o
+    estado "vazio" normal; desligado só por uma NOVA derivação
+    bem-sucedida (`_derivar_solo_da_camada`) ou por `preencher_solo`
+    (carregar projeto/Excel é um regime novo, REQ-UI-CAMADA-04 exige
+    rótulo vazio incondicionalmente). Edição manual dos três campos
+    (`_ao_editar_solo_derivado`) NÃO desliga esta flag — é exatamente o
+    ponto do defeito corrigido: o aviso é sobre um REGIME que continua
+    valendo, não sobre proveniência."""
+
     def registrar_resultado_automatico(self, res: ResultadoSapata) -> None:
         self._ultimo_automatico = res
 
@@ -863,6 +961,12 @@ class PainelEntrada(ttk.Frame):
         # este par deixa o desfecho garantido e nomeado, o mesmo que
         # `_ao_editar_sigma_adm` já produz para σ_adm nesta função.
         self.ultima_derivacao_de_camada = None
+        # D-01 do GATE 2, rodada 1 (a6): um projeto/Excel carregado é um
+        # regime NOVO — mesmo que o aviso de transição de perfil vazio
+        # estivesse ligado antes (`_remover_camada`), o critério de
+        # aceite de REQ-UI-CAMADA-04 exige rótulo VAZIO incondicionalmente
+        # depois desta chamada, não o aviso residual.
+        self._aviso_perfil_vazio = False
         self._atualizar_rotulo_solo_derivado()
 
     def preencher_casos(self, casos: list[CasoCarga]) -> None:

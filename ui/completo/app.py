@@ -32,7 +32,7 @@ from calc_core.sapata_isolada.pranchas import gerar_memorial_pdf
 from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 
 from . import avisos, projeto, tema
-from .formulario import PainelEntrada
+from .formulario import PainelEntrada, _camada_e_abaixo_na, _hf_valido
 from .modelo import construir_modelo_visual
 from .resultado import PainelResultado
 from .visualizacao import PainelVisualizacao
@@ -441,6 +441,14 @@ class AppSapataCompleto(tk.Tk):
             # tanto para a mensagem "perfil mantido" quanto para o
             # `replace(...)` que grava o perfil novo — nunca lido de novo.
             solo_atual = self.formulario.ler_solo()
+            # D-04 do GATE 2, rodada 1 (a6): o TEXTO bruto de v_hf é
+            # capturado AQUI, antes de `preencher_solo` (mais abaixo)
+            # reescrever o campo com `solo_atual.hf` já formatado — que é
+            # `_float(v_hf.get(), 1.5)`, ou seja, campo em branco vira
+            # 1,5 m em silêncio. Usar esse default como base do Ramo B
+            # (divergência) inventaria proveniência que o usuário não
+            # digitou (mesma proibição de REQ-UI-CAMADA-02(b)).
+            texto_hf_antes_da_importacao = self.formulario.v_hf.get()
         except ValueError as erro:
             messagebox.showerror("Erro ao importar planilha", str(erro))
             return
@@ -533,7 +541,7 @@ class AppSapataCompleto(tk.Tk):
                 # tenha digitado se perde. Deriva-se do perfil NOVO com a
                 # mesma função e as mesmas guardas de REQ-UI-CAMADA-01/02.
                 self.formulario._derivar_solo_da_camada()
-            elif perfil.camadas and solo_atual.hf > 0:
+            else:
                 # RAMO B: valores digitados à mão ou vindos de um projeto
                 # aberto (proveniência já inválida) — NUNCA sobrescritos
                 # (preencher_solo já garante isso: só o `perfil` muda em
@@ -543,28 +551,42 @@ class AppSapataCompleto(tk.Tk):
                 # perfil MANTIDO" (D6) e "Hx/Hy zeradas" (BAIXA) desta
                 # mesma função: o que a importação faz ou deixa de fazer
                 # com dados da tela é dito no resumo, nunca em silêncio.
-                camada_nova = PerfilGeotecnico(
-                    camadas=list(perfil.camadas), nivel_agua=perfil.nivel_agua
-                ).camada_em(solo_atual.hf)
-                abaixo_na_novo = (perfil.nivel_agua is not None
-                                  and solo_atual.hf > perfil.nivel_agua)
-                valores_novos = (camada_nova.gamma(abaixo_na_novo),
-                                 camada_nova.phi, camada_nova.coesao)
-                rotulos = ("γ_solo", "φ'", "c'")
-                linhas_divergencia = [
-                    f"  • {rotulo}: tela = {da_tela:.10g}, camada "
-                    f'"{camada_nova.nome}" em h_f = {solo_atual.hf:.10g} m'
-                    f" = {da_camada:.10g}"
-                    for rotulo, da_tela, da_camada
-                    in zip(rotulos, valores_tela, valores_novos)
-                    if da_tela != da_camada
-                ]
-                if linhas_divergencia:
-                    msg_perfil += (
-                        "\n\nATENÇÃO — divergência entre os valores da "
-                        "tela (mantidos, NBR 6122 §7.2) e a camada do "
-                        "perfil novo na cota h_f atual:\n"
-                        + "\n".join(linhas_divergencia))
+                #
+                # D-04 do GATE 2, rodada 1 (a6): a guarda usa o TEXTO
+                # bruto capturado ANTES da importação (`_hf_valido`, a
+                # mesma função que `_derivar_solo_da_camada` usa) — não
+                # `solo_atual.hf`, que já veio com o default silencioso de
+                # 1,5 m se o campo estivesse em branco (derivar dessa cota
+                # fantasma inventaria proveniência, REQ-UI-CAMADA-02(b)).
+                hf_ramo_b = _hf_valido(texto_hf_antes_da_importacao)
+                if hf_ramo_b is not None and perfil.camadas:
+                    # D-03 do GATE 2, rodada 1 (a6): `_camada_e_abaixo_na`
+                    # é o ÚNICO ponto que decide camada/abaixo_na — a
+                    # mesma função que `_derivar_solo_da_camada` usa — em
+                    # vez de uma segunda cópia local do desempate
+                    # normativo.
+                    perfil_novo = PerfilGeotecnico(
+                        camadas=list(perfil.camadas),
+                        nivel_agua=perfil.nivel_agua)
+                    camada_nova, abaixo_na_novo = _camada_e_abaixo_na(
+                        perfil_novo, hf_ramo_b)
+                    valores_novos = (camada_nova.gamma(abaixo_na_novo),
+                                     camada_nova.phi, camada_nova.coesao)
+                    rotulos = ("γ_solo", "φ'", "c'")
+                    linhas_divergencia = [
+                        f"  • {rotulo}: tela = {da_tela:.10g}, camada "
+                        f'"{camada_nova.nome}" em h_f = {hf_ramo_b:.10g} m'
+                        f" = {da_camada:.10g}"
+                        for rotulo, da_tela, da_camada
+                        in zip(rotulos, valores_tela, valores_novos)
+                        if da_tela != da_camada
+                    ]
+                    if linhas_divergencia:
+                        msg_perfil += (
+                            "\n\nATENÇÃO — divergência entre os valores da "
+                            "tela (mantidos, NBR 6122 §7.2) e a camada do "
+                            "perfil novo na cota h_f atual:\n"
+                            + "\n".join(linhas_divergencia))
 
         msg_horizontais = ""
         if slots_com_horizontal_zerada:
