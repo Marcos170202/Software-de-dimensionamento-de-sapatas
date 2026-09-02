@@ -27,6 +27,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent))
 
 from calc_core.sapata_isolada.acoes import gerar_combinacoes
+from calc_core.sapata_isolada.geotecnia import PerfilGeotecnico
 from calc_core.sapata_isolada.pranchas import gerar_memorial_pdf
 from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 
@@ -510,9 +511,60 @@ class AppSapataCompleto(tk.Tk):
             else:
                 msg_perfil = f"perfil geotécnico: NÃO importado por erro — {erro}"
         else:
+            # REQ-UI-CAMADA-06 (backlog #12): "Importar do Excel..." NÃO é
+            # um carregamento de arquivo como "Abrir projeto..." — os três
+            # valores em `solo_atual` (gamma_solo/phi/coesao) não vêm da
+            # planilha (`importar_perfil_geotecnico` devolve só o perfil),
+            # são sobra da TELA casada com um perfil possivelmente de
+            # outra obra. O estado da proveniência é capturado ANTES de
+            # `preencher_solo`, que a zera incondicionalmente
+            # (REQ-UI-CAMADA-04 continua valendo — `preencher_solo`
+            # permanece um setter burro; a decisão é deste chamador).
+            proveniencia_valida_antes = (
+                self.formulario.ultima_derivacao_de_camada is not None)
+            valores_tela = (solo_atual.gamma_solo, solo_atual.phi,
+                            solo_atual.coesao)
             self.formulario.preencher_solo(replace(solo_atual, perfil=perfil))
             msg_perfil = (f"perfil geotécnico: {len(perfil.camadas)} "
                           "camada(s) importada(s).")
+            if proveniencia_valida_antes:
+                # RAMO A: os três campos eram derivados do perfil ANTIGO,
+                # que acabou de ser descartado — nada que o engenheiro
+                # tenha digitado se perde. Deriva-se do perfil NOVO com a
+                # mesma função e as mesmas guardas de REQ-UI-CAMADA-01/02.
+                self.formulario._derivar_solo_da_camada()
+            elif perfil.camadas and solo_atual.hf > 0:
+                # RAMO B: valores digitados à mão ou vindos de um projeto
+                # aberto (proveniência já inválida) — NUNCA sobrescritos
+                # (preencher_solo já garante isso: só o `perfil` muda em
+                # `replace(...)`). Acrescenta uma linha de DIVERGÊNCIA ao
+                # resumo quando algum dos três diferir da camada do perfil
+                # NOVO na mesma cota h_f — mesma doutrina de "aba ausente,
+                # perfil MANTIDO" (D6) e "Hx/Hy zeradas" (BAIXA) desta
+                # mesma função: o que a importação faz ou deixa de fazer
+                # com dados da tela é dito no resumo, nunca em silêncio.
+                camada_nova = PerfilGeotecnico(
+                    camadas=list(perfil.camadas), nivel_agua=perfil.nivel_agua
+                ).camada_em(solo_atual.hf)
+                abaixo_na_novo = (perfil.nivel_agua is not None
+                                  and solo_atual.hf > perfil.nivel_agua)
+                valores_novos = (camada_nova.gamma(abaixo_na_novo),
+                                 camada_nova.phi, camada_nova.coesao)
+                rotulos = ("γ_solo", "φ'", "c'")
+                linhas_divergencia = [
+                    f"  • {rotulo}: tela = {da_tela:.10g}, camada "
+                    f'"{camada_nova.nome}" em h_f = {solo_atual.hf:.10g} m'
+                    f" = {da_camada:.10g}"
+                    for rotulo, da_tela, da_camada
+                    in zip(rotulos, valores_tela, valores_novos)
+                    if da_tela != da_camada
+                ]
+                if linhas_divergencia:
+                    msg_perfil += (
+                        "\n\nATENÇÃO — divergência entre os valores da "
+                        "tela (mantidos, NBR 6122 §7.2) e a camada do "
+                        "perfil novo na cota h_f atual:\n"
+                        + "\n".join(linhas_divergencia))
 
         msg_horizontais = ""
         if slots_com_horizontal_zerada:

@@ -33,7 +33,7 @@ from calc_core.sapata_isolada.sapata import (
 )
 
 from . import tema
-from .dialogo_sigma_adm import DialogoSigmaAdm
+from .dialogo_sigma_adm import AVISO_GAMMA_EFETIVO, DialogoSigmaAdm
 
 AGREGADOS = ["basalto", "diabasio", "granito", "gnaisse", "calcario", "arenito"]
 CATEGORIAS_FYK = ["250", "500", "600"]
@@ -41,6 +41,21 @@ TIPOS_SUBSTRATO = [t.value for t in TipoSubstrato]
 BITOLAS_TXT = [f"{b:g}" for b in BITOLAS_COMERCIAIS]
 MODELOS_REACAO = ["rigido", "elastico", "grelha", "envoltoria"]
 MODELOS_ARMADURA = ["bielas", "flexao", "envoltoria"]
+
+# REQ-UI-CAMADA-05, Exigência 1: quando `_remover_camada` esvazia
+# `self._camadas` estando a proveniência válida, γ_solo troca de papel —
+# deixa de ser o γ (sat/nat) de uma camada do perfil e passa a valer como
+# peso do solo na sobrecarga efetiva de h_f (`gamma_solo * h_f`, sem
+# perfil — `Solo.sobrecarga_no_nivel_da_base`). O aviso é passivo (rótulo,
+# nunca `messagebox`) e reaproveita, PALAVRA POR PALAVRA, o texto de
+# `AVISO_GAMMA_EFETIVO` já exigido por REQ-UI-SIGMA-04/pendência V7 — a
+# mesma pendência V8 (kb/pendencias.md) torna este aviso obrigatório
+# enquanto não houver decisão humana registrada.
+AVISO_TRANSICAO_PERFIL_VAZIO = (
+    "Perfil geotécnico ficou vazio: γ_solo deixa de vir de uma camada do "
+    "perfil e passa a valer como sobrecarga na cota da base (γ_solo × "
+    "h_f, sem perfil). " + AVISO_GAMMA_EFETIVO
+)
 
 
 def _float(valor: str, padrao: float = 0.0) -> float:
@@ -173,6 +188,22 @@ class PainelEntrada(ttk.Frame):
         self._preenchendo_sigma_adm_calculado = False
         """Guarda interna de `_abrir_calculadora_sigma_adm`/
         `_ao_editar_sigma_adm` — ver docstrings dos dois."""
+        self._preenchendo_solo_derivado = False
+        """Guarda de escrita de `_derivar_solo_da_camada` — impede que os
+        três `.set()` programáticos que ela faz em v_gamma_solo/v_phi_solo/
+        v_coesao disparem `_ao_editar_solo_derivado` (que existe para
+        invalidar a proveniência em qualquer OUTRA edição desses campos).
+        Mesma arquitetura de `_preenchendo_sigma_adm_calculado` (REQ-UI-
+        CAMADA-03)."""
+        self._carregando_solo = False
+        """Guarda de `preencher_solo` — suprime a DERIVAÇÃO disparada pelos
+        traces de escrita de v_hf/v_nivel_agua enquanto um projeto/Excel
+        está sendo carregado (REQ-UI-CAMADA-04). Assimetria proposital:
+        NUNCA suprime a invalidação de `ultima_derivacao_de_camada` — os
+        valores de arquivo não são derivados, então a invalidação (via
+        `_ao_editar_solo_derivado`, disparada pelos `.set()` de v_gamma_
+        solo/v_phi_solo/v_coesao dentro de `preencher_solo`) tem de correr
+        normalmente."""
         self._montar_scroll()
 
     # ------------------------------------------------------------- estrutura
@@ -327,6 +358,30 @@ class PainelEntrada(ttk.Frame):
         self.v_coesao = self._campo(f, 4, "c' na base [kPa]", "0")
         self.v_nivel_agua = self._campo(f, 5, "Nível d'água [m] (vazio = ausente)", "")
 
+        # REQ-UI-CAMADA-01/03 (backlog #12): γ_solo/φ'/c' na base passam a
+        # ser PREENCHIDOS a partir da camada vigente em h_f, em vez de
+        # digitados de novo — mesma arquitetura de `ultimo_sigma_adm_
+        # calculado`/`_ao_editar_sigma_adm`/`lbl_sigma_adm_elu` acima:
+        # rótulo discreto que só `_atualizar_rotulo_solo_derivado()`
+        # escreve, ligado à proveniência conjunta dos três campos.
+        self.lbl_solo_derivado = ttk.Label(
+            f, text="", style="PainelFraco.TLabel", foreground=tema.AMARELO,
+            wraplength=250, justify="left")
+        self.lbl_solo_derivado.grid(row=2, column=2, columnspan=2, rowspan=3,
+                                     sticky="w", padx=(4, 8), pady=2)
+        # GATILHOS, lista FECHADA (REQ-UI-CAMADA-01): as duas cotas que
+        # decidem qual camada vale disparam a derivação...
+        self.v_hf.trace_add("write", self._derivar_solo_da_camada)
+        self.v_nivel_agua.trace_add("write", self._derivar_solo_da_camada)
+        # ...e a edição manual de QUALQUER um dos três campos derivados
+        # invalida a proveniência dos TRÊS ao mesmo tempo (REQ-UI-CAMADA-03).
+        # `_preenchendo_solo_derivado` (ligado só dentro de `_derivar_solo_
+        # da_camada`) impede que os `.set()` da própria derivação se
+        # autoinvalidem.
+        self.v_gamma_solo.trace_add("write", self._ao_editar_solo_derivado)
+        self.v_phi_solo.trace_add("write", self._ao_editar_solo_derivado)
+        self.v_coesao.trace_add("write", self._ao_editar_solo_derivado)
+
         ttk.Label(f, text="σ_adm sempre admite sobreposição manual pelo "
                           "engenheiro (NBR 6122 §7.2) — inclusive depois de "
                           "\"Calcular σ_adm a partir de SPT...\": o botão só "
@@ -446,12 +501,129 @@ class PainelEntrada(ttk.Frame):
         self.ultimo_sigma_adm_calculado = None
         self._atualizar_rotulo_sigma_adm_elu()
 
+    # --------------------------------------------------------------------
+    # REQ-UI-CAMADA-01 a 07 (backlog #12) — camada única de dados:
+    # γ_solo/φ'/c' na base derivados da camada vigente em h_f, em vez de
+    # digitados de novo. Mesma arquitetura de `ultimo_sigma_adm_calculado`/
+    # `_ao_editar_sigma_adm`/`_preenchendo_sigma_adm_calculado` acima —
+    # reaproveitada, não reinventada (REQ-UI-CAMADA-03).
+    # --------------------------------------------------------------------
+    def _atualizar_rotulo_solo_derivado(self) -> None:
+        """Único ponto que escreve `lbl_solo_derivado` — chamado tanto por
+        `_derivar_solo_da_camada` (quando preenche) quanto por
+        `_ao_editar_solo_derivado`/`_remover_camada` (quando invalida),
+        para que o rótulo e `ultima_derivacao_de_camada` nunca saiam de
+        sincronia (REQ-UI-CAMADA-03). Só dois estados possíveis: texto
+        vazio (proveniência inválida) ou um texto que contém o radical
+        "derivad", o nome exato da camada e o h_f usado — nunca mais do
+        que isso (REQ-UI-CAMADA-05, Exigência 3: nada de "peso do maciço
+        sobrejacente" ou equivalente)."""
+        info = self.ultima_derivacao_de_camada
+        if info is None:
+            self.lbl_solo_derivado.configure(text="")
+            return
+        texto = (f'valores derivados da camada "{info["nome_camada"]}" em '
+                 f'h_f = {info["hf"]:.10g} m')
+        if info["abaixo_na"]:
+            # REQ-UI-CAMADA-05, Exigência 2: dizer explicitamente que o γ
+            # exibido é o SATURADO (total) da camada — nunca sugerir que o
+            # software escolheu entre saturado/efetivo/natural por conta
+            # própria.
+            texto += (" — γ_solo exibido é o SATURADO (total) dessa "
+                       "camada, por h_f estar abaixo do N.A.")
+        if info["extrapolada"]:
+            # REQ-UI-CAMADA-02: extrapolação abaixo do perfil nunca em
+            # silêncio. `profundidade_total` é lido do núcleo (soma de
+            # espessuras é conta do núcleo, não desta tela).
+            perfil = PerfilGeotecnico(camadas=list(self._camadas))
+            texto += (" — ATENÇÃO: h_f está ABAIXO da base do perfil "
+                      f"cadastrado (profundidade total "
+                      f"{perfil.profundidade_total:.10g} m); os três "
+                      "campos foram preenchidos com a camada de fundo, "
+                      "por extrapolação")
+        self.lbl_solo_derivado.configure(text=texto)
+
+    def _derivar_solo_da_camada(self, *_args) -> None:
+        """ÚNICA derivação (REQ-UI-CAMADA-01). PREENCHE `v_gamma_solo`/
+        `v_phi_solo`/`v_coesao` a partir de `PerfilGeotecnico.camada_em
+        (h_f)`, NUNCA trava os campos (continuam `ttk.Entry` comuns,
+        editáveis — NBR 6122 §7.2). Chamada pelos três editores de camada
+        (`_adicionar_camada`/`_editar_camada`/`_remover_camada`, depois de
+        `_atualizar_tree_camadas`) e pelos traces de escrita de `v_hf`/
+        `v_nivel_agua` — nunca por `ler_solo`/`ler_perfil`/`preencher_solo`
+        (REQ-UI-CAMADA-04/07: o guard `_carregando_solo` cobre o caso em
+        que esses dois traces disparariam durante `preencher_solo`).
+
+        GUARDAS DE RECUSA (REQ-UI-CAMADA-02), todas silenciosas — sem
+        exceção, sem `messagebox`, sem tocar nos três campos: sem perfil;
+        h_f em branco ou não numérico (os traces disparam a CADA tecla,
+        "1", "1." e "1.e" são estados normais de digitação); N.A. não
+        numérico (em branco é válido — N.A. ausente); h_f <= 0 (evita
+        `camada_em` devolver a camada de FUNDO do perfil para uma cota
+        negativa digitada por engano, ver geotecnia.py:121-122).
+
+        Extrapolação (h_f além da base do perfil) DERIVA, mas nunca em
+        silêncio — `ultima_derivacao_de_camada["extrapolada"]` fica `True`
+        e `_atualizar_rotulo_solo_derivado` avisa em texto."""
+        if self._carregando_solo:
+            return
+        if not self._camadas:
+            return
+        try:
+            hf = _float_opt(self.v_hf.get())
+        except ValueError:
+            return
+        if hf is None or hf <= 0:
+            return
+        try:
+            nivel_agua = _float_opt(self.v_nivel_agua.get())
+        except ValueError:
+            return
+
+        perfil = PerfilGeotecnico(camadas=list(self._camadas),
+                                  nivel_agua=nivel_agua)
+        camada = perfil.camada_em(hf)
+        abaixo_na = nivel_agua is not None and hf > nivel_agua
+        extrapolada = hf > perfil.profundidade_total
+
+        self._preenchendo_solo_derivado = True
+        try:
+            self.v_gamma_solo.set(f"{camada.gamma(abaixo_na):.10g}")
+            self.v_phi_solo.set(f"{camada.phi:.10g}")
+            self.v_coesao.set(f"{camada.coesao:.10g}")
+        finally:
+            self._preenchendo_solo_derivado = False
+
+        self.ultima_derivacao_de_camada = {
+            "nome_camada": camada.nome,
+            "hf": hf,
+            "abaixo_na": abaixo_na,
+            "gamma": camada.gamma(abaixo_na),
+            "phi": camada.phi,
+            "coesao": camada.coesao,
+            "extrapolada": extrapolada,
+        }
+        self._atualizar_rotulo_solo_derivado()
+
+    def _ao_editar_solo_derivado(self, *_args) -> None:
+        """Trace de escrita de v_gamma_solo/v_phi_solo/v_coesao —
+        invalida a proveniência dos TRÊS ao mesmo tempo assim que qualquer
+        um deles muda por uma via que não seja o próprio preenchimento
+        feito por `_derivar_solo_da_camada` (REQ-UI-CAMADA-03). Mesmo
+        padrão de `_ao_editar_sigma_adm`: `_preenchendo_solo_derivado`
+        (ligada só dentro da derivação) é a única exceção que sobrevive."""
+        if getattr(self, "_preenchendo_solo_derivado", False):
+            return
+        self.ultima_derivacao_de_camada = None
+        self._atualizar_rotulo_solo_derivado()
+
     def _adicionar_camada(self) -> None:
         dialogo = DialogoCamada(self)
         self.wait_window(dialogo)
         if dialogo.resultado is not None:
             self._camadas.append(dialogo.resultado)
             self._atualizar_tree_camadas()
+            self._derivar_solo_da_camada()
 
     def _remover_camada(self) -> None:
         selecao = self.tree_camadas.selection()
@@ -460,6 +632,15 @@ class PainelEntrada(ttk.Frame):
         indice = self.tree_camadas.index(selecao[0])
         del self._camadas[indice]
         self._atualizar_tree_camadas()
+        if self._camadas:
+            self._derivar_solo_da_camada()
+        elif self.ultima_derivacao_de_camada is not None:
+            # REQ-UI-CAMADA-05, Exigência 1: remoção esvaziou o perfil
+            # estando a proveniência válida — γ_solo troca de papel. Aviso
+            # passivo (nunca `messagebox`), e o NÚMERO em v_gamma_solo não
+            # é tocado: quem decide é o engenheiro.
+            self.ultima_derivacao_de_camada = None
+            self.lbl_solo_derivado.configure(text=AVISO_TRANSICAO_PERFIL_VAZIO)
 
     def _editar_camada(self, evento: tk.Event | None = None) -> None:
         """Abre `DialogoCamada` preenchido com a `Camada` da linha
@@ -480,6 +661,7 @@ class PainelEntrada(ttk.Frame):
         if dialogo.resultado is not None:
             self._camadas[indice] = dialogo.resultado
             self._atualizar_tree_camadas()
+            self._derivar_solo_da_camada()
 
     def _atualizar_tree_camadas(self) -> None:
         self.tree_camadas.delete(*self.tree_camadas.get_children())
@@ -587,6 +769,17 @@ class PainelEntrada(ttk.Frame):
     este atributo é `not None` a linha de σ_adm do memorial ganha
     `ROTULO_ELU`/`ROTULO_FONTE_NAO_NORMATIVA`."""
 
+    ultima_derivacao_de_camada: dict | None = None
+    """Proveniência (REQ-UI-CAMADA-01/03, backlog #12) do último
+    preenchimento de v_gamma_solo/v_phi_solo/v_coesao por
+    `_derivar_solo_da_camada` — `None` sempre que qualquer um dos três
+    mudou por qualquer outra via desde então (`_ao_editar_solo_derivado`),
+    ou o perfil ficou vazio (`_remover_camada`), ou um projeto/Excel foi
+    carregado (`preencher_solo`, REQ-UI-CAMADA-04). Chaves: `nome_camada`,
+    `hf`, `abaixo_na`, `gamma`, `phi`, `coesao`, `extrapolada`. Auxílio de
+    preenchimento de campo — NÃO é repassado a `ler_solo()` nem ao
+    memorial/PDF/Excel (REQ-UI-CAMADA-07): o núcleo só vê o número final."""
+
     def registrar_resultado_automatico(self, res: ResultadoSapata) -> None:
         self._ultimo_automatico = res
 
@@ -634,18 +827,43 @@ class PainelEntrada(ttk.Frame):
         GATE 2, rodada 3: um projeto carregado (.s7proj ou Excel) nunca
         tem relação com um cálculo de σ_adm feito ANTES de abri-lo, então
         o memorial não pode seguir rotulando o valor antigo como
-        "calculado" depois desta chamada."""
-        self.v_sigma_adm.set(f"{solo.sigma_adm:.10g}")
-        self.v_hf.set(f"{solo.hf:.10g}")
-        self.v_gamma_solo.set(f"{solo.gamma_solo:.10g}")
-        self.v_phi_solo.set(f"{solo.phi:.10g}")
-        self.v_coesao.set(f"{solo.coesao:.10g}")
+        "calculado" depois desta chamada.
 
-        perfil = solo.perfil
-        self._camadas = list(perfil.camadas) if perfil is not None else []
-        self._atualizar_tree_camadas()
-        nivel_agua = perfil.nivel_agua if perfil is not None else None
-        self.v_nivel_agua.set(f"{nivel_agua:.10g}" if nivel_agua is not None else "")
+        REQ-UI-CAMADA-04 (backlog #12): γ_solo/φ'/c' vindos de `solo` são
+        valores EXPLÍCITOS de arquivo (possivelmente sobrescritos à mão
+        pelo engenheiro antes de salvar, NBR 6122 §7.2) — nunca
+        reinterpretados como derivados da estratigrafia, mesmo que `solo`
+        traga um `perfil`. `self._carregando_solo` (ligada em TODO o corpo
+        desta função, `try/finally`) suprime a derivação que os traces de
+        `v_hf`/`v_nivel_agua` disparariam abaixo — sem o guard, a escrita
+        de `v_hf` na linha seguinte derivaria da estratigrafia ANTERIOR
+        (`self._camadas` só é substituída mais abaixo). A invalidação de
+        `ultima_derivacao_de_camada` (via `_ao_editar_solo_derivado`,
+        disparada pelos `.set()` de v_gamma_solo/v_phi_solo/v_coesao logo
+        abaixo) NÃO é suprimida — é o resultado correto: valores de
+        arquivo não são derivados."""
+        self._carregando_solo = True
+        try:
+            self.v_sigma_adm.set(f"{solo.sigma_adm:.10g}")
+            self.v_hf.set(f"{solo.hf:.10g}")
+            self.v_gamma_solo.set(f"{solo.gamma_solo:.10g}")
+            self.v_phi_solo.set(f"{solo.phi:.10g}")
+            self.v_coesao.set(f"{solo.coesao:.10g}")
+
+            perfil = solo.perfil
+            self._camadas = list(perfil.camadas) if perfil is not None else []
+            self._atualizar_tree_camadas()
+            nivel_agua = perfil.nivel_agua if perfil is not None else None
+            self.v_nivel_agua.set(
+                f"{nivel_agua:.10g}" if nivel_agua is not None else "")
+        finally:
+            self._carregando_solo = False
+        # Estado terminal explícito (REQ-UI-CAMADA-04): mesmo que os
+        # `.set()` acima já tenham invalidado a proveniência via trace,
+        # este par deixa o desfecho garantido e nomeado, o mesmo que
+        # `_ao_editar_sigma_adm` já produz para σ_adm nesta função.
+        self.ultima_derivacao_de_camada = None
+        self._atualizar_rotulo_solo_derivado()
 
     def preencher_casos(self, casos: list[CasoCarga]) -> None:
         """Repõe os grupos G/Q/W a partir de uma lista de casos carregada,
