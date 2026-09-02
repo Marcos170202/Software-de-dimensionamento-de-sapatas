@@ -1743,3 +1743,271 @@ formulas:
       divergencia: false
     status: OK
     alterada_por_emenda1: false
+
+  - id: NBR6118-8.2.10.1-sigma-c-diagrama-idealizado
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, Figura 8.2"
+    pagina: 26
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Diagrama tensão-deformação IDEALIZADO do concreto à compressão (parábola-retângulo) — lei constitutiva do ELU"
+    latex: "\\sigma_c = 0{,}85\\,\\eta_c\\,f_{cd}\\left[1-\\left(1-\\frac{\\varepsilon_c}{\\varepsilon_{c2}}\\right)^{n}\\right]"
+    sympy: "Eq(sigma_c, 0.85*eta_c*f_cd*(1 - (1 - eps_c/eps_c2)**n))"
+    parametros_declarados_na_figura:
+      eta_c:
+        - {condicao: "f_ck <= 40 MPa", valor: "1,0", latex: "\\eta_c = 1{,}0"}
+        - {condicao: "f_ck > 40 MPa",  valor: null,  latex: "\\eta_c = \\left(40/f_{ck}\\right)^{1/3}"}
+      n:
+        - {condicao: "f_ck <= 50 MPa", valor: "2", latex: "n = 2"}
+        - {condicao: "f_ck > 50 MPa",  valor: null, latex: "n = 1{,}4 + 23{,}4\\left[(90-f_{ck})/100\\right]^{4}"}
+    variaveis:
+      sigma_c: {descricao: "tensão de compressão no concreto na deformação ε_c", unidade: "MPa", valor: null}
+      eps_c:   {descricao: "deformação específica de encurtamento do concreto (0 <= ε_c <= ε_c2 no ramo curvo)", unidade: "adimensional (‰ no texto)", valor: null}
+      eps_c2:  {descricao: "deformação no início do patamar plástico — ver NBR6118-8.2.10.1-epsilon-c2-epsilon-cu", unidade: "adimensional (‰)", valor: null}
+      eta_c:   {descricao: "fator de redução da resistência introduzido na edição 2023, função de f_ck", unidade: "adimensional", valor: null}
+      n:       {descricao: "expoente da parábola, função de f_ck", unidade: "adimensional", valor: null}
+      f_cd:    {descricao: "resistência de cálculo à compressão do concreto — remissão EXPLÍCITA a 12.3.3 no próprio item", unidade: "MPa", valor: null}
+      f_ck:    {descricao: "resistência característica à compressão do concreto", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Concreto à COMPRESSÃO, análises no ESTADO-LIMITE ÚLTIMO, classes C20 a C90.
+      Válido no intervalo 0 <= ε_c <= ε_c2 para o ramo curvo; de ε_c2 até ε_cu a
+      tensão é CONSTANTE e igual ao pico 0,85·η_c·f_cd (o patamar está no desenho
+      da Figura 8.2, não em fórmula: a expressão sozinha, avaliada acima de ε_c2,
+      NÃO reproduz o patamar e pode até decrescer — armadilha de implementação).
+      A própria Norma oferece a ALTERNATIVA das simplificações da Seção 17
+      (retângulo equivalente de 17.2.2, já no acervo): os dois caminhos não
+      precisam dar o mesmo número e a escolha é do projetista.
+      DUAS DISTINÇÕES POR CLASSE DE CONCRETO, COM LIMIARES DIFERENTES — é o que
+      o a2/a4/a5 precisam tratar: η_c muda em f_ck = 40 MPa; n, ε_c2 e ε_cu mudam
+      em C50/C55. Para f_ck <= 40 MPa, η_c = 1,0 e o pico volta a 0,85·f_cd.
+      Entre 40 e 50 MPa vale η_c = (40/f_ck)^(1/3) COM n = 2 — faixa que um
+      software que só distinga "<= C50 / > C50" implementa errado.
+      η_c NÃO existia na NBR 6118:2014; qualquer memória de treinamento que
+      escreva σ_c = 0,85·f_cd·[1-(1-ε_c/ε_c2)^2] está desatualizada acima de C40.
+      Para análise NÃO LINEAR a Norma manda usar outro diagrama (Figura 8.3),
+      com f_cm = f_ck + 8 MPa — registrado à parte e FORA do escopo do ELU.
+    leitura_visual:
+      passada_1: "página PDF 44 (impressa 26) inteira a 300 dpi"
+      passada_2: "recorte da expressão da Figura 8.2 a 500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF, mesmo após tools/decodificar_nbr.py, entrega a
+      expressão da Figura 8.2 com as colunas do sistema de chaves intercaladas
+      ("[ ] ck c 1 3 ck c ... 23,4=90 100 n") — ILEGÍVEL. Só a leitura visual
+      recupera a fórmula. Registrado porque é exatamente o caso em que um parser
+      silencioso, ou a memória do modelo, produziria uma equação plausível e falsa.
+
+  - id: NBR6118-8.2.10.1-epsilon-c2-epsilon-cu
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, parágrafo após a Figura 8.2"
+    pagina: 26
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Deformações ε_c2 (início do patamar plástico) e ε_cu (ruptura) do concreto comprimido"
+    latex: "\\text{até C50: }\\varepsilon_{c2}=2{,}0\\text{\\textperthousand},\\ \\varepsilon_{cu}=3{,}5\\text{\\textperthousand}\\ ;\\quad \\text{C55 a C90: }\\varepsilon_{c2}=2{,}0\\text{\\textperthousand}+0{,}085\\text{\\textperthousand}\\,(f_{ck}-50)^{0{,}53},\\ \\varepsilon_{cu}=2{,}6\\text{\\textperthousand}+35\\text{\\textperthousand}\\left[(90-f_{ck})/100\\right]^{4}"
+    sympy: "[Eq(eps_c2, Piecewise((2.0e-3, f_ck <= 50), (2.0e-3 + 0.085e-3*(f_ck - 50)**0.53, True))), Eq(eps_cu, Piecewise((3.5e-3, f_ck <= 50), (2.6e-3 + 35e-3*((90 - f_ck)/100)**4, True)))]"
+    variaveis:
+      eps_c2: {descricao: "deformação específica de encurtamento do concreto no INÍCIO DO PATAMAR PLÁSTICO", unidade: "adimensional (‰ na fonte)", valor: 0.002}
+      eps_cu: {descricao: "deformação específica de encurtamento do concreto NA RUPTURA", unidade: "adimensional (‰ na fonte)", valor: 0.0035}
+      f_ck:   {descricao: "resistência característica à compressão", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Os valores 2,0‰ e 3,5‰ (campo `valor` preenchido acima) valem SOMENTE para
+      concretos de CLASSES ATÉ C50. Para classes C55 a C90 valem as expressões,
+      e ε_cu passa a ser MENOR que 3,5‰ (2,6‰ no limite C90) enquanto ε_c2 CRESCE
+      — as duas deformações convergem. Acima de C90 a Norma não declara nada:
+      NAO_DECLARADO_NA_FONTE.
+      A Norma escreve ε_cu, NÃO ε_cu2: o índice "2" da nomenclatura do Eurocode
+      não aparece na NBR 6118:2023 e não deve ser introduzido no código.
+      Estas são as MESMAS deformações citadas por 17.2.2 alínea g) para definir
+      os domínios da Figura 17.1 — a remissão em 17.2.2 é explicitamente a
+      8.2.10.1, de modo que os dois itens compartilham um único par de valores.
+      ATENÇÃO: a Norma NÃO diz, em nenhum item, que a compressão uniforme
+      ("reta b" de 17.2.2) corresponda a ε = ε_c2. Essa identificação é
+      INTERPRETAÇÃO — ver a cláusula NBR6118-LACUNA-N-Rd-compressao-centrada-estado-da-cadeia.
+    leitura_visual:
+      passada_1: "página PDF 44 (impressa 26) inteira a 300 dpi"
+      passada_2: "recorte do bloco de ε_c2/ε_cu a 450 dpi — conferidos os expoentes 0,53 e 4"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-8.2.10.1-sigma-c-analise-nao-linear
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, Figura 8.3"
+    pagina: 27
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Diagrama tensão-deformação do concreto para ANÁLISE NÃO LINEAR (Figura 8.3) — não é diagrama de cálculo"
+    latex: "\\frac{\\sigma_c}{f_{cm}}=\\frac{k\\,\\eta-\\eta^{2}}{1+(k-2)\\,\\eta}\\,,\\quad k=1{,}05\\,E_{cm}\\,\\lvert\\varepsilon_{c1}\\rvert/f_{cm}\\,,\\quad \\eta=\\varepsilon_c/\\varepsilon_{c1}\\,,\\quad \\varepsilon_{c1}=0{,}7\\,(f_{cm})^{0{,}31}\\le 2{,}8\\text{\\textperthousand}"
+    sympy: "[Eq(sigma_c/f_cm, (k*eta - eta**2)/(1 + (k - 2)*eta)), Eq(k, 1.05*E_cm*Abs(eps_c1)/f_cm), Eq(eta, eps_c/eps_c1), Eq(eps_c1, Min(0.7*f_cm**0.31, 2.8))]"
+    parametros_declarados_na_figura:
+      eps_cu1:
+        - {condicao: "f_ck <= 50 MPa", latex: "\\varepsilon_{cu1} = \\varepsilon_{cu}"}
+        - {condicao: "f_ck > 50 MPa",  latex: "\\varepsilon_{cu1} = 2{,}8 + 27\\left[(98-f_{cm})/100\\right]^{4}"}
+      f_cm: {relacao: "f_cm = f_ck + 8 (MPa)", origem: "texto imediatamente após a Figura 8.3"}
+    variaveis:
+      sigma_c: {descricao: "tensão de compressão no concreto", unidade: "MPa", valor: null}
+      f_cm:    {descricao: "resistência média à compressão; adotar f_cm = f_ck + 8 (MPa)", unidade: "MPa", valor: null}
+      eps_c1:  {descricao: "deformação no pico da curva", unidade: "‰ (a expressão 0,7·(f_cm)^0,31 devolve ‰)", valor: null}
+      eps_cu1: {descricao: "deformação última do diagrama não linear", unidade: "‰", valor: null}
+      k:       {descricao: "parâmetro de forma", unidade: "adimensional", valor: null}
+      eta:     {descricao: "ε_c/ε_c1", unidade: "adimensional", valor: null}
+      E_cm:    {descricao: "módulo de elasticidade que aparece na expressão de k — NÃO DEFINIDO EM NENHUM ITEM DA NORMA", unidade: "MPa (presumível, não declarado)", valor: null}
+    dominio_validade: >-
+      ANÁLISE ESTRUTURAL NÃO LINEAR, compressão simples de CURTA DURAÇÃO.
+      NÃO é diagrama de cálculo no ELU e NÃO pode ser usado para dimensionar
+      seção: o ELU usa a Figura 8.2 ou as simplificações da Seção 17.
+      Trabalha com f_cm (resistência MÉDIA), não com f_cd — misturar os dois é
+      erro do lado inseguro.
+      LACUNA DA PRÓPRIA FONTE: E_cm, que entra em k, não é definido em 8.2.8 nem
+      em nenhum outro ponto do texto corrido da Norma (busca negativa no
+      documento inteiro). Fica NAO_DECLARADO_NA_FONTE — o a2 não pode aprovar
+      esta expressão sem decidir explicitamente o que é E_cm.
+      Nota da fonte: "Para cargas de longa duração, os efeitos da fluência devem
+      ser convenientemente considerados."
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 27), topo, a 250 dpi"
+      passada_2: "recorte do bloco de expressões da Figura 8.3 a 600 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+    observacao: >-
+      Extraído por completude de item (8.2.10.1 não termina na página 26), não
+      por necessidade do pilarete. O escopo desta rodada é ELU.
+
+  - id: NBR6118-8.3.6-diagrama-aco-passivo
+    norma: "NBR 6118:2023"
+    item: "8.3.6, Figura 8.5"
+    pagina: 29
+    clausula_ref: NBR6118-8.3.6-diagrama-tensao-deformacao-aco-passivo
+    titulo: "Diagrama tensão-deformação de cálculo do AÇO de armadura passiva — A NORMA NÃO ESCREVE EQUAÇÃO"
+    latex: NAO_DECLARADO_NA_FONTE
+    sympy: NAO_DECLARADO_NA_FONTE
+    expressao_fechada_na_fonte: false
+    descricao_da_figura_8_5: >-
+      Conteúdo INTEGRAL da Figura 8.5, lido por visão: ordenada σ_s com dois
+      níveis tracejados, f_yk (superior) e f_yd (inferior); abscissa ε_s com um
+      ÚNICO ponto marcado, ε_su, na extremidade direita; um único ramo reto
+      partindo da origem, rotulado arctg(E_s); dois patamares horizontais, um em
+      f_yd e outro em f_yk, ambos indo até ε_su, onde há linha vertical tracejada.
+      NÃO HÁ na figura nenhuma equação, nenhum valor numérico e nenhum rótulo de
+      deformação além de ε_su. Em particular, ε_yd NÃO é rotulado e ε_su NÃO tem
+      valor atribuído.
+    variaveis:
+      sigma_s: {descricao: "tensão no aço de armadura passiva", unidade: "MPa", valor: null}
+      eps_s:   {descricao: "deformação do aço (igual à do concreto envolvente, por 17.2.2-b)", unidade: "adimensional", valor: null}
+      E_s:     {descricao: "módulo de elasticidade do aço — 210 GPa por 8.3.5, na falta de ensaio", unidade: "GPa", valor: 210}
+      f_yd:    {descricao: "resistência de escoamento de cálculo — a Norma NÃO escreve f_yd = f_yk/γ_s em item algum; decorre de 12.3.1 (f_d = f_k/γ_m) com γ_s da Tabela 12.1", unidade: "MPa", valor: null}
+      f_yk:    {descricao: "resistência característica ao escoamento, de ensaio conforme ABNT NBR ISO 6892-1; para aços SEM patamar, é a tensão da deformação permanente de 0,2 %", unidade: "MPa", valor: null}
+      eps_su:  {descricao: "deformação última do diagrama — SEM VALOR NA FONTE", unidade: "adimensional", valor: null}
+      eps_yd:  {descricao: "deformação de escoamento de cálculo — NÃO DEFINIDA NA FONTE (símbolo só aparece em 17.2.2)", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      Aço de armadura PASSIVA, com ou sem patamar de escoamento, estados-limite
+      de SERVIÇO E ÚLTIMO, temperatura entre -20 °C e 150 °C, e — autorização
+      explícita no parágrafo de continuação da página 30 — aplicável tanto à
+      TRAÇÃO quanto à COMPRESSÃO. É essa frase que legitima usar o diagrama para
+      a armadura comprimida do pilarete; sem ela a aplicação à compressão seria
+      extrapolação.
+      Uso FACULTATIVO ("pode-se utilizar"). Vale igualmente para CA-25, CA-50 e
+      CA-60: não há distinção por categoria de aço além do valor de f_yk. Não há
+      qualquer distinção por classe de concreto.
+      A CONVERSÃO DO DESENHO EM CÓDIGO É INTERPRETAÇÃO, NÃO TRANSCRIÇÃO — ver o
+      campo `interpretacao_a1_nao_normativa` abaixo, que o a2 deve aprovar ou
+      rejeitar explicitamente antes de qualquer implementação em calc_core.
+    interpretacao_a1_nao_normativa: >-
+      MARCADO COMO INTERPRETAÇÃO DO a1, NÃO É TEXTO DA NORMA. A geometria
+      desenhada na Figura 8.5 corresponde a σ_s = E_s·ε_s para ε_s <= f_yd/E_s e
+      σ_s = f_yd para f_yd/E_s <= ε_s <= ε_su, de onde ε_yd = f_yd/E_s. A Norma
+      não escreve nenhuma dessas três relações. O valor de ε_su permanece
+      indeterminado; para a compressão centrada isso é inócuo (ε_c2 = 2,0‰ está
+      muito abaixo de qualquer patamar de ruptura), mas invalida qualquer
+      verificação que dependa do fim do patamar.
+    leitura_visual:
+      passada_1: "página PDF 47 (impressa 29) inteira a 300 dpi"
+      passada_2: "recorte da Figura 8.5 a 500 dpi — feito especificamente para descartar a hipótese de um rótulo numérico ilegível junto a ε_su; não há"
+      divergencia: false
+    status: DESCRITO_SEM_EQUACAO_NA_FONTE
+    alterada_por_emenda1: false
+    observacao: >-
+      Este é o registro que impede a reconstrução de memória. A NBR 6118 é
+      universalmente ensinada com "f_yd = f_yk/1,15 e ε_yd = f_yd/E_s"; nenhuma
+      dessas duas expressões está escrita em 8.3.6 nem em qualquer outro item.
+      f_yd só existe como rótulo de eixo na Figura 8.5 e como aplicação da regra
+      geral f_d = f_k/γ_m de 12.3.1.
+
+  - id: NBR6118-12.3.3-fcd
+    norma: "NBR 6118:2023"
+    item: "12.3.1 e 12.3.3 (alíneas a e b)"
+    pagina: 70
+    clausula_ref: NBR6118-12.3.3-resistencia-de-calculo-do-concreto
+    titulo: "Resistência de cálculo do concreto f_cd — item remetido explicitamente por 8.2.10.1 e por 17.2.2"
+    latex: "f_d = \\frac{f_k}{\\gamma_m}\\;;\\qquad j \\ge 28\\ \\text{dias}:\\ f_{cd} = \\frac{f_{ck}}{\\gamma_c}\\;;\\qquad j < 28\\ \\text{dias}:\\ f_{cd} = \\frac{f_{ckj}}{\\gamma_c} \\cong \\beta_1\\frac{f_{ck}}{\\gamma_c}\\,,\\ \\beta_1 = \\exp\\left\\{s\\left[1-(28/t)^{1/2}\\right]\\right\\}"
+    sympy: "[Eq(f_d, f_k/gamma_m), Eq(f_cd, f_ck/gamma_c), Eq(beta_1, exp(s*(1 - (28/t)**Rational(1,2))))]"
+    variaveis:
+      f_cd:    {descricao: "resistência de cálculo à compressão do concreto", unidade: "MPa", valor: null}
+      f_ck:    {descricao: "resistência característica à compressão aos 28 dias", unidade: "MPa", valor: null}
+      f_ckj:   {descricao: "resistência característica na idade j", unidade: "MPa", valor: null}
+      gamma_c: {descricao: "coeficiente de ponderação do concreto — Tabela 12.1", unidade: "adimensional", valor: null}
+      beta_1:  {descricao: "relação f_ckj/f_ck", unidade: "adimensional", valor: null}
+      s:       {descricao: "0,38 CPIII e IV; 0,25 CPI e II; 0,20 CPV-ARI (ver Emenda 1)", unidade: "adimensional", valor: null}
+      t:       {descricao: "idade efetiva do concreto", unidade: "dias", valor: null}
+    dominio_validade: >-
+      f_cd = f_ck/γ_c vale SOMENTE para verificação em data j IGUAL OU SUPERIOR
+      A 28 DIAS — é a hipótese usual e a única dentro do escopo desta rodada, mas
+      é uma hipótese, não um dado. Para j < 28 dias vale a alínea b), e a
+      verificação passa a ser DUPLA (aos t dias e aos 28 dias) e o controle
+      tecnológico também. É o caso real de um pilarete recém-concretado que
+      recebe a base metálica antes dos 28 dias — o software não deve assumir
+      silenciosamente j >= 28.
+      A 3ª designação de s (CPV-ARI) FOI ALTERADA PELA EMENDA 1:2026 e passou a
+      abranger todos os concretos de classe C60 ou superior — ver o registro
+      NBR6118-Em1-12.3.3-3a-designacao. Introduz um TERCEIRO limiar de classe
+      (C60), além dos de 40 MPa e C50/C55 de 8.2.10.1.
+    leitura_visual:
+      passada_1: "páginas PDF 88 e 89 (impressas 70 e 71) a 300 dpi"
+      passada_2: "recorte da expressão f_cd = f_ck/γ_c a 400 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true
+    observacao: >-
+      A camada de texto decodificada entrega "f fc cd k c = γ", com numerador e
+      denominador fora de ordem — a fração só se lê por visão.
+
+  - id: NBR6118-12.4.1-gamma-c-gamma-s
+    norma: "NBR 6118:2023"
+    item: "12.4 e 12.4.1, Tabela 12.1 e os parágrafos seguintes"
+    pagina: 71
+    clausula_ref: NBR6118-12.4.1-coeficientes-ponderacao-resistencias-ELU
+    titulo: "Coeficientes de ponderação das resistências no ELU (γ_c e γ_s) e as três correções que os acompanham"
+    latex: "\\gamma_m = \\gamma_{m1}\\cdot\\gamma_{m2}\\cdot\\gamma_{m3}"
+    sympy: "Eq(gamma_m, gamma_m1*gamma_m2*gamma_m3)"
+    tabela_12_1_ELU:
+      normais:                    {gamma_c: 1.4, gamma_s: 1.15}
+      especiais_ou_de_construcao: {gamma_c: 1.2, gamma_s: 1.15}
+      excepcionais:               {gamma_c: 1.2, gamma_s: 1.0}
+    correcoes_apos_a_tabela:
+      - {regra: "γ_c × 1,1", condicao: "elementos estruturais com condições DESFAVORÁVEIS de execução previstas (más condições de transporte, adensamento manual, concretagem deficiente por concentração de armadura)", carater: "OBRIGATÓRIO (\"deve ser multiplicado\")"}
+      - {regra: "γ_c ÷ 1,1", condicao: "testemunhos extraídos da estrutura", carater: "FACULTATIVO (\"admite-se\")"}
+      - {regra: "γ_s × 1,1", condicao: "aço CA-25 sem controle de qualidade da ABNT NBR 7480, em obras de pequena importância", carater: "FACULTATIVO (\"admite-se\")"}
+      - {regra: "remissão", condicao: "elementos pré-moldados e pré-fabricados", carater: "consultar ABNT NBR 9062 — norma AUSENTE do acervo"}
+    variaveis:
+      gamma_c: {descricao: "coeficiente de ponderação da resistência do concreto", unidade: "adimensional", valor: 1.4}
+      gamma_s: {descricao: "coeficiente de ponderação da resistência do aço", unidade: "adimensional", valor: 1.15}
+    dominio_validade: >-
+      ESTADO-LIMITE ÚLTIMO. Os valores 1,4 e 1,15 preenchidos em `valor` acima
+      valem APENAS para combinações NORMAIS; combinações especiais/de construção
+      e excepcionais têm outros valores, inclusive γ_s = 1,0 nas excepcionais.
+      A correção γ_c × 1,1 é OBRIGATÓRIA quando previstas condições desfavoráveis
+      de execução — e nenhum software infere isso de geometria ou de SPT: exige
+      entrada explícita do engenheiro. As outras duas correções são facultativas
+      e de sentido oposto; tratá-las como automáticas é erro.
+      A Emenda 1:2026 ACRESCENTA parágrafo avisando que outras seções da Norma
+      podem impor outros valores de γ_c (ver NBR6118-Em1-12.4.1-novo-paragrafo).
+      A varredura dessas "outras seções" NÃO foi feita nesta rodada — pendência.
+      Nota: é daqui, combinado com f_d = f_k/γ_m de 12.3.1, que sai f_yd; a
+      Norma NÃO escreve "f_yd = f_yk/1,15" em lugar nenhum.
+    leitura_visual:
+      passada_1: "página PDF 89 (impressa 71) inteira a 300 dpi"
+      passada_2: "células da Tabela 12.1 reconferidas no mesmo raster, coluna a coluna"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true
