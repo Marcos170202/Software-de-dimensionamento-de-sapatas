@@ -1072,3 +1072,88 @@ motor mínimo (`geometria.py`/`app_desktop.py` intocados, import
 unidirecional, `modelos.py` estritamente aditivo). Suíte completa
 verde (560 passed) sob as mesmas condições do CI (Xvfb, `CI=true`). Os
 quatro reincidentes BAIXA são pendência de polimento, não bloqueio.
+
+## Adendo 2026-09-02 — camada única de dados: φ'/c'/γ na base derivados da
+## camada em h_f (`ui/completo/formulario.py`/`app.py`, backlog #12): GATE 2
+## (a6) — 3 rodadas, **APROVADO** na rodada final
+
+**Escopo.** `ruleset.yaml` v10 (hash `99d1c2e13c1adc2836266265e705aff53e2c2cdfe6e481f870479cf02f9ff7e6`)
+acrescentou `REQ-UI-CAMADA-01` a `-07` em `requisitos_para_a3`: quando existe
+perfil em camadas, os três campos soltos "γ_solo"/"φ' na base"/"c' na base"
+da seção "Solo de apoio" passam a ser derivados de
+`PerfilGeotecnico.camada_em(h_f)` (núcleo já aprovado, escopo amplo —
+`geotecnia.py:66-123`), sempre sobrescrevíveis à mão (NBR 6122 §7.2), com
+proveniência conjunta e invalidação por trace — arquitetura deliberadamente
+copiada da já aprovada `ultimo_sigma_adm_calculado`/`_ao_editar_sigma_adm`/
+`_preenchendo_sigma_adm_calculado`. `calc_core/` não foi tocado em nenhuma
+rodada.
+
+**Rodada 1 (commit `4ddc26b`) — REPROVADO, nota 3,5, veto E1/E5.**
+Defeito ALTA (D1): `_remover_camada`, ao esvaziar o perfil com proveniência
+válida, escrevia `lbl_solo_derivado` diretamente, fora do único escritor
+`_atualizar_rotulo_solo_derivado()` — criava um terceiro estado (proveniência
+`None` com rótulo cheio) que qualquer edição manual subsequente de QUALQUER
+um dos três campos apagava, mesmo sem tocar em γ_solo. Consequência de
+segurança medida pelo a2 antes mesmo da implementação (REQ-UI-CAMADA-05): o
+aviso obrigatório sobre a troca de papel de γ_solo (que abaixo do N.A. passa
+a exigir o valor EFETIVO, não o saturado) desaparecia silenciosamente,
+deixando γ_sat (19-21 kN/m³) num campo que passou a significar sobrecarga
+efetiva — distorção do lado inseguro (+27%, tendendo a fator ~2, mesma classe
+da pendência V7/V8 registrada em `kb/pendencias.md`). Defeito MÉDIA (D2):
+gatilho de `_remover_camada` sem cobertura (mutante reduzindo a chamada a
+`pass` sobrevivia a 592/592). Três defeitos BAIXA recomendados na mesma
+passagem (desempate normativo duplicado inline em `app.py`; Ramos do Excel
+dependendo do default silencioso de 1,5 m de `ler_solo`; rótulo dentro da
+grade dos três campos distorcendo layout).
+
+**Rodada 2 (commit `7b78d6c`) — REPROVADO, nota 4,0, veto E1.** D1, D2, D3 e
+D5 fechados e confirmados por execução (não releitura): novo estado
+`_aviso_perfil_vazio` consultado e priorizado pelo escritor único, desligado
+só por nova derivação bem-sucedida ou por `preencher_solo`; `_camada_e_
+abaixo_na`/`_hf_valido` extraídos como fonte única do desempate normativo.
+Mas a correção de D4 (Ramo B do Excel) foi aplicada ao ramo ERRADO: a
+proibição de REQ-UI-CAMADA-02(b) ("não inventar proveniência do default
+silencioso de 1,5 m") vale para o Ramo A, que GRAVA proveniência — o a3
+aplicou-a também ao Ramo B, que só compara texto, usando o h_f capturado
+ANTES de `preencher_solo`. Resultado: com `v_hf` em branco antes de importar,
+a comparação nunca rodava, mesmo que a tela terminasse mostrando "1,5" e a
+camada nova divergisse fortemente — regressão do lado inseguro em relação à
+própria rodada 1 (que emitia o aviso nesse caso). O a6 registrou
+explicitamente sua própria parcela do erro ("meu D-04 da rodada 1 estava
+errado para o Ramo B") — precedente de auditoria adversarial que se
+autocorrige, não só aponta defeito em código alheio.
+
+**Rodada 3 (commit `d8615cf`) — APROVADO, nota final 4,4 (E1 4,5 / E2 4,5 /
+E3 4,0 / E4 4,5 / E5 4,0), sem veto.** Correção final: leitura de `v_hf` para
+o Ramo B movida para DEPOIS de `preencher_solo` — a cota que a tela vai
+efetivamente exibir ao final da importação, não a de antes; `_hf_valido`
+continua como única guarda (recusa h_f≤0/não numérico). Quatro testes novos
+matando os mutantes MC1-MC4 (Ramo B voltar ao valor cru sem guarda; captura
+no momento errado; perda da guarda `perfil.camadas`; desempate normativo
+reimplementado inline). O a6 replantou o MC2 original (a causa exata da
+regressão da rodada 2) e confirmou que agora derruba a suíte inteira — não
+aceitou a alegação do a3 sem reprodução própria. Revalidação por mutação de
+9 pontos já fechados nas rodadas 1-2: 8 mortos, 1 sobrevivente identificado e
+justificado como mutante EQUIVALENTE (neutralizar o guard
+`_preenchendo_solo_derivado` não muda estado observável porque `_derivar_
+solo_da_camada` escreve os três `StringVar` antes de gravar `ultima_
+derivacao_de_camada` — a invalidação extra é sobrescrita no mesmo callback),
+registrado para o a7 não tratar como buraco de cobertura.
+
+**Três BAIXA abertos como backlog, não bloqueantes:** cobertura do ramo
+`except ValueError` da importação Excel (só `AbaAusente` é exercitado);
+comentário em `app.py:554` que promete mais do que o código garante sobre
+02(b) e o Ramo A (derivar com h_f preenchido, apagar o campo depois — a
+proveniência não se autoinvalida — e importar ainda rotula com a cota
+antiga); comparação de divergência por float exato podendo acusar diferença
+de ruído de ponto flutuante em `:.10g`. Também aberto para o a2 decidir
+(fora do escopo do a6/a3): extrapolação em h_f exatamente igual à
+profundidade total do perfil cai no fallback de `camada_em` sem o aviso de
+extrapolação, porque REQ-UI-CAMADA-02 define o limiar com `>` estrito — o a3
+seguiu a letra do requisito, o requisito é que tem a lacuna.
+
+602/602 testes passando (592 baseline + 10 desta rodada) sob as mesmas
+condições do CI (Xvfb, `CI=true`, `/usr/bin/python3.12`). `calc_core/`
+intocado em toda a saga; `ler_solo()` byte-idêntico à v9.
+
+**Próximo passo do pipeline:** a7-validador (GATE 3).
