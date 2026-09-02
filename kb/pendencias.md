@@ -1042,3 +1042,78 @@ de atrito interno" ali é definido em 3.10 da própria NBR 6120 como ângulo de
 REPOUSO de pilha solta. O anexo remete a Eurocode 1 Part 4 e AS 3774, que são
 normas de silo. Usar a Tabela A.1 como parâmetro geotécnico seria erro grave e
 do lado inseguro. Proibido em todo o repositório.
+
+
+---
+
+# RODADA 2026-09-02 (ruleset versão 10) — camada única de dados: phi'/c'/gamma na base
+
+Uma pendência (V8), levantada pelo a2 ao verificar os requisitos de interface do
+backlog #12 (`ruleset.yaml > requisitos_para_a3 > REQ-UI-CAMADA-01..07`). Não é
+bloqueante: REQ-UI-CAMADA-05 foi desenhado para funcionar sem a resposta,
+exibindo aviso enquanto ela não vier. É filha direta de V7 e herda dela a
+prioridade e o lado do erro.
+
+---
+
+## V8 — Qual peso específico o núcleo deve usar no solo APOIADO SOBRE a sapata abaixo do N.A. — PRIORIDADE ALTA (lado inseguro)
+
+*Pergunta objetiva:* em `_peso_proprio` o peso do solo que repousa sobre os
+ombros da sapata é `gamma_solo * v_solo`. Abaixo do nível d'água, `gamma_solo`
+deve ser o peso específico **saturado (total)**, o **submerso (efetivo)**, ou
+depende da verificação que consome esse peso? A pergunta importa porque o mesmo
+peso próprio alimenta verificações em que peso maior é DESFAVORÁVEL (tensão na
+base) e verificações em que peso maior é FAVORÁVEL (deslizamento e tombamento,
+`sapata.py:775`, onde a resistência é `N*tan(delta) + c*A`).
+
+*Trecho literal do código* (não há trecho de norma a citar — a pergunta nasce do
+código do escopo amplo, ainda `PENDENTE_HUMANO` em
+`ruleset.yaml > escopo_amplo_em_conferencia > "sapata_isolada.geotecnia"`):
+
+> `calc_core/sapata_isolada/sapata.py:365-366`
+> ```
+> return (self.concreto.peso_especifico * g["v_concreto"]
+>         + self.solo.gamma_solo * g["v_solo"])
+> ```
+
+> `calc_core/sapata_isolada/geotecnia.py:360-364`
+> ```
+> def sobrecarga_no_nivel_da_base(self) -> float:
+>     """q [kPa] do solo sobrejacente à cota de assentamento."""
+>     if self.perfil is not None:
+>         return self.perfil.tensao_vertical_efetiva(self.hf)
+>     return self.gamma_solo * self.hf
+> ```
+
+*Leitura proposta pelo a2 (parcial, e é o máximo que se pode afirmar sem decisão
+de engenharia):* os dois trechos mostram que `gamma_solo` tem DOIS papéis e que
+qual deles vale depende de existir perfil. COM perfil, a sobrecarga sai de
+`tensao_vertical_efetiva` e `gamma_solo` só entra no peso do solo sobre a sapata
+— peso TOTAL é o defensável, e é por isso que `Camada.gamma(abaixo_na)`
+(= `gamma_sat`) é aceitável como valor derivado. SEM perfil, `gamma_solo * hf`
+vira sobrecarga EFETIVA e o mesmo número passa a estar errado. O a2 NÃO decide
+qual peso é o certo para o solo submerso sobre a sapata nas verificações de
+deslizamento/tombamento: é julgamento de engenharia sobre modelo, não questão de
+transcrição.
+
+*Impacto se a leitura estiver errada:* medido por execução pelo a2 num perfil de
+referência (Aterro 1,0 m + Areia 2,0 m, N.A. = 1,20 m, h_f = 1,50 m,
+gamma_sat = 20 kN/m³): a sobrecarga correta na cota da base é
+**23,66 kPa** e `gamma_sat * h_f` dá **30,0 kPa** — **+27 %, do lado INSEGURO**
+(q maior significa capacidade de carga maior). Com o N.A. mais alto a distorção
+tende ao **fator ~2** já quantificado em V7. Nas verificações de deslizamento e
+tombamento, superestimar o peso do solo submerso superestima a força normal
+efetiva e portanto a resistência ao deslizamento — também do lado inseguro.
+
+*Mitigação já adotada, que neutraliza o risco sem depender da resposta:*
+REQ-UI-CAMADA-05 exige (i) invalidar a proveniência e AVISAR quando a remoção da
+última camada fizer gamma_solo trocar de papel, com a mesma redação de
+REQ-UI-SIGMA-04 e de V7 (abaixo do N.A. o valor pedido é o EFETIVO, 9-11 kN/m³,
+não o saturado, 19-21) e (ii) o rótulo dizer explicitamente que o gamma derivado
+abaixo do N.A. é o SATURADO da camada. Nenhum número é corrigido pelo software —
+os três campos nunca são travados (NBR 6122:2022 §7.2).
+
+*Quem responde destrava o quê:* uma resposta permite ao a4 separar os dois papéis
+de `gamma_solo` no núcleo (ou usar o perfil também no peso próprio) e, aí sim,
+dispensar os avisos. Enquanto não vier, os avisos são obrigatórios e o a6 os
+trata como veto se ausentes.

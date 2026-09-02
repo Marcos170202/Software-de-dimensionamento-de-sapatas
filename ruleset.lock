@@ -4,6 +4,65 @@
 # registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
 # registrada.
 #
+# ===========================================================================
+# VERSÃO 10 (2026-09-02) — camada única de dados: phi'/c'/gamma na base
+# derivados da camada em h_f. Backlog do usuário, item #12.
+#
+# CONTAGEM INALTERADA em relação à v9 (conferido por comparação estrutural das
+# duas árvores YAML, chave a chave):
+#   regras (normativas) ............ 19 APROVADA, 7 PENDENTE_HUMANO
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO
+#
+# A VERSÃO 10 É EXCLUSIVAMENTE DE INTERFACE. Nenhuma regra, prática ou
+# formulação foi criada, alterada ou teve status mudado; nenhuma linha de
+# `calc_core/` é autorizada a mudar por ela. O que acrescenta são SETE
+# requisitos de tela em `requisitos_para_a3`:
+#   REQ-UI-CAMADA-01-gatilho-e-fonte-da-derivacao
+#   REQ-UI-CAMADA-02-guardas-de-recusa-e-extrapolacao-nunca-silenciosa
+#   REQ-UI-CAMADA-03-proveniencia-conjunta-e-invalidacao-pelos-tres
+#   REQ-UI-CAMADA-04-preencher-solo-nao-deriva-e-a-assimetria-do-guard
+#   REQ-UI-CAMADA-05-gamma-solo-tem-dois-papeis-e-o-aviso-e-obrigatorio
+#   REQ-UI-CAMADA-06-importacao-de-perfil-por-excel-nao-e-carregamento-de-arquivo
+#   REQ-UI-CAMADA-07-fronteira-com-o-nucleo-e-com-o-memorial
+#
+# CLAUDE.md REGRA 5, com o alcance dito por extenso: as aprovações de A6
+# (GATE 2) e A7 (GATE 3) ficam INVALIDADAS PARA A SUPERFÍCIE TOCADA — seção
+# "Solo de apoio" de `ui/completo/formulario.py` (campos soltos, perfil em
+# camadas, `preencher_solo`) e ramo do perfil geotécnico em
+# `ui/completo/app.py::_importar_excel`. Nova rodada de a6 e a7 sobre essa
+# superfície é obrigatória antes de release. NÃO ficam invalidados os
+# resultados de `calc_core/`: nenhum arquivo do núcleo muda e `ler_solo()`
+# mantém contrato idêntico (REQ-UI-CAMADA-07) — o número que o núcleo recebe é
+# do mesmo tipo que já recebia.
+#
+# TRÊS ACHADOS DO a2 QUE MUDARAM O REQUISITO DESPACHADO (detalhe no cabeçalho
+# da v10 em ruleset.yaml):
+#   C1  `camada_em(z)` extrapola em silêncio nos dois sentidos — devolve a
+#       camada de FUNDO tanto para z muito abaixo do perfil quanto para z
+#       NEGATIVO (verificado por execução). Virou REQ-UI-CAMADA-02.
+#   C2  `gamma_solo` tem DOIS papéis no núcleo (peso do solo sobre a sapata
+#       COM perfil; sobrecarga efetiva SEM perfil) e troca de papel sozinho
+#       quando a última camada é removida: 30,0 kPa contra 23,66 kPa corretos
+#       no caso medido, +27 %, do lado INSEGURO. Virou REQ-UI-CAMADA-05 + V8.
+#   C3  "Importar do Excel..." NÃO é carregamento de arquivo para estes três
+#       campos: `app.py:513` casa um perfil novo com valores lidos da TELA
+#       (`app.py:442`). Virou REQ-UI-CAMADA-06.
+#
+# FILA HUMANA: uma pendência nova, V8 em kb/pendencias.md (filha de V7,
+# PRIORIDADE ALTA, lado inseguro) — qual peso específico o núcleo deve usar no
+# solo apoiado sobre a sapata abaixo do N.A. Não bloqueante: enquanto não for
+# respondida, os avisos das Exigências 1 e 2 de REQ-UI-CAMADA-05 são
+# obrigatórios e o a6 os trata como veto se ausentes.
+#
+# CHECAGEM DIMENSIONAL: `python tools/checar_dimensoes.py` rodado nesta rodada
+# — 0 FALHA. A v10 não introduz fórmula alguma, então a etapa 2 da cascata não
+# tem caso novo a acrescentar; o que se verificou foi que nada regrediu.
+# ===========================================================================
+#
 # Situação na versão 9:
 #   regras (normativas) ............ 19 APROVADA, 7 PENDENTE_HUMANO   (era 14/7)
 #   praticas_consagradas ...........  2 APROVADA,
@@ -92,4 +151,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-56f1282b23da45e7164d2e18ebafebee1c0b2f1e317ad0090787fbbe35f277cb  ruleset.yaml
+99d1c2e13c1adc2836266265e705aff53e2c2cdfe6e481f870479cf02f9ff7e6  ruleset.yaml

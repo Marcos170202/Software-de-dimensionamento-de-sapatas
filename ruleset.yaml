@@ -10,9 +10,88 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 9
+versao: 10
 escopo: "sapata isolada, carga centrada, solo homogêneo"
-data_congelamento: "2026-08-28"   # da v8; a v9 NÃO congela — ver ruleset.lock
+data_congelamento: "2026-08-28"   # da v8; v9/v10 NÃO congelam — ver ruleset.lock
+
+# =============================================================================
+# VERSÃO 10 — camada única de dados: phi'/c'/gamma na base derivados da camada
+#             em h_f. Backlog do usuário, item #12. Desbloqueado pelo item #15
+#             (UI de sigma_adm) ter vencido GATE 2/GATE 3.
+#
+# NATUREZA DESTA VERSÃO: é EXCLUSIVAMENTE de INTERFACE. Não acrescenta, não
+# remove e não altera NENHUMA regra normativa, prática consagrada ou formulação
+# — as seções `regras`, `praticas_consagradas`, `requisitos_para_a4` e
+# `escopo_amplo_em_conferencia` saem desta versão IGUAIS às da v9, o que foi
+# conferido por comparação estrutural (`yaml.safe_load` da v9 em `git show
+# HEAD:ruleset.yaml` contra o arquivo novo, chave a chave: todas idênticas;
+# `requisitos_para_a3` é a única lista alterada, e só por acréscimo no fim do
+# bloco de sigma_adm — os 13 requisitos antigos saem intactos).
+# Nenhum cálculo novo existe aqui: `PerfilGeotecnico.camada_em`, `Camada.gamma`,
+# `Camada.phi` e `Camada.coesao` já existem no núcleo e já estão cobertos (como
+# PENDENTE_HUMANO de escopo amplo) por `escopo_amplo_em_conferencia >
+# "sapata_isolada.geotecnia"`. O que a v10 acrescenta é UM bloco de requisitos
+# de tela — REQ-UI-CAMADA-01 a 07, em `requisitos_para_a3` — que manda a
+# interface LER o que o núcleo já expõe em vez de pedir o mesmo dado duas vezes.
+#
+# CLAUDE.md REGRA 5 VALE ASSIM MESMO, E É PRECISO DIZER O ALCANCE EXATO: as
+# aprovações de A6 (GATE 2) e A7 (GATE 3) ficam invalidadas PARA A SUPERFÍCIE
+# TOCADA POR ESTES REQUISITOS — `ui/completo/formulario.py` (seção "Solo de
+# apoio", `preencher_solo`, edição de camadas) e `ui/completo/app.py`
+# (`_importar_excel`, ramo do perfil geotécnico). O que NÃO é invalidado:
+# nenhum resultado de `calc_core/`, porque nenhuma linha de `calc_core/` é
+# tocada e `ler_solo()` continua com o contrato idêntico (REQ-UI-CAMADA-07) —
+# o núcleo recebe exatamente o mesmo tipo de número que já recebia, digitado ou
+# derivado, e nunca sabe a diferença.
+#
+# O QUE O a2 VERIFICOU POR CONTA PRÓPRIA ANTES DE ESCREVER ESTES REQUISITOS,
+# e três achados MUDARAM o requisito que havia sido despachado:
+#
+#   C1. `camada_em(z)` EXTRAPOLA EM SILÊNCIO NOS DOIS SENTIDOS. Executado:
+#       perfil de 3,00 m (Aterro 1,0 m + Areia 2,0 m), `camada_em(10.0)`
+#       devolve "Areia" — sete metros abaixo do fundo do perfil, sem exceção e
+#       sem aviso (geotecnia.py:121-122, `if self.camadas: return
+#       self.camadas[-1]`). Pior: `camada_em(-1.0)` devolve TAMBÉM "Areia", a
+#       camada MAIS PROFUNDA, para uma cota ACIMA da superfície. Uma derivação
+#       que confiasse cegamente em `camada_em` preencheria phi'/c'/gamma com a
+#       camada errada e diria "derivado da camada X" com todas as letras.
+#       CONSEQUÊNCIA: REQ-UI-CAMADA-02 (guardas de recusa) e a obrigação de
+#       rotular a extrapolação, que não estavam no despacho.
+#
+#   C2. gamma_solo TEM DOIS PAPÉIS FÍSICOS DIFERENTES NO NÚCLEO, e a derivação
+#       só é correta em um deles. Com perfil presente, `Solo.
+#       sobrecarga_no_nivel_da_base()` usa `perfil.tensao_vertical_efetiva(hf)`
+#       e NÃO usa gamma_solo (geotecnia.py:360-364); gamma_solo sobra só no
+#       peso do solo sobre a sapata (sapata.py:366), onde peso TOTAL é o que
+#       se quer e `Camada.gamma(abaixo_na) = gamma_sat` é defensável. Some o
+#       perfil (última camada removida) e gamma_solo TROCA DE PAPEL sozinho:
+#       vira `gamma_solo * hf` como sobrecarga EFETIVA. Executado no perfil
+#       acima com N.A. = 1,20 m e h_f = 1,50 m: o correto é 23,66 kPa e o
+#       gamma_sat derivado dá 30,0 kPa, +27 %, DO LADO INSEGURO (q maior =
+#       capacidade maior), e a folga cresce até o fator ~2 de V7 conforme o
+#       N.A. sobe. CONSEQUÊNCIA: REQ-UI-CAMADA-05 e a pendência V8.
+#
+#   C3. A PREMISSA "preencher_solo É SEMPRE CARREGAMENTO DE ARQUIVO" É FALSA.
+#       `ui/completo/app.py:513` chama `preencher_solo(replace(solo_atual,
+#       perfil=perfil))` no ramo de sucesso da importação de perfil por Excel,
+#       e `solo_atual` vem de `self.formulario.ler_solo()` (app.py:442), isto
+#       é, DA TELA. Nesse caminho os três valores NÃO vêm do arquivo: são
+#       sobra do perfil ANTERIOR, agora casada com um perfil novo. Aplicar ali
+#       a regra "arquivo tem valor explícito, não reinterprete" produz
+#       exatamente a inconsistência silenciosa que o item #12 existe para
+#       matar. CONSEQUÊNCIA: REQ-UI-CAMADA-06, com dois ramos determinísticos.
+#
+# FILA HUMANA: uma pendência nova, V8, em kb/pendencias.md (filha de V7,
+# PRIORIDADE ALTA, lado inseguro). Não é bloqueante: o requisito foi desenhado
+# para funcionar sem a resposta, exibindo o aviso enquanto ela não vier.
+#
+# O QUE ESTA VERSÃO NÃO FAZ, por decisão registrada e não por esquecimento:
+# não cria obrigação de memorial, PDF ou Excel para a proveniência da
+# derivação (REQ-UI-CAMADA-07). Ao contrário de REQ-UI-SIGMA-01, onde o
+# rótulo ELU acompanha um número que entra numa verificação normativa de ELU,
+# aqui a proveniência é auxílio de preenchimento: o número que chega ao núcleo
+# é o mesmo, venha de onde vier.
+# =============================================================================
 
 # =============================================================================
 # VERSÃO 9 — sigma_adm a partir de SPT (teórico e semiempírico) e majoração
@@ -3418,6 +3497,410 @@ requisitos_para_a3:
       extraído) e nenhum caminho da v9 trata excentricidade — a regra de área
       efetiva de Meyerhof está em kb mas NÃO foi aprovada.
 
+
+  # ===========================================================================
+  # REQ-UI-CAMADA-01 a 07 — VERSÃO 10. Camada única de dados: phi'/c'/gamma na
+  # base derivados da camada em h_f (backlog #12).
+  #
+  # PROBLEMA: `ui/completo/formulario.py::_secao_solo` pede o MESMO dado
+  # geotécnico duas vezes e sem ligação nenhuma entre as duas — nos campos
+  # soltos `v_gamma_solo`/`v_phi_solo`/`v_coesao` (linhas 325-327) e dentro da
+  # `Camada` que contém a cota h_f, no "Perfil em camadas". Quem preenche o
+  # perfil digita de novo, à mão, o que já digitou; e nada impede que os dois
+  # lados divirjam depois.
+  #
+  # NENHUMA CONTA NOVA. Tudo o que estes sete requisitos mandam exibir sai de
+  # `PerfilGeotecnico.camada_em(z)` (geotecnia.py:117-123), `Camada.gamma
+  # (abaixo_na)` (:66-67), `Camada.phi` e `Camada.coesao`. CLAUDE.md regra 4
+  # continua valendo sem atenuação: a tela LÊ, não calcula, e não pode conter
+  # aritmética própria sobre esses valores (nem soma de espessuras para achar
+  # a camada — `camada_em` já faz isso).
+  #
+  # NOMES FIXADOS PELO a2, e são normativos para esta rodada, para que o teste
+  # automatizado e o a6 tenham alvo determinístico (foi a falta disso que
+  # custou rodadas no GATE 2 de sigma_adm):
+  #   `PainelEntrada.ultima_derivacao_de_camada: dict | None`  (atributo de
+  #       CLASSE com default None, como `ultimo_sigma_adm_calculado`
+  #       (formulario.py:581), para que `getattr` antes da construção seja
+  #       seguro). Chaves: `nome_camada`, `hf`, `abaixo_na`, `gamma`, `phi`,
+  #       `coesao`, `extrapolada`.
+  #   `PainelEntrada._preenchendo_solo_derivado: bool`   (guard de escrita)
+  #   `PainelEntrada._carregando_solo: bool`             (guard de carregamento)
+  #   `PainelEntrada.lbl_solo_derivado: ttk.Label`       (rótulo)
+  #   `PainelEntrada._atualizar_rotulo_solo_derivado()`  (único ponto de rótulo)
+  #   `PainelEntrada._derivar_solo_da_camada()`          (única derivação)
+  #   `PainelEntrada._ao_editar_solo_derivado(*args)`    (trace de invalidação)
+  # ===========================================================================
+
+  - id: REQ-UI-CAMADA-01-gatilho-e-fonte-da-derivacao
+    texto: >-
+      Existindo perfil em camadas, os três campos soltos "γ_solo [kN/m³]",
+      "φ' na base [graus]" e "c' na base [kPa]" passam a ser PREENCHIDOS a
+      partir da camada vigente na cota de assentamento, em vez de digitados de
+      novo. A derivação é `camada = PerfilGeotecnico(camadas=self._camadas,
+      nivel_agua=<N.A. atual>).camada_em(<h_f atual>)` e escreve
+      `camada.gamma(abaixo_na)` em `v_gamma_solo`, `camada.phi` em
+      `v_phi_solo` e `camada.coesao` em `v_coesao`, com
+      `abaixo_na = <N.A.> is not None and <h_f> > <N.A.>`. Nenhuma conversão de
+      unidade: `Camada.phi` já é grau e `Camada.coesao` já é kPa, exatamente as
+      unidades dos rótulos da tela.
+      PREENCHE, NUNCA TRAVA — herdado de REQ-UI-SIGMA e do texto que já está
+      fixo na tela (NBR 6122:2022 §7.2, formulario.py:330-336): os três campos
+      continuam `ttk.Entry` editáveis, sem `state="readonly"`, sem
+      `state="disabled"`, sem validador que recuse o valor digitado. O
+      engenheiro sobrescreve quando quiser, e é ele quem assina a ART.
+      GATILHOS, lista FECHADA — só ação interativa do usuário sobre o perfil ou
+      sobre as duas cotas que definem qual camada vale: `_adicionar_camada`,
+      `_editar_camada`, `_remover_camada` (os três já existentes) e trace de
+      escrita em `v_hf` e em `v_nivel_agua`. Nada mais dispara derivação; em
+      particular NÃO dispara em `ler_solo`, `ler_perfil`, dimensionamento,
+      exportação ou repintura de tela.
+      ONDE O GANCHO NÃO PODE FICAR, e é a armadilha desta tarefa:
+      `_atualizar_tree_camadas` é chamada pelos três pontos de edição de camada
+      MAS TAMBÉM por `preencher_solo` (formulario.py:646). Pendurar a derivação
+      nela viola REQ-UI-CAMADA-04 em silêncio. O gancho vai nos três métodos de
+      edição, depois do `_atualizar_tree_camadas` de cada um.
+      DESEMPATES, decididos aqui para não sobrarem para o código: (a) h_f
+      exatamente sobre uma interface pertence à camada DE BAIXO — é a convenção
+      que `camada_em` já implementa (`z0 <= z < z1`) e é a fisicamente certa,
+      porque a sapata se apoia sobre o que está abaixo da sua base; (b) h_f
+      exatamente igual ao N.A. conta como ACIMA (`abaixo_na = False`, portanto
+      `gamma_nat`), por ser `>` estrito.
+      LEITURA DOS DOIS NÚMEROS DE ENTRADA: h_f e N.A. são lidos com os MESMOS
+      auxiliares que `ler_solo`/`ler_perfil` usam (`_float`/`_float_opt`,
+      incluindo a normalização de vírgula decimal), nunca com `float()` cru —
+      senão a tela pode derivar de uma cota e o núcleo calcular com outra.
+      ESCRITA DOS TRÊS NÚMEROS DE SAÍDA: `f"{valor:.10g}"`, exatamente o
+      formato que todos os `preencher_*` e `_abrir_calculadora_sigma_adm` já
+      usam (formulario.py:414, 639-642). Não é preferência estética: é o que
+      garante que 34.0 vire "34" e não "34.00", que o valor derivado seja
+      textualmente indistinguível de um digitado à mão, e que os critérios de
+      aceite abaixo sejam comparações exatas de string.
+    criterio_de_aceite:
+      - >-
+        Perfil [Camada("Aterro", 1.0, phi=28, coesao=5, gamma_nat=17,
+        gamma_sat=19), Camada("Areia", 2.0, phi=34, coesao=0, gamma_nat=18,
+        gamma_sat=20)], N.A. vazio, h_f = 1,50: adicionar a segunda camada pela
+        UI deixa v_phi_solo == "34", v_coesao == "0" e v_gamma_solo == "18".
+      - >-
+        Mesmo perfil com N.A. = 1,20 e h_f = 1,50: v_gamma_solo == "20"
+        (gamma_sat, `abaixo_na` verdadeiro).
+      - >-
+        h_f = 1,00 (exatamente a interface) deriva da camada "Areia", não da
+        "Aterro"; h_f = 1,20 com N.A. = 1,20 deriva gamma_nat = 18, não 20.
+      - >-
+        Editar a camada que contém h_f (`_editar_camada`) atualiza os três
+        campos; editar uma camada que NÃO contém h_f também roda a derivação e
+        os três campos permanecem coerentes com a camada em h_f.
+      - >-
+        Digitar "1,80" (vírgula) em v_hf deriva da mesma camada que "1.80".
+      - >-
+        Busca textual em `ui/` não encontra soma de espessuras, `limites()`,
+        `float()` cru sobre esses campos nem qualquer aritmética sobre gamma /
+        phi / coesao fora das chamadas ao núcleo (CLAUDE.md regra 4).
+
+  - id: REQ-UI-CAMADA-02-guardas-de-recusa-e-extrapolacao-nunca-silenciosa
+    texto: >-
+      A derivação RECUSA-SE a agir, sem exceção, sem diálogo modal e sem tocar
+      nos três campos, em qualquer destes casos: (a) `self._camadas` vazia —
+      não há perfil, os campos continuam sendo entrada manual pura, como hoje;
+      (b) o texto de `v_hf` está em branco ou não é número (o trace dispara a
+      CADA tecla: "1", "1.", "1.e" são estados normais de digitação e não podem
+      levantar exceção nem abrir `messagebox`); (c) o texto de `v_nivel_agua`
+      não é número (em branco É válido e significa N.A. ausente); (d) h_f <= 0.
+      POR QUE (d) É OBRIGATÓRIO, e não é zelo: `camada_em(-1.0)` devolve a
+      camada MAIS PROFUNDA do perfil (verificado por execução pelo a2 —
+      geotecnia.py:121-122 tem `if self.camadas: return self.camadas[-1]` como
+      saída final). Sem a guarda, uma cota negativa digitada por engano
+      preencheria os três campos com a camada de fundo e ainda a rotularia como
+      derivada.
+      POR QUE (b) NÃO DERIVA COM O DEFAULT: `ler_solo` faz `_float(self.v_hf.
+      get(), 1.5)`, isto é, campo em branco vira 1,5 m para o núcleo em
+      silêncio. Esse comportamento é PRÉ-EXISTENTE e esta versão não o altera
+      (REQ-UI-CAMADA-07), mas a derivação não pode se apoiar nele: derivar de
+      um 1,5 m que o usuário não digitou seria inventar proveniência.
+      EXTRAPOLAÇÃO ABAIXO DO PERFIL — deriva, mas JAMAIS em silêncio. Quando
+      h_f > `perfil.profundidade_total`, `camada_em` devolve a última camada
+      sem avisar (verificado: perfil de 3,00 m, `camada_em(10.0)` devolve a
+      camada de fundo). Nesse caso a derivação acontece (o dado é do próprio
+      usuário e é sempre sobrescrevível) mas `ultima_derivacao_de_camada
+      ["extrapolada"]` é `True` e o rótulo de REQ-UI-CAMADA-03 tem de dizer, em
+      texto, que h_f está ABAIXO da base do perfil e informar a profundidade
+      total. Mesma doutrina de REQ-UI-SIGMA-03: extrapolação silenciosa,
+      clamp e valor aproximado sem aviso são PROIBIDOS.
+    criterio_de_aceite:
+      - >-
+        Sem camadas: escrever "2.0" em v_hf não altera nenhum dos três campos e
+        `ultima_derivacao_de_camada is None`.
+      - >-
+        Com perfil válido, escrever "abc", "" ou "1.e" em v_hf: nenhuma
+        exceção propaga, nenhum `messagebox` é aberto, os três campos ficam
+        como estavam.
+      - >-
+        h_f = "-1" ou "0": nenhuma derivação; em particular v_phi_solo NÃO
+        recebe o phi da camada mais profunda.
+      - >-
+        Perfil de 3,00 m e h_f = 4,00: os três campos são preenchidos com a
+        camada de fundo, `ultima_derivacao_de_camada["extrapolada"] is True` e
+        `lbl_solo_derivado.cget("text")` contém a profundidade total do perfil
+        e a informação de que h_f está abaixo dela.
+      - >-
+        N.A. com texto inválido ("x"): sem derivação, sem exceção.
+
+  - id: REQ-UI-CAMADA-03-proveniencia-conjunta-e-invalidacao-pelos-tres
+    texto: >-
+      Mesma arquitetura de `ultimo_sigma_adm_calculado` /
+      `_ao_editar_sigma_adm` / `_preenchendo_sigma_adm_calculado`
+      (formulario.py:320, 403-447) — não outra. Reaproveitar, não reinventar:
+      guard de flag ligado ANTES dos `.set()` programáticos e desligado em
+      `finally`, trace de escrita que invalida em qualquer outra edição, e uma
+      ÚNICA função de rótulo chamada dos dois pontos (o que preenche e o que
+      invalida), para que rótulo e estado nunca saiam de sincronia.
+      OS TRÊS SÃO UM CONJUNTO, e esta é a decisão que fecha a ambiguidade:
+      edição manual de QUALQUER um dos três (`v_gamma_solo`, `v_phi_solo`,
+      `v_coesao`) invalida a proveniência dos TRÊS ao mesmo tempo —
+      `ultima_derivacao_de_camada = None` e rótulo vazio. Deixar phi'/c' ainda
+      marcados como "derivados" porque só gamma foi tocado criaria um estado
+      ambíguo PIOR que a duplicação de hoje: o rótulo afirmaria uma origem
+      comum que já não existe.
+      O RÓTULO: `ttk.Label` discreta ao lado dos três campos, mesmo padrão
+      visual de `lbl_sigma_adm_elu` (`style="PainelFraco.TLabel"`, `wraplength`,
+      `justify="left"`), atualizada SÓ por `_atualizar_rotulo_solo_derivado()`.
+      Dois estados, e apenas dois: (i) proveniência válida — texto que contém
+      obrigatoriamente o radical "derivad", o NOME da camada exatamente como
+      está em `Camada.nome`, e o valor de h_f usado; (ii) proveniência inválida
+      — string VAZIA. Nunca um terceiro estado.
+      VAZIO MESMO QUE OS NÚMEROS COINCIDAM: se o engenheiro apagar e redigitar
+      à mão o mesmo "34" que a derivação havia posto, a proveniência morre
+      assim mesmo. O rótulo afirma DE ONDE veio, não QUANTO vale; um "derivado"
+      que sobrevive à digitação manual é falso ainda que o número bata.
+      O guard `_preenchendo_solo_derivado` existe exatamente para o
+      preenchimento programático não se autoinvalidar nos três `.set()` — os
+      três ficam DENTRO do mesmo `try/finally`, e `ultima_derivacao_de_camada`
+      só é gravado DEPOIS de os três terem sido escritos.
+    criterio_de_aceite:
+      - >-
+        Após uma derivação bem-sucedida, `ultima_derivacao_de_camada` é um
+        dict com as sete chaves e `lbl_solo_derivado.cget("text")` contém o
+        nome da camada e o h_f usado.
+      - >-
+        `painel.v_phi_solo.set("31")` (edição manual simulada) zera
+        `ultima_derivacao_de_camada` E esvazia o rótulo; idem para
+        `v_gamma_solo` e para `v_coesao`, um teste por campo.
+      - >-
+        Redigitar no campo exatamente o mesmo texto que a derivação escreveu
+        também invalida (rótulo vazio).
+      - >-
+        A derivação NÃO se autoinvalida: logo após `_derivar_solo_da_camada()`,
+        `ultima_derivacao_de_camada is not None`.
+      - >-
+        `_preenchendo_solo_derivado` volta a `False` mesmo se um `.set()`
+        levantar exceção (bloco `finally`).
+
+  - id: REQ-UI-CAMADA-04-preencher-solo-nao-deriva-e-a-assimetria-do-guard
+    texto: >-
+      `preencher_solo()` — caminho de "Abrir projeto..." (`app.py:359`) — NÃO
+      dispara derivação, mesmo quando o `Solo` carregado traz `perfil` com
+      camadas. RAZÃO REGISTRADA, para que ninguém "conserte" isso depois: um
+      projeto salvo já tem valores EXPLÍCITOS gravados para `gamma_solo`,
+      `phi` e `coesao` (`ui/completo/projeto.py:366`), possivelmente diferentes
+      da camada em h_f DE PROPÓSITO — o engenheiro pode tê-los sobrescrito à
+      mão antes de salvar, e a NBR 6122:2022 §7.2 lhe dá esse direito. Repor os
+      três exatamente como vieram do arquivo, sem reinterpretar, é o mesmo
+      princípio que já rege `preencher_casos`: dado explícito de arquivo
+      carregado não é substituído por reinterpretação silenciosa.
+      ASSIMETRIA DO GUARD, e errar o sinal aqui produz exatamente o defeito que
+      a MÉDIA #4 do GATE 2 do sigma_adm criou: `_carregando_solo` suprime a
+      DERIVAÇÃO e NUNCA suprime a INVALIDAÇÃO. Depois de `preencher_solo`, os
+      três campos são valores de arquivo, portanto NÃO são derivados:
+      `ultima_derivacao_de_camada` tem de terminar `None` e o rótulo vazio. É o
+      mesmo desfecho que `_ao_editar_sigma_adm` já produz para sigma_adm nessa
+      função, e pela mesma razão.
+      POR QUE O GUARD É INDISPENSÁVEL (não basta "não chamar a derivação"):
+      `preencher_solo` escreve `v_hf` na linha 639 e `v_nivel_agua` na 648, e
+      os traces de REQ-UI-CAMADA-01 disparariam nas duas. Pior, a ordem torna
+      isso ativamente errado: `self._camadas` só é substituída na linha 645 —
+      um trace disparado pela linha 639 leria as camadas do projeto ANTERIOR e
+      derivaria da estratigrafia errada. O guard cobre o corpo INTEIRO de
+      `preencher_solo`, em `try/finally`.
+      DEPOIS DE CARREGADO, TUDO VOLTA AO NORMAL: a primeira edição interativa
+      de camada, de h_f ou do N.A. deriva como sempre e o rótulo reaparece.
+    criterio_de_aceite:
+      - >-
+        `preencher_solo(Solo(sigma_adm=250, gamma_solo=15, hf=1.5, phi=22,
+        coesao=7, perfil=<perfil cuja camada em 1,5 m tem phi=34, coesao=0,
+        gamma=20>))` deixa v_gamma_solo == "15", v_phi_solo == "22" e
+        v_coesao == "7" — os valores do arquivo, NÃO os da camada.
+      - >-
+        Após essa chamada, `ultima_derivacao_de_camada is None` e
+        `lbl_solo_derivado.cget("text") == ""`.
+      - >-
+        Teste de ordem: carregar um projeto A (perfil A) e em seguida um
+        projeto B (perfil B) não deixa nenhum dos três campos com valor da
+        estratigrafia de A.
+      - >-
+        Depois do carregamento, escrever "1.8" em v_hf deriva normalmente do
+        perfil recém-carregado e o rótulo volta a aparecer.
+      - >-
+        `_carregando_solo` volta a `False` mesmo se `preencher_solo` levantar
+        exceção no meio.
+
+  - id: REQ-UI-CAMADA-05-gamma-solo-tem-dois-papeis-e-o-aviso-e-obrigatorio
+    texto: >-
+      ACHADO DO a2 (C2 do cabeçalho da v10), e é o ponto de segurança desta
+      rodada. `gamma_solo` não tem UM significado no núcleo, tem dois, e qual
+      deles vale depende de haver perfil:
+      (i) COM perfil, `Solo.sobrecarga_no_nivel_da_base()` devolve
+      `perfil.tensao_vertical_efetiva(hf)` e NÃO usa `gamma_solo`
+      (geotecnia.py:360-364); `gamma_solo` sobra apenas no peso do solo sobre a
+      sapata, `self.solo.gamma_solo * g["v_solo"]` (sapata.py:366), onde o que
+      se quer é peso TOTAL. É por isso, e SÓ nessa condição, que derivar
+      `Camada.gamma(abaixo_na)` — que devolve `gamma_sat`, peso saturado total
+      — é defensável.
+      (ii) SEM perfil, `gamma_solo * hf` PASSA A SER a sobrecarga efetiva na
+      cota da base. Um `gamma_sat` deixado ali pela derivação superestima q.
+      Medido pelo a2 no perfil de referência (N.A. = 1,20 m, h_f = 1,50 m):
+      correto 23,66 kPa, derivado 30,0 kPa, +27 %, DO LADO INSEGURO — q maior
+      significa capacidade de carga maior — e a distorção cresce até o fator
+      ~2 de V7 conforme o N.A. sobe.
+      EXIGÊNCIA 1 — TRANSIÇÃO PARA PERFIL VAZIO. Quando `_remover_camada`
+      esvaziar `self._camadas` (última camada removida) estando a proveniência
+      válida, a proveniência é invalidada E a tela exibe aviso explícito de que
+      γ_solo mudou de papel: sem perfil ele passa a valer como sobrecarga na
+      cota da base e, abaixo do N.A., o valor a informar é o EFETIVO
+      (tipicamente 9-11 kN/m³), não o saturado (19-21) — mesmíssima redação já
+      exigida por REQ-UI-SIGMA-04 e pela pendência V7. O aviso é passivo
+      (rótulo/linha de texto), nunca um `messagebox` que exija clique, e NUNCA
+      altera o número: quem decide é o engenheiro.
+      EXIGÊNCIA 2 — HONESTIDADE DO RÓTULO. Quando a derivação usar
+      `abaixo_na = True`, o texto de REQ-UI-CAMADA-03 tem de dizer que o γ
+      derivado é o SATURADO (total) da camada. Proibido o rótulo sugerir que o
+      software escolheu por conta própria entre saturado, efetivo e natural: o
+      valor foi lido da camada que o próprio usuário cadastrou.
+      EXIGÊNCIA 3 — LIMITE DA APROXIMAÇÃO, dito e não escondido. O solo apoiado
+      sobre a sapata vai de h_f até a superfície e pode atravessar o N.A. e
+      várias camadas; um único γ não representa isso exatamente. O rótulo diz
+      "derivado da camada X em h_f", que é verdade, e não pode afirmar mais do
+      que isso (nada de "peso do maciço sobrejacente" ou equivalente).
+      ESTE REQUISITO ESTÁ AMARRADO A UMA PENDÊNCIA HUMANA. A pergunta de fundo
+      — qual peso específico o núcleo deve usar no solo sobre a sapata abaixo
+      do N.A., dado que `_peso_proprio` alimenta também as verificações de
+      deslizamento e tombamento, onde peso maior é FAVORÁVEL e portanto
+      superestimá-lo é inseguro — é julgamento de engenharia e o a2 não a
+      decide. Está em kb/pendencias.md como V8 (filha de V7, PRIORIDADE ALTA,
+      lado inseguro). Enquanto V8 não for resolvida por decisão humana
+      registrada, os avisos das Exigências 1 e 2 são OBRIGATÓRIOS e o a6 os
+      trata como veto se ausentes.
+    criterio_de_aceite:
+      - >-
+        Derivação com `abaixo_na = True`: `lbl_solo_derivado.cget("text")`
+        contém a informação de que o γ exibido é o saturado/total da camada.
+      - >-
+        Remover a última camada com proveniência válida:
+        `ultima_derivacao_de_camada is None` e há na tela texto visível dizendo
+        que γ_solo passa a valer como sobrecarga na cota da base e que abaixo
+        do N.A. o valor pedido é o efetivo, não o saturado.
+      - >-
+        Essa remoção NÃO altera o número em `v_gamma_solo` (o software avisa,
+        não corrige) e NÃO abre `messagebox` modal.
+      - >-
+        Nenhum texto da tela chama o γ derivado de peso do maciço
+        sobrejacente, peso médio ou equivalente.
+
+  - id: REQ-UI-CAMADA-06-importacao-de-perfil-por-excel-nao-e-carregamento-de-arquivo
+    texto: >-
+      CORREÇÃO DE PREMISSA FEITA PELO a2 (C3 do cabeçalho da v10). "Importar do
+      Excel..." NÃO é, neste ponto, um carregamento de arquivo como "Abrir
+      projeto...", e tratá-lo como tal reintroduz o defeito que o item #12
+      existe para eliminar. `ui/completo/app.py:513` faz
+      `preencher_solo(replace(solo_atual, perfil=perfil))` com
+      `solo_atual = self.formulario.ler_solo()` (app.py:442) — os três valores
+      NÃO vêm da planilha (`excel_import.importar_perfil_geotecnico` devolve só
+      o perfil): são sobra da TELA, casados com um perfil novo e possivelmente
+      de outra obra. REQ-UI-CAMADA-04 continua valendo para `preencher_solo`,
+      que permanece um setter burro; a decisão é do CHAMADOR.
+      REGRA, com dois ramos determinísticos, avaliada no ramo `else` de sucesso
+      da importação do perfil (app.py:512-515). O estado da proveniência é
+      capturado ANTES de chamar `preencher_solo` (que o zera):
+      RAMO A — proveniência VÁLIDA antes da importação: os três campos eram
+      derivados do perfil ANTIGO, que acabou de ser descartado; nada que o
+      engenheiro tenha digitado se perde. Deriva-se do perfil NOVO
+      imediatamente depois de `preencher_solo`, chamando o mesmo
+      `_derivar_solo_da_camada()` de REQ-UI-CAMADA-01, com as mesmas guardas de
+      REQ-UI-CAMADA-02.
+      RAMO B — proveniência INVÁLIDA (valores digitados à mão ou vindos de um
+      projeto aberto): NÃO sobrescrever, nunca. Em vez disso, acrescentar à
+      mensagem de resumo da importação (`msg_perfil`, que já existe) uma linha
+      de DIVERGÊNCIA quando qualquer um dos três diferir do valor da camada em
+      h_f do perfil novo, informando os dois valores lado a lado para cada um
+      dos três e a camada de referência.
+      POR QUE A MENSAGEM E NÃO UM RÓTULO NOVO: `_importar_excel` já usa esse
+      resumo exatamente para esta classe de silêncio — "aba ausente, perfil
+      MANTIDO" (D6 do GATE 2, rodada 1) e "Hx/Hy zeradas" (BAIXA da rodada 2)
+      nasceram da mesma regra: o que a importação faz ou deixa de fazer com os
+      dados da tela tem de ser dito ali.
+      NÃO SE EXIGE O MESMO DE "Abrir projeto...", e é decisão consciente: lá os
+      três valores e o perfil vieram do MESMO arquivo, gravados juntos pelo
+      mesmo engenheiro na mesma sessão; a divergência, se houver, é deliberada
+      e já foi decidida uma vez. Aqui o perfil é novo e os valores são velhos —
+      a divergência é acidental por construção.
+    criterio_de_aceite:
+      - >-
+        Ramo A: com proveniência válida, importar planilha com aba de perfil
+        cuja camada em h_f tem phi=38 deixa v_phi_solo == "38" e a proveniência
+        VÁLIDA de novo, apontando para a camada do perfil novo.
+      - >-
+        Ramo B: com os três digitados à mão (proveniência inválida), a
+        importação NÃO altera nenhum dos três, e a mensagem final contém uma
+        linha citando o valor da tela e o da camada nova para cada um dos três
+        que divergir.
+      - >-
+        Ramo B sem divergência (os três já iguais à camada em h_f): nenhuma
+        linha de divergência é acrescentada.
+      - >-
+        Ramos `AbaAusente` e `ValueError` (app.py:489-511) não derivam nada e
+        não tocam nos três campos — o perfil antigo foi mantido, os valores
+        também.
+
+  - id: REQ-UI-CAMADA-07-fronteira-com-o-nucleo-e-com-o-memorial
+    texto: >-
+      `ler_solo()` NÃO MUDA. Continua lendo o texto corrente dos três
+      `StringVar` com `_float(...)`, sem consultar
+      `ultima_derivacao_de_camada`, sem ramo condicional por proveniência e sem
+      preferir a camada ao campo. O núcleo nunca vê o rótulo "derivado" — só o
+      número final. É o mesmo contrato que já vale para sigma_adm depois de
+      REQ-UI-SIGMA-01: quem calcula não precisa saber se o número foi digitado
+      ou preenchido, e é isso que mantém `calc_core/` independente da tela
+      (CLAUDE.md, princípio mestre). Corolário: a derivação nunca pode ser a
+      ÚNICA fonte de um valor — se ela não rodar, os campos continuam com o que
+      estiver neles e o cálculo sai igual ao de hoje.
+      NENHUMA OBRIGAÇÃO NOVA DE MEMORIAL, PDF OU EXCEL nesta rodada, e o
+      contraste com REQ-UI-SIGMA-01 é o que justifica: lá o rótulo ELU
+      acompanha um número que entra numa verificação normativa de ELU e
+      qualificá-lo é parte da rastreabilidade do resultado; aqui a proveniência
+      é auxílio de preenchimento de campo, e o número que chega ao núcleo é
+      idêntico venha de onde vier. `ultima_derivacao_de_camada` NÃO é repassada
+      a `ui.completo.resultado`, a `relatorio.py`, a `pranchas.py` nem ao
+      exportador Excel. (`relatorio.py:84` já imprime gamma_solo e phi' hoje;
+      continua imprimindo o mesmo, sem adjetivo.)
+      DECISÃO DE ESCOPO REGISTRADA, não esquecimento: se uma rodada futura
+      quiser a proveniência no memorial, isso é requisito NOVO, com sua própria
+      rodada de a6/a7 — e este parágrafo existe para que a ausência não seja
+      lida como lacuna, do mesmo modo que a nota de escopo de REQ-UI-01.
+    criterio_de_aceite:
+      - >-
+        O diff da rodada não toca `calc_core/`; o corpo de `ler_solo` sai
+        idêntico ao da v9 (comparação textual).
+      - >-
+        Com proveniência válida, `ler_solo()` devolve exatamente os números que
+        estão nos campos; sobrescrever v_phi_solo à mão para "20" e chamar
+        `ler_solo()` devolve `phi == 20.0` (o valor da camada NÃO prevalece).
+      - >-
+        Busca textual por `ultima_derivacao_de_camada` não encontra ocorrência
+        fora de `ui/completo/formulario.py`, `ui/completo/app.py` e dos testes.
+      - >-
+        O memorial/PDF/Excel gerados antes e depois desta rodada, para a mesma
+        entrada, são idênticos no conteúdo de solo.
 
   - id: REQ-UI-01-rotulo-nao-normativo
     texto: >-
