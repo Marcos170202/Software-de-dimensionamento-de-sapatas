@@ -1309,3 +1309,437 @@ formulas:
       divergencia: false
     status: NAO_NORMATIVO_AGUARDA_A2
     rodada: "2026-09-01 cunha de solo lateral"
+
+  # ===========================================================================
+  # RODADA 2026-09-02 — BACKLOG #13: cadeia de esforços pilarete → sapata
+  #
+  # Escopo mínimo desta rodada (por decisão do usuário): sapata isolada, carga
+  # CENTRADA, pilarete de concreto armado de seção RETANGULAR CONSTANTE, sem
+  # cálculo de 2ª ordem (mas COM o critério que define a fronteira curto/esbelto,
+  # para o a4 RECUSAR fora do domínio — não para calcular fora dele).
+  #
+  # A base metálica, a placa de base e os chumbadores estão FORA DE ESCOPO por
+  # decisão do usuário (NBR 8800, ausente do acervo). N/M/H na base do pilar
+  # metálico são DADO DE ENTRADA.
+  #
+  # ACHADO QUE MUDA O DESENHO DO MOTOR: a NBR 6118:2023 NÃO tem "pedestal"
+  # como elemento de concreto armado (busca negativa registrada em
+  # kb/clausulas.jsonl, id NBR6118-BUSCA-NEG-pedestal). Um pilarete armado é,
+  # para a Norma, um PILAR — e cai integralmente em 13.2.3, 15.8, 17.2.2,
+  # 17.3.5.3 e 18.4. Não existe verificação simplificada para λ pequeno.
+  #
+  # E a NBR 6118 NÃO fornece expressão fechada de N_Rd para compressão centrada
+  # (busca negativa id NBR6118-BUSCA-NEG-NRd-compressao-centrada). Por isso
+  # NÃO HÁ, abaixo, nenhuma fórmula de N_Rd: derivá-la é trabalho do a2, com a
+  # derivação explicitada, a partir de 17.2.2 + 8.2.10.1 + 8.3.6 — e 8.2.10.1
+  # e 8.3.6 NÃO foram extraídos nesta rodada (lacuna conhecida).
+  # ===========================================================================
+
+  - id: NBR6118-11.3.3.4.3-momento-minimo
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3"
+    pagina: 60
+    clausula_ref: NBR6118-11.3.3.4.3-momento-minimo
+    titulo: "Momento mínimo de 1ª ordem em pilares (substitui as imperfeições locais)"
+    latex: "M_{1d,\\min} = N_d\\,(0{,}015 + 0{,}03\\,h)"
+    sympy: "Eq(M_1d_min, N_d*(0.015 + 0.03*h))"
+    variaveis:
+      M_1d_min: {descricao: "momento mínimo de 1ª ordem, de cálculo, na direção considerada", unidade: "kN.m", valor: null}
+      N_d: {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      h: {descricao: "altura total da seção transversal na direção considerada", unidade: "m", valor: null}
+    dominio_validade: >-
+      Pilares e pilares-parede em ESTRUTURAS RETICULADAS. Avaliado POR DIREÇÃO
+      (h é a dimensão da seção na direção considerada, em METROS — a constante
+      0,03 tem unidade implícita e a expressão QUEBRA se h for dado em cm).
+      CONSEQUÊNCIA DIRETA PARA O ESCOPO "CARGA CENTRADA" DESTA RODADA: a NBR
+      6118 não admite dimensionar pilar (logo, pilarete) à compressão
+      estritamente centrada. Mesmo com M_Sd = 0 na entrada, este item impõe
+      M_1d,mín nas duas direções. A este momento devem ser acrescidos os
+      momentos de 2ª ordem da Seção 15 (que esta rodada dispensa apenas quando
+      λ < λ1).
+      A "envoltória mínima de 1ª ordem" da Figura 11.3, citada no mesmo item
+      para seções retangulares, NÃO foi extraída — lacuna conhecida.
+    leitura_visual:
+      passada_1: "página PDF 78 (impressa 60) inteira a 300 dpi"
+      passada_2: "recorte da região do item a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-13.2.3-gamma-n-secao-reduzida
+    norma: "NBR 6118:2023"
+    item: "13.2.3 e Tabela 13.1"
+    pagina: 73
+    clausula_ref: NBR6118-13.2.3-dimensoes-limites-pilar
+    titulo: "Coeficiente adicional γ_n para pilares de menor dimensão entre 14 cm e 19 cm"
+    latex: "\\gamma_n = 1{,}95 - 0{,}05\\,b"
+    sympy: "Eq(gamma_n, 1.95 - 0.05*b)"
+    variaveis:
+      gamma_n: {descricao: "coeficiente adicional que majora os esforços solicitantes FINAIS de cálculo", unidade: "adimensional", valor: null}
+      b: {descricao: "menor dimensão da seção transversal", unidade: "cm", valor: null}
+    tabela_13_1:
+      b_cm:     [">=19", 18, 17, 16, 15, 14]
+      gamma_n:  [1.00, 1.05, 1.10, 1.15, 1.20, 1.25]
+    dominio_validade: >-
+      Pilares e pilares-parede maciços de concreto armado, qualquer forma de
+      seção. VALIDADE ESTRITA: 14 cm <= b < 19 cm. Para b >= 19 cm, γ_n = 1,00.
+      Para b < 14 cm a seção é PROIBIDA — não existe γ_n que a autorize, e a
+      fórmula NÃO deve ser extrapolada. Em qualquer caso A_c >= 360 cm².
+      b em CENTÍMETROS (a constante 0,05 tem unidade implícita).
+      NÃO DECLARADO NA FONTE: a ordem de aplicação de γ_n em relação aos efeitos
+      de 2ª ordem. A NOTA da Tabela 13.1 diz "esforços solicitantes FINAIS de
+      cálculo", o que sugere após a 2ª ordem, mas o texto não é explícito. O a2
+      precisa fixar isso e marcar como interpretação.
+    leitura_visual:
+      passada_1: "página PDF 91 (impressa 73) inteira a 300 dpi"
+      passada_2: "recorte da Tabela 13.1 e do item a 450 dpi — conferidos os 6 pares (b, γ_n) e a expressão"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.6-comprimento-equivalente
+    norma: "NBR 6118:2023"
+    item: "15.6"
+    pagina: 105
+    clausula_ref: NBR6118-15.6-comprimento-equivalente
+    titulo: "Comprimento equivalente ℓ_e do elemento comprimido vinculado em ambas as extremidades"
+    latex: "\\ell_e = \\min\\left(\\ell_0 + h,\\; \\ell\\right)"
+    sympy: "Eq(l_e, Min(l_0 + h, l))"
+    variaveis:
+      l_e: {descricao: "comprimento equivalente do elemento comprimido (pilar)", unidade: "m", valor: null}
+      l_0: {descricao: "distância entre as faces internas dos elementos estruturais, supostos horizontais, que vinculam o pilar", unidade: "m", valor: null}
+      h:   {descricao: "altura da seção transversal do pilar, medida no plano da estrutura em estudo", unidade: "m", valor: null}
+      l:   {descricao: "distância entre os eixos dos elementos estruturais aos quais o pilar está vinculado", unidade: "m", valor: null}
+    dominio_validade: >-
+      Elemento comprimido VINCULADO EM AMBAS AS EXTREMIDADES, em estrutura de
+      NÓS FIXOS. NÃO cobre o pilarete em balanço: para pilar engastado na base
+      e livre no topo, 15.8.2 manda explicitamente ℓ_e = 2ℓ.
+      A definição de ℓ_0 e de ℓ pressupõe elementos horizontais vinculando o
+      pilar em cima e embaixo — condição que pode simplesmente não existir num
+      pilarete de fundação isolado, caso em que este item NÃO se aplica e o
+      software deve pedir a condição de vínculo como entrada explícita, não
+      inferir.
+    leitura_visual:
+      passada_1: "páginas PDF 123 e 124 (impressas 105 e 106) a 300 dpi"
+      passada_2: "recorte da região das duas equações a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.8.2-indice-de-esbeltez
+    norma: "NBR 6118:2023"
+    item: "15.8.2"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.2-dispensa-2a-ordem-local
+    titulo: "Índice de esbeltez λ"
+    latex: "\\lambda = \\dfrac{\\ell_e}{i}"
+    sympy: "Eq(lamb, l_e/i)"
+    variaveis:
+      lamb: {descricao: "índice de esbeltez", unidade: "adimensional", valor: null}
+      l_e:  {descricao: "comprimento equivalente (15.6, ou 2ℓ para pilar engastado na base e livre no topo)", unidade: "m", valor: null}
+      i:    {descricao: "raio de giração MÍNIMO da seção bruta de concreto da peça analisada (definição em 4.3, pág. impressa 6)", unidade: "m", valor: null}
+    dominio_validade: >-
+      Elementos isolados de seção constante e armadura constante ao longo do
+      eixo (15.8.1). ATENÇÃO — LACUNA DELIBERADA: a NBR 6118:2023 NÃO fornece a
+      expressão fechada de i para seção retangular. A Seção 4.3 só define
+      "i — raio de giração mínimo da seção bruta de concreto da peça analisada".
+      A relação i = h/√12 para retângulo é GEOMETRIA (i = √(I/A)), não
+      prescrição normativa: o a2 deve registrá-la como derivação geométrica, com
+      derivação explicitada, e não como transcrição de item da Norma.
+      "Mínimo" implica avaliar as DUAS direções e tomar o menor i — logo o MAIOR λ.
+    leitura_visual:
+      passada_1: "página PDF 125 (impressa 107) inteira a 300 dpi"
+      passada_2: "recorte da equação a 500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.8.2-lambda1-limite-pilar-curto
+    norma: "NBR 6118:2023"
+    item: "15.8.2"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.2-dispensa-2a-ordem-local
+    titulo: "Valor-limite λ1 — FRONTEIRA PILAR CURTO x ESBELTO (dispensa dos efeitos locais de 2ª ordem)"
+    latex: "\\lambda_1 = \\dfrac{25 + 12{,}5\\,e_1/h}{\\alpha_b}\\,,\\qquad 35 \\le \\lambda_1 \\le 90"
+    sympy: "Eq(lamb_1, Min(90, Max(35, (25 + 12.5*e_1/h)/alpha_b)))"
+    criterio_de_dispensa:
+      latex: "\\lambda < \\lambda_1 \\Rightarrow \\text{efeitos locais de 2\\textsuperscript{a} ordem podem ser desprezados}"
+      sympy: "Lt(lamb, lamb_1)"
+      literal_da_fonte: >-
+        "Os esforços locais de 2ª ordem em elementos isolados podem ser
+        desprezados quando o índice de esbeltez for menor que o valor-limite λ1
+        estabelecido nesta subseção." — desigualdade ESTRITA (menor que), não <=.
+    variaveis:
+      lamb_1:  {descricao: "valor-limite do índice de esbeltez", unidade: "adimensional", valor: null}
+      e_1:     {descricao: "excentricidade de 1ª ordem na extremidade do pilar onde ocorre o momento de 1ª ordem de maior valor absoluto; NÃO inclui a excentricidade acidental (simbologia 15.1)", unidade: "m", valor: null}
+      h:       {descricao: "altura da seção transversal na direção considerada", unidade: "m", valor: null}
+      alpha_b: {descricao: "coeficiente que depende da vinculação e do diagrama de momentos de 1ª ordem", unidade: "adimensional", valor: null}
+    alpha_b:
+      a_biapoiado_sem_cargas_transversais:
+        latex: "\\alpha_b = 0{,}60 + 0{,}40\\,\\dfrac{M_B}{M_A} \\ge 0{,}40"
+        sympy: "Eq(alpha_b, Max(0.40, 0.60 + 0.40*M_B/M_A))"
+        limites: "1,0 >= alpha_b >= 0,4"
+        M_A: "maior valor absoluto do momento de 1ª ordem ao longo do pilar biapoiado"
+        M_B: "momento de 1ª ordem no outro extremo; sinal POSITIVO se traciona a mesma face que M_A, NEGATIVO em caso contrário"
+        nos_moveis: "em estruturas de nós móveis, M_A e M_B são os momentos TOTAIS (1ª ordem + 2ª ordem global)"
+      b_biapoiado_com_cargas_transversais_significativas: 1.0
+      c_em_balanco: 1.0
+      d_momentos_menores_que_M1d_min_de_11_3_3_4_3: 1.0
+    dominio_validade: >-
+      Elementos isolados (15.4.4) de seção e armadura constantes ao longo do
+      eixo, submetidos à flexo-compressão (15.8.1). ESTE É O CRITÉRIO PEDIDO
+      PELO BACKLOG #13 para separar pilar curto de esbelto.
+      Os limites 35 <= λ1 <= 90 são de TRUNCAMENTO, não de validade: λ1
+      calculado abaixo de 35 vira 35 e acima de 90 vira 90.
+      PARA O PILARETE SOB CARGA CENTRADA DESTA RODADA cai-se na alínea d):
+      como os momentos são menores que M_1d,mín (11.3.3.4.3), α_b = 1,0, e
+      λ1 = max(35, 25 + 12,5·e_1/h) limitado a 90. Com e_1 = 0, λ1 = 35 —
+      este é o número que o a4 deve usar como fronteira de RECUSA.
+      NÃO DECLARADO NA FONTE: como calcular e_1 quando o momento de 1ª ordem é
+      nulo e só existe M_1d,mín (usar e_1 = M_1d,mín/N_d é interpretação, não
+      texto da Norma — o item 15.8.2 diz que e_1 "não inclui a excentricidade
+      acidental", e M_1d,mín É a substituição das imperfeições locais).
+      A avaliação é POR DIREÇÃO (h muda com a direção).
+    fronteiras_adicionais_de_esbeltez:
+      - "λ > λ1: efeitos locais de 2ª ordem OBRIGATÓRIOS (15.8.2) — FORA do escopo desta rodada"
+      - "λ > 90: consideração da FLUÊNCIA obrigatória (15.8.3.1 → 15.8.4)"
+      - "λ > 140: MÉTODO GERAL (análise não linear) obrigatório (15.8.3.2); e γ_n1 majora os efeitos locais (15.8.1)"
+      - "λ > 200: PROIBIDO, exceto elementos pouco comprimidos com N_d < 0,10 f_cd A_c (15.8.1, alterado pela Emenda 1)"
+    leitura_visual:
+      passada_1: "páginas PDF 125 e 126 (impressas 107 e 108) inteiras a 300 dpi"
+      passada_2: "recortes das regiões de λ1, de 35<=λ1<=90 e de α_b a 450-500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF entrega esta equação embaralhada
+      ("lambda alpha 1 1 25 12 5 = + , / b e h"). Só a leitura visual a recupera.
+
+  - id: NBR6118-15.8.1-gamma-n1
+    norma: "NBR 6118:2023"
+    item: "15.8.1"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.1-generalidades-esbeltez
+    titulo: "Coeficiente adicional γ_n1 de majoração dos efeitos locais de 2ª ordem para λ > 140"
+    latex: "\\gamma_{n1} = 1 + \\dfrac{\\lambda - 140}{140} \\ge 1"
+    sympy: "Eq(gamma_n1, Max(1, 1 + (lamb - 140)/140))"
+    variaveis:
+      gamma_n1: {descricao: "coeficiente adicional aplicado aos efeitos locais de 2ª ordem", unidade: "adimensional", valor: null}
+      lamb:     {descricao: "índice de esbeltez", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      SOMENTE para pilares com λ > 140, e SOMENTE sobre os efeitos LOCAIS de 2ª
+      ordem (não sobre os esforços de 1ª ordem). Registrado aqui apenas para
+      FECHAR A FRONTEIRA DE DOMÍNIO: esta rodada NÃO implementa 2ª ordem, logo
+      o a4 deve RECUSAR λ >= λ1 antes de chegar perto de λ = 140. A fórmula não
+      deve ser implementada nesta rodada.
+    leitura_visual:
+      passada_1: "página PDF 125 (impressa 107) inteira a 300 dpi"
+      passada_2: "recorte da equação a 500 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.3.5.3-armadura-longitudinal-pilar
+    norma: "NBR 6118:2023"
+    item: "17.3.5.3.1 e 17.3.5.3.2"
+    pagina: 133
+    clausula_ref: NBR6118-17.3.5.3.1-armadura-minima-pilar
+    titulo: "Armaduras longitudinais mínima e máxima de pilares"
+    latex: "A_{s,\\min} = \\max\\left(0{,}15\\,\\dfrac{N_d}{f_{yd}},\\; 0{,}004\\,A_c\\right) \\qquad A_{s,\\max} = 0{,}08\\,A_c"
+    sympy: "[Eq(A_s_min, Max(0.15*N_d/f_yd, 0.004*A_c)), Eq(A_s_max, 0.08*A_c)]"
+    variaveis:
+      A_s_min: {descricao: "área mínima de armadura longitudinal do pilar", unidade: "cm2", valor: null}
+      A_s_max: {descricao: "área máxima de armadura longitudinal do pilar", unidade: "cm2", valor: null}
+      N_d:     {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      f_yd:    {descricao: "resistência de cálculo ao escoamento do aço", unidade: "kPa (ou MPa, consistente com N_d e A_c)", valor: null}
+      A_c:     {descricao: "área da seção transversal bruta de concreto do pilar", unidade: "cm2", valor: null}
+    dominio_validade: >-
+      Armadura longitudinal de PILARES de concreto armado (o item se chama
+      literalmente "Valores-limites para armaduras longitudinais de pilares").
+      A_s,mín é um MÁXIMO entre duas parcelas — a Norma escreve
+      "A_s,mín = (0,15 N_d/f_yd) >= 0,004 A_c", ou seja, a primeira parcela
+      calculada, com piso na segunda.
+      A_s,máx = 8 % de A_c deve considerar INCLUSIVE a sobreposição de armadura
+      na região de emenda: se a emenda de traspasse com a armadura de espera da
+      sapata for total na mesma seção (o que 9.5.2.1 AUTORIZA para armadura
+      permanentemente comprimida), a taxa fora da emenda fica na prática
+      limitada a 4 % de A_c. Essa é a restrição que costuma governar o pilarete.
+      NÃO DECLARADO NA FONTE: qual combinação de ações fornece o N_d de A_s,mín
+      (adotar a mais desfavorável é interpretação, não texto).
+      Remissão obrigatória a 18.4.2.2 (distribuição transversal).
+    leitura_visual:
+      passada_1: "página PDF 151 (impressa 133) inteira a 300 dpi"
+      passada_2: "recorte das duas expressões a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-18.4.3-espacamento-estribos-pilar
+    norma: "NBR 6118:2023"
+    item: "18.4.3"
+    pagina: 153
+    clausula_ref: NBR6118-18.4.3-armaduras-transversais-pilar
+    titulo: "Armadura transversal de pilares — diâmetro mínimo do estribo e espaçamento longitudinal máximo"
+    latex: "\\phi_t \\ge \\max(5\\ \\mathrm{mm},\\ \\phi/4) \\qquad s \\le \\min\\left(200\\ \\mathrm{mm},\\ b_{\\min},\\ k_\\phi\\,\\phi\\right)"
+    sympy: "[Ge(phi_t, Max(5, phi/4)), Le(s, Min(200, b_min, k_phi*phi))]"
+    k_phi_por_categoria_de_aco:
+      CA-25: 24
+      CA-50: 12
+      CA-60: "NAO_DECLARADO_NA_FONTE — o item lista apenas CA-25 e CA-50"
+    alternativa_estribo_fino:
+      condicao: "phi_t < phi/4, desde que as armaduras sejam constituídas do MESMO TIPO DE AÇO"
+      latex: "s_{\\max} = 90000\\left(\\dfrac{\\phi_t^2}{\\phi}\\right)\\dfrac{1}{f_{yk}}"
+      sympy: "Eq(s_max, 90000*(phi_t**2/phi)/f_yk)"
+      unidades: "f_yk em MPa; phi e phi_t na mesma unidade; s_max resultando em mm"
+      observacao: >-
+        Esta limitação é ADICIONAL ("respeite TAMBÉM"), não substitutiva: o
+        espaçamento continua sujeito ao mínimo entre 200 mm, b_mín e k_φ·φ.
+    variaveis:
+      phi_t: {descricao: "diâmetro do estribo", unidade: "mm", valor: null}
+      phi:   {descricao: "diâmetro da barra longitudinal isolada, ou diâmetro equivalente do feixe", unidade: "mm", valor: null}
+      s:     {descricao: "espaçamento longitudinal entre estribos, medido na direção do eixo do pilar", unidade: "mm", valor: null}
+      s_max: {descricao: "espaçamento máximo adicional quando se adota phi_t < phi/4", unidade: "mm", valor: null}
+      b_min: {descricao: "menor dimensão da seção transversal do pilar", unidade: "mm", valor: null}
+      f_yk:  {descricao: "resistência característica ao escoamento do aço", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Pilares de concreto armado dentro do campo de 18.4.1 (maior dimensão da
+      seção <= 5 × menor dimensão; fora disso é pilar-parede, 18.5).
+      LACUNA DO PRÓPRIO TEXTO NORMATIVO: o item dá k_φ para CA-25 e CA-50 e
+      NÃO dá para CA-60. Se o software aceitar CA-60 na armadura longitudinal
+      do pilarete, o espaçamento máximo fica NAO_DECLARADO_NA_FONTE e o a4 deve
+      recusar ou exigir entrada do engenheiro — não extrapolar.
+      A NOTA sobre redução de 50 % nos espaçamentos para concretos C55 a C90
+      (com ganchos de pelo menos 135°) é RECOMENDAÇÃO ("recomenda-se"), não
+      requisito: não pode virar verificação obrigatória no software.
+      Quando houver necessidade de armadura transversal para força cortante e
+      torção, comparar com os mínimos de 18.3 (vigas) e adotar o MENOR limite —
+      caso fora do escopo desta rodada (carga centrada, sem cortante no pilarete).
+    leitura_visual:
+      passada_1: "páginas PDF 171 e 172 (impressas 153 e 154) a 300 dpi"
+      passada_2: "recortes da região da expressão de s_max a 350 e 420 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF sugere um expoente 1/2 inexistente
+      ("90000 1 2 phi phi / f yk"). A leitura visual mostra a fração 1/f_yk
+      MULTIPLICANDO o parêntese (φ_t²/φ), sem raiz nenhuma. Registrado porque é
+      exatamente o tipo de erro que um parser silencioso introduziria.
+
+  - id: NBR6118-9.5.2.3-traspasse-comprimidas
+    norma: "NBR 6118:2023"
+    item: "9.5.2.3"
+    pagina: 44
+    clausula_ref: NBR6118-9.5.2.3-traspasse-comprimidas
+    titulo: "Comprimento de traspasse de barras COMPRIMIDAS, isoladas — dimensiona a armadura de espera do pilarete"
+    latex: "\\ell_{0c} = \\ell_{b,nec} \\ge \\ell_{0c,\\min} = \\max\\left(0{,}6\\,\\ell_b,\\; 15\\phi,\\; 200\\ \\mathrm{mm}\\right)"
+    sympy: "Eq(l_0c, Max(l_b_nec, 0.6*l_b, 15*phi, 200))"
+    variaveis:
+      l_0c:     {descricao: "comprimento de traspasse de barras comprimidas", unidade: "mm", valor: null}
+      l_b_nec:  {descricao: "comprimento de ancoragem necessário (9.4.2.5 — já extraído no acervo)", unidade: "mm", valor: null}
+      l_b:      {descricao: "comprimento de ancoragem básico (9.4.2.4 — já extraído no acervo)", unidade: "mm", valor: null}
+      phi:      {descricao: "diâmetro da barra emendada (a de MENOR diâmetro, por 9.5.2.1)", unidade: "mm", valor: null}
+    dominio_validade: >-
+      Barras COMPRIMIDAS isoladas, emendadas por traspasse, com bitola
+      phi <= 32 mm (9.5.2). É O ITEM QUE DIMENSIONA A EMENDA ENTRE A ARMADURA DE
+      ESPERA (ARRANQUE) QUE SAI DA SAPATA E A ARMADURA LONGITUDINAL DO PILARETE
+      no regime de compressão centrada desta rodada.
+      NÃO há coeficiente α_0t (a Tabela 9.4 só vale para barras TRACIONADAS,
+      por 9.5.2.2.1) — e por 9.5.2.1, tratando-se de armadura permanentemente
+      comprimida, TODAS as barras podem ser emendadas na mesma seção.
+      Depende de l_b (9.4.2.4) e l_b,nec (9.4.2.5), ambos JÁ no acervo, e por
+      cadeia de f_bd (9.3.2.1), η_1 (Tabela 8.2) e f_ctd (8.2.5) — também já no
+      acervo. Nenhuma reextração foi necessária.
+      Ver ainda 9.5.2.4.2: pelo menos uma barra de armadura transversal 4φ além
+      de cada extremidade da emenda, além dos critérios de 9.5.2.4.1.
+    leitura_visual:
+      passada_1: "página PDF 62 (impressa 44) a 300 dpi"
+      passada_2: "recorte da região da equação a 400 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-9.5.2.2.1-traspasse-tracionadas
+    norma: "NBR 6118:2023"
+    item: "9.5.2.2.1 e Tabela 9.4"
+    pagina: 43
+    clausula_ref: NBR6118-9.5.2.2.1-traspasse-tracionadas
+    titulo: "Comprimento de traspasse de barras TRACIONADAS, isoladas"
+    latex: "\\ell_{0t} = \\alpha_{0t}\\,\\ell_{b,nec} \\ge \\ell_{0t,\\min} = \\max\\left(0{,}3\\,\\alpha_{0t}\\,\\ell_b,\\; 15\\phi,\\; 200\\ \\mathrm{mm}\\right)"
+    sympy: "Eq(l_0t, Max(alpha_0t*l_b_nec, 0.3*alpha_0t*l_b, 15*phi, 200))"
+    tabela_9_4_alpha_0t:
+      barras_emendadas_na_mesma_secao_pct: ["<=20", 25, 33, 50, ">50"]
+      alpha_0t:                            [1.2, 1.4, 1.6, 1.8, 2.0]
+    variaveis:
+      l_0t:     {descricao: "comprimento de traspasse de barras tracionadas", unidade: "mm", valor: null}
+      alpha_0t: {descricao: "coeficiente função da porcentagem de barras emendadas na mesma seção (Tabela 9.4)", unidade: "adimensional", valor: null}
+      l_b_nec:  {descricao: "comprimento de ancoragem necessário (9.4.2.5)", unidade: "mm", valor: null}
+      l_b:      {descricao: "comprimento de ancoragem básico (9.4.2.4)", unidade: "mm", valor: null}
+      phi:      {descricao: "diâmetro da barra emendada", unidade: "mm", valor: null}
+    dominio_validade: >-
+      Barras TRACIONADAS isoladas, com distância livre entre barras emendadas
+      ENTRE 0 E 4φ. Se a distância livre for MAIOR que 4φ, 9.5.2.2.2 manda
+      ACRESCER essa distância ao comprimento calculado — condição geométrica que
+      o software precisa verificar, não pressupor.
+      FORA DO ESCOPO DESTA RODADA (carga centrada ⇒ armadura do pilarete
+      permanentemente comprimida ⇒ usar 9.5.2.3). Registrado porque é o item que
+      passa a valer assim que o escopo admitir inversão de esforço (vento,
+      excentricidade) e a armadura de espera puder tracionar.
+      Note que α_0t aparece DUAS vezes: multiplicando l_b,nec e dentro do piso
+      0,3·α_0t·l_b — erro fácil de cometer implementando.
+    leitura_visual:
+      passada_1: "páginas PDF 61 e 62 (impressas 43 e 44) a 300 dpi"
+      passada_2: "recortes da equação e da Tabela 9.4 a 400 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-7.4.7-cobrimento-nominal
+    norma: "NBR 6118:2023"
+    item: "7.4.7.1, 7.4.7.2, 7.4.7.5 e Tabela 7.2"
+    pagina: 19
+    clausula_ref: NBR6118-Tabela7.2-cobrimento-nominal
+    titulo: "Cobrimento nominal — critério de aceitação e valores da Tabela 7.2"
+    latex: "c_{nom} \\ge c_{min} + \\Delta c \\,,\\quad \\Delta c \\ge 10\\ \\mathrm{mm}\\,;\\qquad c_{nom} \\ge \\phi_{barra}"
+    sympy: "[Ge(c_nom, c_min + Delta_c), Ge(Delta_c, 10), Ge(c_nom, phi)]"
+    variaveis:
+      c_nom:   {descricao: "cobrimento nominal (o que vai no projeto e nos espaçadores)", unidade: "mm", valor: null}
+      c_min:   {descricao: "cobrimento mínimo — menor valor a respeitar ao longo de todo o elemento", unidade: "mm", valor: null}
+      Delta_c: {descricao: "tolerância de execução", unidade: "mm", valor: null}
+      phi:     {descricao: "diâmetro da barra (ou φ_n = φ√n para feixe; 0,5 φ_bainha para bainha)", unidade: "mm", valor: null}
+    tabela_7_2_cobrimento_nominal_mm:
+      nota: "para Δc = 10 mm; colunas = classes de agressividade ambiental I, II, III, IV (Tabela 6.1)"
+      concreto_armado:
+        laje:                                  {I: 20, II: 25, III: 35, IV: 45}
+        viga_pilar:                            {I: 25, II: 30, III: 40, IV: 50}
+        elementos_em_contato_com_o_solo:       {I: 30, II: 30, III: 40, IV: 50}
+      concreto_protendido:
+        laje:                                  {I: 25, II: 30, III: 40, IV: 50}
+        viga_pilar:                            {I: 30, II: 35, III: 45, IV: 55}
+      nota_de_rodape_d_GOVERNA_O_PILARETE: >-
+        "No trecho dos pilares em contato com o solo junto aos elementos de
+        fundação, a armadura deve ter cobrimento nominal >= 45 mm."
+        Piso ABSOLUTO de 45 mm, independente da classe de agressividade — mais
+        restritivo que a linha "Viga/pilar" nas classes I, II e III.
+    dominio_validade: >-
+      Concreto armado e protendido, classes de agressividade I a IV.
+      PARA O PILARETE DE FUNDAÇÃO o valor que governa é a NOTA DE RODAPÉ (d) da
+      Tabela 7.2: c_nom >= 45 mm no trecho em contato com o solo junto aos
+      elementos de fundação. O a2 precisa decidir explicitamente onde termina
+      "o trecho em contato com o solo" num pilarete parcialmente enterrado — a
+      Norma NÃO define essa fronteira (NAO_DECLARADO_NA_FONTE).
+      Na linha "Elementos estruturais em contato com o solo" as classes I e II
+      compartilham UMA ÚNICA CÉLULA de 30 mm — a extração de texto crua entrega
+      3 valores para 4 colunas e leva a pareamento errado.
+      A redução de 5 mm para concretos de classe superior à mínima exigida é
+      permitida ("podem ser reduzidos em até 5 mm"), não automática.
+      A redução para Δc = 5 mm (7.4.7.4) exige projeto conforme ABNT NBR 9062,
+      norma AUSENTE do acervo — fora do domínio implementável.
+      Os cobrimentos são referidos à ARMADURA EXTERNA, em geral a face externa
+      do ESTRIBO (7.4.7.5), não à barra longitudinal.
+    leitura_visual:
+      passada_1: "páginas PDF 37 e 38 (impressas 19 e 20) inteiras a 300 dpi"
+      passada_2: "recorte da Tabela 7.2 e das notas de rodapé a 450 dpi — conferida a célula mesclada I+II = 30 mm e a nota (d)"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false

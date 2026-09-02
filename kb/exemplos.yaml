@@ -150,3 +150,139 @@ exemplos:
     hash_de: "sha256(enunciado_transcrito, utf-8)"
     hash: "sha256:875768b06610dd7b4fba192acaf9a801e9398244ad7f41fcf704f2c3d24aed35"
     rodada: "2026-09-01 cunha de solo lateral"
+
+  # ===========================================================================
+  # RODADA 2026-09-02 — BACKLOG #13 (cadeia pilarete → sapata)
+  #
+  # BUSCA NEGATIVA DE EXEMPLOS: varridos os dois documentos do acervo que têm
+  # exercícios resolvidos (Sapatas.pdf, de Bastos, 119 p.; e Fundações Diretas,
+  # de Cintra/Aoki/Albiero). NENHUM dos dois dimensiona um pilarete/pedestal:
+  # em todos os exercícios o pilar é CONDIÇÃO DE CONTORNO da sapata (entra só
+  # com a_p × b_p e a bitola do arranque), nunca elemento a verificar.
+  # Não há, no acervo, um único exemplo resolvido de verificação à compressão,
+  # de armadura mínima ou de esbeltez de pilar. Isso é LACUNA REAL: o a7 não
+  # terá caso de conferência numérica de terceiros para o pilarete em si.
+  #
+  # O caso abaixo é o ÚNICO exercício do acervo que quantifica a INTERFACE
+  # pilar/sapata — e ele cobre exatamente o elo que o backlog #13 chama de
+  # "transferência de esforços do pilarete para a sapata" pelo lado da
+  # ancoragem do arranque.
+  # ===========================================================================
+
+  - id: BASTOS-ex1-ancoragem-arranque-governa-altura-da-sapata
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT.
+    item: "1.6.5.4 Exemplo 1 - Sapata Isolada Rigida Sob Carga Centrada"
+    pagina: "PDF 35 e 36 (impressas 31 e 32)"
+    clausula_ref: NBR6118-22.6.4.1.2-arranque
+    titulo: >-
+      Unico exercicio do acervo que quantifica a ancoragem do arranque do pilar
+      dentro da sapata - e nele a ANCORAGEM GOVERNA a altura adotada, nao o
+      criterio de rigidez
+    relevancia_para_a_rodada: >-
+      Backlog #13 pede a "transferencia de esforcos do pilarete para a sapata".
+      Este caso mostra o elo pelo lado da ANCORAGEM: h e escolhido em 70 cm nao
+      pelo criterio de rigidez (que so exigia 61,7 cm) mas para garantir
+      d > l_b da armadura do pilar. E o unico numero do acervo para conferir
+      esse acoplamento.
+
+    enunciado_transcrito: |
+      1.6.5.4 Exemplo 1 - Sapata Isolada Rigida Sob Carga Centrada
+      Dimensionar uma sapata de fundacao rasa para um pilar com secao transversal 20 x 80 cm, que transfere a sapata uma carga vertical centrada total de 1.250 kN (Nk = valor caracteristico), com armadura vertical no pilar composta por barras de 16 mm (phi_pil), tensao admissivel do solo (Padm) de 0,26 MPa (2,6 kgf/cm2) e:
+      - momentos fletores solicitantes externos inexistentes (Mx = My = 0);
+      - coeficientes de ponderacao: gamma_c = gamma_f = 1,4 ; gamma_s = 1,15;
+      - materiais: concreto C25, aco CA-50 (fyd = 43,48 kN/cm2);
+      - cobrimento de concreto: c = 4,0 cm.
+      [...]
+      A altura da sapata, supondo-a como rigida conforme a NBR 6118, deve atender (Eq. 1.1):
+      h >= (A - a_p)/3 = (265 - 80)/3 = 61,7 cm , e como cA = cB, nao e necessario verificar na direcao do lado B.
+      Para possibilitar a ancoragem da armadura longitudinal do pilar dentro do volume da sapata, a altura util d deve ser superior ao comprimento de ancoragem (l_b) da armadura do pilar: d > l_b (Figura 1.60). O comprimento de ancoragem, considerando regiao de boa aderencia, concreto C25, phi_pil = 16 mm e ancoragem com gancho, e l_b = 42 cm, conforme a Tabela A-7 anexa. Portanto, d > 42 cm. Adotando h = 70 cm, a sapata e classificada como rigida (> 61,7 cm), e para a altura util d pode-se considerar:
+      d = h - (c + 1) = h - (4,0 + 1,0) = h - 5 cm = 70 - 5 = 65 cm ; d = 65 cm > l_b = 42 cm  ok!
+      Nota de rodape 25: "A sapata deve ter altura suficiente para permitir a ancoragem da armadura de arranque." (NBR 6118, 22.6.4.1.2).
+      Nota de rodape 26: Porque as barras verticais dos pilares sao geralmente feitas com ganchos na extremidade, e apoiadas sobre as armaduras da base da sapata.
+
+    entradas:
+      pilar_ap_cm: 80
+      pilar_bp_cm: 20
+      N_k_kN: 1250
+      Mx: 0
+      My: 0
+      P_adm_MPa: 0.26
+      phi_arranque_mm: 16
+      concreto: "C25"
+      aco: "CA-50"
+      f_yd_kN_cm2: 43.48
+      cobrimento_cm: 4.0
+      gamma_c: 1.4
+      gamma_f: 1.4
+      gamma_s: 1.15
+      K_maj: 1.1
+      ancoragem: "regiao de BOA aderencia, com GANCHO"
+
+    saidas_esperadas:
+      S_sap_necessaria_cm2: 52885
+      B_calculado_cm: 201.9
+      B_adotado_cm: 205
+      A_adotado_cm: 265
+      S_sap_corrigida_cm2: 54325
+      cA_cm: 92.5
+      cB_cm: 92.5
+      h_minimo_por_rigidez_cm: 61.7
+      l_b_da_fonte_cm: 42
+      h_adotado_cm: 70
+      d_cm: 65
+      verificacao_ancoragem: "d = 65 cm > l_b = 42 cm"
+
+    hipoteses_do_autor:
+      - >-
+        O AUTOR CHAMA DE l_b O QUE E l_b,nec. O valor de 42 cm vem da Tabela A-7
+        da apostila JA COM o coeficiente de gancho aplicado (o proprio texto diz
+        "ancoragem com gancho"). Pela NBR 6118 9.4.2.4, l_b = (phi/4)(f_yd/f_bd)
+        e um comprimento BASICO, sem gancho; o fator alpha = 0,7 do gancho entra
+        em 9.4.2.5 (l_b,nec). CONFERENCIA ARITMETICA (derivacao deste extrator,
+        NAO da fonte, a ser refeita em Python deterministico pelo a4):
+        C25 -> f_ctk,inf = 0,7 . 0,3 . 25^(2/3) = 1,796 MPa ; f_ctd = 1,283 MPa ;
+        eta_1 = 2,25 (CA-50), eta_2 = 1,0 (boa aderencia), eta_3 = 1,0 (phi<32) ->
+        f_bd = 2,886 MPa ; f_yd = 434,8 MPa ; l_b = (16/4)(434,8/2,886) = 60,3 cm
+        (> 25 phi = 40 cm) ; com alpha = 0,7 e As,calc/As,ef = 1,0 ->
+        l_b,nec = 42,2 cm ~ 42 cm. FECHA com a fonte, o que CONFIRMA que os 42 cm
+        sao l_b,nec e nao l_b. Se o software comparar d com l_b (60,3 cm) em vez
+        de l_b,nec (42,2 cm), o resultado DIVERGE da fonte - e o a7 acusaria
+        falso positivo.
+      - >-
+        d = h - (c + 1): o autor desconta o cobrimento de 4 cm MAIS 1 cm, sem
+        declarar o que e o 1 cm (presumivelmente ~metade do diametro da armadura
+        de flexao da sapata). Arredondamento/hipotese de autor, nao regra
+        normativa.
+      - >-
+        "d > l_b" e leitura MAIS FORTE que o texto normativo. A NBR 6118
+        22.6.4.1.2 diz apenas "a sapata deve ter altura suficiente para permitir
+        a ancoragem da armadura de arranque" - nao fixa d > l_b,nec nem diz se a
+        comparacao e com h ou com d, nem se o gancho pode ser contado dentro da
+        altura util. A escolha de comparar com d (e nao com h) e do autor.
+      - >-
+        K_maj = 1,1 para peso proprio da sapata + solo (ver formula
+        BASTOS-1.6.3-eq1.6-1.7-Kmaj). Nao e valor normativo.
+      - >-
+        Cobrimento c = 4,0 cm. ATENCAO AO CONFRONTO COM A TABELA 7.2 DA NBR 6118:
+        para "elementos estruturais em contato com o solo" 40 mm corresponde a
+        classe de agressividade III; e a nota de rodape (d) exige c_nom >= 45 mm
+        no TRECHO DOS PILARES em contato com o solo junto aos elementos de
+        fundacao. A apostila nao declara classe de agressividade nem discute a
+        nota (d). Se o pilarete for verificado com este cobrimento, o software
+        deve acusar.
+      - >-
+        h = 70 cm nao vem de nenhum criterio fechado: e escolha do autor entre
+        o piso de rigidez (61,7 cm) e a folga de ancoragem. O software nao pode
+        reproduzir "70" sem uma regra de arredondamento declarada.
+
+    o_que_este_caso_NAO_cobre:
+      - "Nao dimensiona o pilar: nao ha verificacao de compressao, de A_s,min, de esbeltez nem de estribos do pilar."
+      - "Nao ha pilarete: o pilar 20x80 nasce acima da sapata, sem trecho intermediario e sem junta de concretagem."
+      - "Nao ha emenda por traspasse: o exercicio para na ancoragem do arranque, sem calcular l_0c (NBR 6118 9.5.2.3)."
+      - "Carga centrada e Mx = My = 0: nao exercita o momento minimo M_1d,min de 11.3.3.4.3."
+    status: AGUARDA_A2
+    rodada: "2026-09-02 backlog #13 pilarete"
