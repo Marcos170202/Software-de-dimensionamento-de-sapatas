@@ -441,14 +441,6 @@ class AppSapataCompleto(tk.Tk):
             # tanto para a mensagem "perfil mantido" quanto para o
             # `replace(...)` que grava o perfil novo — nunca lido de novo.
             solo_atual = self.formulario.ler_solo()
-            # D-04 do GATE 2, rodada 1 (a6): o TEXTO bruto de v_hf é
-            # capturado AQUI, antes de `preencher_solo` (mais abaixo)
-            # reescrever o campo com `solo_atual.hf` já formatado — que é
-            # `_float(v_hf.get(), 1.5)`, ou seja, campo em branco vira
-            # 1,5 m em silêncio. Usar esse default como base do Ramo B
-            # (divergência) inventaria proveniência que o usuário não
-            # digitou (mesma proibição de REQ-UI-CAMADA-02(b)).
-            texto_hf_antes_da_importacao = self.formulario.v_hf.get()
         except ValueError as erro:
             messagebox.showerror("Erro ao importar planilha", str(erro))
             return
@@ -552,13 +544,23 @@ class AppSapataCompleto(tk.Tk):
                 # mesma função: o que a importação faz ou deixa de fazer
                 # com dados da tela é dito no resumo, nunca em silêncio.
                 #
-                # D-04 do GATE 2, rodada 1 (a6): a guarda usa o TEXTO
-                # bruto capturado ANTES da importação (`_hf_valido`, a
-                # mesma função que `_derivar_solo_da_camada` usa) — não
-                # `solo_atual.hf`, que já veio com o default silencioso de
-                # 1,5 m se o campo estivesse em branco (derivar dessa cota
-                # fantasma inventaria proveniência, REQ-UI-CAMADA-02(b)).
-                hf_ramo_b = _hf_valido(texto_hf_antes_da_importacao)
+                # DEF-01 do GATE 2, rodada 3 (a6): a guarda usa o texto de
+                # `v_hf` DEPOIS de `preencher_solo` — ou seja, a cota que a
+                # tela vai efetivamente exibir ao final desta importação —
+                # não o texto de ANTES (regressão da rodada 2: um campo em
+                # branco antes de importar fazia `_hf_valido("")` devolver
+                # `None` e a comparação nunca rodava, mesmo que a tela
+                # acabasse mostrando "1,5" pós-`preencher_solo`, silêncio do
+                # lado INSEGURO). Isto NÃO é a mesma proibição de
+                # REQ-UI-CAMADA-02(b): aquela impede o Ramo A de GRAVAR
+                # `ultima_derivacao_de_camada` a partir do default silencioso
+                # de `ler_solo`, como se o usuário tivesse digitado aquele
+                # h_f; o Ramo B não grava proveniência nenhuma, só compara o
+                # que a tela tem contra a camada nova na cota que a tela de
+                # fato mostra. `_hf_valido` continua sendo a única guarda
+                # (mesma função que `_derivar_solo_da_camada` usa) — ainda
+                # recusa h_f <= 0 ou não numérico.
+                hf_ramo_b = _hf_valido(self.formulario.v_hf.get())
                 if hf_ramo_b is not None and perfil.camadas:
                     # D-03 do GATE 2, rodada 1 (a6): `_camada_e_abaixo_na`
                     # é o ÚNICO ponto que decide camada/abaixo_na — a

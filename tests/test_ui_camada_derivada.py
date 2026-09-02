@@ -810,10 +810,13 @@ def app_completo():
     app.destroy()
 
 
-def _planilha_pilar_e_perfil(caminho, camada_kwargs: dict):
+def _planilha_pilar_e_perfil(caminho, camada_kwargs: dict) -> None:
     """Monta um .xlsx com as duas abas (Pilar+cargas e Perfil geotécnico)
     que `_importar_excel` lê juntas — uma camada só, cujos phi/coesao/gamma
-    são parametrizáveis pelo teste."""
+    (e, desde o GATE 2 rodada 3, espessura/nível d'água) são
+    parametrizáveis pelo teste via `camada_kwargs` (defaults idênticos aos
+    já usados pelas rodadas 1/2 — nenhum teste existente muda de
+    comportamento)."""
     openpyxl = pytest.importorskip("openpyxl")
     from ui.completo import excel_import
 
@@ -826,11 +829,13 @@ def _planilha_pilar_e_perfil(caminho, camada_kwargs: dict):
     ws_perfil = livro.create_sheet(excel_import.ABA_PERFIL)
     ws_perfil.append(excel_import.CABECALHO_PERFIL)
     ws_perfil.append([
-        camada_kwargs.get("nome", "Camada importada"), "granular", 3.0,
+        camada_kwargs.get("nome", "Camada importada"), "granular",
+        camada_kwargs.get("espessura", 3.0),
         camada_kwargs.get("gamma_nat", 19.0),
         camada_kwargs.get("gamma_sat", 19.0),
         camada_kwargs.get("phi", 38.0), camada_kwargs.get("coesao", 0.0),
-        None, None, None, None, None, None])
+        None, None, None, None, None,
+        camada_kwargs.get("nivel_agua", None)])
     livro.save(str(caminho))
 
 
@@ -929,6 +934,194 @@ def test_importar_excel_ramo_b_sem_divergencia_nao_acrescenta_linha(
 
     mensagem = info.call_args[0][1]
     assert "ATENÇÃO — divergência" not in mensagem
+
+
+# -----------------------------------------------------------------------
+# DEF-01/DEF-02 do GATE 2, rodada 3 (backlog #12): a rodada 2 corrigiu D-04
+# capturando o texto de `v_hf` ANTES de `preencher_solo` reescrevê-lo — mas
+# isso é o próprio bug (regressão): com o campo em branco antes de
+# importar, o texto pré-importação é "" e `_hf_valido("")` devolve `None`,
+# silenciando a linha de divergência mesmo que a tela acabe mostrando
+# "1,5" (default de `ler_solo`) e a camada nova divirja fortemente dela —
+# silêncio do lado INSEGURO. Os quatro testes abaixo travam a correção
+# (ler `v_hf` DEPOIS de `preencher_solo`) e os quatro mutantes que o a6
+# plantou/confirmou na rodada 2.
+# -----------------------------------------------------------------------
+def test_importar_excel_ramo_b_hf_em_branco_compara_com_valor_pos_preenchimento(
+        app_completo, tmp_path):
+    """DEF-01: `v_hf` em BRANCO antes de importar (proveniência já
+    inválida = Ramo B) — a comparação de divergência tem de rodar contra a
+    cota que a tela efetivamente PASSA A MOSTRAR ao final da importação
+    (default silencioso de `ler_solo`, "1,5"), não contra o texto vazio de
+    antes. Reproduz o cenário do a6: tela γ=20/φ'=38/c'=10 (à mão) vs.
+    camada nova "Argila mole" em h_f=1,5 com γ=15/φ'=18/c'=2 — a mensagem
+    final TEM de conter a linha de divergência.
+
+    Mata MC2 (captura do texto de `v_hf` no momento errado: código da
+    rodada 2 lia o texto ANTES de `preencher_solo`, que aqui é ""; com o
+    fix, lê DEPOIS, que aqui é "1.5")."""
+    from unittest import mock as _mock
+
+    app = app_completo
+    formulario = app.formulario
+    formulario.v_hf.set("")
+    formulario.v_gamma_solo.set("20")
+    formulario.v_phi_solo.set("38")
+    formulario.v_coesao.set("10")
+    assert formulario.ultima_derivacao_de_camada is None
+
+    caminho = tmp_path / "perfil_argila_mole.xlsx"
+    _planilha_pilar_e_perfil(caminho, {
+        "nome": "Argila mole", "gamma_nat": 15.0, "gamma_sat": 15.0,
+        "phi": 18.0, "coesao": 2.0})
+
+    with _mock.patch("ui.completo.app.filedialog.askopenfilename",
+                     return_value=str(caminho)), \
+         _mock.patch("ui.completo.app.messagebox.showinfo") as info, \
+         _mock.patch("ui.completo.app.messagebox.showerror"):
+        app._importar_excel()
+
+    assert formulario.v_hf.get() == "1.5"   # default silencioso, agora na tela
+    # nenhum dos três campos da tela foi sobrescrito (Ramo B continua)
+    assert formulario.v_gamma_solo.get() == "20"
+    assert formulario.v_phi_solo.get() == "38"
+    assert formulario.v_coesao.get() == "10"
+
+    mensagem = info.call_args[0][1]
+    assert "ATENÇÃO — divergência" in mensagem
+    assert "Argila mole" in mensagem
+    assert "h_f = 1.5" in mensagem
+    assert "tela = 20" in mensagem and "= 15" in mensagem       # gamma
+    assert "tela = 38" in mensagem and "= 18" in mensagem       # phi
+    assert "tela = 10" in mensagem and "= 2" in mensagem        # coesao
+
+
+def test_importar_excel_ramo_b_hf_invalido_antes_de_importar_nao_compara(
+        app_completo, tmp_path):
+    """DEF-01/MC1: `v_hf` com texto EXPLICITAMENTE inválido (h_f <= 0,
+    "0") antes de importar. `ler_solo()` (chamado sobre esse texto ANTES
+    da importação) devolve `Solo.hf == 0.0` sem levantar exceção —
+    `_float` só aplica o default de 1,5 m para texto EM BRANCO, não para
+    "0" — e `preencher_solo` reescreve `v_hf` como "0" (o mesmo texto,
+    formatado). A guarda `_hf_valido` tem de continuar recusando essa
+    cota (h_f <= 0) mesmo lendo `v_hf` DEPOIS de `preencher_solo`.
+
+    Mata MC1 (mutante que troca `_hf_valido(v_hf.get())` por
+    `solo_atual.hf` cru, sem a guarda): aqui o texto pré- e
+    pós-importação COINCIDEM ("0" nos dois momentos), então MC2 sozinho
+    não pega este mutante — só a guarda de `_hf_valido` (ausente em MC1)
+    evita a comparação com h_f=0."""
+    from unittest import mock as _mock
+
+    app = app_completo
+    formulario = app.formulario
+    formulario.v_hf.set("0")
+    formulario.v_gamma_solo.set("99")   # bem diferente de qualquer camada
+    formulario.v_phi_solo.set("99")
+    formulario.v_coesao.set("99")
+    assert formulario.ultima_derivacao_de_camada is None
+
+    caminho = tmp_path / "perfil_qualquer.xlsx"
+    _planilha_pilar_e_perfil(caminho, {"nome": "Camada nova", "gamma_nat": 15.0,
+                                       "phi": 18.0, "coesao": 2.0})
+
+    with _mock.patch("ui.completo.app.filedialog.askopenfilename",
+                     return_value=str(caminho)), \
+         _mock.patch("ui.completo.app.messagebox.showinfo") as info, \
+         _mock.patch("ui.completo.app.messagebox.showerror"):
+        app._importar_excel()
+
+    assert formulario.v_hf.get() == "0"
+    mensagem = info.call_args[0][1]
+    assert "ATENÇÃO — divergência" not in mensagem
+
+
+def test_importar_excel_ramo_b_perfil_sem_camadas_nao_compara_nem_quebra(
+        app_completo, tmp_path):
+    """DEF-01/MC3: `PerfilGeotecnico` com `camadas == []`. A própria
+    `excel_import.importar_perfil_geotecnico` recusa uma aba sem NENHUMA
+    linha de dado (levanta `ValueError: nenhuma camada encontrada` —
+    `ui/completo/excel_import.py:482-483`), então esse caso concreto nunca
+    chega ao Ramo B por um arquivo .xlsx real; `importar_perfil_geotecnico`
+    é mockado para devolver o `PerfilGeotecnico` vazio diretamente,
+    isolando a guarda do app (defesa em profundidade: qualquer chamador
+    futuro de `_importar_excel` que devolva um perfil vazio não pode
+    quebrar `_importar_excel`, que tentaria `perfil.camada_em(hf)` — isso
+    levantaria `ValueError` num perfil sem camadas).
+
+    Mata MC3 (mutante que remove a guarda `and perfil.camadas` de `if
+    hf_ramo_b is not None and perfil.camadas:`)."""
+    from unittest import mock as _mock
+
+    app = app_completo
+    formulario = app.formulario
+    formulario.v_hf.set("1.5")
+    formulario.v_gamma_solo.set("20")
+    formulario.v_phi_solo.set("38")
+    formulario.v_coesao.set("10")
+    assert formulario.ultima_derivacao_de_camada is None
+
+    caminho = tmp_path / "perfil_vazio.xlsx"
+    _planilha_pilar_e_perfil(caminho, {})   # aba de pilar válida; a de
+                                             # perfil é ignorada (mockada)
+
+    from ui.completo import excel_import as excel_import_real
+    perfil_vazio = PerfilGeotecnico(camadas=[])
+
+    with _mock.patch("ui.completo.app.filedialog.askopenfilename",
+                     return_value=str(caminho)), \
+         _mock.patch("ui.completo.app.messagebox.showinfo") as info, \
+         _mock.patch("ui.completo.app.messagebox.showerror"), \
+         _mock.patch.object(excel_import_real, "importar_perfil_geotecnico",
+                            return_value=perfil_vazio):
+        app._importar_excel()   # não pode levantar exceção
+
+    assert formulario.v_gamma_solo.get() == "20"
+    assert formulario.v_phi_solo.get() == "38"
+    assert formulario.v_coesao.get() == "10"
+
+    mensagem = info.call_args[0][1]
+    assert "0 camada(s) importada(s)" in mensagem
+    assert "ATENÇÃO — divergência" not in mensagem
+
+
+def test_importar_excel_ramo_b_na_igual_hf_usa_gamma_nat_desempate_estrito(
+        app_completo, tmp_path):
+    """DEF-01/MC4: N.A. exatamente igual ao h_f final (pós-
+    `preencher_solo`) — pelo desempate normativo ÚNICO de
+    `_camada_e_abaixo_na` (mesmo usado por `_derivar_solo_da_camada`:
+    comparação ESTRITA `hf > nivel_agua`), h_f == N.A. conta como ACIMA do
+    N.A., logo a camada usa `gamma_nat` (17), não `gamma_sat` (23).
+
+    Mata MC4 (cópia inline do desempate com `>=` no lugar de `>`, que
+    deslocaria hf==N.A. para 'abaixo' e citaria `gamma_sat` na linha de
+    divergência em vez de `gamma_nat`)."""
+    from unittest import mock as _mock
+
+    app = app_completo
+    formulario = app.formulario
+    formulario.v_hf.set("1.5")
+    formulario.v_gamma_solo.set("50")   # diverge tanto de 17 quanto de 23
+    formulario.v_phi_solo.set("38")     # igual à camada — sem divergência
+    formulario.v_coesao.set("0")        # igual à camada — sem divergência
+    assert formulario.ultima_derivacao_de_camada is None
+
+    caminho = tmp_path / "perfil_na_no_hf.xlsx"
+    _planilha_pilar_e_perfil(caminho, {
+        "nome": "Camada com NA", "gamma_nat": 17.0, "gamma_sat": 23.0,
+        "phi": 38.0, "coesao": 0.0, "nivel_agua": 1.5})
+
+    with _mock.patch("ui.completo.app.filedialog.askopenfilename",
+                     return_value=str(caminho)), \
+         _mock.patch("ui.completo.app.messagebox.showinfo") as info, \
+         _mock.patch("ui.completo.app.messagebox.showerror"):
+        app._importar_excel()
+
+    mensagem = info.call_args[0][1]
+    assert "ATENÇÃO — divergência" in mensagem
+    assert "γ_solo: tela = 50" in mensagem
+    assert "= 17" in mensagem     # gamma_nat, desempate correto (hf == NA -> ACIMA)
+    assert "= 23" not in mensagem   # gamma_sat NUNCA deveria aparecer aqui
 
 
 def test_importar_excel_aba_ausente_ou_erro_nao_deriva_nem_toca_campos(
