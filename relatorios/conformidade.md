@@ -1076,3 +1076,68 @@ alteração de repositório por esta validação).
 Detalhe completo dos experimentos (inclusive os textos exatos capturados
 das mensagens/rótulos da UI) em `relatorios/revisao_codigo.md`, adendo
 "GATE 3, camada única de dados".
+
+## Adendo 2026-09-03 — GATE 3, V15 (η_c ausente no bloco retangular de
+## tensões, REQ-ETA-C-01), commit `2ac1033` — **APROVADO**
+
+Portão sobre `calc_core/sapata_isolada/materiais.py`/`sapata.py` — defeito
+do lado INSEGURO em código já em produção (armadura de flexão a menos e
+verificação de dutilidade `x/d ≤ ξ_limite` podendo passar quando devia
+reprovar, para f_ck > 40 MPa). GATE 2 (a6): nota 4,6, sem veto. Detalhe
+completo em `relatorios/revisao_codigo.md`, mesmo cabeçalho de data.
+
+```yaml
+id: NBR6118-8.2.10.1-eta-c-bloco-retangular
+fonte: "ABNT NBR 6118:2023, 17.2.2-e / 8.2.10.1, p. impressa 121/26 (não é exemplo de livro-texto — verificação de fórmula normativa)"
+hipoteses:
+  - "seção retangular, largura b_w constante da linha neutra à borda comprimida (1o ramo de 17.2.2-e; o ramo de 0,9 não é modelado)"
+casos_reproduzidos_independentemente:
+  - {fck: 30, faixa: "<=40 MPa (retrocompat)", As: 21.6925, unidade: "cm2/m", xd: 0.143836}
+  - {fck: 45, faixa: "40-50 MPa (faixa crítica, alpha_c/lambda ainda não reduziram mas eta_c já reduziu)", As: 44.5365, unidade: "cm2/m", xd: 0.204754}
+  - {fck: 90, faixa: ">50 MPa", As: 68.0366, unidade: "cm2/m", xd: 0.281498}
+tolerancia: "igualdade bit a bit (rel_tol=1e-9) contra reimplementação própria da fórmula, sem importar Concreto/Sapata"
+criticidade: ALTA  # lado inseguro, código em uso, escopo amplo
+```
+
+**Cenário de inversão de veredito, ponta a ponta** (não só a função
+isolada): `Sapata.dimensionar()` completo, C90, geometria imposta
+(pilar 0,40×0,40 m, base 3,00×3,00 m, `N_k` calculado para `Md=1500`
+kN·m/m em X) → pipeline devolve `Md=1500,00` kN·m/m (calculado por ele,
+não por mim), `d=0,44025` m, `x/d=0,3827`, `dominio_ok=False`. Recálculo
+manual sem η_c para o mesmo Md/d: `x/d=0,2804 ≤ 0,35` → "passaria". Com
+η_c: reprova. Par exato citado pelo a5/a6 (C90, d=0,45 m, bw=1,0 m,
+Md=1500 kN·m/m, via `_armadura_flexao_simples` isolada) reproduzido:
+`x/d=0,3634 ≈ 0,363`.
+
+**Retrocompatibilidade contra bibliografia** — `kb/exemplos.yaml >
+BASTOS-ex1-ancoragem-arranque-governa-altura-da-sapata` (C25, pilar
+80×20 cm, N_k=1250 kN, σ_adm=0,26 MPa) rodado via `dimensionar()`
+completo: `As_flexao` idêntico bit a bit (X: 10,9001 cm²; Y: 14,3962 cm²)
+entre o pipeline e a reimplementação independente com η_c=1,0 (exato para
+C25). Nota de método: a sapata sai RÍGIDA e `As_calc`/`As_adot` refletem
+o envelope com bielas de Blévot (22.6.3), não a flexão pura — daí a
+comparação ter sido feita no campo `As_flexao`, a saída crua da via que a
+correção do η_c efetivamente toca.
+
+**Continuidade em f_ck=40 MPa**: maior salto relativo de As entre
+39,5→40,0 MPa foi 0,10 %, caindo proporcionalmente com o passo até
+39,99→40,01 MPa (0,003 %) — sem descontinuidade em As nem em x/d.
+
+**Suíte completa**: `xvfb-run -a /usr/bin/python3.12 -m pytest -q` →
+**655 passed**, rodado nesta validação.
+
+**Defeito MÉDIA/E3 aberto pelo a6** (`sapata.py:719`, ramo `disc<0`):
+reproduzido de propósito (C90, h=0,30 m, momento muito acima da
+capacidade da seção) — confirmado que é defeito de MENSAGEM
+("x/d = 0,000 acima do limite" é autocontraditório), não de CORRETUDE:
+`dominio_ok=False`, `res.aprovado=False` e `res.reprovacoes` listam a
+falha explicitamente; nenhum número é apresentado como se a seção
+resistisse. Não bloqueante.
+
+**Veredito: APROVADO — GATE 3 fechado para V15/REQ-ETA-C-01.** Fórmula
+normativa reproduzida do zero e batendo byte a byte em três classes
+(uma de cada lado do limiar de 40 MPa mais a faixa crítica 40-50);
+inversão de veredito confirmada ponta a ponta via `dimensionar()`;
+retrocompatibilidade exata contra exemplo de bibliografia já usado em
+rodadas anteriores; continuidade numérica confirmada; suíte verde.
+Detalhe completo em `relatorios/revisao_codigo.md`, adendo "GATE 3, V15".

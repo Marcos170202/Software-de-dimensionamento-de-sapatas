@@ -1389,3 +1389,145 @@ duas vezes pelo a6, sob Xvfb/`python3.12`).
 
 **Próximo passo:** a7-validador (GATE 3), sobre a superfície de flexão do
 motor amplo — não o motor inteiro.
+
+## Adendo 2026-09-03 — GATE 3, V15 (η_c ausente no bloco retangular de
+## tensões, REQ-ETA-C-01), commit `2ac1033` — **APROVADO**
+
+Portão sobre `calc_core/sapata_isolada/materiais.py::Concreto.eta_c` /
+`sigma_cd_bloco` e `sapata.py::_armadura_flexao_simples`. GATE 2 (a6)
+fechou na rodada 1, nota 4,6, sem veto (adendo anterior, mesmo arquivo).
+Validação **independente** — reprodução própria, não releitura do relato
+do a5/a6, com script em Python rodado por este agente
+(`/usr/bin/python3.12`, fora da suíte versionada).
+
+### 1. Reimplementação independente de 17.2.2-e/8.2.10.1 (3 classes)
+
+Reconstruí a fórmula do zero (α_c, η_c, λ, σ_cd = α_c·η_c·f_cd, equação
+quadrática de equilíbrio do bloco retangular) sem importar `Concreto`/
+`Sapata`, e comparei contra `_armadura_flexao_simples`:
+
+| classe | η_c | As independente | As código | x/d independente | x/d código |
+|---|---|---|---|---|---|
+| C30 (≤40 MPa) | 1,000000 | 21,6925 cm²/m | 21,6925 cm²/m | 0,143836 | 0,143836 |
+| C45 (faixa crítica 40-50) | 0,961500 | 44,5365 cm²/m | 44,5365 cm²/m | 0,204754 | 0,204754 |
+| C90 (>50 MPa) | 0,763143 | 68,0366 cm²/m | 68,0366 cm²/m | 0,281498 | 0,281498 |
+
+Igualdade bit a bit (`rel_tol=1e-9`) nas três classes, inclusive na faixa
+40-50 MPa onde α_c e λ ainda não reduziram mas η_c já reduziu — a faixa
+que um código "≤C50/>C50" erraria em silêncio (achado C2 do a2, v11).
+
+### 2. Cenário de inversão de veredito, `dimensionar()` de ponta a ponta
+
+Não me limitei a rechamar `_armadura_flexao_simples` isolada (o que o a5/
+a6 já fizeram). Montei uma sapata C90 com geometria imposta
+(`GeometriaImposta`, `modelo_armadura_rigida="flexao"`, pilar 0,40×0,40 m,
+base 3,00×3,00 m, `N_k` calculado para que o momento por metro na direção
+X saísse em 1500 kN·m/m) e rodei `Sapata.dimensionar()` completo:
+
+- `Md` calculado pelo pipeline (não escolhido por mim): 4500,00 kN·m
+  totais / 3,00 m de largura = **1500,00 kN·m/m**, exatamente o alvo.
+- `d` efetivamente usado pelo pipeline: 0,44025 m (o valor de 0,45 m que
+  eu tinha como alvo se desvia ligeiramente porque `dimensionar()`
+  recalcula `d` com a bitola escolhida na 1ª passada — efeito real do
+  pipeline, não um erro meu).
+- `x/d` devolvido pelo `ResultadoSapata` = **0,3827**, `dominio_ok =
+  False` — bate byte a byte (`rel_tol=1e-6`) com uma segunda
+  reimplementação independente minha usando esse `Md`/`d` exatos.
+- Recalculando à mão a fórmula **sem** η_c (o bug antigo) para o mesmo
+  `Md`/`d`: `x/d = 0,2804 ≤ 0,35` → "PASSA". Com η_c (pipeline atual):
+  `x/d = 0,3827 > 0,35` → REPROVA. **Inversão de veredito confirmada
+  ponta a ponta**, não só na função isolada.
+- Também reproduzi o par exato citado pelo a5/a6 (C90, `d=0,45` m,
+  `bw=1,0` m, `Md=1500` kN·m/m) chamando `_armadura_flexao_simples`
+  isolada: `x/d = 0,3634 ≈ 0,363`, confirmando o número relatado.
+
+Durante esta reprodução eu mesmo cometi um bug de script (variável de
+laço `bw` reaproveitada como nome global, mascarando o parâmetro `bw_m`
+da minha função de referência) que produzia um discriminante negativo
+espúrio. Registro isso aqui porque é exatamente o tipo de erro que este
+processo existe para pegar — e pegou, no meu próprio código de teste, não
+no software: identificado, corrigido, e a reprodução refeita antes de
+aceitar o resultado.
+
+### 3. Retrocompatibilidade contra exemplo de bibliografia (Bastos ex.1)
+
+Rodei `kb/exemplos.yaml > BASTOS-ex1-ancoragem-arranque-governa-altura-da-
+sapata` (pilar 80×20 cm, `N_k=1250` kN, `σ_adm=0,26` MPa, **C25** ≤40 MPa,
+CA-50, cobrimento 4,0 cm) através de `Sapata.dimensionar()` completo,
+sem geometria imposta (dimensionamento automático, como no exercício).
+
+Achado de método, não de defeito: a sapata sai classificada como RÍGIDA
+(`classificacao.rigida_nbr = True`), e nesse regime `dimensionar()`
+combina flexão com o modelo de bielas de Blévot (`22.6.3`) — o campo
+`As_calc`/`As_adot` reflete esse envelope, não a flexão pura. A correção
+do η_c só toca a via de flexão (`bielas.py` usa α_v2, confirmado
+intocado pelo a6). Comparei então contra o campo `As_flexao` (saída crua
+de `_armadura_flexao_simples`, antes do envelope):
+
+| direção | Md (kN·m) | As_flexao pipeline | As_flexao referência (η_c=1) | x/d pipeline | x/d referência |
+|---|---|---|---|---|---|
+| X | 282,518 | 10,9001 cm² | 10,9001 cm² | 0,031533 | 0,031533 |
+| Y | 365,206 | 14,3962 cm² | 14,3962 cm² | 0,032899 | 0,032899 |
+
+`Concreto(25.0).eta_c == 1.0` exatamente. Igualdade bit a bit
+(`rel_tol=1e-9`) — o exemplo bibliográfico usado em rodadas anteriores do
+a1/a2 não muda em nada com a correção, confirmando retrocompatibilidade
+com um caso real, não só com a fórmula genérica.
+
+### 4. Continuidade numérica em torno de f_ck = 40 MPa
+
+Para uma seção fixa (Md=500 kN·m, bw=1,0 m, d=0,40 m), variando f_ck em
+passos decrescentes ao redor do limiar (39,5→40,0 ; 40,0→40,5 ; 39,9→40,1
+; 39,99→40,01): maior salto relativo em As foi 0,10 % e em x/d foi
+0,0024 (passo de 0,5 MPa) — caindo proporcionalmente com o passo, sem
+descontinuidade. `η_c` é contínua no limiar por construção
+((40/40)^(1/3) = 1,0 = valor do outro ramo no mesmo ponto); confirmado
+aqui que essa continuidade se propaga a As e x/d, não só à propriedade
+isolada.
+
+### 5. Suíte completa
+
+`xvfb-run -a /usr/bin/python3.12 -m pytest -q` → **655 passed**, rodado
+por mim nesta validação (não reaproveitando o número relatado pelo a5/
+a6). `git status --short` limpo antes e depois — nenhuma alteração de
+repositório por esta validação.
+
+### 6. Defeito MÉDIA/E3 aberto pelo a6 (`sapata.py:719`, ramo `disc<0`)
+
+Confirmado como problema de MENSAGEM/COBERTURA, não de CORRETUDE.
+Reproduzi o ramo `disc<0` de propósito (seção C90, `h=0,30` m, momento
+muito acima da capacidade de compressão da seção) via `dimensionar()`
+completo:
+
+- `ar.x_d` reportado = `0,000` (o `inf` interno é mascarado para `0,0` na
+  saída), e a mensagem final diz *"Direção X: x/d = 0,000 acima do limite
+  de ductilidade"* — autocontraditória em texto, como o a6 já apontara.
+- Mas `ar.dominio_ok = False`, `res.aprovado = False`, e
+  `res.reprovacoes` **contém** a linha acima, junto com as reprovações de
+  punção e ancoragem. `As_adot` cai para o mínimo normativo (23,04 cm²)
+  — um valor real e definido, mas exibido ao lado de um veredito
+  explícito de REPROVAÇÃO, não como se a seção resistisse.
+
+Ou seja: nenhum número é apresentado como confiável quando `disc<0`
+ocorre de fato — o software nunca aprova essa seção, apenas erra o texto
+de uma mensagem dentro de uma lista de reprovações que já está correta em
+substância. Não bloqueia o GATE 3 (é qualidade de mensagem e cobertura de
+teste, não segurança numérica); mantenho a recomendação do a6 de um
+sinalizador próprio ("seção insuficiente à compressão", com `M_lim`
+explícito) para uma rodada futura de polimento, com teste de cobertura
+dedicado.
+
+### Veredito — GATE 3
+
+**APROVADO.** Fórmula normativa reproduzida do zero e batendo byte a
+byte em 3 classes (uma de cada lado do limiar de 40 MPa e uma na faixa
+crítica 40-50); cenário de inversão de veredito confirmado ponta a ponta
+via `dimensionar()`, não só na função isolada; retrocompatibilidade
+exata confirmada contra um exemplo de bibliografia já usado em rodadas
+anteriores (Bastos ex.1); continuidade numérica em torno de f_ck=40 MPa
+confirmada em As e x/d, não só em η_c; suíte completa verde (655 passed)
+rodada por mim; defeito MÉDIA/E3 aberto confirmado como não afetando
+corretude — o software nunca aprova uma seção que não resiste, mesmo
+quando a mensagem que descreve a reprovação está errada. Detalhe
+completo (incluindo o script de reprodução) também referenciado em
+`relatorios/conformidade.md`, mesmo adendo.
