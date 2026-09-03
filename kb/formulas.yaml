@@ -2270,3 +2270,485 @@ formulas:
       divergencia: false
     status: FORA_DO_ESCOPO_DESTA_RODADA
     alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  # ===========================================================================
+  # RODADA 2026-09-03 (d) — backlog #13, rodada 4: ELU DE FORÇA CORTANTE
+  # do pilarete. NBR 6118:2023, §17.4 (elementos lineares) + §18.3.3.2
+  # (detalhamento da armadura transversal para cortante) + Emenda 1:2026.
+  #
+  # LEIA ANTES DE USAR QUALQUER FÓRMULA DESTE BLOCO:
+  #
+  #   (1) §17.4 NÃO É §19.4 NEM §19.5. O motor amplo (sapata) usa
+  #       tau_Rd2 = 0,27·alfa_v·f_cd de 19.5.3.1, que é uma TENSÃO em perímetro
+  #       crítico. Aqui V_Rd2 = 0,27·alfa_v2·f_cd·b_w·d é uma FORÇA em b_w·d.
+  #       Mesmo coeficiente 0,27, grandezas diferentes, itens diferentes,
+  #       símbolos diferentes (alfa_v x alfa_v2). Ver a cláusula
+  #       NBR6118-DELIMITACAO-17.4-vs-19.4-19.5.
+  #
+  #   (2) A NORMA OFERECE DOIS MODELOS E NÃO ESCOLHE. Modelo I (17.4.2.2) tem
+  #       theta = 45° fixo. Modelo II (17.4.2.3) tem theta "variável livremente
+  #       entre 30° e 45°" — ESCOLHA DO PROJETISTA. theta é ENTRADA DECLARADA,
+  #       nunca inferida pelo software (mesma doutrina de ell_e). O mesmo vale
+  #       para a escolha entre os dois modelos.
+  #
+  #   (3) TODAS AS EQUAÇÕES DESTE BLOCO PERDEM SEUS COEFICIENTES na camada de
+  #       texto do PDF: 0,27 / 0,54 / 0,6 / 0,9 / 0,2 / 0,67 / 300 mm / 200 mm
+  #       simplesmente não aparecem no texto decodificado. Todas foram lidas
+  #       VISUALMENTE em duas passadas independentes.
+  # ===========================================================================
+
+  - id: NBR6118-17.4.1.1.1-rho-sw-min
+    norma: "NBR 6118:2023"
+    item: "17.4.1.1.1"
+    pagina: 134
+    clausula_ref: NBR6118-17.4.1.1.1-armadura-transversal-minima
+    titulo: "Taxa geométrica MÍNIMA de armadura transversal por RESISTÊNCIA ao cortante"
+    latex: "\\rho_{sw} = \\dfrac{A_{sw}}{b_w\\,s\\,\\operatorname{sen}\\alpha} \\ge 0{,}2\\,\\dfrac{f_{ct,m}}{f_{ywk}}"
+    sympy: "Ge(A_sw/(b_w*s*sin(alpha)), 0.2*f_ct_m/f_ywk)"
+    variaveis:
+      rho_sw:  {descricao: "taxa geométrica da armadura transversal", unidade: "adimensional", valor: null}
+      A_sw:    {descricao: "área da seção transversal dos estribos", unidade: "cm2", valor: null}
+      b_w:     {descricao: "largura média da alma, medida ao longo da altura útil da seção, respeitada a restrição de 17.4.1.1.2", unidade: "cm", valor: null}
+      s:       {descricao: "espaçamento dos estribos, medido segundo o eixo longitudinal do elemento estrutural", unidade: "cm", valor: null}
+      alpha:   {descricao: "inclinação dos estribos em relação ao eixo longitudinal do elemento estrutural; 45° <= alpha <= 90° por 17.4.1.1.5", unidade: "grau", valor: null}
+      f_ct_m:  {descricao: "resistência média à tração do concreto, dada em 8.2.5 (= 0,3 f_ck^(2/3) para f_ck <= 50 MPa)", unidade: "MPa", valor: null}
+      f_ywk:   {descricao: "resistência característica ao escoamento do aço da armadura transversal", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Todos os elementos lineares submetidos a força cortante, COM EXCEÇÃO dos
+      três casos de 17.4.1.1.2 — e o terceiro deles é justamente "os pilares e
+      elementos lineares de fundação submetidos predominantemente à compressão"
+      que atendam, simultaneamente, a (i) não ultrapassar f_ctk em nenhum ponto,
+      com a seção calculada em ESTÁDIO I e na combinação mais desfavorável em
+      ELU, e (ii) V_Sd <= V_c, com V_c de 17.4.2.2. Atendidas as duas, "a
+      armadura transversal mínima é a definida na Seção 18".
+      NÃO CONFUNDIR COM 18.4.3: esta é uma TAXA (área por comprimento); 18.4.3 é
+      DIÂMETRO e ESPAÇAMENTO. São exigências DISTINTAS e COMPLEMENTARES, não
+      duplicadas. Quem resolve a sobreposição é o próprio texto: 18.4.3 manda
+      comparar com os mínimos de 18.3 "adotando-se o MENOR dos limites" quando
+      há necessidade de armadura para cortante.
+      Unidades: f_ct,m e f_ywk na MESMA unidade (rho_sw é adimensional). A
+      Norma não declara a unidade; a fonte secundária Bastos usa MPa nas duas.
+      NÃO_DECLARADO_NA_FONTE: qual f_ctk (inf ou sup) usar na condição (i) de
+      17.4.1.1.2-c) — 8.2.5 define f_ctk,inf e f_ctk,sup, e a diferença entre
+      os dois é de 86 %.
+    leitura_visual:
+      passada_1: "página PDF 152 (impressa 134) inteira a 300 dpi"
+      passada_2: "recorte da equação a 520 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-resto-de-17.4-e-18.3.3
+    observacao: >-
+      A camada de texto devolve a equação embaralhada — "rho alpha sw sw w ct,m
+      ywk = >= A b s sen f f 0 2 ," — na qual o "0,2" aparece partido em "0 2" e
+      o operador ">=" precede a fração. Um parser silencioso poderia produzir
+      0,02 (dez vezes menor, lado INSEGURO) ou inverter a desigualdade. A
+      leitura visual confirma: 0,2 (dois décimos), sinal >=, sen(alpha) NO
+      DENOMINADOR.
+
+  - id: NBR6118-17.4.2.1-condicoes-VRd2-VRd3
+    norma: "NBR 6118:2023"
+    item: "17.4.2.1"
+    pagina: 136
+    clausula_ref: NBR6118-17.4.2.1-condicoes-do-ELU-de-cortante
+    titulo: "As duas condições SIMULTÂNEAS do ELU de força cortante em elemento linear"
+    latex: "V_{Sd} \\le V_{Rd2} \\quad \\text{e} \\quad V_{Sd} \\le V_{Rd3} = V_c + V_{sw}"
+    sympy: "[Le(V_Sd, V_Rd2), Le(V_Sd, V_Rd3), Eq(V_Rd3, V_c + V_sw)]"
+    variaveis:
+      V_Sd:  {descricao: "força cortante solicitante de cálculo, na seção", unidade: "kN", valor: null}
+      V_Rd2: {descricao: "força cortante resistente de cálculo relativa à ruína das diagonais comprimidas de concreto (biela); modelo I ou II", unidade: "kN", valor: null}
+      V_Rd3: {descricao: "força cortante resistente de cálculo relativa à ruína por tração diagonal", unidade: "kN", valor: null}
+      V_c:   {descricao: "parcela de força cortante absorvida por mecanismos complementares ao da treliça", unidade: "kN", valor: null}
+      V_sw:  {descricao: "parcela resistida pela armadura transversal", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Verificação POR SEÇÃO TRANSVERSAL, não por elemento. As duas condições são
+      CUMULATIVAS: falhar em uma reprova. Na região dos apoios os cálculos devem
+      considerar as forças cortantes nas respectivas faces, com as reduções de
+      17.4.1.2.1 — reduções que são FACULTATIVAS, válidas só em apoio direto e
+      PROIBIDAS na verificação da compressão diagonal (V_Rd2).
+      V_Rd2 e V_Rd3 dependem do MODELO (17.4.2.2 ou 17.4.2.3) — a Norma oferece
+      os dois e não escolhe.
+    leitura_visual:
+      passada_1: "página PDF 154 (impressa 136) inteira a 300 dpi"
+      passada_2: "recorte da região das duas condições a 480 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.2-modelo-I-VRd2
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-a)"
+    pagina: 136
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — verificação da compressão diagonal do concreto (biela)"
+    latex: "V_{Rd2} = 0{,}27\\,\\alpha_{v2}\\,f_{cd}\\,b_w\\,d \\qquad \\alpha_{v2} = \\left(1 - \\dfrac{f_{ck}}{250}\\right)"
+    sympy: "[Eq(V_Rd2, 0.27*alpha_v2*f_cd*b_w*d), Eq(alpha_v2, 1 - f_ck/250)]"
+    variaveis:
+      V_Rd2:    {descricao: "força cortante resistente de cálculo relativa à ruína da biela comprimida", unidade: "kN", valor: null}
+      alpha_v2: {descricao: "coeficiente de efetividade do concreto fissurado ao cisalhamento", unidade: "adimensional", valor: null}
+      f_cd:     {descricao: "resistência de cálculo à compressão do concreto (12.3.3)", unidade: "kN/cm2 (consistente com b_w e d em cm)", valor: null}
+      f_ck:     {descricao: "resistência característica à compressão do concreto — NA EXPRESSÃO DE alpha_v2 É OBRIGATORIAMENTE EM MPa", unidade: "MPa", valor: null}
+      b_w:      {descricao: "menor largura da seção, compreendida ao longo da altura útil d", unidade: "cm", valor: null}
+      d:        {descricao: "altura útil da seção, igual à distância da borda comprimida ao CENTROIDE (redação da Emenda 1:2026; 'centro de gravidade' em 2023) da armadura de tração", unidade: "cm", valor: null}
+    dominio_validade: >-
+      Elementos lineares (14.4.1). Modelo I: theta = 45° FIXO — não há escolha de
+      theta neste modelo. NENHUMA DEPENDÊNCIA DE FORÇA NORMAL: N não entra em
+      V_Rd2. A força normal só age na parcela V_c (ver
+      NBR6118-17.4.2.2-modelo-I-Vc).
+      As reduções de V_Sd de 17.4.1.2.1 NÃO se aplicam a esta verificação — é
+      texto expresso da Norma.
+      ARMADILHA DE UNIDADE: f_ck entra em MPa dentro de alpha_v2 e f_cd entra na
+      unidade coerente com b_w·d. Misturar as duas é o erro clássico.
+      NÃO CONFUNDIR com tau_Rd2 = 0,27·alpha_v·f_cd de 19.5.3.1 (punção de laje):
+      lá é TENSÃO em perímetro crítico, aqui é FORÇA em b_w·d, e o símbolo do
+      coeficiente é alpha_v (sem o 2).
+    contraprova_externa: >-
+      BASTOS, Sapatas.pdf, Tabela A-4 (p. impressa 111): V_Rd2 = 0,35·b_w·d [kN,
+      cm] para C20. Conferência: 0,27 × (1 − 20/250) × (2,0/1,4) = 0,3549 —
+      fecha. E o exemplo numérico da p. impressa 85: b_w = 35 cm, d = 70 cm,
+      C20 -> V_Rd2 = 857,5 kN. Ver kb/exemplos.yaml,
+      BASTOS-1.13-viga-alavanca-cortante-modelo-I. É FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "página PDF 154 (impressa 136) inteira a 300 dpi"
+      passada_2: "recorte da equação no rodapé da página a 480 dpi, mais o recorte da definição de alpha_v2 no topo da página PDF 155 a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true    # só a designação de d ("centroide"); sem efeito numérico
+    emenda1_ref: NBR6118-Em1-17.4.2.2-d-centroide
+
+  - id: NBR6118-17.4.2.2-modelo-I-Vsw
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-b)"
+    pagina: 137
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — parcela resistida pela armadura transversal"
+    latex: "V_{sw} = \\dfrac{A_{sw}}{s}\\,0{,}9\\,d\\,f_{ywd}\\,(\\operatorname{sen}\\alpha + \\cos\\alpha)"
+    sympy: "Eq(V_sw, (A_sw/s)*0.9*d*f_ywd*(sin(alpha) + cos(alpha)))"
+    variaveis:
+      V_sw:  {descricao: "parcela da força cortante resistida pela armadura transversal", unidade: "kN", valor: null}
+      A_sw:  {descricao: "área da seção transversal dos estribos (soma dos ramos)", unidade: "cm2", valor: null}
+      s:     {descricao: "espaçamento entre elementos da armadura transversal, medido segundo o eixo longitudinal", unidade: "cm", valor: null}
+      d:     {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      f_ywd: {descricao: "tensão na armadura transversal passiva; limitada a f_yd para estribos e a 70 % de f_yd para barras dobradas, NUNCA superior a 435 MPa", unidade: "kN/cm2", valor: null}
+      alpha: {descricao: "ângulo de inclinação da armadura transversal em relação ao eixo longitudinal; 45° <= alpha <= 90°", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Modelo I. Estribo vertical: alpha = 90°, sen = 1, cos = 0, e a expressão
+      degenera em V_sw = (A_sw/s)·0,9·d·f_ywd.
+      TETO DE 435 MPa em f_ywd: governa CA-60 (f_yd = 521,7 MPa) e NÃO governa
+      CA-50 (f_yd = 434,8 MPa). Implementar o teto é obrigatório — omiti-lo é
+      erro do lado INSEGURO em CA-60.
+      O braço 0,9·d é FIXO na expressão da Norma; não é z calculado da seção.
+      No caso de armadura transversal ATIVA há regra própria (acréscimo de tensão
+      limitado a f_pyd menos a tensão de protensão e a 435 MPa) — FORA DO ESCOPO
+      do pilarete, que é armado.
+    contraprova_externa: >-
+      BASTOS, Tabela A-4 (p. impressa 111), forma invertida para C20:
+      A_sw = 2,55·V_Sd/d − 0,17·b_w [cm2/m, kN, cm], que já embute V_c0 e o
+      estribo vertical. Exemplo numérico p. impressa 86: V_Sd = 574,4 kN,
+      d = 70 cm, b_w = 35 cm -> A_sw = 14,97 cm2/m. FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "página PDF 155 (impressa 137) inteira a 300 dpi"
+      passada_2: "recorte do bloco de equações a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.2-modelo-I-Vc
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-b), designações de V_c, V_c0, f_ctd e M_0"
+    pagina: "137-138"
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — parcela complementar V_c e a ÚNICA interação N–V que a NBR 6118 escreve para §17.4"
+    latex: "V_{c0} = 0{,}6\\,f_{ctd}\\,b_w\\,d \\qquad f_{ctd} = \\dfrac{f_{ctk,inf}}{\\gamma_c} \\qquad V_c = V_{c0}\\left(1 + \\dfrac{M_0}{M_{Sd,\\max}}\\right) \\le 2\\,V_{c0} \\quad (\\text{flexo-compressão}) \\qquad M_0 = P_d\\left(\\dfrac{W_1}{A_c} + e_p\\right) + N_{Sd}\\left(\\dfrac{W_1}{A_c}\\right)"
+    sympy: "[Eq(V_c0, 0.6*f_ctd*b_w*d), Eq(f_ctd, f_ctk_inf/gamma_c), Eq(V_c, Min(V_c0*(1 + M_0/M_Sd_max), 2*V_c0)), Eq(M_0, P_d*(W_1/A_c + e_p) + N_Sd*(W_1/A_c))]"
+    casos_de_V_c:
+      tracionado_LN_fora_da_secao: "V_c = 0"
+      flexao_simples_e_flexo_tracao_com_LN_cortando_a_secao: "V_c = V_c0"
+      flexo_compressao: "V_c = V_c0 (1 + M_0/M_Sd,máx) <= 2 V_c0"
+    variaveis:
+      V_c:       {descricao: "parcela de força cortante absorvida por mecanismos complementares ao da treliça", unidade: "kN", valor: null}
+      V_c0:      {descricao: "valor de referência de V_c", unidade: "kN", valor: null}
+      f_ctd:     {descricao: "resistência de cálculo do concreto à tração", unidade: "kN/cm2", valor: null}
+      f_ctk_inf: {descricao: "resistência característica inferior à tração (8.2.5: 0,7 f_ct,m)", unidade: "MPa", valor: null}
+      gamma_c:   {descricao: "coeficiente de ponderação da resistência do concreto (12.4.1)", unidade: "adimensional", valor: null}
+      b_w:       {descricao: "menor largura da seção ao longo da altura útil d", unidade: "cm", valor: null}
+      d:         {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      M_0:       {descricao: "momento fletor que ANULA a tensão normal de compressão na borda da seção tracionada por M_Sd,máx", unidade: "kN.cm", valor: null}
+      M_Sd_max:  {descricao: "momento fletor de cálculo máximo na seção em análise (alternativa: na seção de maior M_Sd,máx do semitramo)", unidade: "kN.cm", valor: null}
+      P_d:       {descricao: "força de protensão de cálculo — ZERO em concreto armado", unidade: "kN", valor: 0}
+      e_p:       {descricao: "excentricidade do cabo de protensão", unidade: "cm", valor: null}
+      N_Sd:      {descricao: "força normal concomitante com V_Sd; a tensão que M_0 anula é calculada com gamma_f = 1,0 (e gamma_p = 0,9)", unidade: "kN", valor: null}
+      W_1:       {descricao: "módulo de resistência na fibra mais tracionada", unidade: "cm3", valor: null}
+      A_c:       {descricao: "área da seção transversal de concreto", unidade: "cm2", valor: null}
+    dominio_validade: >-
+      ESTA É A RESPOSTA AO ITEM 4 DA RODADA (interação N–V). A NBR 6118:2023 TEM,
+      SIM, efeito explícito da força normal de compressão sobre a resistência ao
+      cortante em §17.4, e ele é EXATAMENTE UM: a majoração da parcela V_c, com
+      TETO em 2·V_c0. Não há qualquer efeito de N sobre V_Rd2 (a biela).
+      PARA O PILARETE (concreto armado, sem protensão) P_d = 0 e
+      M_0 = N_Sd·W_1/A_c.
+      TRÊS ARMADILHAS, todas do texto da própria Norma:
+        (a) A tensão que M_0 anula é calculada "com valores de gamma_f e gamma_p
+            iguais a 1,0 e 0,9, respectivamente". Logo o N_Sd de M_0 NÃO é o N_d
+            majorado da combinação. Usar N_d majorado MAJORA V_c e é do lado
+            INSEGURO. Como conciliar isso com M_Sd,máx, que é de CÁLCULO, é
+            NÃO_DECLARADO_NA_FONTE — decisão do a2.
+        (b) Com M_Sd,máx -> 0 (pilarete quase só comprimido) a razão M_0/M_Sd,máx
+            explode. O teto 2·V_c0 é o único freio e PRECISA estar implementado.
+            Um teste de mutação que remova o teto tem de quebrar.
+        (c) W_1 é "o módulo de resistência na fibra mais tracionada". Em seção
+            retangular de pilar sob flexão OBLÍQUA há duas fibras candidatas,
+            uma por direção, e a Norma não diz qual usar nem se a verificação é
+            por direção. NÃO_DECLARADO_NA_FONTE.
+      f_ctk,inf vem de 8.2.5 (= 0,7·f_ct,m). O gamma_c é o de 12.4.1, sujeito ao
+      novo parágrafo da Emenda 1:2026 ("outros valores devem ser adotados em
+      casos específicos") — ver NBR6118-Em1-12.4.1-novo-paragrafo.
+    contraprova_externa: >-
+      CONFERÊNCIA FECHADA CONTRA A TABELA A-4 DO BASTOS (p. impressa 111), para
+      C20, estribo vertical, gamma_c = 1,4, gamma_s = 1,15, CA-50, flexão
+      simples. Cadeia: f_ct,m = 0,3·20^(2/3) = 2,2104 MPa; f_ctk,inf =
+      0,7 × 2,2104 = 1,5473 MPa; f_ctd = 1,5473/1,4 = 1,1052 MPa =
+      0,110522 kN/cm2 (1 MPa = 0,1 kN/cm2 — a conversão que mais gera erro de
+      uma ordem de grandeza aqui); V_c0 = 0,6 × 0,110522 × b_w·d =
+      0,0663·b_w·d [kN, cm].
+      O 0,0663 NÃO aparece literalmente no Bastos; ele aparece EMBUTIDO em dois
+      lugares da Tabela A-4, e os dois fecham:
+        (1) no termo −0,17·b_w da expressão A_sw = 2,55·V_Sd/d − 0,17·b_w
+            [cm2/m], porque 100·V_c0/(0,9·d·43,5) = 2,5556·(0,0663·b_w) =
+            0,1694·b_w ≈ 0,17·b_w;
+        (2) em V_Sd,mín = 0,101·b_w·d, que é a cortante abaixo da qual a
+            armadura MÍNIMA de 17.4.1.1.1 governa — resolvendo
+            2,5556·V/d − 0,1694·b_w = 20·(f_ct,m/f_ywk)·b_w = 0,08842·b_w
+            resulta V = 0,1011·b_w·d. Fecha na terceira casa.
+      Esta segunda conferência é valiosa porque AMARRA NUMERICAMENTE, num único
+      número de terceiros, 17.4.1.1.1 (rho_sw,mín), 17.4.2.2 (V_c0) e o teto de
+      435 MPa de f_ywd. É a melhor fixture disponível no acervo.
+      ATENÇÃO: V_Sd,mín (0,101·b_w·d) e V_c0 (0,0663·b_w·d) são grandezas
+      DIFERENTES e não devem ser confundidas ao montar fixture.
+      FONTE SECUNDÁRIA, e o exemplo do Bastos é de FLEXÃO SIMPLES (V_c = V_c0):
+      ele NÃO exercita a majoração da flexo-compressão, que fica SEM contraprova
+      externa no acervo.
+    leitura_visual:
+      passada_1: "páginas PDF 155 e 156 (impressas 137 e 138) inteiras a 300 dpi"
+      passada_2: "recorte do bloco V_c/V_c0/f_ctd a 430 dpi e recorte independente da expressão de M_0 a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A expressão de M_0 sai da camada de texto como uma pilha de símbolos
+      soltos — "1 1 G S 6G c c W W 0 3 H 1 A A" — da qual NÃO se recupera
+      P_d(W_1/A_c + e_p) + N_Sd(W_1/A_c). Só existe por leitura visual.
+
+  - id: NBR6118-17.4.2.2-decalagem-a-l
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-c)"
+    pagina: 138
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — decalagem do diagrama de força no banzo tracionado"
+    latex: "a_\\ell = d\\left[\\dfrac{V_{Sd,\\max}}{2\\,(V_{Sd,\\max} - V_c)}\\,(1 + \\operatorname{cotg}\\alpha) - \\operatorname{cotg}\\alpha\\right] \\le d"
+    sympy: "Le(a_l, d*(V_Sd_max/(2*(V_Sd_max - V_c))*(1 + cot(alpha)) - cot(alpha)))"
+    pisos_e_tetos:
+      - "a_l = d, para |V_Sd,máx| <= |V_c|"
+      - "a_l >= 0,5 d, no caso geral"
+      - "a_l >= 0,2 d, para estribos inclinados a 45°"
+      - "a_l <= d (teto da própria expressão)"
+    alternativa_forca_de_tracao:
+      latex: "F_{Sd,cor} = \\dfrac{M_{Sd}}{z} + |V_{Sd}|\\,\\dfrac{a_\\ell}{d} \\le \\dfrac{M_{Sd,\\max}}{z_{\\max}}"
+      sympy: "Le(F_Sd_cor, M_Sd/z + Abs(V_Sd)*a_l/d)"
+    variaveis:
+      a_l:       {descricao: "comprimento de decalagem do diagrama de força no banzo tracionado", unidade: "cm", valor: null}
+      d:         {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      V_Sd_max:  {descricao: "força cortante de cálculo máxima no trecho", unidade: "kN", valor: null}
+      V_c:       {descricao: "parcela complementar de 17.4.2.2", unidade: "kN", valor: null}
+      alpha:     {descricao: "inclinação da armadura transversal", unidade: "grau", valor: null}
+      F_Sd_cor:  {descricao: "força de tração corrigida no banzo tracionado", unidade: "kN", valor: null}
+      M_Sd:      {descricao: "momento fletor de cálculo na seção", unidade: "kN.cm", valor: null}
+      z:         {descricao: "braço de alavanca das forças resultantes internas", unidade: "cm", valor: null}
+      M_Sd_max:  {descricao: "momento fletor de cálculo máximo no trecho em análise", unidade: "kN.cm", valor: null}
+      z_max:     {descricao: "valor de z correspondente a M_Sd,máx", unidade: "cm", valor: null}
+    dominio_validade: >-
+      Matéria de armadura LONGITUDINAL de flexão, não de capacidade ao cortante.
+      Extraída porque o item 17.4.2.2 foi transcrito INTEGRALMENTE (regra 4 do
+      procedimento: não cortar alíneas). Não entra em V_Rd2 nem em V_Rd3.
+      Para o pilarete a aplicabilidade é DUVIDOSA e não foi verificada: a
+      decalagem pressupõe diagrama de momentos ao longo de um vão e armadura
+      longitudinal dimensionada por equilíbrio de seção à flexão — o pilarete é
+      dimensionado por flexão composta oblíqua com armadura simétrica. FORA DO
+      ESCOPO desta rodada; registrado para não sumir.
+    leitura_visual:
+      passada_1: "página PDF 156 (impressa 138) inteira a 300 dpi"
+      passada_2: "recorte da expressão de a_l e da de F_Sd,cor a 430 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.3-modelo-II-VRd2
+    norma: "NBR 6118:2023"
+    item: "17.4.2.3-a)"
+    pagina: 138
+    clausula_ref: NBR6118-17.4.2.3-modelo-de-calculo-II
+    titulo: "Modelo de cálculo II — compressão diagonal com theta ARBITRADO PELO PROJETISTA entre 30° e 45°"
+    latex: "V_{Rd2} = 0{,}54\\,\\alpha_{v2}\\,f_{cd}\\,b_w\\,d\\,\\operatorname{sen}^2\\theta\\,(\\operatorname{cotg}\\alpha + \\operatorname{cotg}\\theta) \\qquad \\alpha_{v2} = \\left(1 - \\dfrac{f_{ck}}{250}\\right)"
+    sympy: "[Eq(V_Rd2, 0.54*alpha_v2*f_cd*b_w*d*sin(theta)**2*(cot(alpha) + cot(theta))), Eq(alpha_v2, 1 - f_ck/250)]"
+    variaveis:
+      V_Rd2:    {descricao: "força cortante resistente de cálculo relativa à ruína da biela comprimida", unidade: "kN", valor: null}
+      alpha_v2: {descricao: "coeficiente de efetividade do concreto fissurado ao cisalhamento", unidade: "adimensional", valor: null}
+      f_cd:     {descricao: "resistência de cálculo à compressão do concreto", unidade: "kN/cm2", valor: null}
+      f_ck:     {descricao: "resistência característica à compressão — em MPa dentro de alpha_v2", unidade: "MPa", valor: null}
+      b_w:      {descricao: "menor largura da seção ao longo da altura útil d", unidade: "cm", valor: null}
+      d:        {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      theta:    {descricao: "ângulo de inclinação das bielas de compressão — ESCOLHA DO PROJETISTA, variável LIVREMENTE entre 30° e 45°", unidade: "grau", valor: null}
+      alpha:    {descricao: "ângulo de inclinação da armadura transversal; 45° <= alpha <= 90° (17.4.1.1.5, mantido por 17.4.2.3)", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Elementos lineares. ESTE É O ÚNICO PARÂMETRO DE ESCOLHA DO PROJETISTA em
+      todo o §17.4: "theta variável LIVREMENTE entre 30° e 45°". A Norma NÃO fixa
+      theta, NÃO dá critério de escolha, NÃO recomenda valor e NÃO manda otimizar.
+      Portanto theta é ENTRADA DECLARADA pelo engenheiro, jamais inferida pelo
+      software — mesma doutrina já aplicada a ell_e no pilarete.
+      LIMITES QUE A NORMA PERMITE, transcritos e não escolhidos:
+        30° <= theta <= 45°   (17.4.2.3, primeiro parágrafo)
+        45° <= alpha <= 90°   (17.4.1.1.5, mantido por 17.4.2.3)
+      A ESCOLHA NÃO É NEUTRA: theta menor AUMENTA V_sw (cotg theta cresce) e
+      DIMINUI V_Rd2. Escolher theta é escolher o resultado.
+      PROPRIEDADE DE FRONTEIRA, útil como teste ao a7: em theta = 45° e
+      alpha = 90°, sen²theta = 0,5, cotg alpha = 0, cotg theta = 1, e
+      V_Rd2(II) = 0,54 × 0,5 × alpha_v2 f_cd b_w d = 0,27 alpha_v2 f_cd b_w d =
+      V_Rd2(I). Os dois modelos COINCIDEM nessa fronteira.
+      Observação para o a2: 17.5.1.1 (torção) usa o mesmo intervalo 30°–45° com
+      redação diferente — "pode ser arbitrada pelo projeto". A palavra
+      "arbitrada" confirma a leitura de que a decisão é do projetista.
+    leitura_visual:
+      passada_1: "página PDF 156 (impressa 138) inteira a 300 dpi"
+      passada_2: "recorte da equação e da frase do intervalo de theta a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # a lista da Emenda salta de "Página 137" para "Página 141"
+    observacao: >-
+      A camada de texto perde o 0,54 exatamente como perde o 0,27 do Modelo I
+      ("VRd2 Dv2 fcd bw d sen2 T (cotg DFRWJT") e perde também o intervalo de
+      theta ("com T variável livremente entre  e "). Sem leitura visual não há
+      Modelo II nenhum.
+
+  - id: NBR6118-17.4.2.3-modelo-II-Vsw-e-Vc1
+    norma: "NBR 6118:2023"
+    item: "17.4.2.3-b)"
+    pagina: 139
+    clausula_ref: NBR6118-17.4.2.3-modelo-de-calculo-II
+    titulo: "Modelo de cálculo II — armadura transversal e a REDUÇÃO de V_c com o aumento de V_Sd"
+    latex: "V_{sw} = \\dfrac{A_{sw}}{s}\\,0{,}9\\,d\\,f_{ywd}\\,(\\operatorname{cotg}\\alpha + \\operatorname{cotg}\\theta)\\operatorname{sen}\\alpha"
+    sympy: "Eq(V_sw, (A_sw/s)*0.9*d*f_ywd*(cot(alpha) + cot(theta))*sin(alpha))"
+    casos_de_V_c:
+      tracionado_LN_fora_da_secao: "V_c = 0"
+      flexao_simples_e_flexo_tracao_com_LN_cortando_a_secao: "V_c = V_c1"
+      flexo_compressao: "V_c = V_c1 (1 + M_0/M_Sd,máx) < 2 V_c1"
+    V_c1:
+      - "V_c1 = V_c0 quando V_Sd <= V_c0"
+      - "V_c1 = 0 quando V_Sd = V_Rd2"
+      - "interpolando-se linearmente para valores intermediários"
+    variaveis:
+      V_sw:  {descricao: "parcela resistida pela armadura transversal", unidade: "kN", valor: null}
+      A_sw:  {descricao: "área da seção transversal dos estribos", unidade: "cm2", valor: null}
+      s:     {descricao: "espaçamento da armadura transversal", unidade: "cm", valor: null}
+      d:     {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      f_ywd: {descricao: "tensão na armadura transversal, com o mesmo teto de 435 MPa de 17.4.2.2", unidade: "kN/cm2", valor: null}
+      alpha: {descricao: "inclinação da armadura transversal; 45° a 90°", unidade: "grau", valor: null}
+      theta: {descricao: "inclinação das bielas; 30° a 45°, ARBITRADO pelo projetista", unidade: "grau", valor: null}
+      V_c1:  {descricao: "parcela complementar do Modelo II, que decresce linearmente de V_c0 (em V_Sd = V_c0) até 0 (em V_Sd = V_Rd2)", unidade: "kN", valor: null}
+      V_c0:  {descricao: "0,6 f_ctd b_w d, definido em 17.4.2.2 e mantido por 17.4.2.3", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Modelo II. "São mantidas a notação e as limitações definidas em 17.4.2.2" —
+      logo V_c0, f_ctd, M_0, o teto de 435 MPa em f_ywd e o intervalo de alpha
+      valem sem alteração.
+      DIFERENÇA TIPOGRÁFICA REAL, transcrita como está na fonte e NÃO
+      uniformizada por este extrator: o Modelo I escreve "<= 2 V_c0" e o Modelo
+      II escreve "< 2 V_c1" (menor ESTRITO). A Norma não traz nota explicando a
+      diferença. Se é erro de composição, não cabe ao extrator corrigir —
+      decisão do a2. Registrado porque um teste em cima do valor 2·V_c1 vai
+      depender de qual leitura o a2 congelar.
+      A regra de V_c1 é uma INTERPOLAÇÃO LINEAR IMPLÍCITA entre dois pontos
+      (V_Sd = V_c0 -> V_c1 = V_c0) e (V_Sd = V_Rd2 -> V_c1 = 0). A Norma dá os
+      dois extremos e a palavra "interpolando-se linearmente"; NÃO escreve a
+      fórmula fechada. Escrevê-la é derivação — legítima, mas tem de ser
+      declarada como DERIVAÇÃO no ruleset, não como transcrição.
+      NÃO_DECLARADO_NA_FONTE: o comportamento quando V_Sd < V_c0 já está coberto
+      (V_c1 = V_c0), mas o texto não diz o que fazer se V_Sd > V_Rd2 — situação
+      em que, de todo modo, 17.4.2.1 já reprova.
+    contraprova_externa: >-
+      BASTOS, Tabela A-5 (p. impressa 111), "equações simplificadas segundo o
+      Modelo de Cálculo II para concretos do Grupo I", com estribo vertical,
+      gamma_c = 1,4, gamma_s = 1,15, CA-50/CA-60 e flexão simples. Para C20:
+      V_Rd2 = 0,71·b_w·d·sen(theta)·cos(theta). Conferência contra a Norma:
+      0,54 × 0,92 × (2,0/1,4) = 0,7097 e sen²theta·cotg theta = sen theta·cos
+      theta — fecha em forma e em valor. FONTE SECUNDÁRIA; a tabela do Bastos
+      NÃO cobre flexo-compressão.
+    leitura_visual:
+      passada_1: "página PDF 157 (impressa 139) inteira a 300 dpi"
+      passada_2: "recorte do bloco de equações a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-18.3.3.2-espacamentos-estribos-cortante
+    norma: "NBR 6118:2023"
+    item: "18.3.3.2"
+    pagina: 150
+    clausula_ref: NBR6118-18.3.3.1-18.3.3.2-armadura-transversal-cortante-vigas
+    titulo: "Detalhamento do estribo PARA CORTANTE — diâmetro, espaçamento longitudinal máximo e espaçamento transversal máximo entre ramos"
+    latex: "\\phi_t \\ge 5\\ \\mathrm{mm},\\ \\phi_t \\le b_w/10 \\qquad s_{\\max} = \\begin{cases}\\min(0{,}6d,\\ 300\\ \\mathrm{mm}) & V_d \\le 0{,}67\\,V_{Rd2}\\\\ \\min(0{,}3d,\\ 200\\ \\mathrm{mm}) & V_d > 0{,}67\\,V_{Rd2}\\end{cases} \\qquad s_{t,\\max} = \\begin{cases}\\min(d,\\ 800\\ \\mathrm{mm}) & V_d \\le 0{,}20\\,V_{Rd2}\\\\ \\min(0{,}6d,\\ 350\\ \\mathrm{mm}) & V_d > 0{,}20\\,V_{Rd2}\\end{cases}"
+    sympy: "[Ge(phi_t, 5), Le(phi_t, b_w/10), Eq(s_max, Piecewise((Min(0.6*d, 300), V_d <= 0.67*V_Rd2), (Min(0.3*d, 200), True))), Eq(s_t_max, Piecewise((Min(d, 800), V_d <= 0.20*V_Rd2), (Min(0.6*d, 350), True)))]"
+    limites_de_diametro:
+      minimo_geral: "5 mm"
+      maximo: "1/10 da largura da alma da viga"
+      barra_lisa: "diâmetro NÃO pode ser superior a 12 mm"
+      tela_soldada: "mínimo pode cair para 4,2 mm, desde que tomadas precauções contra corrosão"
+    espacamento_minimo: >-
+      "suficiente para permitir a passagem do vibrador, garantindo um bom
+      adensamento da massa" — critério QUALITATIVO, sem número. A Norma não dá
+      valor; qualquer número que o software adotar é hipótese declarada, não
+      requisito normativo.
+    variaveis:
+      phi_t:   {descricao: "diâmetro da barra que constitui o estribo", unidade: "mm", valor: null}
+      b_w:     {descricao: "largura da alma da viga (o item está em 18.3, Vigas)", unidade: "mm", valor: null}
+      s_max:   {descricao: "espaçamento longitudinal máximo entre estribos", unidade: "mm", valor: null}
+      s_t_max: {descricao: "espaçamento transversal máximo entre ramos sucessivos de estribos", unidade: "mm", valor: null}
+      d:       {descricao: "altura útil da seção", unidade: "mm", valor: null}
+      V_d:     {descricao: "força cortante de cálculo — a Norma escreve V_d neste item e V_Sd em todo o 17.4; se são o mesmo objeto é NAO_DECLARADO_NA_FONTE", unidade: "kN", valor: null}
+      V_Rd2:   {descricao: "força cortante resistente relativa à biela, do modelo adotado (17.4.2.2 ou 17.4.2.3)", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Item redigido para VIGAS (18.3) e alcançado no pilarete por TRÊS remissões
+      expressas: 17.4.1.1.6 ("os espaçamentos máximos e mínimos entre elementos
+      da armadura devem atender às exigências da Seção 18"), 17.4.1.1.2-c)
+      ("nesse caso, a armadura transversal mínima é a definida na Seção 18") e
+      18.4.3 ("quando houver necessidade de armaduras transversais para forças
+      cortantes e torção, esses valores devem ser comparados com os mínimos
+      especificados em 18.3 para vigas, adotando-se o menor dos limites especificados").
+      SOBREPOSIÇÃO COM 18.4.3, e ela é COMPLEMENTAR e não duplicada. Para um
+      pilarete com cortante a verificar valem SIMULTANEAMENTE:
+        (i)   s <= min(200 mm, b_mín, k_phi·phi)      — 18.4.3, detalhamento de pilar
+        (ii)  s <= s_max desta fórmula                 — 18.3.3.2, via 18.4.3
+        (iii) s_t <= s_t,max desta fórmula             — 18.3.3.2
+        (iv)  rho_sw >= 0,2 f_ct,m/f_ywk               — 17.4.1.1.1, salvo exceção de 17.4.1.1.2-c)
+        (v)   phi_t >= max(5 mm, phi/4)                — 18.4.3
+        (vi)  phi_long >= phi_t nas barras de canto    — 18.3.3.2, redação da Emenda 1:2026
+      Note que (v) e (vi) juntas encaixotam a relação dos diâmetros em
+      phi/4 <= phi_t <= phi, o que NENHUMA das duas fontes enuncia junto.
+      INTERPRETAÇÃO NECESSÁRIA, sinalizada e não resolvida aqui: aplicar
+      "phi_t <= b_w/10" a um pilar exige ler b_w como a menor dimensão da seção
+      do pilarete. É leitura natural e conservadora, mas é INTERPRETAÇÃO —
+      18.4.3 não traz teto de diâmetro de estribo, só piso.
+    contraprova_externa: >-
+      BASTOS, p. impressa 86: com V_Rd2 = 857,5 kN e V_Sd = 574,4 kN,
+      0,67·V_Rd2 = 574,5 kN > V_Sd -> s_máx = min(0,6×70, 30) = 30 cm; e
+      0,20·V_Rd2 = 171,5 kN < V_Sd -> s_t,máx = min(0,6×70, 35) = 35 cm. O caso
+      cai a 0,1 kN da fronteira dos 0,67·V_Rd2 — fixture de fronteira pronta
+      para o a7. FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "páginas PDF 167 e 168 (impressas 150 e 151) a 300 dpi"
+      passada_2: "recortes independentes a 400 dpi do parágrafo de diâmetros e das quatro alíneas de espaçamento"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true    # INCLUSÃO de parágrafo (barras de amarração), sem alterar número algum
+    emenda1_ref: NBR6118-Em1-18.3.3.2-barras-de-amarracao
+    observacao: >-
+      A camada de texto decodificada perde TODOS os números deste item ("se 9d d
+      9Rd2 entao Smáx Gd PP"): sem leitura visual não existem nem 0,67, nem
+      0,20, nem 0,6d, nem 300/200/800/350 mm.

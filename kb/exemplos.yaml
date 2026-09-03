@@ -347,3 +347,135 @@ exemplos:
       Alternativa preferível: caso de teste fornecido por engenheiro humano.
     status: LACUNA_DE_VALIDACAO_AGUARDA_A2
     rodada: "2026-09-03 backlog #13 pilarete — rodada 3 (flexão composta oblíqua)"
+
+  # ===========================================================================
+  # RODADA 2026-09-03 (d) — backlog #13, rodada 4 (ELU de FORCA CORTANTE, 17.4).
+  # ACHADO: o acervo NAO tem exemplo de cortante em PILAR (ver
+  # ACERVO-BUSCA-NEG-exemplo-de-cortante-em-pilar), mas tem UM exemplo
+  # resolvido de cortante em VIGA pelo Modelo de Calculo I que exercita, numero
+  # a numero, quatro dos itens extraidos nesta rodada. E a primeira contraprova
+  # de terceiros que este backlog consegue para o pilarete — todas as rodadas
+  # anteriores fecharam com ZERO casos externos.
+  # ===========================================================================
+
+  - id: BASTOS-1.13-viga-alavanca-cortante-modelo-I
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT. E
+      NAO E UM PILAR: e a viga alavanca (viga de equilibrio) de uma sapata de
+      divisa. Serve como conferencia numerica das EXPRESSOES de 17.4 e 18.3.3.2,
+      nao como precedente de aplicacao de 17.4 a pilarete.
+    item: "Exemplo da sapata de divisa com viga alavanca, item 5.2 (Armadura transversal)"
+    pagina: "PDF 89, 90 e 115 (impressas 85, 86 e 111)"
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    formulas_exercitadas:
+      - NBR6118-17.4.2.2-modelo-I-VRd2
+      - NBR6118-17.4.2.2-modelo-I-Vsw
+      - NBR6118-17.4.2.2-modelo-I-Vc
+      - NBR6118-17.4.1.1.1-rho-sw-min
+      - NBR6118-18.3.3.2-espacamentos-estribos-cortante
+    titulo: >-
+      O UNICO exemplo resolvido do acervo que dimensiona armadura transversal ao
+      cortante pelo Modelo de Calculo I da NBR 6118 - e ele passa a 0,1 kN da
+      fronteira de 0,67 V_Rd2, o que o torna fixture de FRONTEIRA para o a7
+    relevancia_para_a_rodada: >-
+      Amarra numericamente, num unico caso, V_Rd2 (17.4.2.2-a), A_sw via V_sw e
+      V_c0 (17.4.2.2-b), A_sw,min (17.4.1.1.1) e os dois espacamentos maximos
+      (18.3.3.2). Nao cobre a majoracao de V_c na flexo-compressao, nao cobre o
+      Modelo II e nao cobre a excecao de 17.4.1.1.2-c) para pilares - essas tres
+      continuam sem caso externo nenhum no acervo.
+
+    enunciado_transcrito: |
+      5.2) Armadura transversal
+      No trecho da sapata de divisa (B1): Vk = V1L = 410,3 kN
+             VSd = 1,4 . 410,3 = 574,4 kN
+      Para calculo de Asw, conforme as equacoes simplificadas do Modelo de Calculo I, com concreto C20 e dv = 70 cm (ver Tabela A-4 anexa):
+      VRd2 = 0,35 bw d = 0,35 . 35 . 70 = 857,5 kN > VSd = 574,4 kN   ok!
+      VSd,min = 0,101 bw d = 0,101 . 35 . 70 = 247,5 kN < VSd = 574,4 kN   portanto, calcular Asw:
+      Asw = 2,55 VSd/d - 0,17 bw = 2,55 . 574,4/70 - 0,17 . 35 = 14,97 cm2/m
+      Asw,min = 20 fct,m / fywk . bw = 20 (0,3 . raiz cubica de 20^2) / (10 . 50) . 35 = 3,09 cm2/m
+      Com Asw = 14,97 cm2/m, fazendo estribo com quatro ramos tem-se Asw,1,ramo = 14,97/4 = 3,74 cm2/m, e na Tabela A-11 encontra-se: 8 mm c/13 cm (3,85 cm2/m).
+      Espacamento maximo: 0,67 VRd2 = 0,67 . 857,5 = 574,5 kN > VSd = 574,4 kN
+      s <= 0,6d <= 30 cm  ->  s <= 0,6 . 70 = 42 cm <= 30 cm  ->  smax = 30 cm
+      como s = 13 cm <= smax = 30 cm  ->  ok!
+      0,2 VRd2 = 171,5 kN < VSd  ->  st <= 0,6d <= 35 cm
+      st <= 0,6 . 70 <= 42 cm <= 35 cm  ->  ok!  st,max = 35 cm
+
+    entradas:
+      V_k:      {valor: 410.3, unidade: "kN", descricao: "forca cortante caracteristica no trecho da sapata de divisa (B1)"}
+      gamma_f:  {valor: 1.4, unidade: "adimensional", descricao: "coeficiente de ponderacao das acoes usado pelo autor"}
+      b_w:      {valor: 35, unidade: "cm", descricao: "largura da alma da viga alavanca"}
+      d:        {valor: 70, unidade: "cm", descricao: "altura util (h = 75 cm)"}
+      concreto: "C20 (f_ck = 20 MPa)"
+      aco_transversal: "CA-50"
+      gamma_c:  {valor: 1.4, unidade: "adimensional"}
+      gamma_s:  {valor: 1.15, unidade: "adimensional"}
+      alpha:    {valor: 90, unidade: "grau", descricao: "estribo VERTICAL (implicito nas equacoes simplificadas da Tabela A-4)"}
+      theta:    {valor: 45, unidade: "grau", descricao: "fixo pelo Modelo de Calculo I; nao e escolha neste modelo"}
+
+    saidas_esperadas:
+      V_Sd:       {valor: 574.4, unidade: "kN"}
+      V_Rd2:      {valor: 857.5, unidade: "kN", nota: "0,27 . alpha_v2 . f_cd . b_w . d, com alpha_v2 = 1 - 20/250 = 0,92 e f_cd = 20/1,4 MPa = 1,42857 kN/cm2 -> coeficiente 0,3549, que o autor arredonda para 0,35"}
+      V_Sd_min:   {valor: 247.5, unidade: "kN", nota: "NAO e V_c0. E a cortante abaixo da qual A_sw,min governa; conferida por este extrator como 0,1011 b_w d, resolvendo A_sw(V) = A_sw,min"}
+      V_c0:       {valor: 162.4, unidade: "kN", nota: "NAO aparece no texto do autor; calculado por este extrator para o a7 - V_c0 = 0,6 f_ctd b_w d = 0,0663 . 35 . 70. Fica registrado como valor DERIVADO, nao como valor da fonte"}
+      A_sw:       {valor: 14.97, unidade: "cm2/m"}
+      A_sw_min:   {valor: 3.09, unidade: "cm2/m", nota: "= 20 (f_ct,m/f_ywk) b_w, forma por metro de rho_sw >= 0,2 f_ct,m/f_ywk com sen(alpha) = 1"}
+      f_ct_m:     {valor: 2.2104, unidade: "MPa", nota: "0,3 . 20^(2/3); o autor escreve a raiz cubica de 20^2"}
+      estribo_adotado: "4 ramos de 8 mm c/13 cm (3,85 cm2/m por ramo; 15,40 cm2/m no total)"
+      s_max:      {valor: 30, unidade: "cm", nota: "V_Sd = 574,4 kN <= 0,67 V_Rd2 = 574,5 kN -> ramo s_max = min(0,6d, 300 mm) = min(42, 30) cm"}
+      s_t_max:    {valor: 35, unidade: "cm", nota: "V_Sd = 574,4 kN > 0,20 V_Rd2 = 171,5 kN -> ramo s_t,max = min(0,6d, 350 mm) = min(42, 35) cm"}
+
+    hipoteses_do_autor:
+      - >-
+        USA AS EQUACOES SIMPLIFICADAS DA TABELA A-4, nao as expressoes literais
+        da Norma. A Tabela A-4 pre-tabula 0,27 alpha_v2 f_cd por classe de
+        concreto e ja embute gamma_c = 1,4, gamma_s = 1,15, estribo VERTICAL
+        (alpha = 90 graus) e FLEXAO SIMPLES (V_c = V_c0). Um software que
+        implemente as expressoes literais reproduz esses numeros, mas nao pelo
+        mesmo caminho - o a7 tem de comparar RESULTADO, nao passo.
+      - >-
+        ARREDONDAMENTO DO AUTOR: 0,3549 -> 0,35 em V_Rd2. Isso torna o V_Rd2 da
+        fonte 1,4 % MENOR que o da expressao literal (857,5 kN contra 869,4 kN),
+        e a diferenca cai EXATAMENTE em cima da fronteira de 0,67 V_Rd2: com o
+        0,35 arredondado, 0,67 V_Rd2 = 574,5 kN > V_Sd = 574,4 kN e o autor fica
+        no ramo FOLGADO (s_max = 30 cm); com o valor literal 0,3549,
+        0,67 V_Rd2 = 582,5 kN, e o autor continua no mesmo ramo. Neste caso a
+        conclusao nao muda, mas a margem e de 0,1 kN. TOLERANCIA SUGERIDA AO a7:
+        comparar V_Rd2 com folga de 2 % e NUNCA usar este caso como teste de
+        fronteira do ramo de 0,67 sem declarar o arredondamento.
+      - >-
+        UNIDADES DA EXPRESSAO DE A_sw,min: o autor escreve
+        20 f_ct,m/f_ywk . b_w com f_ct,m em MPa dividido por 10 e f_ywk em
+        kN/cm2 (50), produzindo cm2/m. A NBR 6118 escreve a mesma coisa como
+        taxa adimensional rho_sw >= 0,2 f_ct,m/f_ywk. Sao a MESMA regra em
+        unidades diferentes; o fator 20 = 0,2 x 100 (conversao para cm2 por
+        METRO). Se o software escrever 0,2 e a fixture 20, um deles esta certo -
+        conferir a unidade antes de acusar defeito.
+      - >-
+        f_ywd = 435 MPa esta EMBUTIDO no coeficiente 2,55 da Tabela A-4
+        (100/(0,9 . 43,5) = 2,5556). O autor nao discute o teto de 435 MPa de
+        17.4.2.2 nem o que aconteceria com CA-60.
+      - >-
+        d = 70 cm com h = 75 cm, ou seja, d = h - 5 cm. O autor nao declara o
+        criterio (cobrimento + estribo + meia barra). Arredondamento de autor.
+      - >-
+        FLEXAO SIMPLES. O exemplo NAO tem forca normal, portanto NAO exercita
+        V_c = V_c0 (1 + M_0/M_Sd,max) <= 2 V_c0. A interacao N-V - que e
+        justamente o que interessa ao pilarete - fica SEM conferencia externa.
+      - >-
+        O autor cita a NBR 6118 pela apostila "Dimensionamento de vigas de
+        concreto armado a forca cortante" (Mar/2021, 79 p.), que NAO ESTA NO
+        ACERVO. As Tabelas A-4 e A-5 sao dela. Nao ha como auditar a origem dos
+        coeficientes tabelados alem da conferencia numerica feita acima.
+
+    o_que_este_caso_NAO_cobre:
+      - "Nao e pilar nem pilarete: e viga alavanca. Nao ha forca normal, nao ha esbeltez, nao ha 17.4.1.1.2-c)."
+      - "Nao exercita o Modelo de Calculo II nem a escolha de theta (a Tabela A-5 existe na apostila, mas nao e usada em nenhum exemplo resolvido)."
+      - "Nao exercita a majoracao de V_c na flexo-compressao nem o teto de 2 V_c0 - a lacuna de validacao mais grave desta rodada."
+      - "Nao exercita a excecao de armadura minima de 17.4.1.1.2-c) (f_ctk em estadio I e V_Sd <= V_c)."
+      - "Nao exercita estribo inclinado (alpha < 90 graus) nem barras dobradas."
+      - "Nao exercita 18.4.3 (detalhamento de PILAR) nem a regra do 'menor dos limites' entre 18.3 e 18.4.3."
+    status: AGUARDA_A2
+    rodada: "2026-09-03 backlog #13 pilarete - rodada 4 (ELU de forca cortante, 17.4)"

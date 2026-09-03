@@ -1568,3 +1568,192 @@ default silencioso) com o valor impresso no memorial, e obriga a implementar o
 máximo sobre a elipse por varredura com refinamento declarado — mais um caminho
 numérico a validar no GATE 3. Um "não" congela o comportamento da v12, que é o
 conservador.
+
+---
+
+# RODADA 2026-09-03 (d) — backlog #13, rodada 4: extração do ELU de FORÇA CORTANTE (§17.4)
+
+Rodada disparada pela decisão do usuário registrada em **V17**, alínea (c):
+"autorizar uma rodada de a1 sobre 17.4 fecha a questão de vez". **V17 está
+respondida na parte que cabia ao a1** — §17.4 foi extraído integralmente
+(17.4.1 a 17.4.2.3), com a Emenda 1:2026, mais §18.3.3.2 e a definição de
+elemento linear de §14.4.1. Ver `kb/clausulas.jsonl` e `kb/formulas.yaml`.
+
+O que **não** foi resolvido, e é o que sobe: quatro pendências novas, **V19 a
+V22**. Duas delas (V19 e V20) precisam de resposta **antes** de o a2 fechar a
+v13, porque decidem o comportamento de um cálculo, não a redação de um aviso.
+
+---
+
+## V19 — θ do Modelo de Cálculo II é escolha do projetista, e o software não pode escolher por ele — PRIORIDADE ALTA (decide comportamento)
+
+*Pergunta objetiva:* a NBR 6118:2023 oferece **dois** modelos de cálculo ao
+cortante e não escolhe entre eles. O Modelo II tem, além disso, um parâmetro
+livre: θ. O software deve (a) oferecer só o Modelo I, que não tem parâmetro
+livre; (b) oferecer os dois, com o modelo e o θ como **entradas declaradas**; ou
+(c) oferecer os dois e escolher θ por otimização?
+
+*Trecho literal da fonte* (NBR 6118:2023, 17.4.2.3, p. impressa 138, lido por
+visão em duas passadas):
+
+> "O modelo II admite diagonais de compressão inclinadas de θ em relação ao eixo
+> longitudinal do elemento estrutural, com θ variável livremente entre 30° e 45°.
+> Admite ainda que a parcela complementar V_c sofra redução com o aumento de
+> V_Sd."
+
+E, no Modelo I (17.4.2.2, p. 136):
+
+> "O modelo I admite diagonais de compressão inclinadas de θ = 45° em relação ao
+> eixo longitudinal do elemento estrutural e admite ainda que a parcela
+> complementar V_c tenha valor constante, independentemente de V_Sd."
+
+*Limites que a Norma permite, transcritos e não escolhidos:*
+`30° ≤ θ ≤ 45°` (17.4.2.3) e `45° ≤ α ≤ 90°` (17.4.1.1.5, mantido pelo
+Modelo II). A Norma **não** dá critério de escolha, **não** recomenda valor e
+**não** manda otimizar. Em 17.5.1.1 (torção), com o mesmo intervalo, ela usa a
+palavra **"arbitrada pelo projeto"** — o que confirma a leitura.
+
+*Leitura proposta pelo a1 (não é decisão):* **(b)**, e por analogia direta com
+ℓ_e, que já é entrada declarada no pilarete pela mesma razão. A escolha de θ
+**não é neutra**: θ menor aumenta V_sw e diminui V_Rd2 — escolher θ é escolher o
+resultado. A opção (c) é a perigosa: "otimizar θ" significa o software procurar
+o valor que faz a peça passar, o que é exatamente o oposto de verificar.
+
+*Impacto se a leitura estiver errada:* se a resposta for (a), perde-se alcance
+(o Modelo II costuma dar armadura menor) sem perder segurança. Se for (c), o
+software passa a escolher a favor do projeto — inaceitável pela doutrina do
+repositório.
+
+*Propriedade útil, seja qual for a resposta:* em θ = 45° e α = 90° os dois
+modelos **coincidem** em V_Rd2 (0,54·0,5 = 0,27). É teste de fronteira pronto
+para o a7.
+
+---
+
+## V20 — Qual f_ctk, e qual N_Sd? Duas lacunas do próprio texto de §17.4 que mudam o número — PRIORIDADE ALTA (decide comportamento)
+
+*Pergunta objetiva:* dois pontos de §17.4 usam símbolos que a própria Norma não
+fecha, e nos dois o software não pode escolher sozinho.
+
+**(1) f_ctk sem sufixo.** 17.4.1.1.2-c) exige, para dispensar a armadura mínima
+em pilar, que "em nenhum ponto deve ser ultrapassada a tensão f_ctk". Mas 8.2.5
+define `f_ctk,inf = 0,7 f_ct,m` e `f_ctk,sup = 1,3 f_ct,m`; **`f_ctk` puro não
+existe** em 8.2.5. A diferença entre os dois é de **86 %**.
+
+*Trecho literal* (NBR 6118:2023, 17.4.1.1.2-c), p. 134, leitura visual):
+
+> "c) os pilares e elementos lineares de fundação submetidos predominantemente à
+> compressão, que atendam simultaneamente, na combinação mais desfavorável das
+> ações em estado-limite último, calculada a seção em estádio I, às condições
+> seguintes: — em nenhum ponto deve ser ultrapassada a tensão f_ctk;
+> — V_Sd ≤ V_c, sendo V_c definido em 17.4.2.2."
+
+**(2) γ_f = 1,0 dentro de M_0.** A majoração `V_c = V_c0(1 + M_0/M_Sd,máx) ≤
+2 V_c0` é a **única** interação N–V que a Norma escreve para §17.4, e o M_0 dela
+é definido como o momento que anula uma tensão "calculada com valores de γ_f e
+γ_p iguais a **1,0** e 0,9". Ou seja, o N_Sd que entra em M_0 **não é** o N_d
+majorado da combinação — enquanto M_Sd,máx, no denominador da mesma fração, é de
+**cálculo**. Usar N_d majorado no numerador MAJORA V_c e é do lado **INSEGURO**.
+A Norma não diz como conciliar as duas ponderações na mesma fração.
+
+**(3) Bônus da mesma família:** W_1 é "o módulo de resistência na fibra mais
+tracionada". Em seção retangular de pilar sob flexão **oblíqua** há duas fibras
+candidatas, uma por direção, e a Norma não diz qual usar nem se a verificação de
+cortante é feita por direção. `NAO_DECLARADO_NA_FONTE`.
+
+*Leitura proposta pelo a1 (não é decisão):* nas três, adotar o lado
+conservador e **declará-lo no memorial como interpretação, com o item citado**:
+f_ctk,inf em (1); N_Sd com γ_f = 1,0 em (2), como a Norma escreve, e não o N_d;
+e, em (3), o **menor** W_1 entre as duas direções. Nenhuma das três pode virar
+constante silenciosa no código.
+
+*Impacto se a leitura estiver errada:* em (1), usar f_ctk,sup dispensaria
+armadura mínima em pilarete que a Norma manda armar — lado inseguro. Em (2),
+usar N_d majorado infla V_c — lado inseguro. Em (3), o W_1 maior infla M_0 —
+lado inseguro. **As três erram para o mesmo lado**, e é por isso que a
+prioridade é ALTA.
+
+---
+
+## V21 — O pilarete pode não ser "elemento linear", e §17.4 só se aplica a elementos lineares — PRIORIDADE ALTA (lacuna nova, de citação normativa)
+
+*Pergunta objetiva:* §17.4 se aplica a **pilares** — isso está resolvido e é
+melhor do que se esperava (ver abaixo). Mas se aplica a um pilarete **curto**?
+
+*O que a Norma fornece, e fecha:* a aplicação de §17.4 a pilar **não é
+interpretação**. Há remissão nominal e expressa em 17.4.1.1.2-c), que escreve
+"os pilares e elementos lineares **de fundação**". E 14.4.1.2 define pilar como
+elemento linear. A pergunta 3 da rodada ("§17.4 se aplica sem ressalva a
+pilares?") está respondida: **aplica-se, com remissão explícita**.
+
+*O que a Norma não fornece, e é a lacuna nova:* a ressalva não está em §17.4 —
+está três Seções antes.
+
+*Trecho literal* (NBR 6118:2023, 14.4.1, p. impressa 83, leitura visual):
+
+> "14.4.1 Elementos lineares. São aqueles em que o comprimento longitudinal
+> supera em pelo menos três vezes a maior dimensão da seção transversal, sendo
+> também denominados barras."
+
+Um pilarete de fundação é, por uso, curto. Para seção 30 × 30 cm o limiar é
+**90 cm** de altura; para 40 × 40 cm, **120 cm**. Abaixo disso o elemento não
+satisfaz 14.4.1 e, pela letra da Norma, **§17.4 não lhe é aplicável** — nem
+17.4.1.1.2-c), que é a própria dispensa. E 17.4.1 exclui expressamente
+"elementos de volume", sem definir o que são. A Seção 21.1 manda os elementos
+que "por sua forma ou proporções caracterizam uma descontinuidade generalizada"
+para a **Seção 22**, que trata vigas-parede, consolos, dentes Gerber, sapatas,
+blocos e pilares-parede — e **não** trata pilarete, pedestal nem pilar curto de
+fundação (busca negativa já registrada).
+
+*Atenção, porque é fácil confundir:* esta checagem é **diferente** de
+λ ≤ λ₁ (15.8.2). λ₁ decide se os efeitos de 2ª ordem podem ser dispensados;
+14.4.1 decide a **classe do elemento**. Um pilarete pode passar em 15.8.2 e
+ainda assim não ser um elemento linear. Nenhuma regra do ruleset v12 verifica
+14.4.1.
+
+*Leitura proposta pelo a1 (não é decisão):* o a2 tem três saídas, e nenhuma é
+óbvia — (a) exigir ℓ ≥ 3·max(b,h) e **recusar** fora disso, citando 14.4.1;
+(b) aplicar §17.4 assim mesmo, declarando no memorial que é **interpretação** e
+que a Norma não classifica o elemento; (c) aplicar §17.4 e **não** dizer nada,
+que é a opção que este registro existe para impedir.
+
+*Impacto se ignorado:* o memorial cita §17.4 como base de uma verificação em um
+elemento que a própria Norma não classifica como elemento linear. É citação
+normativa incorreta — o tipo que a auditoria pega e que nenhum teste numérico
+detecta.
+
+---
+
+## V22 — A interação N–V não tem contraprova de terceiros no acervo — PRIORIDADE MÉDIA (validação)
+
+*Pergunta objetiva:* esta rodada trouxe, pela primeira vez neste backlog, um
+exemplo resolvido de terceiros (Bastos, viga alavanca, p. impressas 85-86 —
+`kb/exemplos.yaml`, `BASTOS-1.13-viga-alavanca-cortante-modelo-I`). Ele amarra
+numericamente V_Rd2, A_sw, A_sw,mín e os espaçamentos de 18.3.3.2. Mas é
+**flexão simples**. O que valida a parte que só existe no pilarete?
+
+*O que fica sem caso externo, e são exatamente as três coisas novas:*
+1. a majoração `V_c = V_c0(1 + M_0/M_Sd,máx) ≤ 2 V_c0` da flexo-compressão;
+2. o Modelo II com θ arbitrado (a Tabela A-5 do Bastos existe, mas **nenhum
+   exemplo resolvido da apostila a usa**);
+3. a exceção de 17.4.1.1.2-c) para pilares (f_ctk em estádio I e V_Sd ≤ V_c).
+
+*Propriedades internas que o a1 sugere ao a7 — não são requisito normativo:*
+- **teto**: com M_Sd,máx → 0, V_c deve travar em exatamente 2·V_c0. Um teste de
+  mutação que remova o teto tem de quebrar;
+- **fronteira dos modelos**: V_Rd2(II) em θ = 45°, α = 90° deve dar
+  **exatamente** V_Rd2(I);
+- **degeneração**: com N = 0 e flexão simples, V_c deve valer V_c0 e o resultado
+  tem de reproduzir o caso do Bastos dentro de 2 % (o autor arredonda 0,3549
+  para 0,35 em V_Rd2, e o caso passa a **0,1 kN** da fronteira de 0,67·V_Rd2 —
+  não usar este caso como teste de fronteira sem declarar o arredondamento);
+- **amarração cruzada**, e esta é a melhor fixture do acervo: o V_Sd,mín =
+  0,101·b_w·d da Tabela A-4 do Bastos foi reproduzido por este extrator a partir
+  das expressões literais da Norma, resolvendo A_sw(V) = A_sw,mín, e fecha na
+  terceira casa (0,1011). Um único número de terceiros que amarra 17.4.1.1.1,
+  17.4.2.2 e o teto de 435 MPa de f_ywd.
+
+*Quem responde destrava o quê:* um caso de teste fornecido por engenheiro
+humano para pilar sob N + V fecharia (1) e (3). Sem ele, o GATE 3 valida a
+interação N–V só por propriedade interna, e isso precisa estar dito no relatório
+antes, não depois.
