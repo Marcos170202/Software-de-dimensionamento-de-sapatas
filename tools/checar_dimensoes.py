@@ -44,7 +44,13 @@ CASOS: list[tuple[str, str, object, object]] = []
 
 
 def caso(ident: str, descricao: str, valor, esperado):
-    """Registra um caso. `esperado` é uma unidade-alvo ou a string EMPIRICA."""
+    """Registra um caso. `esperado` é uma unidade-alvo ou a string EMPIRICA.
+
+    `valor` pode ser uma grandeza `pint` já construída ou um CALLABLE sem
+    argumentos. A forma callable existe para os mutantes que quebram já na
+    CONSTRUÇÃO da expressão (somar metro com número puro, por exemplo): a
+    exceção precisa acontecer dentro de `main`, não no import do módulo.
+    """
     CASOS.append((ident, descricao, valor, esperado))
 
 
@@ -181,6 +187,154 @@ caso(
     "Raiz de grandeza adimensional menos 1, vezes coeficiente que carrega MPa.",
 )
 
+# ===========================================================================
+# 6. PILARETE DE CONCRETO COMO PILAR CURTO — NBR 6118:2023 (backlog #13, v11)
+#
+#    Grandezas típicas do sanity check (a2-verificador.md, etapa 4):
+#    seção 30x30 cm, altura livre 1,00 m engastada na base e livre no topo,
+#    C25, CA-50, N_d = 1000 kN, phi 16 mm, estribo 5 mm.
+# ===========================================================================
+h_sec = Q(0.30, "m")          # altura da seção na direção considerada
+b_sec = Q(0.30, "m")          # menor dimensão da seção
+A_c = h_sec * b_sec           # área bruta de concreto
+N_d = Q(1000.0, "kN")         # força normal de cálculo
+ell = Q(1.00, "m")            # altura livre do pilarete
+f_ck = Q(25.0, "MPa")
+gamma_c = 1.4
+gamma_s = 1.15
+f_cd = f_ck / gamma_c
+f_yk = Q(500.0, "MPa")
+f_yd = f_yk / gamma_s
+E_s = Q(210.0, "GPa")         # NBR 6118, 8.3.5
+eps_c2 = 2.0e-3               # NBR 6118, 8.2.10.1 (classes até C50)
+phi_l = Q(16.0, "mm")         # barra longitudinal
+phi_t = Q(5.0, "mm")          # estribo
+
+# --- 11.3.3.4.3 — momento mínimo de 1a ordem -------------------------------
+# A expressão NÃO é homogênea como escrita: o 0,015 carrega METROS e o 0,03 é
+# puro (multiplica h em metros). Só fecha com a atribuição declarada abaixo.
+caso(
+    "NBR6118-11.3.3.4.3-M1d-min",
+    "M_1d,min = N_d*(0,015 m + 0,03*h), h em METROS",
+    N_d * (Q(0.015, "m") + 0.03 * h_sec),
+    "kN*m",
+)
+caso(
+    "MUTANTE-M1d-min-h-em-cm",
+    "N_d*(0,015 m + 0,03*h) com h passado como NÚMERO PURO em cm -- DEVE FALHAR",
+    lambda: N_d * (Q(0.015, "m") + 0.03 * h_sec.to("cm").magnitude),
+    "kN*m",
+)
+caso(
+    "NBR6118-11.3.3.4.3-excentricidade-minima",
+    "e_1,min = M_1d,min/N_d = 0,015 m + 0,03*h (independe de N_d)",
+    (N_d * (Q(0.015, "m") + 0.03 * h_sec)) / N_d,
+    "m",
+)
+
+# --- 15.8.2 — esbeltez ------------------------------------------------------
+# i = raio de giração MÍNIMO da seção bruta. A Norma NÃO dá i = h/sqrt(12):
+# isso é geometria (i = sqrt(I/A)), registrada como derivação geométrica.
+I_bruta = b_sec * h_sec ** 3 / 12.0
+i_giracao = (I_bruta / A_c) ** 0.5
+ell_e = 2.0 * ell                       # 15.8.2: engastado na base, livre no topo
+lambda_esb = ell_e / i_giracao
+caso("DER-GEOM-raio-de-giracao", "i = sqrt(I/A) = sqrt((b*h^3/12)/(b*h))", i_giracao, "m")
+caso("NBR6118-15.8.2-lambda", "lambda = l_e/i, com l_e = 2*l (engastado-livre)",
+     lambda_esb, "dimensionless")
+caso(
+    "MUTANTE-lambda-com-i-ao-quadrado",
+    "lambda = l_e/i^2 -- DEVE FALHAR",
+    ell_e / i_giracao ** 2,
+    "dimensionless",
+)
+e_1 = Q(0.015, "m") + 0.03 * h_sec
+caso("NBR6118-15.8.2-lambda1", "lambda1 = (25 + 12,5*e_1/h)/alpha_b, alpha_b = 1,0",
+     Q((25.0 + 12.5 * (e_1 / h_sec).to("dimensionless").magnitude) / 1.0, "dimensionless"),
+     "dimensionless")
+
+# --- 8.2.10.1 + 8.3.5/8.3.6 + 12.3.3/12.4.1 — derivação de N_Rd0 -----------
+eta_c = 1.0 if f_ck.magnitude <= 40.0 else (40.0 / f_ck.magnitude) ** (1.0 / 3.0)
+sigma_c_pico = 0.85 * eta_c * f_cd                       # 8.2.10.1 em eps = eps_c2
+sigma_s2 = min((E_s * eps_c2).to("MPa"), f_yd.to("MPa"))  # 8.3.6 + 8.3.5 + 12.3.1
+A_s = Q(3.6, "cm**2")                                     # >= A_s,min (ver abaixo)
+caso("NBR6118-8.2.10.1-sigma-c-em-eps-c2",
+     "sigma_c(eps_c2) = 0,85*eta_c*f_cd*[1-(1-1)^n] = 0,85*eta_c*f_cd",
+     0.85 * eta_c * f_cd * (1.0 - (1.0 - eps_c2 / eps_c2) ** 2), "MPa")
+caso("DER-NRd0-parcela-concreto", "0,85*eta_c*f_cd*A_c", sigma_c_pico * A_c, "kN")
+caso("DER-NRd0-parcela-aco", "A_s*sigma_s2, sigma_s2 = min(E_s*eps_c2, f_yd)",
+     A_s * sigma_s2, "kN")
+caso("DER-NRd0-compressao-centrada",
+     "N_Rd0 = 0,85*eta_c*f_cd*A_c + A_s*min(E_s*eps_c2, f_yd)",
+     sigma_c_pico * A_c + A_s * sigma_s2, "kN")
+caso(
+    "MUTANTE-NRd0-sem-sigma-s2",
+    "0,85*eta_c*f_cd*A_c + A_s (parcela do aço sem tensão) -- DEVE FALHAR",
+    lambda: sigma_c_pico * A_c + A_s,
+    "kN",
+)
+caso(
+    "MUTANTE-NRd0-com-Ac-linear",
+    "0,85*eta_c*f_cd*h (A_c trocada por h) -- DEVE FALHAR",
+    sigma_c_pico * h_sec,
+    "kN",
+)
+
+# --- 17.3.5.3 — armaduras longitudinais limites ----------------------------
+caso("NBR6118-17.3.5.3.1-As-min-parcela-forca", "0,15*N_d/f_yd", 0.15 * N_d / f_yd, "cm**2")
+caso("NBR6118-17.3.5.3.1-As-min-parcela-geometrica", "0,004*A_c", 0.004 * A_c, "cm**2")
+caso("NBR6118-17.3.5.3.2-As-max", "0,08*A_c", 0.08 * A_c, "cm**2")
+caso(
+    "MUTANTE-As-min-com-fyk-no-lugar-de-N",
+    "0,15*f_yd/N_d (invertido) -- DEVE FALHAR",
+    lambda: 0.15 * f_yd / N_d,
+    "cm**2",
+)
+
+# --- 18.4.3 — estribos ------------------------------------------------------
+# s_max = 90000*(phi_t^2/phi)*(1/f_yk): o 90000 carrega MPa para a expressão
+# fechar em milímetros. É a atribuição declarada.
+caso(
+    "NBR6118-18.4.3-s-max-estribo-fino",
+    "s_max = 90000 MPa*(phi_t^2/phi)/f_yk",
+    Q(90000.0, "MPa") * (phi_t ** 2 / phi_l) / f_yk,
+    "mm",
+)
+caso(
+    "MUTANTE-18.4.3-s-max-com-raiz",
+    "s_max = 90000 MPa*sqrt(phi_t^2/phi)/f_yk (o que a camada de texto sugere) "
+    "-- DEVE FALHAR",
+    Q(90000.0, "MPa") * (phi_t ** 2 / phi_l) ** 0.5 / f_yk,
+    "mm",
+)
+
+# --- 9.4.2.4/9.4.2.5/9.5.2.3 — ancoragem e emenda por traspasse -------------
+eta_1, eta_2, eta_3 = 2.25, 1.0, 1.0          # 9.3.2.1 (CA-50, boa aderência, phi<32)
+f_ctk_inf = 0.7 * Q(0.30 * 25.0 ** (2.0 / 3.0), "MPa")   # 8.2.5
+f_ctd = f_ctk_inf / gamma_c
+f_bd = eta_1 * eta_2 * eta_3 * f_ctd
+l_b = (phi_l / 4.0) * (f_yd / f_bd)
+caso("NBR6118-9.3.2.1-fbd", "f_bd = eta1*eta2*eta3*f_ctd", f_bd, "MPa")
+caso("NBR6118-9.4.2.4-lb", "l_b = (phi/4)*(f_yd/f_bd) >= 25*phi", l_b, "mm")
+caso("NBR6118-9.5.2.3-l0c-min", "l_0c,min = max(0,6*l_b, 15*phi, 200 mm)",
+     max(0.6 * l_b, (15.0 * phi_l).to("mm"), Q(200.0, "mm")), "mm")
+caso(
+    "MUTANTE-lb-sem-dividir-por-fbd",
+    "l_b = (phi/4)*f_yd (f_bd faltando) -- DEVE FALHAR",
+    (phi_l / 4.0) * f_yd,
+    "mm",
+)
+
+# --- 13.2.3 — coeficiente adicional gamma_n --------------------------------
+caso(
+    "NBR6118-13.2.3-gamma-n",
+    "gamma_n = 1,95 - 0,05*b, b em CENTÍMETROS",
+    "EMPIRICA",
+    "O 1,95 e puro e o 0,05 carrega 1/cm. Passar b em metros da 1,94 (proximo "
+    "de 1,00 so por coincidencia de faixa) sem nenhum erro dimensional "
+    "detectavel. Exige guarda de unidade explicita e faixa 14 cm <= b < 19 cm.",
+)
+
 
 def main(padrao: str | None = None) -> int:
     falhas = 0
@@ -193,7 +347,8 @@ def main(padrao: str | None = None) -> int:
             print(f"         {'':<{largura}}  motivo: {esperado}")
             continue
         try:
-            convertido = valor.to(esperado)
+            bruto = valor() if callable(valor) else valor
+            convertido = bruto.to(esperado)
             deve_falhar = ident.startswith("MUTANTE")
             marca = "FALHA" if deve_falhar else "OK   "
             if deve_falhar:

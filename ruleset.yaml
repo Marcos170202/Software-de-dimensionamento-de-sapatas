@@ -10,9 +10,158 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 10
-escopo: "sapata isolada, carga centrada, solo homogêneo"
-data_congelamento: "2026-08-28"   # da v8; v9/v10 NÃO congelam — ver ruleset.lock
+versao: 11
+escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — sem verificação de ELU de seção"
+data_congelamento: "2026-08-28"   # da v8; v9/v10/v11 NÃO congelam — ver ruleset.lock
+
+# =============================================================================
+# VERSÃO 11 — pilarete de concreto como pilar curto e a transferência de
+#             esforços pilarete -> sapata. Backlog do usuário, item #13.
+#
+# ESCOPO CONFIRMADO PELO USUÁRIO: só o pilarete de concreto e a transferência
+# pilarete -> sapata. N, M e H na base do pilar METÁLICO são DADO DE ENTRADA.
+# Placa de base e chumbadores ficam FORA (ABNT NBR 8800 não está no acervo).
+#
+# AVISO OBRIGATÓRIO (CLAUDE.md regra 5): esta versão ACRESCENTA 19 regras
+# normativas, CRIA uma categoria nova (`derivacoes`) e CRIA uma seção nova de
+# requisitos (`requisitos_para_a5`). As aprovações de A6 (GATE 2) e A7
+# (GATE 3) registradas em relatorios/ NÃO são invalidadas por ela, e a razão é
+# verificável: nada do que já existe muda. As listas `regras` (as 26 antigas),
+# `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem desta versão IDÊNTICAS às da v10 —
+# conferido por comparação estrutural (`yaml.safe_load` da v10 em
+# `git show HEAD:ruleset.yaml` contra o arquivo novo, chave a chave). Nenhuma
+# linha de `calc_core/` ou de `ui/` é autorizada a mudar POR ESTA VERSÃO em
+# módulo já aprovado — o que ela autoriza é um pacote NOVO,
+# `calc_core/estrutural/`, que ainda não existe. A EXCEÇÃO é o achado C3
+# abaixo (eta_c ausente), que toca `sapata_isolada/materiais.py` e
+# `sapata_isolada/sapata.py`: se e quando esse conserto for feito, ele
+# INVALIDA A6/A7 para a superfície de flexão da sapata, e é por isso que ele
+# está registrado como requisito próprio e não embutido aqui.
+#
+# FONTE DESTA RODADA: duas extrações do a1, commits a8b1ec8 (30 cláusulas,
+# 12 fórmulas: pilarete como pilar curto) e 2112b3d (10 cláusulas, 6 fórmulas:
+# diagramas tensão-deformação). Ambas NBR 6118:2023 + Emenda 1:2026.
+#
+# O QUE O a2 CONFERIU POR CONTA PRÓPRIA, e não é releitura de relatório:
+#   - LEITURA VISUAL INDEPENDENTE, renderizando as páginas do PDF, de TODAS as
+#     páginas que sustentam regra aprovada: 20 (Tabela 7.2 e nota d), 26
+#     (8.2.10.1 e Figura 8.2), 29 (8.3.5, 8.3.6 e Figura 8.5), 44 (9.5.2.3 e
+#     9.5.2.4), 60 (11.3.3.4.3), 73 (13.2.3 e Tabela 13.1), 107 e 108 (15.8.1,
+#     15.8.2 completo com 35<=lambda_1<=90 e as quatro alíneas de alpha_b),
+#     120-121 (17.2.2-e, onde está o alpha_c·eta_c·f_cd), 133 (17.3.5.3),
+#     153 e 154 (18.4.2, 18.4.3 e a expressão de s_max), 181 (21.6 integral).
+#     Nenhuma divergência com a extração do a1 em nenhuma delas.
+#   - VARREDURA PRÓPRIA DA EMENDA 1:2026 (23 páginas sem camada de texto),
+#     página a página da lista de alterações, verificando a ORDENAÇÃO por
+#     página do texto-base: 15 -> 22 -> 28 -> 30 -> 31 -> 34 -> 42 -> 45 -> 51
+#     -> 52 -> 56 -> 58 -> 59 -> 68 -> 71 -> 75 -> 77 -> 78 -> 80 -> 91 -> 97
+#     -> 103 -> 106 -> 107 -> 119 -> 123 -> 125 -> 127 -> 129 -> 130 -> 133 ->
+#     135 -> 137 -> 141 -> 145 -> 147 -> 149 -> 150 -> 151 -> 152 -> 164 ->
+#     170 -> 172 -> 173 -> 176 -> 182 -> 187 -> 189. Os SALTOS são a prova:
+#     não há entrada para 19-20 (cobrimento), 26-27 (8.2.10.1), 29 (8.3.5/
+#     8.3.6), 37 (ancoragem), 60 (momento mínimo), 73 (13.2.3), 105 (15.6),
+#     120-122 (17.2.2), 153 (18.4.2/18.4.3) nem 181 (21.6). As alterações que
+#     TOCAM esta feature são exatamente duas, e são as que o a1 registrou:
+#     15.8.1 2º parágrafo (p. 107) e 9.5.2 1º parágrafo (p. 42) — mais 12.3.3
+#     e 12.4.1 (p. 71), da segunda extração. Na p. 133 a Emenda altera
+#     17.3.5.2.4, item VIZINHO sobre vigas, e NÃO 17.3.5.3; na p. 152 altera
+#     18.3.6 (vigas) e NÃO 18.4.
+#   - BUSCA NEGATIVA REFEITA pelo a2, não aceita do a1: "pedestal" tem UMA
+#     ocorrência em toda a NBR 6118:2023 (p. impressa 209, item 24.6.2,
+#     CONCRETO SIMPLES) e "pilarete" tem ZERO. Na NBR 6122:2022: "pedestal" 0,
+#     "pilarete" 0, "pilar metálico" 0, "junta de concretagem" 0. CONFIRMADO:
+#     não existe atalho normativo — pilarete é PILAR e cai integralmente em
+#     13.2.3 + 15.8 + 17.2.2 + 17.3.5.3 + 18.4.
+#   - CHECAGEM DIMENSIONAL de todas as fórmulas desta versão, com mutantes
+#     plantados, em tools/checar_dimensoes.py (seção 6, acrescentada nesta
+#     rodada): 24 casos novos, dos quais 7 são MUTANTES plantados; todos os
+#     mutantes foram rejeitados pelo pint, e nenhum caso legítimo falhou.
+#   - SANITY CHECK NUMÉRICO instanciado (pilarete 30x30 cm, C25, CA-50,
+#     N_d = 1000 kN, ell = 1,00 m), com contra-provas externas onde existem.
+#
+# CINCO ACHADOS DO a2 QUE MUDARAM O QUE FOI DESPACHADO:
+#
+#   C1. "lambda_1 = 35" É TEOREMA, NÃO COINCIDÊNCIA — E MESMO ASSIM NÃO PODE
+#       SER FIXADO NO CÓDIGO. O despacho justificava a proibição dizendo que
+#       "a fórmula depende de e_1/h que varia com N_d/h". Não varia: sob
+#       M_1d,min, e_1 = M_1d,min/N_d = 0,015 + 0,03·h e o N_d CANCELA. Avaliado
+#       em toda a faixa admissível de h (0,14 a 2,00 m), lambda_1 bruto fica
+#       entre 25,47 e 26,71 — sempre truncado para 35. Para superar 35 seria
+#       preciso h < 0,0195 m, proibido por 13.2.3. A CONCLUSÃO DO DESPACHO
+#       CONTINUA CERTA, por outro motivo: basta o momento de 1ª ordem REAL
+#       superar M_1d,min — e ele supera sempre que M ou H entram como dado na
+#       base do pilar metálico — para lambda_1 subir acima de 35. Virou o teste
+#       de invariância (1) de REQ-PILARETE-13.
+#
+#   C2. SÃO DOIS LIMIARES DE CLASSE NA LEI CONSTITUTIVA, NÃO TRÊS. O despacho
+#       pedia "eta_c/n/eps_c2/eps_cu variando em TRÊS limiares (40 MPa,
+#       C50/C55, C60 via Emenda 1)". Lido o item na fonte: eta_c muda em 40 MPa;
+#       n, eps_c2 e eps_cu mudam em C50/C55. O terceiro limiar (C60) foi
+#       introduzido pela Emenda 1 no parâmetro s de beta_1, item 12.3.3-b, que
+#       é a verificação em idade j < 28 dias — outro item, outra grandeza. O
+#       ALERTA SUBSTANTIVO DO DESPACHO PERMANECE INTEIRO e virou requisito: um
+#       "<= C50 / > C50" ingênuo erra em silêncio na faixa 40 < f_ck <= 50,
+#       onde eta_c < 1 mas n ainda é 2. E o terceiro limiar foi neutralizado
+#       por escopo: j < 28 dias é RECUSA (REQ-PILARETE-06-D).
+#
+#   C3. DEFEITO DO LADO INSEGURO NO CÓDIGO QUE JÁ EXISTE, encontrado porque
+#       esta rodada extraiu 8.2.10.1 pela primeira vez. A NBR 6118:2023,
+#       17.2.2-e, manda usar alpha_c·eta_c·f_cd no diagrama retangular
+#       (conferido por leitura visual da p. impressa 121 pelo a2).
+#       `sapata_isolada/materiais.py::Concreto.alpha_c` implementa apenas
+#       alpha_c e NÃO EXISTE eta_c em lugar nenhum de `calc_core/`; o consumidor
+#       é `sapata.py::_armadura_flexao_simples`. Como `Concreto` aceita f_ck até
+#       90 MPa, para f_ck > 40 o bloco comprimido é SUPERESTIMADO em 1/eta_c —
+#       4,0 % em C45, 7,7 % em C50, 14,5 % em C60, 31,0 % em C90. Efeito medido
+#       por execução da própria fórmula do código: em seção pouco armada o
+#       déficit de A_s é < 1 %, mas em seção próxima do limite de dutilidade
+#       chega a 9,0 % de A_s A MENOS, e x/d é subestimado de 0,486 contra 0,700
+#       corretos em C90 — isto é, a verificação de dutilidade x/d <= 0,35 PASSA
+#       quando deveria REPROVAR. Não é defeito desta feature; é defeito
+#       PREEXISTENTE que esta feature tornou visível. Virou
+#       REQ-ETA-C-01, e consertá-lo invalida A6/A7 para a flexão da sapata.
+#
+#   C4. A COMPRESSÃO CENTRADA NÃO FECHA A VERIFICAÇÃO, E POR ISSO ESTA VERSÃO
+#       NÃO EMITE VEREDITO DE ELU DE SEÇÃO. O despacho pedia (item 2) M_1d,min
+#       obrigatório nas duas direções e (item 4) a aprovação da derivação de
+#       N_Rd. Os dois juntos implicam o que o despacho não dizia: se há momento
+#       nas duas direções, o estado é FLEXO-COMPRESSÃO OBLÍQUA e o critério
+#       aplicável é a envoltória (N_Rd, M_Rd) de 17.2.1 — que exige a Figura
+#       11.3 (envoltória mínima de 1ª ordem) e 17.2.5 (processo aproximado para
+#       flexão composta oblíqua), NENHUMA DAS DUAS EXTRAÍDA, além de eps_yd/
+#       eps_su que não têm valor na fonte. DECISÃO: N_Rd0 é aprovado como
+#       LIMITE SUPERIOR informativo e como condição SUFICIENTE PARA REPROVAR,
+#       e é PROIBIDO derivar dele qualquer "aprovado". Devolvido ao a1 o pedido
+#       de extração de 17.2.5 e da Figura 11.3.
+#
+#   C5. A CADEIA DA EMENDA NÃO É A CADEIA DA ANCORAGEM, e o código atual mistura
+#       as duas. `sapata.py::_ancoragem_pilar` usa
+#       `max(0,6·ell_b, 10 phi, 100 mm)`: o 0,6·ell_b é o mínimo de EMENDA
+#       (9.5.2.3) e o 10 phi/100 mm são o mínimo de ANCORAGEM (9.4.2.5, cujo
+#       primeiro termo é 0,3·ell_b). O híbrido é conservador, mas não
+#       corresponde a item nenhum. O pilarete NÃO reusa a função
+#       (REQ-PILARETE-10); a limpeza da existente ficou em kb/pendencias.md > V12.
+#
+# CATEGORIA NOVA: `derivacoes`, com citação `[deriv: <id>]`. O despacho pediu
+# que a derivação de N_Rd fosse classificada corretamente e observou que não é
+# `[pratica:]` "no sentido em que o projeto já usa esse rótulo". O a2 concorda e
+# formaliza: `praticas_consagradas` declara que norma/item/página/hash estão
+# ausentes POR DEFINIÇÃO e que o respaldo é uma fonte bibliográfica; aqui não há
+# fonte bibliográfica nenhuma, há álgebra sobre itens da própria NBR 6118, cada
+# passo apontando para um item que está em `regras`. Justificativa completa no
+# cabeçalho da seção.
+#
+# FILA HUMANA: sete pendências novas, V9 a V15, em kb/pendencias.md. Nenhuma é
+# bloqueante para o que a v11 aprovou — todas foram desenhadas para que o
+# software funcione sem elas, recusando em vez de aproximar.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e não é por causa desta versão: as sete
+# pendências humanas de escopo amplo e as quatro de fonte bibliográfica que já
+# vinham da v9/v10 seguem abertas. Todas as 19 regras e as 5 derivações NOVAS
+# desta versão estão em APROVADA ou APROVADA_COM_USO_RESTRITO — nenhuma
+# PENDENTE_HUMANO foi criada em `regras` nesta rodada.
+# =============================================================================
 
 # =============================================================================
 # VERSÃO 10 — camada única de dados: phi'/c'/gamma na base derivados da camada
@@ -1727,6 +1876,709 @@ regras:
       o software deve dizer ao usuário que não oferece a rota — em vez de
       silenciar. Registrada em kb/pendencias.md > V2.
 
+  # ===========================================================================
+  # VERSÃO 11 — PILARETE DE CONCRETO (pilar curto) E TRANSFERÊNCIA
+  # PILARETE -> SAPATA. Backlog do usuário, item #13.
+  #
+  # TODAS as regras deste bloco são NBR 6118:2023 e TODAS têm
+  # `metodo: calculo`. Nenhuma delas aceita valor característico com FS global:
+  # o pilarete é verificado por valores de cálculo (gamma_f nas ações,
+  # gamma_c/gamma_s nas resistências, Tabela 12.1). É a primeira vez que este
+  # ruleset tem um bloco inteiro em `calculo` — a proibição de mistura com o
+  # bloco geotécnico (`admissivel`) é REQ-PILARETE-14.
+  # ===========================================================================
+
+  - id: NBR6118-13.2.3-dimensoes-limites-pilarete
+    norma: "NBR 6118:2023"
+    item: "13.2.3 e Tabela 13.1"
+    pagina: 73
+    hash: "sha256:894fb843a37f9f2a0142b5275d69190123b05e53cea5cecde40bcc40d4d630ed"   # kb/clausulas.jsonl > NBR6118-13.2.3-dimensoes-limites-pilar
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.verificar_dimensoes_limites"
+    checagem_dimensional: >-
+      gamma_n = 1,95 - 0,05·b é NÃO HOMOGÊNEA: o 1,95 é puro e o 0,05 carrega
+      1/cm. Rodado em tools/checar_dimensoes.py como EMPIRICA
+      (NBR6118-13.2.3-gamma-n) com o motivo registrado. Armadilha real: passar b
+      em METROS devolve 1,94 — número plausível, sem erro dimensional
+      detectável. Exige guarda de unidade explícita.
+    checagem_numerica: >-
+      b = 19 cm -> gamma_n = 1,00 (bate com a Tabela 13.1); b = 14 cm ->
+      gamma_n = 1,25 (bate); b = 16 cm -> 1,15 (bate). Os seis pares da
+      Tabela 13.1 foram reproduzidos pela fórmula sem exceção — conferidos
+      contra a leitura visual da p. 73 feita pelo a2 nesta rodada.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 nesta rodada (PDF p. 91 = impressa 73):
+      texto e Tabela 13.1 batem com a extração do a1, valor por valor.
+      TRÊS FRONTEIRAS DURAS, e a terceira é a que costuma passar batido:
+      (1) b < 14 cm é PROIBIDO — não existe gamma_n que autorize;
+      (2) A_c < 360 cm² é PROIBIDO "em qualquer caso", INDEPENDENTE de b: um
+          pilarete 19x18 cm tem b >= 14 mas A_c = 342 cm² < 360 e é proibido;
+      (3) 14 <= b < 19 cm só é admissível MAJORANDO os esforços por gamma_n.
+      NÃO DECLARADO NA FONTE: a ordem de aplicação de gamma_n em relação aos
+      efeitos de 2ª ordem. A NOTA da Tabela 13.1 diz "esforços solicitantes
+      FINAIS de cálculo". DECISÃO DO a2 PARA ESTA VERSÃO: como esta rodada só
+      admite pilar curto (lambda < lambda_1, efeitos locais de 2ª ordem
+      dispensados por 15.8.2), NÃO EXISTE "depois da 2ª ordem" — os esforços
+      finais SÃO os de 1ª ordem majorados, e a ambiguidade não se materializa.
+      A ambiguidade volta assim que a 2ª ordem entrar no escopo; registrada em
+      kb/pendencias.md > V9 para não ser redescoberta.
+
+  - id: NBR6118-11.3.3.4.3-momento-minimo-pilarete
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3"
+    pagina: 60
+    hash: "sha256:88f331d6717afa147a3f3c26ed0d3b5915ff7caee4f16fdb03880bbb8f2db336"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.momento_minimo_1a_ordem"
+    checagem_dimensional: >-
+      M_1d,min = N_d·(0,015 + 0,03·h) NÃO é homogênea como escrita: o 0,015
+      carrega METROS e o 0,03 é puro. Rodado em tools/checar_dimensoes.py com a
+      atribuição declarada (NBR6118-11.3.3.4.3-M1d-min -> kN·m, OK) e com o
+      mutante MUTANTE-M1d-min-h-em-cm, que o pint REJEITA quando h chega como
+      número puro em centímetros. Se h chegar como grandeza em cm, o pint
+      converte em silêncio e ACERTA — o erro só existe para float cru, e é por
+      isso que REQ-PILARETE-02 exige unidade declarada na fronteira do módulo.
+    checagem_numerica: >-
+      N_d = 1000 kN, h = 0,30 m -> M_1d,min = 24,0 kN·m e e_1,min = 24 mm.
+      Ordem de grandeza compatível com a excentricidade acidental de um pilar
+      curto (2 a 3 cm). Verificado ainda que e_1,min = M_1d,min/N_d =
+      0,015 + 0,03h NÃO DEPENDE DE N_d (N_d cancela) — ver DER-15.8.2-e1.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 78 = impressa 60). A extração
+      do a1 está correta, e o a2 acrescenta uma PRECISÃO DE REDAÇÃO que muda o
+      estatuto da regra: a Norma diz que o efeito das imperfeições locais "PODE
+      ser substituído ... pela consideração do momento mínimo". O que é
+      OBRIGATÓRIO é considerar as imperfeições locais (11.3.3.4.2); M_1d,min é
+      a rota de substituição AUTORIZADA em estruturas reticuladas. Portanto a
+      afirmação "carga centrada não é estado admissível de projeto para pilar"
+      está CORRETA em substância — as duas rotas produzem momento não nulo — mas
+      a justificativa correta é essa, não "a Norma obriga M_1d,min".
+      DOMÍNIO: o item diz "em estruturas reticuladas". Um pilarete isolado sob
+      base metálica pode não ser parte de estrutura reticulada. O a2 APROVA a
+      aplicação assim mesmo, e a razão é quantitativa, não retórica: pela rota
+      alternativa (11.3.3.4.2, falta de retilineidade, theta_1 <= 1/200 e
+      e_a = theta_1·H/2), um pilarete de H = 1,0 m daria e_a = 2,5 mm contra os
+      24 mm de M_1d,min — a substituição adotada é ~10x MAIS CONSERVADORA. É
+      hipótese declarada, não silêncio, e vai no memorial (REQ-PILARETE-12).
+      CONSEQUÊNCIA DE ESCOPO, e é a mais importante desta versão: se há momento
+      mínimo nas DUAS direções, a verificação de seção do pilarete é
+      FLEXO-COMPRESSÃO (oblíqua), não compressão centrada. Ver
+      DER-NBR6118-NRd0-compressao-centrada e REQ-PILARETE-06: esta versão NÃO
+      emite veredito de ELU de seção.
+
+  - id: NBR6118-15.4.4-elementos-isolados
+    norma: "NBR 6118:2023"
+    item: "15.4.4"
+    pagina: 103
+    hash: "sha256:a4a07f15b85f52905d64df73afdcf97640aa1de63e7f142208f1991209895328"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.classificar_elemento_isolado"
+    uso_autorizado: >-
+      Classificação PRÉVIA e OBRIGATÓRIA para poder aplicar 15.8. Autorizada
+      apenas a alínea a) — "elementos estruturais isostáticos" — que é onde cai
+      o pilarete engastado na base e livre no topo, sem vinculação horizontal:
+      ele é isostático por construção. O software marca esse caso sozinho e
+      registra a justificativa no memorial.
+    nao_autorizado: >-
+      As alíneas b), c) e d) dependem de informação sobre a ESTRUTURA ACIMA
+      (contraventado, estrutura de contraventamento, nós móveis) que este
+      software não possui e não pode inferir de N/M/H na base do pilar
+      metálico. Se o usuário declarar que o topo do pilarete é vinculado, a
+      classificação passa a ser DECLARADO_PELO_USUARIO e ell_e vira entrada
+      explícita (REQ-PILARETE-05). Nunca inferir.
+    checagem_dimensional: "Item de classificação, sem grandeza física."
+    checagem_numerica: "Não se aplica."
+    observacao: >-
+      A alínea d) foi marcada PARCIAL pelo a1 (cai na página seguinte, lida na
+      camada de texto, não por visão). Como ela está em `nao_autorizado`, a
+      lacuna de conferência NÃO bloqueia esta versão — nenhum caminho de código
+      depende dela. Se algum dia depender, reextrair antes.
+
+  - id: NBR6118-15.6-comprimento-equivalente
+    norma: "NBR 6118:2023"
+    item: "15.6"
+    pagina: 105
+    hash: "sha256:1d448b7296482d0e1a399ab1041af6d134ed1338ea0b0bb6ad4a1047685eb17a"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.comprimento_equivalente (só o ramo declarado)"
+    uso_autorizado: >-
+      ell_e = min(ell_0 + h, ell) SOMENTE quando o usuário declarar que o
+      pilarete é vinculado em AMBAS as extremidades a elementos horizontais e
+      fornecer ell_0 e ell. Nesse caso os dois números são ENTRADA, nunca
+      inferidos de geometria da sapata.
+    nao_autorizado: >-
+      Aplicar 15.6 ao pilarete em balanço. Para engastado na base e livre no
+      topo a Norma manda explicitamente ell_e = 2·ell (15.8.2), e é esse o
+      caminho aprovado. Também não autorizado adivinhar ell_0 (distância entre
+      faces internas de elementos horizontais que o software não conhece).
+    checagem_dimensional: "ell_e = min(ell_0 + h, ell): soma e mínimo entre comprimentos, [m]. Homogêneo por inspeção."
+    checagem_numerica: "Não instanciado — ramo sem caminho de código nesta versão salvo declaração explícita do usuário."
+    observacao: >-
+      Conferido pelo a1 por visão; o a2 conferiu a existência e o domínio na
+      camada de texto decodificada (PDF p. 123-124). O ponto que importa é o
+      DOMÍNIO, não a fórmula: 15.6 pressupõe "elementos estruturais, supostos
+      horizontais, que vinculam o pilar". Num pilarete de fundação isolado eles
+      podem simplesmente não existir, e aí a expressão não tem sentido físico —
+      é exatamente o caso em que um software desatento produziria um ell_e
+      plausível e falso.
+
+  - id: NBR6118-15.8.1-campo-de-aplicacao-esbeltez
+    norma: "NBR 6118:2023"
+    item: "15.8.1 (2º parágrafo conforme NBR 6118:2023/Em1:2026)"
+    pagina: 107
+    hash: "sha256:743c302ba0e05ff84d3593ce723491c93e40bbf5464fb3cd2da40c8800fbd4b0"
+    hash_emenda: "sha256:ce85206327e92f6ce96eab9312ba40043bd63e848bc83c890db91548d7c6d9a6"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.verificar_campo_de_aplicacao_15_8"
+    checagem_dimensional: "lambda adimensional; N_d [kN] < 0,10·f_cd [kPa]·A_c [m²] = [kN]. Homogêneo."
+    checagem_numerica: >-
+      Pilarete 30x30 cm, C25: 0,10·f_cd·A_c = 0,10·17857 kPa·0,09 m² = 160,7 kN.
+      Com N_d = 1000 kN o pilarete NÃO é "pouco comprimido" — logo lambda <= 200
+      é limite duro. Coerente: a exceção de lambda > 200 é para elemento quase
+      descarregado, que não é o caso de um pilarete de fundação.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 125 = impressa 107) TANTO na
+      norma-mãe QUANTO na Emenda 1:2026 (PDF p. 13 = impressa 9). A Emenda
+      substitui o 2º parágrafo e a mudança é de PRECISÃO, não de valor: "força
+      normal DE CÁLCULO menor que 0,10 f_cd A_c". O software usa N_d, e é o
+      texto emendado que ele cita.
+      DUAS CONDIÇÕES DE CAMPO que valem antes de qualquer conta e que o
+      software precisa impor: seção CONSTANTE e armadura CONSTANTE ao longo do
+      eixo. Pilarete com seção variável (tronco de pirâmide, transição para a
+      sapata) sai do campo de 15.8.2/15.8.3.2/15.8.4 — RECUSA, não
+      aproximação (REQ-PILARETE-05).
+
+  - id: NBR6118-15.8.2-dispensa-2a-ordem-local
+    norma: "NBR 6118:2023"
+    item: "15.8.2"
+    pagina: 107
+    hash: "sha256:c7e926e3cc7de93fe58378f1e86bb3e5c6199e5c6109e027f4ddb056c1e07faa"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.indice_de_esbeltez / limite_lambda1 / verificar_pilar_curto"
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: NBR6118-15.8.2-lambda (ell_e/i ->
+      dimensionless, OK), NBR6118-15.8.2-lambda1 (dimensionless, OK),
+      DER-GEOM-raio-de-giracao (sqrt(I/A) -> m, OK) e o mutante
+      MUTANTE-lambda-com-i-ao-quadrado, REJEITADO pelo pint como esperado.
+      LIMITE CONHECIDO DA CHECAGEM, registrado para não gerar falsa confiança:
+      e_1/h é adimensional com e_1 e h em qualquer unidade — se um deles vier em
+      cm e o outro em m, o pint converte e o erro passa. Só guarda de unidade
+      explícita pega isso (REQ-PILARETE-02).
+    checagem_numerica: >-
+      Pilarete 30x30 cm, ell = 1,00 m, engastado-livre: ell_e = 2,00 m,
+      i = 0,30/sqrt(12) = 0,0866 m, lambda = 23,09. Com e_1 = e_1,min = 0,024 m
+      -> e_1/h = 0,080 -> lambda_1 bruto = 26,0, truncado para 35.
+      lambda = 23,1 < 35 -> PILAR CURTO, 2ª ordem local dispensada. Faixa
+      plausível: um pilarete de fundação típico (ell <= 1,5 m, b >= 20 cm) fica
+      entre lambda 15 e 35 — o resultado está dentro.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 em DUAS páginas (PDF p. 125 e 126 =
+      impressas 107 e 108): lambda = ell_e/i; ell_e = 2·ell para engastado na
+      base e livre no topo; lambda_1 = (25 + 12,5·e_1/h)/alpha_b; 35 <=
+      lambda_1 <= 90; alpha_b pelas alíneas a) a d), com alpha_b = 1,0 nas
+      alíneas c) (balanço) e d) (momentos menores que M_1d,min). Tudo bate com
+      a extração do a1, incluindo os limites de truncamento.
+      DESIGUALDADE ESTRITA: a dispensa vale "quando o índice de esbeltez for
+      MENOR QUE o valor-limite". lambda == lambda_1 NÃO dispensa. O código usa
+      `<`, e o teste de fronteira é obrigatório (REQ-PILARETE-13).
+      "i" é o raio de giração MÍNIMO: avaliar as DUAS direções e tomar o MAIOR
+      lambda. A Norma não dá i = h/sqrt(12) — ver DER-GEOM-raio-de-giracao.
+
+  - id: NBR6118-15.8.3-metodos-de-2a-ordem
+    norma: "NBR 6118:2023"
+    item: "15.8.3.1 e 15.8.3.2"
+    pagina: 108
+    hash: "sha256:ceb604fdfe6346c1c4644681780246b2bbca4e00ef727b74861af52afa7b2dbe"
+    metodo: calculo
+    status: REJEITADA
+    implementacao: "NENHUMA — e é veto do a6 encontrar código que implemente 2ª ordem local nesta versão."
+    checagem_dimensional: "Não instanciada: regra não implementada."
+    checagem_numerica: "Não instanciada."
+    observacao: >-
+      REJEITADA no sentido criado na v9: extraída, auditada e DECIDIDO NÃO
+      IMPLEMENTAR nesta versão — não é pendência à espera de humano. Conferido
+      visualmente pelo a2 (PDF p. 126): fluência obrigatória para lambda > 90;
+      método geral (análise não linear) obrigatório para lambda > 140. Nada
+      disso é fórmula fechada, e o software não tem análise não linear.
+      A CONSEQUÊNCIA DIRETA é o critério de recusa de REQ-PILARETE-05: para
+      lambda >= lambda_1 o software RECUSA, exibindo o item (15.8.2/15.8.3) e o
+      valor de lambda obtido. Recusar é o comportamento correto; calcular
+      "aproximadamente" seria produzir número sem regra aprovada.
+      Também REJEITADA por arrasto nesta versão: NBR 6118 15.8.1 gamma_n1
+      (majoração de 2ª ordem para lambda > 140), registrada em kb/formulas.yaml
+      com status FORA_DO_ESCOPO_DESTA_RODADA.
+
+  - id: NBR6118-17.3.5.3-armaduras-limite-pilarete
+    norma: "NBR 6118:2023"
+    item: "17.3.5.3.1 e 17.3.5.3.2"
+    pagina: 133
+    hash: "sha256:c64e2c1c2a444318f4d18c3a4ac0395c1dbb969f5753730ebe4696ab6fc8e318"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.armadura_longitudinal_minima / _maxima"
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: 0,15·N_d/f_yd -> cm² (OK);
+      0,004·A_c -> cm² (OK); 0,08·A_c -> cm² (OK); mutante
+      MUTANTE-As-min-com-fyk-no-lugar-de-N (razão invertida) REJEITADO.
+    checagem_numerica: >-
+      Pilarete 30x30 cm (A_c = 900 cm²), CA-50 (f_yd = 434,8 MPa),
+      N_d = 1000 kN: 0,15·N_d/f_yd = 3,45 cm² e 0,004·A_c = 3,60 cm² ->
+      A_s,min = 3,60 cm² (governa a parcela geométrica). A_s,max = 72,0 cm².
+      Faixa plausível: 4 phi 12,5 = 4,91 cm² atende; a taxa mínima de 0,4 % é o
+      valor clássico para pilar pouco solicitado. Ordem de grandeza correta.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 151 = impressa 133), e
+      conferido também na Emenda 1:2026 (PDF p. 14 = impressa 10): a Emenda
+      altera 17.3.5.2.4 — item VIZINHO, sobre 4 % de A_c em VIGAS — e NÃO toca
+      17.3.5.3. A lista de alterações da Emenda salta de 133 para 135. O a1
+      afirmara isso; o a2 confirmou lendo a lista.
+      RESTRIÇÃO QUE COSTUMA GOVERNAR O PILARETE: A_s,max = 8 % de A_c vale
+      "inclusive a sobreposição de armadura existente em regiões de emenda".
+      Como 9.5.2.1 autoriza emendar 100 % das barras na mesma seção quando a
+      armadura é permanentemente comprimida — e é isso que o pilarete faz na
+      espera da sapata — a taxa FORA da emenda fica limitada a 4 % de A_c. O
+      software precisa verificar os DOIS pontos: seção corrente (<= 8 %) e
+      seção de emenda com armadura duplicada (<= 8 %, isto é, <= 4 % fora).
+      NÃO DECLARADO NA FONTE: qual combinação fornece o N_d de A_s,min. Adotar
+      a mais desfavorável é INTERPRETAÇÃO conservadora, declarada no memorial.
+
+  - id: NBR6118-18.4.1-campo-de-aplicacao-detalhamento
+    norma: "NBR 6118:2023"
+    item: "18.4.1"
+    pagina: 152
+    hash: "sha256:09023175fc2a38ea2e74bb8c18f97cccb23061384d623882d3c75a9209788752"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.verificar_campo_18_4"
+    checagem_dimensional: "h_max <= 5·b_min: razão entre comprimentos, adimensional. Homogêneo."
+    checagem_numerica: "30x30 cm -> razão 1,0 <= 5: dentro. 100x19 cm -> razão 5,26 > 5: FORA, é pilar-parede (18.5), RECUSA."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 171 = impressa 153, item na
+      p. 152). Duas fronteiras, e a segunda foi decidida pelo a2 nesta rodada:
+      (1) razão de lados > 5 -> pilar-parede (18.5 + efeitos localizados de 2ª
+          ordem): FORA do escopo, RECUSA explícita;
+      (2) "não são válidas para as REGIÕES ESPECIAIS (ver Seção 21)". A
+          interface pilarete/sapata é região de descontinuidade. DECISÃO DO a2:
+          18.4 governa o FUSTE do pilarete; a região da junta é governada por
+          9.5.2.x (emenda por traspasse, Seção 9 — não excluída por 18.4.1) e
+          por 21.6 (junta de concretagem). O software não estende 18.4 à região
+          da junta e não usa a Seção 22 (bielas e tirantes) nesta versão.
+      Conferido na Emenda 1:2026 (PDF p. 17 = impressa 13): as alterações na
+      página 152 do texto-base são todas de 18.3.6 (vigas); 18.4.1 não é
+      tocada, e não há entrada alguma para a página 153.
+
+  - id: NBR6118-18.4.2-armaduras-longitudinais-pilarete
+    norma: "NBR 6118:2023"
+    item: "18.4.2.1 e 18.4.2.2"
+    pagina: 153
+    hash: "sha256:e8d23c4f4f84b1c038389212111db84199527b2efee94e8174b5f5ea92ae2c32"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.detalhar_armadura_longitudinal"
+    checagem_dimensional: "phi >= 10 mm; phi <= b_min/8; espaçamentos em mm comparados com mm. Homogêneo."
+    checagem_numerica: >-
+      Pilarete 30x30 cm: phi_max = 300/8 = 37,5 mm (não governa, pois 9.5.2
+      proíbe traspasse acima de 32 mm); phi_min = 10 mm; mínimo 4 barras (uma
+      por vértice); espaçamento máximo entre eixos = min(2·300, 400) = 400 mm —
+      com 4 barras a 30 cm de seção, folgado. Espaçamento livre mínimo =
+      max(20 mm, phi, 1,2·d_agregado): com phi 16 e brita 1 (19 mm) -> 22,8 mm.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 171 = impressa 153). O ponto
+      que costuma governar o pilarete NÃO é o espaçamento na seção corrente e
+      sim a frase "esses valores se aplicam TAMBÉM às regiões de emendas por
+      traspasse": na emenda com a espera da sapata as barras estão duplicadas e
+      o espaçamento livre mínimo continua valendo. Com 100 % das barras
+      emendadas na mesma seção (autorizado por 9.5.2.1), é essa restrição
+      geométrica que limita a bitola — e é uma verificação que o software DEVE
+      fazer, não um aviso (REQ-PILARETE-07).
+
+  - id: NBR6118-18.4.3-armaduras-transversais-pilarete
+    norma: "NBR 6118:2023"
+    item: "18.4.3"
+    pagina: 153
+    hash: "sha256:a80a4c30ce2953eadf45e4edd2cbcf9e10da83c30afe5d059c5d88e68b6b49aa"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.detalhar_estribos"
+    uso_autorizado: >-
+      Armadura longitudinal em CA-25 (k_phi = 24) ou CA-50 (k_phi = 12).
+      phi_t >= max(5 mm, phi/4). s <= min(200 mm, b_min, k_phi·phi).
+      Alternativa phi_t < phi/4 autorizada SOMENTE com o mesmo tipo de aço nas
+      duas armaduras e com a limitação ADICIONAL s_max = 90000·(phi_t²/phi)/f_yk
+      — adicional, não substitutiva.
+    nao_autorizado: >-
+      CA-60 na armadura longitudinal do pilarete. O item dá k_phi apenas para
+      CA-25 e CA-50; para CA-60 o espaçamento máximo é NAO_DECLARADO_NA_FONTE.
+      RECUSA explícita, jamais extrapolação por interpolação de f_yk ou por
+      analogia com CA-50 (REQ-PILARETE-08). Também não autorizado transformar a
+      NOTA sobre C55-C90 (redução de 50 % nos espaçamentos, ganchos a 135°) em
+      verificação: a Norma escreve "recomenda-se", e recomendação não vira
+      requisito de software.
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py. NBR6118-18.4.3-s-max-estribo-fino ->
+      mm (OK) com a atribuição declarada de MPa ao coeficiente 90000. E o achado
+      que justifica sozinho a etapa 2 da cascata: o mutante
+      MUTANTE-18.4.3-s-max-com-raiz — a leitura que a CAMADA DE TEXTO do PDF
+      sugere ("90000 1 2 phi phi / f yk", com um expoente 1/2 inexistente) —
+      é REJEITADO pelo pint por dar mm^0,5. Transcrição errada, dimensão quebra,
+      aparece sem intervenção humana.
+    checagem_numerica: >-
+      phi 16 mm, phi_t 5 mm, CA-50: phi/4 = 4 mm, logo phi_t = 5 mm satisfaz
+      phi_t >= max(5; 4). s <= min(200 mm; 300 mm; 12·16 = 192 mm) = 192 mm.
+      A limitação adicional dá s_max = 90000·(25/16)/500 = 281 mm, que NÃO
+      governa — coerente, já que ela só entra quando se adota estribo mais fino
+      que phi/4, e aqui não se adotou.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 em DUAS páginas (PDF p. 171 e 172 =
+      impressas 153 e 154), a segunda com recorte a 300 dpi só para a expressão
+      de s_max: a fração 1/f_yk multiplica o parêntese (phi_t²/phi), SEM raiz
+      nenhuma. Confirmado o achado do a1 e confirmado que "24 phi para CA-25,
+      12 phi para CA-50" é a lista COMPLETA — CA-60 não aparece.
+      Conferido na Emenda 1:2026: nenhuma alteração na página 153.
+
+  - id: NBR6118-Tab7.2-nota-d-cobrimento-pilarete
+    norma: "NBR 6118:2023"
+    item: "7.4.7.1 a 7.4.7.6 e Tabela 7.2, nota de rodapé (d)"
+    pagina: 20
+    hash: "sha256:ab356f17e0ff0f877b5f771c70095b99431f5cb17afd11f9497ef484f20b6fb4"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.cobrimento_nominal_minimo"
+    checagem_dimensional: "c_nom >= c_min + Delta_c e c_nom >= phi: comprimentos [mm] comparados com comprimentos. Homogêneo."
+    checagem_numerica: >-
+      Pilarete em CAA II com phi 16 mm e brita 19 mm: a linha "Viga/pilar" daria
+      30 mm, mas a nota (d) impõe 45 mm no trecho em contato com o solo junto à
+      fundação — governa. Verificações auxiliares: c_nom >= phi (45 >= 16, OK) e
+      d_max <= 1,2·c_nom (19 <= 54, OK). Em CAA IV a linha "Viga/pilar" dá 50 mm
+      e passa a governar sobre os 45 mm — o software toma o MAIOR dos dois, não
+      a nota isoladamente.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 38 = impressa 20), incluindo a
+      CÉLULA MESCLADA da linha "Elementos estruturais em contato com o solo",
+      onde um único 30 mm cobre as classes I e II (a extração de texto crua
+      entrega 3 valores para 4 colunas e pareia errado). Nota (d) transcrita
+      literalmente: "No trecho dos pilares em contato com o solo junto aos
+      elementos de fundação, a armadura deve ter cobrimento nominal >= 45 mm".
+      TRÊS DECISÕES DO a2 QUE O TEXTO NÃO TOMA POR SI:
+      (1) A nota (d) é PISO ABSOLUTO, independente da classe de agressividade,
+          mas NÃO é teto: em CAA IV vale o maior entre 45 mm e o valor da linha
+          aplicável. O software calcula o máximo.
+      (2) "Onde termina o trecho em contato com o solo" é NAO_DECLARADO_NA_FONTE.
+          DECISÃO: aplicar os 45 mm ao PILARETE INTEIRO, do topo da sapata ao
+          topo do pilarete. É o lado conservador e evita ter de inventar uma
+          cota de transição que a Norma não define. Registrado no memorial como
+          hipótese; kb/pendencias.md > V10.
+      (3) A redução de até 5 mm por classe de resistência superior à mínima e a
+          redução para Delta_c = 5 mm (7.4.7.4, que exige projeto conforme
+          ABNT NBR 9062, AUSENTE do acervo) NÃO são automáticas e NÃO são
+          implementadas nesta versão.
+      Cobrimento é referido à ARMADURA EXTERNA — face externa do ESTRIBO
+      (7.4.7.5), não à barra longitudinal. Conferido na Emenda 1:2026: a lista
+      de alterações salta da página 15 para a 22 do texto-base; 19 e 20 não são
+      tocadas.
+
+  - id: NBR6118-9.5.2.1-emenda-100-por-cento-comprimida
+    norma: "NBR 6118:2023"
+    item: "9.5.2.1"
+    pagina: 42
+    hash: "sha256:ea22460bee66b4819bdcd320fe421aa9675e3ae4c416b027859fc9d3dfbaa692"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.emenda_espera (guarda de proporção)"
+    checagem_dimensional: "Regra de proporção (%), adimensional."
+    checagem_numerica: >-
+      Armadura permanentemente comprimida -> 100 % das barras podem ser
+      emendadas na mesma seção, sem a Tabela 9.3 e sem alpha_0t. Consequência
+      numérica verificada: com 4 phi 16 (8,04 cm²) duplicados na emenda,
+      16,08 cm² = 1,79 % de A_c (900 cm²) — folgado contra os 8 % de
+      17.3.5.3.2. O limite só apertaria acima de 4 % fora da emenda.
+    observacao: >-
+      Conferido pelo a2 na camada de texto decodificada (PDF p. 61 = impressa
+      43), frase literal: "Quando se tratar de armadura permanentemente
+      comprimida ou de distribuição, todas as barras podem ser emendadas na
+      mesma seção". A Tabela 9.3 e o coeficiente alpha_0t da Tabela 9.4 valem
+      só para barras TRACIONADAS — não se aplicam aqui.
+      GUARDA OBRIGATÓRIA: "permanentemente comprimida" é uma HIPÓTESE sobre o
+      esforço, não sobre o elemento. Se alguma combinação puser a barra em
+      TRAÇÃO (vento, momento grande, tração na base metálica), a autorização
+      cai e voltam a valer 9.5.2.2 e a Tabela 9.4 — que esta versão não
+      implementa. O software deve VERIFICAR a hipótese em todas as combinações
+      e RECUSAR se alguma tracionar a armadura (REQ-PILARETE-10).
+
+  - id: NBR6118-9.5.2.3-traspasse-comprimidas
+    norma: "NBR 6118:2023"
+    item: "9.5.2 (1º parágrafo conforme Em1:2026) e 9.5.2.3"
+    pagina: 44
+    hash: "sha256:d41e90c7adff9c0277acc0fe77e444f7dd615a43730a6ee8022a407d9256a82c"
+    hash_emenda: "sha256:aa879652a6185ff0c0dcf3b63405612bbfb0068a9eb6616a53e84690d4b21e80"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.comprimento_de_traspasse"
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: NBR6118-9.3.2.1-fbd -> MPa (OK);
+      NBR6118-9.4.2.4-lb -> mm (OK); NBR6118-9.5.2.3-l0c-min -> mm (OK);
+      mutante MUTANTE-lb-sem-dividir-por-fbd REJEITADO (mm·MPa).
+    checagem_numerica: >-
+      phi 16 mm, C25, CA-50, boa aderência (eta_1 = 2,25; eta_2 = 1,0;
+      eta_3 = 1,0): f_ctd = 1,283 MPa, f_bd = 2,886 MPa, ell_b = 602,7 mm =
+      37,7·phi. CONTRA-PROVA INDEPENDENTE: o valor de tabela clássico para
+      C25/CA-50 em boa aderência, sem gancho, é 38·phi — bate. ell_0c,min =
+      max(0,6·602,7; 15·16; 200) = 361,6 mm; com A_s,calc/A_s,ef = 1,0,
+      ell_0c = ell_b,nec = 602,7 mm, que governa. Ordem de grandeza correta
+      (~60 cm de traspasse para phi 16 em C25).
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 62 = impressa 44):
+      ell_0c = ell_b,nec >= ell_0c,min, com ell_0c,min = maior valor entre
+      0,6·ell_b, 15·phi e 200 mm. Confirmada a extração do a1.
+      Conferida também a Emenda 1:2026 (PDF p. 8 = impressa 4): o 1º parágrafo
+      de 9.5.2 é substituído acrescentando "na execução" e estendendo os
+      cuidados especiais a "demais elementos estruturais lineares de seção
+      inteiramente tracionada". O limite de 32 mm NÃO muda e nada afeta o
+      pilarete comprimido — mas o software cita a redação EMENDADA.
+      DISTINÇÃO QUE O CÓDIGO ATUAL NÃO FAZ E QUE É A ARMADILHA DESTA REGRA:
+      ell_0c (EMENDA por traspasse, acima do topo da sapata, mínimo 0,6·ell_b /
+      15 phi / 200 mm) é grandeza DIFERENTE de ell_b,nec (ANCORAGEM da espera
+      DENTRO da sapata, 9.4.2.5, mínimo 0,3·ell_b / 10 phi / 100 mm).
+      `sapata_isolada/sapata.py::_ancoragem_pilar` usa hoje
+      `max(0,6·ell_b, 10 phi, 100 mm)` — um HÍBRIDO dos dois mínimos, que não
+      corresponde a nenhum dos itens: conservador na primeira parcela, mas sem
+      rastreabilidade limpa. O módulo do pilarete NÃO deve reusar essa função;
+      ver REQ-PILARETE-10 e kb/pendencias.md > V12.
+      alpha = 1,0 (9.4.2.5): barra comprimida não tem gancho e não há barra
+      transversal soldada — os outros três valores de alpha não se aplicam.
+
+  - id: NBR6118-9.5.2.4.2-armadura-transversal-na-emenda
+    norma: "NBR 6118:2023"
+    item: "9.5.2.4.1 e 9.5.2.4.2"
+    pagina: 44
+    hash: "sha256:e4e9957d518a2d0374a07a05860b70c9b48cc6b32912e38004aabd45aeab8031"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.armadura_transversal_da_emenda"
+    uso_autorizado: >-
+      O TEXTO dos dois itens: como a armadura do pilarete é comprimida e a
+      proporção emendada na mesma seção é tipicamente 100 % (>= 25 %), valem os
+      requisitos reforçados de 9.5.2.4.1 — estribos capazes de resistir à força
+      de UMA barra emendada, fechados quando a distância entre as duas barras
+      mais próximas de duas emendas for < 10·phi, concentrados nos terços
+      extremos — MAIS a exigência própria de 9.5.2.4.2: pelo menos uma barra de
+      armadura transversal posicionada 4·phi ALÉM de cada extremidade da
+      emenda.
+    nao_autorizado: >-
+      Os valores que aparecem SÓ NA FIGURA 9.5 (Soma A_st/2 em cada terço,
+      1/3·ell_0, espaçamento <= 150 mm). O a1 transcreveu-os da camada de texto
+      da figura, sem leitura vetorial, e o a2 NÃO os conferiu por visão nesta
+      rodada. Enquanto não forem conferidos, o software NÃO pode dimensionar a
+      armadura da emenda por esses números: ele impõe o texto (estribo 4 phi
+      além das extremidades, estribos fechados, concentração nos terços) e
+      REMETE o dimensionamento da Soma A_st ao projetista, com aviso no
+      memorial. kb/pendencias.md > V11.
+    checagem_dimensional: "4·phi [mm] e 10·phi [mm] comparados com distâncias [mm]. Homogêneo."
+    checagem_numerica: >-
+      phi 16 mm: estribo adicional a 4·phi = 64 mm além de cada extremidade da
+      emenda; critério de estribo fechado se a distância entre barras < 160 mm —
+      num pilarete 30x30 com 4 barras e cobrimento 45 mm, a distância livre
+      entre barras é ~180 mm, acima de 10 phi, mas com estribo já fechado por
+      18.4.3 o critério é atendido por construção.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 62 = impressa 44). 9.5.2.4.2 é
+      REMISSIVO: manda manter os critérios do caso anterior e ACRESCENTA o
+      estribo a 4 phi. É por isso que 9.5.2.4.1 entra na cadeia mesmo tratando
+      de barras tracionadas.
+
+  - id: NBR6118-21.6-junta-de-concretagem-pilarete-sapata
+    norma: "NBR 6118:2023"
+    item: "21.6"
+    pagina: 181
+    hash: "sha256:9d0abd2429f49a6152405bf73ed95539c3c57f904c5e57c5bc7047d61ba5a808"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.verificar_junta (guarda de escopo, não cálculo)"
+    uso_autorizado: >-
+      DOIS casos, e só dois:
+      (a) pilarete concretado MONOLITICAMENTE com a sapata — não há junta e
+          21.6 não se aplica;
+      (b) junta com aderência e rugosidade DECLARADAS ASSEGURADAS pela
+          especificação de execução (DECLARADO_PELO_USUARIO, mesmo padrão de
+          força das demais guardas deste projeto). Nesse caso 21.6 NÃO exige
+          armadura de costura além da espera já dimensionada por 9.5.2.3, e o
+          software registra a declaração LITERAL no memorial, junto com a
+          exigência do 1º parágrafo (o projeto de execução deve indicar de
+          forma precisa o local e a configuração da superfície da junta).
+    nao_autorizado: >-
+      Junta SEM aderência/rugosidade asseguradas. RECUSA explícita, citando
+      21.6 e a AUSÊNCIA da ABNT NBR 9062 do acervo. Proibido: modelo de
+      cisalhamento-atrito, coeficiente de coesão/atrito por classe de
+      rugosidade, taxa mínima de armadura de costura, rugosidade em milímetros
+      — NADA disso existe em documento algum do acervo (busca negativa
+      ACERVO-BUSCA-NEG-cisalhamento-interface-pilarete-sapata, reconferida pelo
+      a2: 'rugosidade' ocorre uma única vez na NBR 6118 inteira, e é em 21.6).
+      Aproximar por Eurocódigo/ACI de memória seria inventar fonte.
+    checagem_dimensional: "Item integralmente QUALITATIVO — não há grandeza a checar. É o achado, não uma omissão."
+    checagem_numerica: "Não se aplica."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 199 = impressa 181), texto
+      integral: dois parágrafos, nenhum número. Conferido na Emenda 1:2026 que
+      a página 181 não é alterada (a lista salta de 176 para 182).
+      O a2 CONCORDA com a decisão de escopo do usuário e a formaliza acima. O
+      a2 ACRESCENTA uma mitigação que a decisão não previa e que não depende de
+      resposta humana: quando houver H != 0 (força horizontal) na junta do caso
+      (b), o memorial deve trazer AVISO explícito de que a NBR 6118 não fornece
+      verificação de transferência de cortante na junta e de que a adequação
+      fica sob a declaração de execução e a ART do projetista. Aviso, não
+      recusa — recusar aí seria julgamento de engenharia do a2, e o a2 não
+      aprova conteúdo normativo sozinho. Pergunta registrada em
+      kb/pendencias.md > V13.
+
+  - id: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, Figura 8.2 e parágrafo seguinte"
+    pagina: 26
+    hash: "sha256:94f4368af47b7667bf275594db95b21b251e49270495b0ce87a51503346187fe"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.materiais_6118.eta_c / n_diagrama / eps_c2 / eps_cu / sigma_c"
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: NBR6118-8.2.10.1-sigma-c-em-eps-c2 ->
+      MPa (OK). eta_c = (40/f_ck)^(1/3) é razão de tensões, adimensional; n,
+      eps_c2 e eps_cu adimensionais. LIMITE DA CHECAGEM, declarado: eps_c/eps_c2
+      é razão entre adimensionais — se um vier em ‰ e o outro em valor absoluto,
+      o erro de fator 1000 NÃO é detectável dimensionalmente. Exige guarda de
+      unidade explícita (REQ-PILARETE-06).
+    checagem_numerica: >-
+      C25: eta_c = 1,0; n = 2; eps_c2 = 2,0 ‰; eps_cu = 3,5 ‰;
+      sigma_c(eps_c2) = 0,85·1,0·17,857 = 15,18 MPa. C50: eta_c =
+      (40/50)^(1/3) = 0,9283, n = 2 ainda. C90: eta_c = 0,7631, n = 1,4,
+      eps_c2 = 2,617 ‰, eps_cu = 2,6 ‰ — e aqui aparece a inversão que confirma
+      a leitura: acima de C55 eps_cu CAI (3,5 -> 2,6 ‰) enquanto eps_c2 SOBE,
+      as duas convergindo. Se a transcrição tivesse trocado os sinais das
+      expressões, essa convergência não apareceria.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 44 = impressa 26), página
+      inteira: a expressão da Figura 8.2 e os quatro ramos do sistema de chaves
+      batem exatamente com a extração do a1. Conferido na Emenda 1:2026 (lista
+      salta de 22 para 28 no texto-base) que 8.2.10.1 NÃO é alterada.
+      CORREÇÃO DE UMA PREMISSA DO DESPACHO, e ela importa para a implementação:
+      o despacho falava em "TRÊS limiares de classe (40 MPa, C50/C55, C60 via
+      Emenda 1)" para eta_c/n/eps_c2/eps_cu. São DOIS, e só dois, nesta lei
+      constitutiva: eta_c muda em f_ck = 40 MPa; n, eps_c2 e eps_cu mudam em
+      C50/C55. O terceiro limiar (C60, introduzido pela Emenda 1) pertence ao
+      parâmetro s de beta_1 em 12.3.3-b, isto é, à verificação em idade j < 28
+      dias — que esta versão RECUSA (ver NBR6118-12.3.3-12.4.1). O alerta
+      substantivo do despacho continua válido e é o que o código tem de honrar:
+      um software que só distinga "<= C50 / > C50" ERRA SILENCIOSAMENTE na
+      faixa 40 < f_ck <= 50, onde eta_c < 1 mas n ainda é 2.
+      ARMADILHA DE IMPLEMENTAÇÃO REGISTRADA: a expressão da Figura 8.2 vale só
+      no ramo curvo (0 <= eps_c <= eps_c2). De eps_c2 a eps_cu a tensão é
+      CONSTANTE, e isso está no DESENHO, não na fórmula — avaliar a expressão
+      acima de eps_c2 não reproduz o patamar e pode até decrescer.
+      LACUNA DE DOMÍNIO DECIDIDA PELO a2: a Norma escreve os ramos de eta_c e n
+      por f_ck contínuo (40 MPa, 50 MPa) e os de eps_c2/eps_cu por CLASSE ("até
+      C50", "C55 até C90"). Para um f_ck não normalizado entre 50 e 55 os dois
+      critérios divergem. O software só aceita classes normalizadas C20 a C90
+      (REQ-PILARETE-06); f_ck fora dessa lista é RECUSA, não interpolação.
+
+  - id: NBR6118-8.3.5-8.3.6-aco-passivo
+    norma: "NBR 6118:2023"
+    item: "8.3.5 e 8.3.6 (com a Figura 8.5 e o parágrafo de continuação da p. 30)"
+    pagina: 29
+    hash: "sha256:598dd4f3a728087de5429faf68923344c2dcfdf0e84152afb6d06bb072cb9f01"
+    hash_8_3_6: "sha256:e451cb8b25933343e29026225b2299517a0db48faf085f6e05f4332f0d710479"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.materiais_6118.sigma_s (ver DER-NBR6118-8.3.6-sigma-s)"
+    uso_autorizado: >-
+      E_s = 210 GPa na falta de ensaio ou de valor do fabricante (8.3.5), e o
+      diagrama simplificado da Figura 8.5 aplicado À COMPRESSÃO — autorização
+      que está no parágrafo de continuação da página 30 ("pode ser aplicado
+      para tração e compressão") e é o que legitima usar o diagrama para a
+      armadura comprimida do pilarete. Vale para CA-25, CA-50 e CA-60 sem
+      distinção além de f_yk.
+    nao_autorizado: >-
+      Tratar a EQUAÇÃO do diagrama como texto normativo. A Norma NÃO escreve
+      equação alguma em 8.3.6: a Figura 8.5 é só desenho, sem rótulo de
+      eps_yd e sem valor para eps_su. Converter o desenho em código é
+      DERIVAÇÃO — ver DER-NBR6118-8.3.6-sigma-s. Também não autorizado usar
+      210 GPa quando houver ensaio ou valor do fabricante (o valor é
+      SUPLETIVO), nem usar 200 GPa (isso é armadura ATIVA, 8.4.4).
+    checagem_dimensional: "E_s [GPa] · eps [adimensional] -> MPa. Homogêneo (rodado dentro de DER-NRd0-parcela-aco)."
+    checagem_numerica: >-
+      CA-50: f_yd = 500/1,15 = 434,8 MPa; eps_yd = 434,8/210000 = 2,07 ‰.
+      Em eps = eps_c2 = 2,0 ‰ o aço AINDA NÃO escoou: sigma_s2 =
+      210000·0,002 = 420 MPa < 434,8. É o clássico "420 MPa para CA-50 em
+      compressão centrada", e serve de contra-prova da cadeia inteira.
+      CA-25: f_yd = 217,4 MPa < 420 -> escoa, sigma_s2 = 217,4 MPa.
+      CA-60: f_yd = 521,7 MPa -> sigma_s2 = 420 MPa (não escoa) — mas CA-60 é
+      RECUSADO por 18.4.3, e a recusa vem ANTES desta conta.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 47 = impressa 29): a Figura
+      8.5 tem eixo sigma_s com f_yk e f_yd tracejados, eixo eps_s com UM único
+      ponto marcado (eps_su), um ramo reto rotulado arctg(E_s) e dois patamares.
+      NÃO HÁ equação, NÃO HÁ eps_yd rotulado, NÃO HÁ valor numérico para
+      eps_su. Confirmada integralmente a busca negativa do a1, inclusive a
+      afirmação mais forte: a expressão f_yd = f_yk/gamma_s NÃO está escrita em
+      8.3.6 nem em nenhum outro item — ela decorre de 12.3.1 com a Tabela 12.1
+      (ver DER-NBR6118-12.3.1-fyd). Conferido na Emenda 1:2026 que 8.3.5 e
+      8.3.6 não são alterados.
+
+  - id: NBR6118-12.3.3-12.4.1-valores-de-calculo
+    norma: "NBR 6118:2023"
+    item: "12.3.1, 12.3.3-a, 12.4 e 12.4.1 (Tabela 12.1), com Em1:2026 em 12.4.1"
+    pagina: 70
+    hash: "sha256:52081c49f813806bf6999c64f1c7665a4665310136c494eb9e8af03f9df44788"
+    hash_12_4_1: "sha256:d7e167065a1124817adccea30cb79ef86003f94af4a81cf50700244bd24d0113"
+    hash_emenda: "sha256:828c918b49d2b400fdb334e9edff5951fb3cb20a8cac80b1b3b0c96ed1e1e014"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.materiais_6118.f_cd / f_yd"
+    uso_autorizado: >-
+      f_cd = f_ck/gamma_c com verificação em idade j >= 28 dias (12.3.3, alínea
+      a) e COMBINAÇÕES NORMAIS (gamma_c = 1,4; gamma_s = 1,15 — Tabela 12.1).
+      gamma_c e gamma_s são ENTRADAS com esses valores como padrão, nunca
+      constantes fechadas no código: a correção gamma_c × 1,1 de 12.4.1 é
+      OBRIGATÓRIA ("deve ser multiplicado") quando houver condições
+      desfavoráveis de execução, e um pilarete de seção pequena com 100 % das
+      barras emendadas na mesma seção é candidato natural a "concentração de
+      armadura". O software PERGUNTA; não infere e não assume 1,4.
+    nao_autorizado: >-
+      (1) Verificação em j < 28 dias (12.3.3, alínea b, com beta_1 e o
+          parâmetro s): fora do escopo desta versão — é ela que exige o terceiro
+          limiar de classe (C60) trazido pela Emenda 1. O software RECUSA e
+          exige a declaração de que a verificação é aos 28 dias ou mais. Não é
+          hipótese acadêmica: pilarete recém-concretado recebendo base metálica
+          e equipamento é o caso real.
+      (2) Combinações especiais/de construção (gamma_c = 1,2) e excepcionais
+          (gamma_c = 1,2; gamma_s = 1,0): não implementadas.
+      (3) gamma_c ÷ 1,1 (testemunhos extraídos) e gamma_s × 1,1 (CA-25 sem
+          controle da ABNT NBR 7480): FACULTATIVAS ("admite-se") e de sentidos
+          opostos — nunca automáticas.
+      (4) Elementos pré-moldados/pré-fabricados: 12.4.1 remete à ABNT NBR 9062,
+          AUSENTE do acervo. RECUSA.
+    checagem_dimensional: "f_cd = f_ck/gamma_c: MPa/adimensional = MPa. Homogêneo."
+    checagem_numerica: "C25 -> f_cd = 17,857 MPa; CA-50 -> f_yd = 434,8 MPa. Valores clássicos, conferem."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 na Emenda 1:2026 (PDF p. 10 = impressa
+      6): as duas alterações da Seção 12 são exatamente as que o a1 registrou —
+      s = 0,20 estendido a "todos os concretos com classe de resistência C60 ou
+      superior" (12.3.3) e o parágrafo novo de 12.4.1 ("Outros valores do
+      coeficiente gamma_c devem ser adotados em casos específicos, conforme
+      determinados em outras seções desta Norma").
+      DECISÃO DO a2 SOBRE ESSA RESSALVA NOVA — a pergunta 9 do despacho: ela
+      NÃO bloqueia esta versão, porque (i) o escopo aprovado é só combinações
+      normais, (ii) gamma_c não é constante no código, é entrada com padrão
+      1,4, e (iii) o memorial imprime o gamma_c efetivamente usado. O que a
+      ressalva exige é uma NOTA DE ESCOPO explícita, que fica aqui: a varredura
+      das "outras seções" com gamma_c específico NÃO foi feita, e por isso o
+      software não pode afirmar que 1,4 é sempre o valor certo — ele afirma que
+      1,4 é o valor da Tabela 12.1 para combinações normais e que o projetista
+      responde por casos específicos. kb/pendencias.md > V14.
+
 # =============================================================================
 # ACHADO COLATERAL desta rodada — NÃO é regra, é aviso para quem for
 # implementar a pendência de pilar de borda/canto (ver CLAUDE.md, "Pendente em
@@ -2992,6 +3844,193 @@ praticas_consagradas:
 # Vale para A4 (cálculo) e A3 (interface). É a parte operacional da aprovação —
 # a aprovação é DESTES itens juntos, não da fórmula solta.
 # -----------------------------------------------------------------------------
+
+# =============================================================================
+# derivacoes — CATEGORIA CRIADA NA VERSÃO 11, e a criação é uma decisão do a2
+# que precisa de justificativa explícita, porque o projeto já tinha duas
+# categorias e nenhuma delas serve para o que entra aqui.
+#
+#   `regras`               = TRANSCRIÇÃO de item normativo. Citação [rule: id].
+#                            Tem norma, item, página e hash.
+#   `praticas_consagradas` = formulação de FONTE EXTERNA (Bastos, Cintra/Aoki/
+#                            Albiero, Boussinesq/Newmark). Citação [pratica: id].
+#                            Não tem item normativo, por definição.
+#   `derivacoes`           = ÁLGEBRA DO PRÓPRIO AGENTE sobre primitivas
+#                            normativas citadas. NÃO há fonte externa: cada
+#                            passo aponta para um item da NBR 6118 que está em
+#                            `regras`. Citação [deriv: id].
+#
+# Por que não cabe em `praticas_consagradas`: aquela seção diz, com todas as
+# letras, que `norma`/`item`/`pagina`/`hash` estão "ausentes POR DEFINIÇÃO" e
+# que o respaldo é `origem_da_confianca` — uma fonte bibliográfica. Aqui não há
+# fonte bibliográfica NENHUMA: N_Rd0 sai de multiplicar tensão por área usando
+# a lei constitutiva de 8.2.10.1 e o diagrama de 8.3.6. Chamar isso de "prática
+# consagrada de Fulano" seria inventar autoridade onde há álgebra.
+# Por que não cabe em `regras`: a NBR 6118 NÃO ESCREVE nenhuma dessas
+# expressões. Emitir [rule: ] para elas seria atribuir à Norma texto que ela não
+# tem — exatamente o defeito que este pipeline existe para impedir.
+#
+# ESTATUTO:
+#   - Para a regra 2 do CLAUDE.md, uma entrada aqui com status APROVADA ou
+#     APROVADA_COM_USO_RESTRITO CONTA como autorização, dentro do
+#     `uso_autorizado`.
+#   - Para a regra 3, a docstring cita `[deriv: <id>]` E os itens de origem.
+#     Um `[rule: ]` apontando para um id desta seção é DEFEITO, e o a6 deve
+#     tratá-lo como tal — mesmo tratamento já dado a `[pratica: ]`.
+#   - Todo passo que a Norma não escreve fica listado em `passos_de_interpretacao`
+#     com o item que o sustenta. Passo sem item de origem é motivo de rejeição.
+# =============================================================================
+derivacoes:
+
+  - id: DER-NBR6118-12.3.1-fyd
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-12.3.1-fyd]"
+    metodo: calculo
+    status: APROVADA
+    formula: "f_yd = f_yk / gamma_s"
+    itens_de_origem:
+      - "NBR 6118:2023, 12.3.1 (p. 70): f_d = f_k / gamma_m — regra geral, transcrita em NBR6118-12.3.3-12.4.1-valores-de-calculo"
+      - "NBR 6118:2023, Tabela 12.1 em 12.4.1 (p. 71): gamma_s = 1,15 para combinações normais"
+    passos_de_interpretacao:
+      - "ÚNICO passo: aplicar a regra geral f_d = f_k/gamma_m ao aço, tomando gamma_m = gamma_s da Tabela 12.1. A Norma não escreve 'f_yd = f_yk/1,15' em item algum; f_yd só aparece como rótulo de eixo na Figura 8.5."
+    implementacao: "estrutural.materiais_6118.f_yd"
+    checagem_dimensional: "MPa / adimensional = MPa. Homogêneo."
+    checagem_numerica: "CA-50: 500/1,15 = 434,78 MPa. CA-25: 217,39 MPa. CA-60: 521,74 MPa. Valores universalmente tabelados — contra-prova externa disponível."
+    observacao: >-
+      Derivação de um passo só, registrada mesmo assim porque a AUSÊNCIA dessa
+      expressão na Norma foi um achado explícito do a1, confirmado pelo a2 por
+      leitura visual de 8.3.6. É o tipo de coisa que a memória do modelo
+      escreveria como se fosse texto normativo.
+
+  - id: DER-NBR6118-8.3.6-sigma-s
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-8.3.6-sigma-s]"
+    metodo: calculo
+    status: APROVADA
+    formula: "sigma_s(eps_s) = min(E_s·eps_s, f_yd), com eps_yd = f_yd/E_s"
+    itens_de_origem:
+      - "NBR 6118:2023, 8.3.6 e Figura 8.5 (p. 29-30): diagrama simplificado, ramo reto de inclinação arctg(E_s) e patamar em f_yd; autorização de uso à COMPRESSÃO no parágrafo da p. 30"
+      - "NBR 6118:2023, 8.3.5 (p. 29): E_s = 210 GPa na falta de ensaio"
+      - "DER-NBR6118-12.3.1-fyd para f_yd"
+    passos_de_interpretacao:
+      - "Ler do DESENHO da Figura 8.5 que o ramo inicial é linear com coeficiente angular E_s e que o patamar está no nível f_yd. A Norma não escreve a equação."
+      - "Deduzir eps_yd = f_yd/E_s da interseção do ramo reto com o patamar. A Norma não define eps_yd nem lhe dá valor (busca negativa NBR6118-LACUNA-epsilon-su-epsilon-yd-nao-quantificados, confirmada pelo a2 por leitura da figura a alta resolução: não há rótulo)."
+    implementacao: "estrutural.materiais_6118.sigma_s"
+    checagem_dimensional: "E_s [GPa]·eps [adimensional] -> MPa, comparado com f_yd [MPa]. Homogêneo."
+    checagem_numerica: "CA-50, eps = 2,0 ‰: min(420; 434,8) = 420 MPa. CA-25, eps = 2,0 ‰: min(420; 217,4) = 217,4 MPa (escoou). Coerente com o valor clássico de 420 MPa para CA-50 em compressão centrada."
+    limite_declarado: >-
+      eps_su NÃO tem valor na fonte. Portanto esta derivação vale enquanto o
+      ponto de trabalho estiver no ramo reto ou no início do patamar. Para
+      compressão do pilarete isso é inócuo (eps_c2 = 2,0 ‰ está muito abaixo de
+      qualquer patamar de ruptura), mas QUALQUER verificação que dependa do FIM
+      do patamar — flexão composta com armadura tracionada em domínio 2 ou 3 —
+      está FORA desta aprovação e fora desta versão.
+
+  - id: DER-GEOM-raio-de-giracao
+    natureza: DERIVACAO_GEOMETRICA
+    citacao_em_codigo: "[deriv: DER-GEOM-raio-de-giracao]"
+    metodo: calculo
+    status: APROVADA
+    formula: "i = sqrt(I/A); para seção retangular b×h em torno do eixo considerado, i = h/sqrt(12)"
+    itens_de_origem:
+      - "NBR 6118:2023, 4.3 (p. 6): 'i — raio de giração mínimo da seção bruta de concreto da peça analisada' — a Norma DEFINE o símbolo e NÃO dá expressão"
+      - "NBR 6118:2023, 15.8.2 (p. 107): lambda = ell_e/i (transcrita em NBR6118-15.8.2-dispensa-2a-ordem-local)"
+    passos_de_interpretacao:
+      - "i = sqrt(I/A) é a definição de raio de giração da Resistência dos Materiais, não da Norma."
+      - "Para retângulo, I = b·h³/12 e A = b·h, donde i = h/sqrt(12). Álgebra exata, não aproximação."
+    implementacao: "estrutural.pilarete.raio_de_giracao (NO NÚCLEO, nunca na UI — REQ-PILARETE-05)"
+    checagem_dimensional: "sqrt(m⁴/m²) = m. Rodado em tools/checar_dimensoes.py (DER-GEOM-raio-de-giracao, OK)."
+    checagem_numerica: "h = 0,30 m -> i = 0,0866 m; conferido que sqrt((b·h³/12)/(b·h)) e h/sqrt(12) coincidem em ponto flutuante para b arbitrário (o b cancela)."
+    observacao: >-
+      "Mínimo" é palavra da definição e tem consequência de código: avaliar as
+      DUAS direções da seção e tomar o MENOR i, isto é, o MAIOR lambda. Um
+      pilarete 20x40 cm tem i_min = 0,0577 m (governa a direção de 20 cm) e não
+      0,1155 m.
+
+  - id: DER-NBR6118-15.8.2-e1-de-M1d-min
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-15.8.2-e1-de-M1d-min]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    formula: "e_1 = max(M_1d , M_1d,min)/N_d ; com M_1d = 0 -> e_1 = 0,015 + 0,03·h"
+    itens_de_origem:
+      - "NBR 6118:2023, 15.8.2 (p. 107): lambda_1 = (25 + 12,5·e_1/h)/alpha_b, com e_1 = excentricidade de 1ª ordem"
+      - "NBR 6118:2023, 15.8.2, alínea d) (p. 108): alpha_b = 1,0 para momentos menores que o momento mínimo de 11.3.3.4.3"
+      - "NBR 6118:2023, 11.3.3.4.3 (p. 60): M_1d,min = N_d·(0,015 + 0,03·h)"
+    passos_de_interpretacao:
+      - "Converter momento em excentricidade por e = M/N. A Norma não escreve como obter e_1 quando o momento de 1ª ordem é nulo e só existe M_1d,min."
+      - "TENSÃO INTERNA DA NORMA, registrada e não escondida: 15.8.2 diz que e_1 'não inclui a excentricidade acidental' (simbologia 15.1), e M_1d,min É a substituição das imperfeições locais. Usar M_1d,min para formar e_1 é, portanto, INTERPRETAÇÃO. O a2 a adota porque a alínea d) do próprio 15.8.2 remete a 11.3.3.4.3 — a Norma casa os dois itens — e porque o efeito é irrelevante, como o achado abaixo demonstra."
+    uso_autorizado: "Cálculo de lambda_1 para a fronteira pilar curto/esbelto."
+    nao_autorizado: "Usar e_1 assim obtido como excentricidade de projeto para verificação de seção. Para isso vale M_1d,min diretamente (regra NBR6118-11.3.3.4.3-momento-minimo-pilarete)."
+    checagem_dimensional: "M [kN·m]/N [kN] = m. Rodado em tools/checar_dimensoes.py (NBR6118-11.3.3.4.3-excentricidade-minima, OK)."
+    checagem_numerica: >-
+      ACHADO DO a2, e ele corrige uma premissa do despacho: e_1 = M_1d,min/N_d =
+      0,015 + 0,03·h NÃO DEPENDE DE N_d — o N_d cancela. Logo
+      e_1/h = 0,015/h + 0,03, função só de h. Avaliado em toda a faixa
+      ADMISSÍVEL de h (0,14 m, mínimo absoluto de 13.2.3, a 2,00 m):
+      lambda_1 bruto varia apenas entre 26,71 e 25,47 — SEMPRE abaixo de 35,
+      logo SEMPRE truncado para lambda_1 = 35. Para o bruto passar de 35 seria
+      preciso e_1/h > 0,8, isto é, h < 0,0195 m — proibido por 13.2.3.
+      CONCLUSÃO: quando o único momento é M_1d,min, lambda_1 = 35 EXATAMENTE, e
+      isso é um TEOREMA sobre o domínio admissível, não uma coincidência do caso
+      testado. A consequência prática é a oposta da intuição: o valor 35 está
+      certo, mas continua PROIBIDO fixá-lo no código (REQ-PILARETE-05), porque
+      basta o pilarete ter momento de 1ª ordem REAL maior que M_1d,min — e ele
+      tem, sempre que M ou H entram como dado na base do pilar metálico — para
+      lambda_1 subir acima de 35 e a fronteira mudar. Vira teste de invariância
+      obrigatório no GATE 3 (REQ-PILARETE-13).
+
+  - id: DER-NBR6118-NRd0-compressao-centrada
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-NRd0-compressao-centrada]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    formula: "N_Rd0 = 0,85·eta_c·f_cd·A_c + A_s·sigma_s(eps_c2), com sigma_s = min(E_s·eps_c2, f_yd)"
+    itens_de_origem:
+      - "NBR 6118:2023, 17.2.1 e 17.2.2 (p. 119-122): critério de envoltória (N_Rd, M_Rd) ⊇ (N_Sd, M_Sd); seções planas; igualdade de deformação aço-concreto (alínea b); tração do concreto desprezada (alínea d); compressão uniforme = 'reta b' da Figura 17.1 (alínea g)"
+      - "NBR 6118:2023, 8.2.10.1 (p. 26): sigma_c = 0,85·eta_c·f_cd·[1-(1-eps_c/eps_c2)^n]; eps_c2; eta_c — regra NBR6118-8.2.10.1-diagrama-idealizado-do-concreto"
+      - "NBR 6118:2023, 8.3.5 e 8.3.6 (p. 29-30): E_s e diagrama do aço aplicável à compressão — regra NBR6118-8.3.5-8.3.6-aco-passivo"
+      - "NBR 6118:2023, 12.3.1, 12.3.3-a e Tabela 12.1 (p. 70-71): f_cd e f_yd — regra NBR6118-12.3.3-12.4.1-valores-de-calculo"
+      - "DER-NBR6118-8.3.6-sigma-s e DER-NBR6118-12.3.1-fyd"
+    passos_de_interpretacao:
+      - "PASSO 1 — identificar a 'reta b' (compressão uniforme) com deformação uniforme eps = eps_c2. A Norma NÃO escreve isso em item algum: ela nomeia a reta b na Figura 17.1 e não lhe atribui deformação. É o passo mais forte da derivação."
+      - "PASSO 2 — avaliar a lei de 8.2.10.1 em eps_c = eps_c2: [1-(1-1)^n] = 1, logo sigma_c = 0,85·eta_c·f_cd. Substituição algébrica exata, feita pelo agente."
+      - "PASSO 3 — f_yd = f_yk/gamma_s combinando 12.3.1 com a Tabela 12.1 (DER-NBR6118-12.3.1-fyd)."
+      - "PASSO 4 — sigma_s(eps_c2) = min(E_s·eps_c2, f_yd) pela geometria da Figura 8.5 (DER-NBR6118-8.3.6-sigma-s); usa a igualdade de deformação aço-concreto de 17.2.2-b."
+      - "PASSO 5 — somar as duas parcelas sobre a seção. Equilíbrio de forças normais; não é item da Norma, é estática."
+    uso_autorizado: >-
+      (i) Como LIMITE SUPERIOR de referência da capacidade da seção, exibido
+      como grandeza informativa; (ii) como denominador da taxa nu = N_d/N_Rd0
+      no relatório; (iii) como GUARDA DE RECUSA: se N_d > N_Rd0 a seção está
+      reprovada com certeza e o software pode dizer isso — a condição é
+      SUFICIENTE para reprovar.
+    nao_autorizado: >-
+      Emitir VEREDITO DE APROVAÇÃO a partir de N_d <= N_Rd0. A condição é
+      NECESSÁRIA e NÃO SUFICIENTE, e a razão é normativa, não de gosto: por
+      11.3.3.4.3 existe M_1d,min nas duas direções, logo o estado real é de
+      FLEXO-COMPRESSÃO OBLÍQUA e o critério aplicável é a envoltória
+      (N_Rd, M_Rd) de 17.2.1 — que esta versão não implementa (faltam a
+      Figura 11.3, a envoltória mínima de 1ª ordem, e 17.2.5, processo
+      aproximado para flexão composta oblíqua; nenhuma das duas foi extraída, e
+      eps_su/eps_yd não têm valor na fonte). Um software que dissesse "pilarete
+      OK" com base só em N_Rd0 estaria escondendo o momento que a própria Norma
+      impõe. É a recusa central desta versão — REQ-PILARETE-06.
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: DER-NRd0-parcela-concreto (MPa·m² ->
+      kN, OK), DER-NRd0-parcela-aco (cm²·MPa -> kN, OK),
+      DER-NRd0-compressao-centrada (kN, OK). Dois mutantes REJEITADOS pelo pint:
+      MUTANTE-NRd0-sem-sigma-s2 (parcela do aço sem tensão) e
+      MUTANTE-NRd0-com-Ac-linear (A_c trocada por h).
+    checagem_numerica: >-
+      Pilarete 30x30 cm, C25, CA-50, A_s = 3,60 cm² (= A_s,min):
+      parcela do concreto = 15,18 MPa × 0,09 m² = 1366 kN;
+      parcela do aço = 3,60 cm² × 420 MPa = 151 kN;
+      N_Rd0 = 1517 kN. Contra-prova de ordem de grandeza: 1517/0,09 = 16,9 MPa
+      de tensão média na seção bruta, contra f_cd = 17,9 MPa — coerente, já que
+      a armadura mínima quase compensa a redução de 0,85. Com N_d = 1000 kN,
+      nu = 0,66. Faixa plausível para pilarete de fundação.
+
+# =============================================================================
 requisitos_para_a4:
   - id: REQ-PROP-01-pressao-liquida
     texto: >-
@@ -3422,6 +4461,413 @@ requisitos_para_a4:
       Ligar q só pode AUMENTAR sigma_a, logo o default é o lado seguro. Quando
       ligado, exibir aviso de que é acréscimo não sustentado pela dedução da
       fonte, e q em MPa (REQ-SIGMA-03).
+
+# =============================================================================
+# requisitos_para_a5 — SEÇÃO CRIADA NA VERSÃO 11.
+#
+# Até a v10 este ruleset só tinha requisitos para A4 (geotécnico) e A3
+# (interface), porque o único motor auditado era geotécnico e as regras de
+# NBR 6118 já implementadas vieram no pacote externo do escopo amplo. A v11 é a
+# primeira que MANDA construir elemento estrutural novo, e o destinatário é o
+# A5. Requisitos aqui são condição da aprovação: as regras e derivações da v11
+# estão aprovadas PARA SEREM USADAS DESTE JEITO, não em geral.
+#
+# DECISÃO DE MÓDULO, com a justificativa que o despacho pediu:
+#
+#   O pilarete vai para um pacote NOVO — `calc_core/estrutural/`, com
+#   `pilarete.py` e `materiais_6118.py` — e NÃO como extensão de
+#   `calc_core/sapata_isolada/`. Quatro razões, em ordem de peso:
+#
+#   1. GRAU DE CONFIANÇA. O CLAUDE.md separa os dois motores existentes
+#      justamente por grau de auditoria: `geotecnico/` é 100 % auditado,
+#      `sapata_isolada/` é o pacote externo PARCIALMENTE auditado, com partes
+#      em PENDENTE_HUMANO que a UI é obrigada a exibir como "em conferência".
+#      O pilarete nasce 100 % rastreado por este GATE 1. Colocá-lo dentro do
+#      pacote parcialmente auditado destruiria a informação que o usuário mais
+#      precisa ler — qual parte do memorial está auditada e qual não está.
+#   2. `Pilar` NÃO É O PILARETE. `sapata_isolada/acoes.py::Pilar` é GEOMETRIA
+#      PURA (ap, bp, phi_arranque_mm, n_barras, as_calc_efetiva) e existe como
+#      CONDIÇÃO DE CONTORNO da sapata: alimenta perímetro crítico de punção,
+#      bielas e ancoragem do arranque. O pilarete é elemento com resistência,
+#      esbeltez, detalhamento e domínio de ELU próprios. Enfiar altura, ell_e,
+#      vinculação, estribos, cobrimento próprio e tipo de junta dentro de
+#      `Pilar` forçaria `Sapata` a carregar campos que não usa e mudaria em
+#      silêncio o esquema de `.s7proj` e do Excel (`ui/completo/projeto.py`),
+#      quebrando arquivos salvos — efeito colateral em superfície já aprovada
+#      por A6/A7, sem necessidade.
+#   3. DIREÇÃO DE DEPENDÊNCIA. O pilarete não precisa de nada da geotecnia. A
+#      sapata é que, no futuro, poderá consumir o resultado do pilarete (N_d na
+#      base). Módulo novo mantém a seta apontando para o lado certo.
+#   4. TESTABILIDADE. O GATE 3 desta feature não tem exemplo de terceiros (ver
+#      REQ-PILARETE-13). Um módulo isolado, sem solo e sem combinações, é
+#      testável por invariância e por mutação de forma direta; dentro de
+#      `Sapata` cada teste arrastaria um projeto inteiro.
+#
+#   FRONTEIRA DE DEPENDÊNCIA PERMITIDA (REQ-PILARETE-01): `estrutural/` pode
+#   importar `sapata_isolada/materiais.py` (Concreto/Aco — §8 já conferido item
+#   a item, ver relatorios/revisao_codigo.md, adendo) e nada mais do pacote
+#   amplo. É PROIBIDO importar geotecnia, rigidez, recalques, bielas, grelha,
+#   solo_mef ou sapata.
+# =============================================================================
+requisitos_para_a5:
+
+  - id: REQ-PILARETE-01-modulo-novo-e-fronteira-de-dependencia
+    texto: >-
+      Criar `calc_core/estrutural/` com `pilarete.py` (elemento) e
+      `materiais_6118.py` (eta_c, n, eps_c2, eps_cu, sigma_c, sigma_s, f_cd,
+      f_yd). Importar de `calc_core/sapata_isolada/materiais.py` apenas
+      `Concreto` e `Aco`; é PROIBIDO importar qualquer outro módulo do pacote
+      amplo, e é PROIBIDO que `sapata.py` passe a importar `estrutural/`
+      nesta versão (a integração pilarete<->sapata é rodada própria, com novo
+      GATE). Toda função pública leva docstring com item normativo, página e
+      `[rule: <id>]`, `[deriv: <id>]` ou `[pratica: <id>]` conforme a categoria
+      — CLAUDE.md regra 3. Um `[rule: ]` apontando para id de `derivacoes` é
+      defeito com veto do a6.
+      NAMESPACE OBRIGATÓRIO (colisão de símbolo, cascata do a2 item 3). Este
+      elemento traz QUATRO colisões novas, e uma delas já está no código:
+        - `h`: altura da SEÇÃO do pilarete na direção considerada (6118 13.2.3,
+          11.3.3.4.3) x altura da SAPATA (6118 22.6.1) x espessura de camada e
+          embutimento no domínio geotécnico. Usar `h_secao` no pilarete.
+        - `b`: menor dimensão da seção do pilarete em CENTÍMETROS (13.2.3,
+          Tabela 13.1) x largura da sapata em METROS (`B` em geotecnico/).
+          Usar `b_min_cm` onde a fórmula de gamma_n exigir cm.
+        - `lambda`: índice de esbeltez (15.8.2) x relação y/x do diagrama
+          retangular (17.2.2), que JÁ EXISTE como `Concreto.lambda_x` em
+          `materiais.py`. Usar `lambda_esbeltez` e nunca `lambda`.
+        - `alpha_b` (15.8.2) x `alpha_c` (17.2.2, já em `materiais.py`): manter
+          os dois nomes completos, jamais abreviar para `alpha`.
+      Também: `gamma_n` (13.2.3, seção reduzida) x `gamma_n1` (15.8.1, 2ª ordem
+      para lambda > 140) — nomes completos sempre, e o segundo não existe nesta
+      versão.
+
+  - id: REQ-PILARETE-02-entradas-explicitas-e-recusa-por-ausencia
+    texto: >-
+      O construtor do pilarete EXIGE, sem default silencioso, e RECUSA (exceção
+      com mensagem que nomeia o campo e o item normativo) se faltar:
+        (a) seção b×h e altura livre ell;
+        (b) condição de vinculação, como enumeração fechada:
+            ENGASTADO_BASE_LIVRE_TOPO (e aí ell_e = 2·ell, calculado pelo núcleo
+            com [rule: NBR6118-15.8.2-dispensa-2a-ordem-local]) ou
+            VINCULADO_DOIS_EXTREMOS (e aí ell_e é ENTRADA NUMÉRICA EXPLÍCITA do
+            usuário, com ell_0 e ell declarados — 15.6, uso restrito). Não há
+            terceira opção e não há valor inferido. Isto é um AJUSTE ao
+            despacho, e o motivo está registrado: o despacho pedia ell_e sempre
+            como entrada; mas para o caso engastado-livre a própria Norma
+            escreve ell_e = 2·ell em 15.8.2, e transformar texto normativo em
+            entrada do usuário seria jogar fora rastreabilidade. O princípio
+            "nunca inferir" é preservado: o que o usuário declara é a
+            VINCULAÇÃO, não o número; e sem a declaração o software recusa.
+        (c) categoria do aço (CA-25/CA-50/CA-60 — a última só para recusar,
+            REQ-PILARETE-08) e classe do concreto (lista fechada C20..C90);
+        (d) classe de agressividade ambiental e dimensão máxima do agregado;
+        (e) tipo de junta com a sapata (REQ-PILARETE-11);
+        (f) declaração de que a verificação é em idade j >= 28 dias;
+        (g) situação de aderência para f_bd (eta_2 = 1,0 boa / 0,7 má, 9.3.2.1)
+            — DECLARADA, nunca assumida boa;
+        (h) gamma_c e gamma_s, com 1,4 e 1,15 como PADRÃO EXIBIDO e editável,
+            mais a pergunta explícita sobre condições desfavoráveis de execução
+            (12.4.1: gamma_c × 1,1 é OBRIGATÓRIO quando previstas, e "concretagem
+            deficiente por concentração de armadura" é caso plausível num
+            pilarete de seção pequena com 100 % das barras emendadas).
+      GUARDA DE UNIDADE (a checagem dimensional NÃO pega estes erros, e está
+      registrado por que): h em METROS na expressão de M_1d,min e b em
+      CENTÍMETROS na de gamma_n; nos dois casos o coeficiente carrega a unidade
+      e um valor na unidade errada produz número plausível. Parâmetros nomeados
+      com a unidade (`h_secao_m`, `b_min_cm`) e validação de faixa.
+
+  - id: REQ-PILARETE-03-geometria-limite-e-recusas-duras
+    texto: >-
+      [rule: NBR6118-13.2.3-dimensoes-limites-pilarete] e
+      [rule: NBR6118-18.4.1-campo-de-aplicacao-detalhamento].
+      Verificar, nesta ordem, e RECUSAR (não calcular, não aproximar):
+        (1) b_min < 14 cm -> PROIBIDO pela Norma;
+        (2) A_c < 360 cm² -> PROIBIDO "em qualquer caso", mesmo com b >= 14 cm
+            (um 19×18 cm passa em (1) e reprova aqui — teste obrigatório);
+        (3) 14 <= b_min < 19 cm -> admissível SOMENTE com gamma_n = 1,95 -
+            0,05·b majorando os esforços de cálculo; aplicar e REGISTRAR no
+            memorial que foi aplicado, com o valor;
+        (4) h_max > 5·b_min -> é pilar-parede (18.5), FORA do escopo: RECUSA.
+      A recusa cita item, valor obtido e valor-limite. Mensagem sem número é
+      defeito.
+
+  - id: REQ-PILARETE-04-M1d-min-obrigatorio-nas-duas-direcoes
+    texto: >-
+      [rule: NBR6118-11.3.3.4.3-momento-minimo-pilarete].
+      NÃO EXISTE, na API do pilarete, caminho de "compressão centrada pura".
+      Mesmo que o motor geotécnico chame o caso de "carga centrada" e passe
+      M = 0, o núcleo calcula M_1d,min = N_d·(0,015 + 0,03·h_secao) em CADA
+      direção e usa `M_d = max(M_entrada, M_1d,min)` por direção. A ausência
+      desse caminho é estrutural, não convencional: não deve existir função
+      pública que aceite só N_d e devolva veredito.
+      O memorial imprime SEMPRE M_1d,min das duas direções e a frase de que a
+      NBR 6118 não admite dimensionar pilar à compressão estritamente centrada,
+      com a hipótese declarada de que M_1d,min substitui as imperfeições locais
+      de 11.3.3.4.2 (ver `observacao` da regra: é ~10x mais conservador que a
+      rota alternativa para um pilarete de 1 m).
+
+  - id: REQ-PILARETE-05-esbeltez-com-recusa-fora-do-pilar-curto
+    texto: >-
+      [rule: NBR6118-15.8.2-dispensa-2a-ordem-local],
+      [rule: NBR6118-15.8.1-campo-de-aplicacao-esbeltez],
+      [rule: NBR6118-15.8.3-metodos-de-2a-ordem] (REJEITADA -> recusa),
+      [deriv: DER-GEOM-raio-de-giracao], [deriv: DER-NBR6118-15.8.2-e1-de-M1d-min].
+      Sequência obrigatória, e cada passo tem seu próprio motivo de recusa:
+        (1) Campo de 15.8.1: seção constante e armadura constante ao longo do
+            eixo. Pilarete com seção variável -> RECUSA.
+        (2) Classificar como elemento isolado (15.4.4-a) ou exigir declaração
+            do usuário [rule: NBR6118-15.4.4-elementos-isolados].
+        (3) i = sqrt(I/A) CALCULADO NO NÚCLEO a partir da geometria — nunca
+            pedido à UI, nunca digitado. Avaliar as duas direções e tomar o
+            MENOR i, isto é, o MAIOR lambda.
+        (4) lambda = ell_e/i por direção.
+        (5) lambda_1 = min(90, max(35, (25 + 12,5·e_1/h_secao)/alpha_b)) POR
+            DIREÇÃO, CALCULADO PELA FÓRMULA. É PROIBIDO fixar 35 no código, e a
+            proibição vale mesmo sabendo (ver a checagem numérica da derivação)
+            que sob M_1d,min o resultado é exatamente 35 em todo o domínio
+            admissível: basta o M de entrada superar M_1d,min — o que acontece
+            sempre que M ou H entram como dado na base do pilar metálico — para
+            lambda_1 subir. alpha_b = 1,0 pelas alíneas c) e d) de 15.8.2, com o
+            motivo registrado no memorial.
+        (6) lambda < lambda_1 (ESTRITO) -> pilar curto, segue.
+            lambda >= lambda_1 -> RECUSA, mensagem citando 15.8.2/15.8.3, o
+            lambda obtido, o lambda_1 calculado e a direção que governou.
+        (7) Verificar ainda lambda <= 200 (15.8.1 com a redação da Em1:2026,
+            com N_d — força normal DE CÁLCULO — na exceção de elemento pouco
+            comprimido).
+
+  - id: REQ-PILARETE-06-NRd0-e-a-recusa-de-veredito-de-ELU
+    texto: >-
+      [deriv: DER-NBR6118-NRd0-compressao-centrada],
+      [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto],
+      [rule: NBR6118-8.3.5-8.3.6-aco-passivo].
+      (A) IMPLEMENTAR eta_c, n, eps_c2 e eps_cu com os limiares EXPLÍCITOS e
+          separados: eta_c muda em f_ck = 40 MPa; n, eps_c2 e eps_cu mudam em
+          C50/C55. São DOIS limiares nesta lei constitutiva — a correção da
+          premissa do despacho está registrada na `observacao` da regra. O
+          terceiro limiar (C60, parâmetro s de beta_1, Emenda 1) pertence a
+          j < 28 dias, que é RECUSADO em (D). Um `if fck <= 50: 0.85 else ...`
+          sem eta_c é DEFEITO com veto: erra em silêncio em 40 < f_ck <= 50.
+          Só classes normalizadas C20 a C90; f_ck fora da lista -> RECUSA (a
+          Norma define eta_c/n por f_ck contínuo e eps_c2/eps_cu por classe, e
+          os dois critérios divergem entre 50 e 55 MPa).
+      (B) IMPLEMENTAR o patamar: sigma_c(eps_c) é a parábola só até eps_c2 e
+          CONSTANTE de eps_c2 a eps_cu. Avaliar a expressão acima de eps_c2 é
+          defeito (a expressão decresce).
+      (C) N_Rd0 é EXPOSTO como valor informativo e como denominador de
+          nu = N_d/N_Rd0. É PROIBIDO qualquer caminho de código em que
+          `N_d <= N_Rd0` produza "aprovado", cor verde, ou ausência de aviso.
+          O relatório desta versão diz, com todas as letras, que a verificação
+          de ELU de seção sob flexo-composta NÃO é feita e que o resultado é
+          verificação de DETALHAMENTO e DOMÍNIO, não de resistência. N_d > N_Rd0
+          PODE reprovar (condição suficiente para reprovar).
+      (D) RECUSAR verificação em idade j < 28 dias
+          [rule: NBR6118-12.3.3-12.4.1-valores-de-calculo], citando 12.3.3-b e
+          a exigência de dupla verificação (aos t dias e aos 28).
+
+  - id: REQ-PILARETE-07-armadura-longitudinal
+    texto: >-
+      [rule: NBR6118-17.3.5.3-armaduras-limite-pilarete],
+      [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete].
+      Verificar: A_s >= max(0,15·N_d/f_yd ; 0,004·A_c); A_s <= 0,08·A_c na seção
+      corrente E na seção de emenda com a armadura DUPLICADA (o que na prática
+      limita a 4 % fora da emenda quando 100 % das barras emendam na mesma
+      seção — é a restrição que costuma governar); phi >= 10 mm e phi <=
+      b_min/8; mínimo uma barra por vértice (4 na seção retangular);
+      espaçamento livre >= max(20 mm, phi, 1,2·d_agregado) INCLUSIVE na região
+      de emenda, com as barras duplicadas; espaçamento máximo entre eixos <=
+      min(2·b_min, 400 mm). O N_d de A_s,min é o da combinação mais
+      desfavorável — interpretação declarada no memorial, porque a Norma não
+      diz qual combinação usar.
+
+  - id: REQ-PILARETE-08-estribos-e-a-recusa-do-CA-60
+    texto: >-
+      [rule: NBR6118-18.4.3-armaduras-transversais-pilarete].
+      phi_t >= max(5 mm, phi/4); s <= min(200 mm, b_min, k_phi·phi) com
+      k_phi = 24 (CA-25) ou 12 (CA-50). Estribos em TODA a altura do pilarete.
+      RECUSA EXPLÍCITA se a armadura longitudinal for CA-60: o item não fornece
+      k_phi para CA-60 e o valor é NAO_DECLARADO_NA_FONTE. É PROIBIDO
+      interpolar por f_yk, extrapolar de CA-50, ou "adotar 12 phi por
+      analogia". A mensagem cita 18.4.3 e diz que a Norma não cobre o caso.
+      A alternativa phi_t < phi/4 só é oferecida com o MESMO tipo de aço nas
+      duas armaduras e aplica a limitação ADICIONAL s_max = 90000·(phi_t²/phi)/
+      f_yk (f_yk em MPa, s em mm) — adicional, nunca substitutiva do
+      min(200, b_min, k_phi·phi). ATENÇÃO À TRANSCRIÇÃO: NÃO há raiz quadrada
+      nessa expressão; a camada de texto do PDF sugere um expoente 1/2 que não
+      existe, e o mutante correspondente está em tools/checar_dimensoes.py.
+      A NOTA de 18.4.3 sobre C55-C90 (reduzir 50 %, ganchos a 135°) é
+      RECOMENDAÇÃO: pode virar aviso, JAMAIS verificação de reprovação.
+
+  - id: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata
+    texto: >-
+      [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete].
+      O pilarete tem CAMPO DE COBRIMENTO PRÓPRIO, separado do da sapata:
+      c_nom,pilarete = max(45 mm ; valor da Tabela 7.2 para a classe de
+      agressividade na linha aplicável ; phi ; d_agregado/1,2). Medido à face
+      externa do ESTRIBO (7.4.7.5).
+      INCOMPATIBILIDADE REGISTRADA COM O CÓDIGO EXISTENTE, e a instrução é para
+      NÃO consertá-la à força: `sapata_isolada/sapata.py::Sapata` recebe UM
+      único `cobrimento` para a peça inteira (`__init__`, default 0,05 m), e
+      esse número atravessa `ui/completo/formulario.py`, `modelo.py`,
+      `projeto.py` (schema `.s7proj`), `relatorio.py`, `pranchas.py` e
+      `visual3d.py`. O pilarete NÃO reusa esse campo e NÃO o altera nesta
+      versão. Quando a integração pilarete<->sapata for feita (rodada própria),
+      o campo novo entra como `cobrimento_pilarete` com default None e
+      migração que preserva arquivos salvos — mudar o significado do campo
+      existente invalidaria aprovações de A6/A7 sobre `ui/` sem necessidade.
+      A redução de 5 mm por classe de resistência superior à mínima e a de
+      7.4.7.4 (Delta_c = 5 mm, que exige ABNT NBR 9062, ausente do acervo) NÃO
+      são implementadas.
+
+  - id: REQ-PILARETE-10-emenda-por-traspasse-pilarete-sapata
+    texto: >-
+      [rule: NBR6118-9.5.2.3-traspasse-comprimidas],
+      [rule: NBR6118-9.5.2.1-emenda-100-por-cento-comprimida],
+      [rule: NBR6118-9.5.2.4.2-armadura-transversal-na-emenda].
+      ell_0c = ell_b,nec >= max(0,6·ell_b ; 15·phi ; 200 mm), com
+      ell_b = (phi/4)·(f_yd/f_bd) >= 25·phi, f_bd = eta_1·eta_2·eta_3·f_ctd
+      (9.3.2.1, eta_2 DECLARADO por REQ-PILARETE-02-g) e alpha = 1,0 em
+      ell_b,nec (barra comprimida não tem gancho nem barra transversal soldada).
+      phi > 32 mm -> traspasse PROIBIDO (9.5.2): RECUSA.
+      NÃO REUSAR `sapata.py::_ancoragem_pilar`. Aquela função calcula
+      ANCORAGEM DENTRO DA SAPATA e usa `max(0,6·ell_b, 10 phi, 100 mm)`, que é
+      um híbrido: o 0,6·ell_b vem do mínimo de EMENDA (9.5.2.3) e o 10 phi /
+      100 mm vêm do mínimo de ANCORAGEM (9.4.2.5, que tem 0,3·ell_b). Não
+      corresponde a nenhum dos dois itens. Conservador na primeira parcela, mas
+      sem rastreabilidade — kb/pendencias.md > V12. O pilarete calcula ell_0c
+      do seu próprio jeito, com [rule: ] correto.
+      VERIFICAR A HIPÓTESE, não assumi-la: "armadura permanentemente
+      comprimida" é o que autoriza 100 % das barras emendadas na mesma seção.
+      Se QUALQUER combinação tracionar a armadura do pilarete, a autorização
+      cai, passam a valer 9.5.2.2 e a Tabela 9.4 (não implementadas) e o
+      software RECUSA.
+      Armadura transversal da emenda: impor o TEXTO (estribo fechado, uma barra
+      a 4·phi além de cada extremidade da emenda, concentração nos terços
+      extremos) e NÃO dimensionar Soma A_st pelos valores que só existem na
+      Figura 9.5 — não conferidos por leitura vetorial (V11). Remeter ao
+      projetista com aviso no memorial.
+
+  - id: REQ-PILARETE-11-junta-de-concretagem-tres-casos-e-uma-recusa
+    texto: >-
+      [rule: NBR6118-21.6-junta-de-concretagem-pilarete-sapata].
+      Enumeração fechada, sem default:
+        MONOLITICO -> segue, sem exigência adicional de 21.6.
+        JUNTA_COM_ADERENCIA_DECLARADA -> segue. A declaração é
+          DECLARADO_PELO_USUARIO, vai LITERAL no memorial junto com a exigência
+          do 1º parágrafo de 21.6 (o projeto de execução deve indicar de forma
+          precisa o local e a configuração da superfície da junta), e a espera
+          dimensionada por 9.5.2.3 é a armadura que atravessa a junta.
+        JUNTA_SEM_ADERENCIA_ASSEGURADA -> RECUSA. Mensagem: 21.6 exige armadura
+          de costura, a NBR 6118 não fornece modelo de cisalhamento na
+          interface (sem coeficiente de atrito, sem coesão, sem rugosidade em
+          mm, sem taxa mínima) e a ABNT NBR 9062 NÃO ESTÁ NO ACERVO. É PROIBIDO
+          calcular por aproximação, por Eurocódigo ou por ACI.
+      MITIGAÇÃO ACRESCENTADA PELO a2 (não estava no despacho): quando houver
+      H != 0 na junta do caso JUNTA_COM_ADERENCIA_DECLARADA, o memorial traz
+      AVISO de que a NBR 6118 não fornece verificação de transferência de
+      cortante na junta e de que a adequação repousa na especificação de
+      execução e na ART. Aviso, não recusa — recusar seria julgamento de
+      engenharia que o a2 não pode aprovar sozinho. Pergunta em
+      kb/pendencias.md > V13.
+
+  - id: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer
+    texto: >-
+      O relatório do pilarete imprime, sem exceção: (a) os itens normativos de
+      cada verificação com página; (b) M_1d,min das duas direções e a frase
+      sobre compressão centrada não ser estado admissível; (c) lambda,
+      lambda_1, i e ell_e por direção, com a vinculação DECLARADA; (d) N_Rd0 e
+      nu = N_d/N_Rd0 rotulados como INFORMATIVOS, com a frase "esta versão não
+      verifica o ELU de seção sob flexo-compressão"; (e) gamma_c e gamma_s
+      efetivamente usados e se a correção × 1,1 de 12.4.1 foi aplicada; (f) o
+      tipo de junta e, no caso declarado, o texto da declaração; (g) as
+      hipóteses declaradas: j >= 28 dias, eta_2 de aderência, cobrimento de
+      45 mm aplicado ao pilarete inteiro, M_1d,min substituindo as imperfeições
+      locais fora de estrutura reticulada.
+      É PROIBIDO o memorial do pilarete emitir "APROVADO"/"OK" global.
+
+  - id: REQ-PILARETE-13-testes-sem-exemplo-de-terceiros
+    texto: >-
+      ACHADO QUE MUDA A ESTRATÉGIA DE TESTE, e ele vem da busca negativa do a1,
+      reconferida pelo a2: NÃO HÁ UM ÚNICO EXEMPLO RESOLVIDO DE PILARETE em
+      toda a bibliografia do acervo — Bastos ("pilarete": 0 ocorrências;
+      "esbeltez": 0) e Cintra/Aoki/Albiero tratam o pilar só como condição de
+      contorno da sapata. O GATE 3 NÃO terá conferência numérica de terceiros.
+      Isso não bloqueia o GATE 1, mas obriga o A5 a entregar, e o A7 a exigir:
+        (1) INVARIÂNCIA: sob M_1d,min apenas, lambda_1 = 35 EXATAMENTE, para
+            h de 0,14 m a 2,00 m e para qualquer N_d (o N_d cancela). Testar a
+            faixa inteira, não um ponto.
+        (2) FRONTEIRA ESTRITA: lambda == lambda_1 NÃO dispensa a 2ª ordem —
+            teste em cima do valor.
+        (3) FRONTEIRAS DURAS de 13.2.3: b = 13,9 cm recusa; b = 19×18 cm (A_c =
+            342 cm²) recusa mesmo com b >= 14 cm; b = 14,0 cm aceita com
+            gamma_n = 1,25.
+        (4) MUTAÇÃO: remover eta_c do cálculo de sigma_c deve QUEBRAR um teste
+            com f_ck = 45 MPa (e não pode quebrar nenhum com f_ck = 25 MPa —
+            é assim que se prova que o teste testa o que diz testar).
+        (5) FÍSICA: N_Rd0 monótono crescente em A_s e em f_ck; ell_0c monótono
+            crescente em phi e decrescente em f_ck; lambda cresce com ell.
+        (6) CONTRA-PROVA PARCIAL DISPONÍVEL, e é o único ponto com valor
+            externo: ell_b/phi = 37,7 para C25/CA-50 boa aderência sem gancho,
+            contra o valor de tabela clássico de 38·phi; e sigma_s2 = 420 MPa
+            para CA-50 em eps_c2 = 2 ‰. Usar como fixtures, declarando que a
+            referência é tabela consagrada e não fonte do acervo.
+
+  - id: REQ-PILARETE-14-proibicao-de-mistura-de-metodo-e-de-majoracao-por-vento
+    texto: >-
+      COLISÃO DE MÉTODO DE SEGURANÇA (cascata do a2, item 3), e esta versão é a
+      primeira em que ela fica perigosa de verdade, porque passam a coexistir um
+      bloco `admissivel` (geotécnico, característico + FS global) e um bloco
+      inteiramente `calculo` (pilarete, gamma_f/gamma_m):
+        (a) A API do pilarete aceita SOMENTE valores de cálculo (N_d, M_d), e o
+            parâmetro carrega o metadado do método, como já se faz em
+            REQ-SIGMA-01/02. Receber valor característico é ERRO EXPLÍCITO, não
+            conversão automática: o software NÃO multiplica por 1,4 sozinho.
+        (b) É PROIBIDO comparar qualquer grandeza do pilarete com tensão
+            admissível do solo, e é PROIBIDO alimentar o pilarete com o N que
+            foi usado na verificação geotécnica de ELS.
+        (c) MAJORAÇÃO POR VENTO: as regras NBR 6122 §6.3.2 (15 %/30 %) e §6.3.3
+            (10 %) são EXCLUSIVAS da tensão do SOLO e NÃO TÊM NENHUMA aplicação
+            ao pilarete. É PROIBIDO majorar N_Rd0, f_cd, f_yd ou qualquer
+            resistência de concreto/aço por vento. A ação do vento entra no
+            pilarete pelos coeficientes de combinação da NBR 8681/NBR 6118
+            §11, do lado das AÇÕES, e só. Encontrar em `estrutural/` qualquer
+            referência a 6.3.2/6.3.3 é veto do a6.
+
+  - id: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro
+    prioridade: ALTA
+    lado: INSEGURO
+    texto: >-
+      NÃO É REQUISITO DO PILARETE. É defeito PREEXISTENTE em
+      `calc_core/sapata_isolada/`, encontrado por esta rodada porque foi ela que
+      extraiu 8.2.10.1 pela primeira vez, e despachado ao a5 por ser matéria
+      estrutural.
+      O QUE A NORMA DIZ (conferido por leitura visual da p. impressa 121 pelo
+      a2, item 17.2.2, alínea e): a tensão constante do diagrama retangular é
+      "alpha_c·eta_c·f_cd", com eta_c definido em 8.2.10.1 — eta_c = 1,0 para
+      f_ck <= 40 MPa e eta_c = (40/f_ck)^(1/3) acima.
+      O QUE O CÓDIGO FAZ: `materiais.py::Concreto.alpha_c` devolve 0,85 (ou
+      0,85·[1-(f_ck-50)/200]) e eta_c NÃO EXISTE em `calc_core/`. O consumidor é
+      `sapata.py::_armadura_flexao_simples`, que monta
+      `A = alpha_c·f_cd·b_w·lambda`. Como `Concreto.__post_init__` aceita f_ck
+      até 90 MPa, o bloco comprimido fica superestimado em 1/eta_c para
+      f_ck > 40: +4,0 % (C45), +7,7 % (C50), +14,5 % (C60), +31,0 % (C90).
+      IMPACTO MEDIDO, executando a própria fórmula do código: em seção pouco
+      armada o déficit de A_s é < 1 % (M_d = 300 kN·m/m, d = 0,45 m: 15,60
+      contra 15,69 cm²/m em C90); em seção próxima do limite de dutilidade o
+      déficit chega a 9,0 % de A_s A MENOS, e x/d sai 0,486 contra 0,700
+      corretos — a verificação `x/d <= csi_limite` PASSA quando deveria
+      REPROVAR. Lado inseguro nos dois efeitos.
+      O QUE FAZER: acrescentar `Concreto.eta_c` com [rule:
+      NBR6118-8.2.10.1-diagrama-idealizado-do-concreto] e multiplicá-lo onde
+      alpha_c é usado no diagrama retangular. NÃO mexer em `bielas.py:102`
+      (`0,85·alpha_v2·f_cd`) nesta rodada: é outro item (nós de bielas e
+      tirantes), não extraído, e mudar por analogia seria o erro que este
+      pipeline existe para impedir.
+      CONSEQUÊNCIA DE PROCESSO, explícita porque é obrigatória: este conserto
+      TOCA `sapata_isolada/materiais.py` e `sapata_isolada/sapata.py` e portanto
+      INVALIDA as aprovações de A6 (GATE 2) e A7 (GATE 3) para a superfície de
+      flexão da sapata — nova rodada de a6 e a7 sobre ela antes de release.
+      Enquanto não for feito, a interface deve avisar que o motor amplo não é
+      confiável para f_ck > 40 MPa em flexão. kb/pendencias.md > V15.
 
 requisitos_para_a3:
   - id: REQ-UI-SIGMA-01-rotulo-de-ELU

@@ -5,6 +5,101 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 11 (2026-09-02) — pilarete de concreto como pilar curto e a
+# transferência de esforços pilarete -> sapata. Backlog do usuário, item #13.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: as listas `praticas_consagradas`, `requisitos_para_a4`,
+# `requisitos_para_a3` e `escopo_amplo_em_conferencia` saem IDÊNTICAS às da
+# v10, e as 26 regras antigas saem intactas):
+#   regras (normativas) ............ 30 APROVADA          (eram 19)
+#                                     7 APROVADA_COM_USO_RESTRITO (eram 0)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     1 REJEITADA         (era 0)
+#   derivacoes (SEÇÃO NOVA) ........  3 APROVADA
+#                                     2 APROVADA_COM_USO_RESTRITO
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA           (inalterado)
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO     (inalterado)
+#   requisitos_para_a5 (SEÇÃO NOVA)  15
+#
+# REGRAS NOVAS (todas NBR 6118:2023, todas `metodo: calculo` — é o primeiro
+# bloco inteiramente de VALORES DE CÁLCULO deste ruleset):
+#   NBR6118-13.2.3-dimensoes-limites-pilarete .......... APROVADA
+#   NBR6118-11.3.3.4.3-momento-minimo-pilarete ......... APROVADA
+#   NBR6118-15.4.4-elementos-isolados .................. APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.6-comprimento-equivalente ............... APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.8.1-campo-de-aplicacao-esbeltez ......... APROVADA
+#   NBR6118-15.8.2-dispensa-2a-ordem-local ............. APROVADA
+#   NBR6118-15.8.3-metodos-de-2a-ordem ................. REJEITADA
+#   NBR6118-17.3.5.3-armaduras-limite-pilarete ......... APROVADA
+#   NBR6118-18.4.1-campo-de-aplicacao-detalhamento ..... APROVADA
+#   NBR6118-18.4.2-armaduras-longitudinais-pilarete .... APROVADA
+#   NBR6118-18.4.3-armaduras-transversais-pilarete ..... APROVADA_COM_USO_RESTRITO
+#   NBR6118-Tab7.2-nota-d-cobrimento-pilarete .......... APROVADA
+#   NBR6118-9.5.2.1-emenda-100-por-cento-comprimida .... APROVADA
+#   NBR6118-9.5.2.3-traspasse-comprimidas .............. APROVADA
+#   NBR6118-9.5.2.4.2-armadura-transversal-na-emenda ... APROVADA_COM_USO_RESTRITO
+#   NBR6118-21.6-junta-de-concretagem-pilarete-sapata .. APROVADA_COM_USO_RESTRITO
+#   NBR6118-8.2.10.1-diagrama-idealizado-do-concreto ... APROVADA
+#   NBR6118-8.3.5-8.3.6-aco-passivo .................... APROVADA_COM_USO_RESTRITO
+#   NBR6118-12.3.3-12.4.1-valores-de-calculo ........... APROVADA_COM_USO_RESTRITO
+#
+# DERIVAÇÕES (categoria CRIADA nesta versão; citação `[deriv: <id>]`, JAMAIS
+# `[rule: ]` e JAMAIS `[pratica: ]` — é álgebra sobre a própria NBR 6118, sem
+# fonte externa nenhuma, com cada passo apontando para um item que está em
+# `regras`):
+#   DER-NBR6118-12.3.1-fyd ............................. APROVADA
+#   DER-NBR6118-8.3.6-sigma-s .......................... APROVADA
+#   DER-GEOM-raio-de-giracao ........................... APROVADA
+#   DER-NBR6118-15.8.2-e1-de-M1d-min ................... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-NRd0-compressao-centrada ............... APROVADA_COM_USO_RESTRITO
+#
+# A RECUSA CENTRAL DESTA VERSÃO, dita sem eufemismo: N_Rd0 é aprovado como
+# LIMITE SUPERIOR informativo e como condição SUFICIENTE PARA REPROVAR, e é
+# PROIBIDO derivar dele qualquer veredito de aprovação. Motivo normativo: por
+# 11.3.3.4.3 há M_1d,min nas duas direções, logo o estado é flexo-compressão
+# oblíqua e o critério é a envoltória (N_Rd, M_Rd) de 17.2.1 — que exige a
+# Figura 11.3 e 17.2.5, NENHUMA DAS DUAS EXTRAÍDA. Esta versão entrega
+# verificação de DOMÍNIO e DETALHAMENTO do pilarete, não de resistência de
+# seção. Devolvido ao a1: extrair 17.2.5, a Figura 11.3 e os limites numéricos
+# dos domínios da Figura 17.1.
+#
+# MÓDULO DECIDIDO: pacote NOVO `calc_core/estrutural/` (pilarete.py e
+# materiais_6118.py), NÃO extensão de `calc_core/sapata_isolada/`. Quatro
+# razões no cabeçalho de `requisitos_para_a5`; a principal é que
+# `sapata_isolada/` é o pacote PARCIALMENTE auditado e o pilarete nasce 100 %
+# rastreado — misturá-los apagaria a informação que o memorial precisa dar.
+#
+# ACHADO DO LADO INSEGURO EM CÓDIGO JÁ EM USO (não é do pilarete; foi esta
+# rodada que o revelou, por ter extraído 8.2.10.1 pela primeira vez):
+# `Concreto.alpha_c` não aplica eta_c, exigido por 17.2.2-e. Para f_ck > 40 MPa
+# o bloco comprimido é superestimado em até 31 % (C90); medido por execução, o
+# déficit de A_s chega a 9 % e x/d sai 0,486 contra 0,700 corretos — a
+# verificação de dutilidade PASSA quando deveria REPROVAR. REQ-ETA-C-01 e
+# kb/pendencias.md > V15. CONSERTAR ISSO INVALIDA A6/A7 para a superfície de
+# flexão da sapata — por isso o conserto NÃO foi feito nesta rodada e está
+# despachado, não escondido.
+#
+# ALCANCE DA REGRA 5 DO CLAUDE.md NESTA VERSÃO: as aprovações de A6 (GATE 2) e
+# A7 (GATE 3) NÃO ficam invalidadas por ela, porque nada do que já existe muda
+# — as listas antigas saem idênticas e o que a v11 autoriza é um pacote novo
+# que ainda não existe. Ficarão invalidadas, para a superfície de flexão da
+# sapata, no momento em que REQ-ETA-C-01 for implementado.
+#
+# FILA HUMANA: sete pendências novas, V9 a V15, em kb/pendencias.md. Nenhuma
+# bloqueia o que a v11 aprovou. Prioridade ALTA: V13 (junta aderente com H != 0
+# — recusar ou avisar) e V15 (eta_c, lado inseguro, código em uso).
+#
+# FERRAMENTA: tools/checar_dimensoes.py ganhou a seção 6 (pilarete), com 24
+# casos novos, 7 deles mutantes. Todos os mutantes foram rejeitados pelo pint,
+# inclusive o que reproduz a leitura ERRADA que a camada de texto do PDF sugere
+# para s_max de 18.4.3 (raiz quadrada inexistente) — a checagem dimensional
+# pegou sozinha uma transcrição falsa plausível.
+#
+# ===========================================================================
 # VERSÃO 10 (2026-09-02) — camada única de dados: phi'/c'/gamma na base
 # derivados da camada em h_f. Backlog do usuário, item #12.
 #
@@ -151,4 +246,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-99d1c2e13c1adc2836266265e705aff53e2c2cdfe6e481f870479cf02f9ff7e6  ruleset.yaml
+ffdcd961bd1df10e2610e73602bbfa8aec8d93fe9fa150dc0587244ec847228f  ruleset.yaml

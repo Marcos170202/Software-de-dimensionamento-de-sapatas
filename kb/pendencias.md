@@ -1117,3 +1117,275 @@ os três campos nunca são travados (NBR 6122:2022 §7.2).
 de `gamma_solo` no núcleo (ou usar o perfil também no peso próprio) e, aí sim,
 dispensar os avisos. Enquanto não vier, os avisos são obrigatórios e o a6 os
 trata como veto se ausentes.
+
+---
+
+# RODADA 2026-09-02 (ruleset versão 11) — pilarete de concreto como pilar curto
+
+Sete pendências (V9 a V15), levantadas pelo a2 ao auditar as duas extrações do
+a1 para o backlog #13 (commits `a8b1ec8` e `2112b3d`) e ao escrever
+`ruleset.yaml > requisitos_para_a5 > REQ-PILARETE-01..14` e `REQ-ETA-C-01`.
+
+**Nenhuma delas bloqueia o que a v11 aprovou.** Todas foram desenhadas para que
+o software funcione sem a resposta — recusando em vez de aproximar. Duas
+merecem leitura imediata: **V15** é defeito do lado INSEGURO em código que já
+está em produção no motor amplo, e **V13** é a única em que o a2 acrescentou
+uma mitigação que o despacho do usuário não previa.
+
+---
+
+## V9 — Ordem de aplicação de gamma_n (13.2.3) em relação aos efeitos de 2ª ordem — PRIORIDADE BAIXA (dormente nesta versão)
+
+*Pergunta objetiva:* para pilar (ou pilarete) com menor dimensão entre 14 cm e
+19 cm, o coeficiente gamma_n = 1,95 - 0,05·b majora os esforços ANTES ou DEPOIS
+do cálculo dos efeitos locais de 2ª ordem?
+
+*Trecho literal da fonte* (NBR 6118:2023, 13.2.3 e NOTA da Tabela 13.1,
+p. impressa 73, lido por visão pelo a2 nesta rodada):
+
+> "Em casos especiais, permite-se a consideração de dimensões entre 19 cm e
+> 14 cm, desde que se multipliquem os esforços solicitantes de cálculo a serem
+> considerados no dimensionamento por um coeficiente adicional gamma_n [...]"
+> "NOTA O coeficiente gamma_n deve majorar os esforços solicitantes finais de
+> cálculo quando de seu dimensionamento."
+
+*Leitura proposta pelo a2:* "finais de cálculo" sugere DEPOIS dos efeitos de 2ª
+ordem, mas o texto não fecha a questão — "finais" pode ser lido como "de
+cálculo, isto é, já ponderados por gamma_f". O a2 NÃO arbitra.
+
+*Por que não bloqueia esta versão:* o escopo aprovado é PILAR CURTO
+(lambda < lambda_1, efeitos locais de 2ª ordem dispensados por 15.8.2). Não
+existe "depois da 2ª ordem" — os esforços finais SÃO os de 1ª ordem majorados, e
+a ambiguidade não se materializa. Registrada aqui para não ser redescoberta
+quando a 2ª ordem entrar no escopo.
+
+*Impacto se a leitura estiver errada (fora desta versão):* aplicar gamma_n antes
+da 2ª ordem majora também o momento de 2ª ordem, que é função não linear do
+esforço — o resultado é MAIOR (lado seguro) do que aplicar depois. Errar para o
+lado "depois" é o lado inseguro.
+
+---
+
+## V10 — Onde termina "o trecho dos pilares em contato com o solo" da nota (d) da Tabela 7.2 — PRIORIDADE MÉDIA
+
+*Pergunta objetiva:* num pilarete parcialmente enterrado, o cobrimento de 45 mm
+vale só no trecho efetivamente em contato com o solo, ou no pilarete inteiro? E
+onde exatamente começa esse trecho — no topo da sapata, na cota de arrasamento,
+no nível do terreno?
+
+*Trecho literal da fonte* (NBR 6118:2023, Tabela 7.2, nota de rodapé (d),
+p. impressa 20, lido por visão pelo a2):
+
+> "No trecho dos pilares em contato com o solo junto aos elementos de fundação,
+> a armadura deve ter cobrimento nominal >= 45 mm."
+
+*Leitura proposta pelo a2:* aplicar os 45 mm ao PILARETE INTEIRO, do topo da
+sapata ao topo do pilarete. Não é a leitura literal mais estreita; é a que
+evita inventar uma cota de transição que a Norma não define e que ficaria à
+mercê do desenho de cada obra. É o lado conservador (cobrimento maior). Fica
+declarada como hipótese no memorial, por REQ-PILARETE-12.
+
+*Impacto se a leitura estiver errada:* se a leitura correta fosse a estreita, o
+software estaria exigindo 45 mm onde 30 mm (CAA I/II) bastariam — perda de
+seção útil e de altura útil, custo, mas nunca insegurança. Erro para o lado
+seguro. O inverso (aplicar 30 mm no trecho enterrado) seria durabilidade
+comprometida em ambiente agressivo por umidade do solo.
+
+---
+
+## V11 — Os valores da Figura 9.5 (armadura transversal da emenda) não foram conferidos por leitura vetorial — PRIORIDADE MÉDIA
+
+*Pergunta objetiva:* a Figura 9.5 da NBR 6118:2023 (p. impressa 44) traz
+"Soma A_st/2" concentrada em cada terço extremo da emenda, o comprimento
+"1/3 ell_0" e um espaçamento "<= 150 mm". Esses três valores são requisito
+normativo ou ilustração?
+
+*Trecho literal da fonte* (9.5.2.4.1, TEXTO — o texto NÃO traz nenhum dos três
+números):
+
+> "[...] a armadura transversal deve: ser capaz de resistir a uma força igual à
+> de uma barra emendada, considerando os ramos paralelos ao plano da emenda;
+> ser constituída por barras fechadas se a distância entre as duas barras mais
+> próximas de duas emendas na mesma seção for < 10 phi [...]; concentrar-se nos
+> terços extremos da emenda."
+
+*Leitura proposta pelo a2:* o TEXTO é o requisito e está aprovado
+(`ruleset.yaml > NBR6118-9.5.2.4.2-armadura-transversal-na-emenda`). Os três
+números aparecem SÓ na figura; o a1 os transcreveu da camada de texto da figura
+(não por leitura vetorial) e o a2 NÃO os conferiu por visão nesta rodada. Sem
+essa conferência eles não podem dimensionar nada: `nao_autorizado` da regra.
+
+*Impacto se a leitura estiver errada:* dimensionar Soma A_st por um valor mal
+transcrito produziria armadura de costura da emenda errada, possivelmente a
+menos — lado inseguro. Enquanto não houver conferência, o software impõe o
+texto e REMETE o dimensionamento de Soma A_st ao projetista, com aviso. Custa
+completude, não segurança.
+
+*Quem responde destrava o quê:* uma leitura visual dedicada da Figura 9.5 (a1)
+permite fechar o dimensionamento da armadura da emenda dentro do software.
+
+---
+
+## V12 — `_ancoragem_pilar` mistura o mínimo de EMENDA com o mínimo de ANCORAGEM — PRIORIDADE MÉDIA (conservador, mas sem rastreabilidade)
+
+*Pergunta objetiva:* o mínimo usado hoje para a ancoragem da espera dentro da
+sapata deve ser o de 9.4.2.5 (ancoragem) ou o de 9.5.2.3 (emenda)?
+
+*Trecho literal do código:*
+
+> `calc_core/sapata_isolada/sapata.py:1203`
+> ```
+> lb_min = max(0.6 * lb, 10.0 * phi / 1000.0, 0.10)   # compressão: alpha = 1,0
+> ```
+
+*Trechos literais da fonte:*
+
+> 9.4.2.5 — "l_b,mín é o maior valor entre 0,3·l_b, 10·phi e 100 mm."
+> 9.5.2.3 — "l_0c,mín é o maior valor entre 0,6·l_b, 15·phi e 200 mm."
+
+*Leitura proposta pelo a2:* o código pegou o PRIMEIRO termo de 9.5.2.3
+(0,6·l_b) e o SEGUNDO e TERCEIRO de 9.4.2.5 (10 phi, 100 mm). O híbrido não
+corresponde a nenhum dos dois itens. Como 0,6 > 0,3, o resultado é
+CONSERVADOR — mas a docstring cita um item que não é o que a fórmula usa, e
+isso é defeito de rastreabilidade, que é justamente o que este pipeline
+protege. O a2 NÃO altera `calc_core/`; o pilarete calcula ell_0c do seu jeito,
+com [rule: ] correto (REQ-PILARETE-10).
+
+*Impacto se a leitura estiver errada:* nenhum número fica menor do que a Norma
+exige nas duas hipóteses. O risco é de AUDITORIA, não de segurança: um revisor
+que confira o código contra 9.4.2.5 encontrará 0,6 onde a Norma escreve 0,3 e
+concluirá — erradamente — que há defeito de transcrição.
+
+---
+
+## V13 — Junta declarada aderente COM força horizontal: recusar ou avisar? — PRIORIDADE ALTA (decisão de escopo já parcialmente tomada)
+
+*Pergunta objetiva:* o usuário decidiu que o software só admite (a) pilarete
+monolítico com a sapata ou (b) junta cuja aderência e rugosidade sejam
+declaradas asseguradas pela especificação de execução. No caso (b), quando
+houver força horizontal H != 0 transmitida pela base metálica, o software deve
+RECUSAR ou apenas AVISAR?
+
+*Trecho literal da fonte* (NBR 6118:2023, 21.6, p. impressa 181, integral, lido
+por visão pelo a2 — o item inteiro tem dois parágrafos e nenhum número):
+
+> "O projeto de execução de uma junta de concretagem deve indicar de forma
+> precisa o local e a configuração de sua superfície.
+> Sempre que não forem asseguradas a aderência e a rugosidade entre o concreto
+> novo e o existente, devem ser previstas armaduras de costura, devidamente
+> ancoradas em regiões capazes de resistir a esforços de tração."
+
+*Leitura proposta pelo a2:* o a2 CONCORDA com a decisão do usuário e a
+formalizou no ruleset. Lendo 21.6 pela positiva, com aderência e rugosidade
+asseguradas a Norma NÃO exige costura adicional, e a espera de 9.5.2.3 é a
+armadura que atravessa a junta. Mas 21.6 não fornece NENHUMA verificação de
+transferência de CORTANTE na interface, e a NBR 9062 — que forneceria — não
+está no acervo. O a2 ACRESCENTOU, por isso, uma mitigação que o despacho não
+previa: com H != 0, aviso obrigatório no memorial de que a NBR 6118 não fornece
+essa verificação e de que a adequação repousa na especificação de execução e na
+ART. **Aviso, não recusa** — recusar aí seria julgamento de engenharia, e o a2
+não aprova conteúdo normativo sozinho.
+
+*Impacto se a leitura estiver errada:* se o correto for recusar, o software
+hoje permite dimensionar um pilarete cuja junta transmite cortante sem
+verificação normativa nenhuma — o aviso transfere a responsabilidade, mas não
+impede o uso. Lado inseguro, mitigado por texto e não por cálculo. Se o correto
+for avisar, recusar teria custado uso legítimo do software.
+
+*Quem responde destrava o quê:* uma resposta "recusar" vira guarda dura em
+REQ-PILARETE-11. Uma resposta "avisar" congela o comportamento atual. Trazer a
+ABNT NBR 9062 para o acervo destrava a terceira via — junta sem aderência
+assegurada, com modelo de cisalhamento-atrito — que hoje é RECUSA.
+
+---
+
+## V14 — "Outras seções desta Norma" com gamma_c específico (novo parágrafo da Emenda 1 em 12.4.1) não foram varridas — PRIORIDADE BAIXA
+
+*Pergunta objetiva:* a Emenda 1:2026 acrescenta a 12.4.1 que "outros valores do
+coeficiente gamma_c devem ser adotados em casos específicos, conforme
+determinados em outras seções desta Norma". Quais são essas seções, e alguma
+delas alcança o pilarete de fundação ou a sapata?
+
+*Trecho literal da fonte* (NBR 6118:2023/Em1:2026, "Página 71, 12.4.1", lido por
+visão pelo a2 na p. impressa 6 da Emenda):
+
+> "Adicionar novo parágrafo no fim da subseção: Outros valores do coeficiente
+> gamma_c devem ser adotados em casos específicos, conforme determinados em
+> outras seções desta Norma."
+
+*Leitura proposta pelo a2:* NÃO bloqueia a v11, por três razões: o escopo
+aprovado é só combinações normais; gamma_c não é constante no código, é entrada
+com padrão 1,4 (REQ-PILARETE-02-h); e o memorial imprime o gamma_c
+efetivamente usado (REQ-PILARETE-12-e). O que a ressalva exige é a NOTA DE
+ESCOPO que ficou registrada na `observacao` da regra
+`NBR6118-12.3.3-12.4.1-valores-de-calculo`: a varredura não foi feita, e o
+software não afirma que 1,4 é sempre o valor certo — afirma que 1,4 é o valor
+da Tabela 12.1 para combinações normais.
+
+*Impacto se a leitura estiver errada:* se existir seção aplicável ao pilarete
+com gamma_c maior que 1,4, o software estará usando resistência de cálculo
+maior que a devida — lado inseguro. A mitigação (gamma_c editável e impresso)
+permite ao engenheiro corrigir sem alterar código.
+
+*Quem responde destrava o quê:* uma varredura do a1 por "gamma_c" em toda a
+NBR 6118:2023 fecha a questão de vez, e é barata: a busca é textual.
+
+---
+
+## V15 — eta_c ausente no motor amplo: bloco comprimido superestimado para f_ck > 40 MPa — PRIORIDADE ALTA (lado INSEGURO, código em uso)
+
+*Pergunta objetiva:* nenhuma, no sentido normativo — a Norma é explícita e o a2
+a conferiu por leitura visual. A pendência existe porque o conserto TOCA código
+já aprovado por A6/A7 e a decisão de quando fazê-lo é do usuário.
+
+*Trecho literal da fonte* (NBR 6118:2023, 17.2.2, alínea e, p. impressa 121,
+lido por visão pelo a2 nesta rodada):
+
+> "[...] a tensão constante atuante até a profundidade y pode ser tomada igual
+> a: alpha_c eta_c f_cd, no caso da largura da seção, medida paralelamente à
+> linha neutra, não diminuir a partir desta para a borda comprimida; 0,9
+> alpha_c eta_c f_cd, no caso contrário; [...] eta_c conforme definido em
+> 8.2.10.1."
+
+E em 8.2.10.1 (p. impressa 26, Figura 8.2):
+
+> "Para f_ck <= 40 MPa: eta_c = 1,0; Para f_ck > 40 MPa: eta_c = (40/f_ck)^(1/3)"
+
+*Trecho literal do código:*
+
+> `calc_core/sapata_isolada/materiais.py:89-93`
+> ```
+> def alpha_c(self) -> float:
+>     """Coeficiente do diagrama retangular - NBR 6118, 17.2.2."""
+>     if self.fck <= 50.0:
+>         return 0.85
+>     return 0.85 * (1.0 - (self.fck - 50.0) / 200.0)
+> ```
+> `calc_core/sapata_isolada/sapata.py:699` — `ac, lam = self.concreto.alpha_c, self.concreto.lambda_x`
+
+*Leitura do a2 (e aqui não há "proposta": é transcrição contra código):* eta_c
+NÃO EXISTE em `calc_core/`. Como `Concreto.__post_init__` aceita f_ck de 20 a
+90 MPa, para f_ck > 40 o bloco comprimido fica superestimado em 1/eta_c. A
+expressão do código (0,85 e 0,85·[1-(f_ck-50)/200], sem eta_c) é exatamente a
+forma que circula na literatura da edição ANTERIOR da Norma — o a1 registrou
+que eta_c é novidade de 2023, e o a2 NÃO CONFIRMA essa parte, porque a
+NBR 6118:2014 não está no acervo e o a2 não valida afirmação sobre documento
+que não pode ler. O que é verificado e basta: a edição 2023 EXIGE eta_c, e o
+código não o tem.
+
+*Impacto, medido por execução da própria fórmula do código (não estimado):*
+superestimação do bloco de +4,0 % (C45), +7,7 % (C50), +14,5 % (C60), +31,0 %
+(C90). Em seção pouco armada (M_d = 300 kN·m/m, d = 0,45 m) o déficit de A_s é
+< 1 %. Em seção próxima do limite de dutilidade (M_d = 2500 kN·m/m) o déficit
+chega a **9,0 % de A_s a menos** e x/d sai **0,486 contra 0,700** corretos em
+C90 — isto é, a verificação `x/d <= csi_limite` (0,35 para f_ck > 50) **PASSA
+quando deveria REPROVAR**. Os dois efeitos são do lado inseguro.
+
+*Mitigação disponível sem esperar resposta:* o defeito só existe para
+f_ck > 40 MPa. Aviso na interface enquanto não for corrigido, ou limitar
+temporariamente `Concreto` a f_ck <= 40 MPa no motor amplo.
+
+*Quem responde destrava o quê:* autorizar o conserto (REQ-ETA-C-01) e a
+consequente nova rodada de A6/A7 sobre a superfície de flexão da sapata. Nada
+disso é do escopo do pilarete — é dívida preexistente que esta rodada tornou
+visível.
