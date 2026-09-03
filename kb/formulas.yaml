@@ -2011,3 +2011,262 @@ formulas:
       divergencia: false
     status: OK
     alterada_por_emenda1: true
+
+  # ===========================================================================
+  # RODADA 2026-09-03 — backlog #13, rodada 3: ELU do pilarete como FLEXÃO
+  # COMPOSTA OBLÍQUA (envoltória de 17.2.1).
+  #
+  # Todas as equações abaixo foram lidas VISUALMENTE em duas passadas
+  # independentes; nenhuma divergiu. Nenhuma delas é fórmula de N_Rd ou de
+  # M_Rd: a Norma continua sem fechar analiticamente os esforços resistentes
+  # (ver kb/clausulas.jsonl, NBR6118-BUSCA-NEG-sem-formula-fechada-MRd-NRd-
+  # secao-retangular). O que entra aqui é o que a Norma REALMENTE escreve.
+  #
+  # ARMADILHA DESTA RODADA, registrada de propósito: há DUAS expressões de
+  # interação de momentos em duas direções na NBR 6118:2023, com EXPOENTES
+  # DIFERENTES e lados opostos da verificação —
+  #   • Figura 11.3 / Figura 15.2 → expoente 2 (elipse), lado SOLICITANTE
+  #     (envoltória MÍNIMA que os esforços de projeto devem cobrir);
+  #   • 17.2.5 → expoente α (1 ou 1,2), lado RESISTENTE.
+  # Trocá-las é o erro provável. Não use uma no lugar da outra.
+  # ===========================================================================
+
+  - id: NBR6118-17.2.5-interacao-flexao-composta-obliqua
+    norma: "NBR 6118:2023"
+    item: "17.2.5"
+    pagina: 125
+    clausula_ref: NBR6118-17.2.5-flexao-composta-obliqua
+    titulo: "Processo aproximado para flexão composta oblíqua — expressão de interação dos momentos RESISTENTES"
+    latex: "\\left[\\frac{M_{Rd,x}}{M_{Rd,xx}}\\right]^{\\alpha} + \\left[\\frac{M_{Rd,y}}{M_{Rd,yy}}\\right]^{\\alpha} = 1"
+    sympy: "Eq((M_Rd_x/M_Rd_xx)**alpha + (M_Rd_y/M_Rd_yy)**alpha, 1)"
+    variaveis:
+      M_Rd_x:
+        descricao: "componente, segundo o eixo principal de inércia x da seção bruta, do momento resistente de cálculo em flexão oblíqua composta, com N_Rd = N_Sd. INCÓGNITA — é um dos valores que se deseja obter"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_y:
+        descricao: "componente, segundo o eixo principal de inércia y da seção bruta, do momento resistente de cálculo em flexão oblíqua composta, com N_Rd = N_Sd. INCÓGNITA"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_xx:
+        descricao: "momento resistente de cálculo segundo o eixo x em flexão composta NORMAL, com o mesmo valor de N_Rd. Calculado a partir do arranjo e da quantidade de armadura em estudo — a Norma NÃO fornece expressão para ele"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_yy:
+        descricao: "momento resistente de cálculo segundo o eixo y em flexão composta NORMAL, com o mesmo valor de N_Rd. Idem"
+        unidade: "kN.m"
+        valor: null
+      alpha:
+        descricao: "expoente de interação. A Norma declara que depende do valor da força normal, da forma da seção, do arranjo da armadura e de suas porcentagens, mas NÃO fornece expressão nem tabela para ele; fornece apenas dois valores adotáveis"
+        unidade: "adimensional"
+        valor: null
+        valores_declarados_na_fonte:
+          geral: 1.0        # "Em geral pode ser adotado α = 1, a favor da segurança"
+          secao_retangular: 1.2   # "No caso de seções retangulares, pode-se adotar α = 1,2"
+    dominio_validade: >-
+      Flexão oblíqua, SIMPLES OU COMPOSTA, de seções de elementos lineares
+      (cobre o pilarete). Quatro condições que não podem ser perdidas:
+      (1) é declarado PROCESSO APROXIMADO e de uso FACULTATIVO ("pode ser
+      adotada a aproximação") — o critério de segurança continua sendo a
+      envoltória de 17.2.1;
+      (2) NÃO fecha o problema: M_Rd,xx e M_Rd,yy são flexões compostas
+      NORMAIS para o mesmo N_Rd, e a Norma não ensina a calculá-los por
+      fórmula. 17.2.5 REDUZ o problema oblíquo (linha neutra inclinada, duas
+      variáveis) a DOIS problemas normais (uma variável cada) — não elimina a
+      varredura numérica da seção;
+      (3) a Norma escreve "= 1", IGUALDADE, não "≤ 1". A expressão descreve a
+      SUPERFÍCIE da envoltória resistente. Usá-la como teste de aceitação na
+      forma (M_Sd,x/M_Rd,xx)^α + (M_Sd,y/M_Rd,yy)^α ≤ 1 é INTERPRETAÇÃO —
+      coerente com 17.2.1, mas não escrita pela fonte. Decisão do a2;
+      (4) α = 1 é o valor conservador declarado e o default seguro; α = 1,2 só
+      está autorizado para SEÇÃO RETANGULAR. Não há na Norma nenhum outro
+      valor de α, nem expressão para interpolá-lo.
+      A forma lembra uma interação tipo Bresler, mas esta é a expressão da
+      própria NBR 6118:2023, com os expoentes que ela mesma declara: não há
+      necessidade nem autorização para importar expoentes de outra norma ou da
+      bibliografia.
+    leitura_visual:
+      passada_1: "página PDF 143 (impressa 125) inteira a 300 dpi"
+      passada_2: "recorte independente da equação a 700 dpi — feito deliberadamente para confirmar o sinal de IGUALDADE e os dois expoentes α sobre os colchetes"
+      divergencia: false
+      nota_camada_de_texto: >-
+        A camada de texto do PDF, mesmo após tools/decodificar_nbr.py, entrega
+        esta equação com numeradores, denominadores e delimitadores em linhas
+        separadas e fora de ordem ("M | M | M | M | Rd,x | Rd,xx | Rd,y |
+        Rd,yy | ⎡ | ⎣ | ⎢ ... | = | α | α | 1"): ILEGÍVEL. Um parser silencioso
+        montaria a fração errada. Só a leitura visual recupera.
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3, Figura 11.3"
+    pagina: 61
+    clausula_ref: NBR6118-11.3.3.4.3-figura-11.3-envoltoria-minima-1a-ordem
+    titulo: "Envoltória mínima de 1ª ordem — elipse de expoente 2 no plano (M_x, M_y), lado SOLICITANTE"
+    latex: "\\left(\\frac{M_{1d,\\min,x}}{M_{1d,\\min,xx}}\\right)^{2} + \\left(\\frac{M_{1d,\\min,y}}{M_{1d,\\min,yy}}\\right)^{2} = 1"
+    sympy: "Eq((M_1d_min_x/M_1d_min_xx)**2 + (M_1d_min_y/M_1d_min_yy)**2, 1)"
+    componentes_na_figura:
+      M_1d_min_xx:
+        latex: "M_{1d,\\min,xx} = N_d\\,(0{,}015 + 0{,}03\\,h)"
+        sympy: "Eq(M_1d_min_xx, N_d*(0.015 + 0.03*h))"
+        nota: "momento em torno do eixo x (seta HORIZONTAL no croqui da figura); usa h, a dimensão VERTICAL da seção"
+      M_1d_min_yy:
+        latex: "M_{1d,\\min,yy} = N_d\\,(0{,}015 + 0{,}03\\,b)"
+        sympy: "Eq(M_1d_min_yy, N_d*(0.015 + 0.03*b))"
+        nota: "momento em torno do eixo y (seta VERTICAL no croqui da figura); usa b, a dimensão HORIZONTAL da seção"
+    variaveis:
+      M_1d_min_x:  {descricao: "componente em flexão composta OBLÍQUA do momento mínimo de 1ª ordem, segundo x", unidade: "kN.m", valor: null}
+      M_1d_min_y:  {descricao: "componente em flexão composta OBLÍQUA do momento mínimo de 1ª ordem, segundo y", unidade: "kN.m", valor: null}
+      M_1d_min_xx: {descricao: "componente em flexão composta NORMAL do momento mínimo de 1ª ordem, em torno de x — semieixo da elipse sobre M_x", unidade: "kN.m", valor: null}
+      M_1d_min_yy: {descricao: "componente em flexão composta NORMAL do momento mínimo de 1ª ordem, em torno de y — semieixo da elipse sobre M_y", unidade: "kN.m", valor: null}
+      N_d: {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      h:   {descricao: "dimensão VERTICAL da seção retangular no croqui da Figura 11.3", unidade: "m", valor: null}
+      b:   {descricao: "dimensão HORIZONTAL da seção retangular no croqui da Figura 11.3", unidade: "m", valor: null}
+    dominio_validade: >-
+      PILARES DE SEÇÃO RETANGULAR, em estruturas reticuladas. Uso FACULTATIVO e
+      declarado A FAVOR DA SEGURANÇA ("pode-se definir uma envoltória mínima de
+      1ª ordem, tomada a favor da segurança").
+      EXPOENTE 2 — NÃO é o α de 17.2.5. Esta é a envoltória do lado
+      SOLICITANTE; a de 17.2.5 é do lado RESISTENTE.
+      CORRESPONDÊNCIA CRUZADA DIMENSÃO↔EIXO, explícita na figura: M_xx usa h e
+      M_yy usa b, ou seja, cada momento mínimo usa a dimensão da seção medida
+      NO PLANO EM QUE ELE FLEXIONA. O registro genérico de 11.3.3.4.3 ("h é a
+      altura total da seção transversal na direção considerada") não desambigua
+      isso; a figura, sim.
+      h e b em METROS — a constante 0,03 tem unidade implícita e a expressão
+      QUEBRA se a dimensão vier em cm.
+      CRITÉRIO DE APROVAÇÃO associado (texto após a figura, transcrito na
+      cláusula): a verificação do momento mínimo está atendida quando o
+      dimensionamento adotado produz uma ENVOLTÓRIA RESISTENTE QUE ENGLOBE
+      esta elipse. A Norma manda "englobar" mas NÃO escreve o teste de
+      inclusão de uma curva na outra — isso é derivação, decisão do a2.
+      SÓ BASTA para pilar curto: havendo efeitos locais de 2ª ordem em qualquer
+      direção, aplica-se ainda a envoltória mínima com 2ª ordem de 15.3.2.
+    leitura_visual:
+      passada_1: "página PDF 79 (impressa 61) inteira a 300 dpi"
+      passada_2: "recortes independentes do quadro da equação a 700 dpi e do croqui da seção a 500 dpi — o recorte a 700 dpi foi feito para confirmar o EXPOENTE 2, ponto de maior risco de confusão com o α = 1,2 de 17.2.5"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-15.3.2-fig15.2-envoltoria-minima-2a-ordem
+    norma: "NBR 6118:2023"
+    item: "15.3.2, Figura 15.2"
+    pagina: 102
+    clausula_ref: NBR6118-15.3.2-figura-15.2-envoltoria-minima-2a-ordem
+    titulo: "Envoltória mínima COM 2ª ordem — mesma elipse de expoente 2, com M_d,tot,mín no lugar de M_1d,mín"
+    latex: "\\left(\\frac{M_{d,tot,\\min,x}}{M_{d,tot,\\min,xx}}\\right)^{2} + \\left(\\frac{M_{d,tot,\\min,y}}{M_{d,tot,\\min,yy}}\\right)^{2} = 1"
+    sympy: "Eq((M_d_tot_min_x/M_d_tot_min_xx)**2 + (M_d_tot_min_y/M_d_tot_min_yy)**2, 1)"
+    variaveis:
+      M_d_tot_min_x:  {descricao: "componente em flexão composta OBLÍQUA do momento total mínimo (1ª + 2ª ordens), segundo x", unidade: "kN.m", valor: null}
+      M_d_tot_min_y:  {descricao: "componente em flexão composta OBLÍQUA do momento total mínimo, segundo y", unidade: "kN.m", valor: null}
+      M_d_tot_min_xx: {descricao: "componente em flexão composta NORMAL do momento total mínimo, em torno de x, calculada a partir do momento mínimo de 1ª ordem e de acordo com 15.8.3", unidade: "kN.m", valor: null}
+      M_d_tot_min_yy: {descricao: "componente em flexão composta NORMAL do momento total mínimo, em torno de y, idem", unidade: "kN.m", valor: null}
+    dominio_validade: >-
+      PILARES DE SEÇÃO RETANGULAR EM QUE HÁ NECESSIDADE DE CALCULAR OS EFEITOS
+      LOCAIS DE 2ª ORDEM. FORA DO ESCOPO DE CÁLCULO desta feature, que trata o
+      pilarete como pilar curto (λ < λ1, 2ª ordem dispensada por 15.8.2) — no
+      escopo atual vale a Figura 11.3, não esta. Registrado para marcar a
+      FRONTEIRA: se o a4/a5 vier a aceitar λ ≥ λ1, a envoltória a englobar
+      deixa de ser a de 1ª ordem e passa a ser esta, com M_d,tot,mín por 15.8.3
+      (e, por 15.8.3.1/15.8.3.2, λ > 90 obriga fluência e λ > 140 obriga o
+      método geral).
+      A Norma autoriza explicitamente obter M_d,tot,mín,xx e M_d,tot,mín,yy por
+      DUAS ANÁLISES DE FLEXÃO COMPOSTA NORMAL ISOLADAS, uma por direção
+      principal, com os momentos mínimos de 1ª ordem atuantes nos extremos do
+      pilar — não exige análise oblíqua acoplada.
+      No gráfico da figura as duas elipses são CONCÊNTRICAS: a interna é a de
+      1ª ordem (Figura 11.3), a externa é esta.
+    leitura_visual:
+      passada_1: "página PDF 120 (impressa 102) inteira a 300 dpi"
+      passada_2: "recorte independente do quadro da equação a 700 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-17.2.2-fig17.1-limites-dos-dominios
+    norma: "NBR 6118:2023"
+    item: "17.2.2 alínea g), Figura 17.1"
+    pagina: 122
+    clausula_ref: NBR6118-17.2.2-figura-17.1-limites-numericos-dos-dominios
+    titulo: "Figura 17.1 — limites de deformação dos domínios de ELU (os polos A, B e C e o valor 10‰)"
+    latex: "y_C = \\frac{(\\varepsilon_{cu} - \\varepsilon_{c2})\\,h}{\\varepsilon_{cu}}"
+    sympy: "Eq(y_C, (epsilon_cu - epsilon_c2)*h/epsilon_cu)"
+    limites_lidos_na_figura:
+      polo_A:
+        descricao: "polo do alongamento; dele partem a reta a e os domínios 1 e 2"
+        deformacao: "10‰ (dez por mil) de ALONGAMENTO na armadura tracionada"
+        valor_por_mil: 10.0
+        nota: "ESTE VALOR ESTÁ NA FIGURA, escrito ao lado do ponto A. NÃO está no texto corrido — foi por isso que a rodada anterior o deu como ausente. Ver kb/clausulas.jsonl, NBR6118-CORRECAO-10-por-mil-esta-na-figura-17.1."
+      polo_B:
+        descricao: "polo do encurtamento-limite, na borda comprimida; dele partem os domínios 3, 4 e 4a"
+        deformacao: "ε_cu (encurtamento na ruptura, definido em 8.2.10.1)"
+        valor_por_mil: null
+      polo_C:
+        descricao: "polo do domínio 5; situado sobre a vertical de ε_c2"
+        deformacao: "ε_c2 (encurtamento no início do patamar plástico, definido em 8.2.10.1)"
+        posicao: "à distância y_C = (ε_cu − ε_c2)·h/ε_cu medida a partir do nível da borda COMPRIMIDA (nível do polo B)"
+        valor_por_mil: null
+      reta_a: "tração uniforme — passa pelo polo A"
+      reta_b: "COMPRESSÃO UNIFORME — é a LINHA VERTICAL de abscissa ε_c2, que passa pelo polo C. É a figura, e não o texto, que estabelece que a compressão uniforme corresponde a encurtamento ε_c2 em toda a altura da seção."
+      fronteira_dominio_3_4: "ε_yd na armadura tracionada (domínio 3: ε_s ≥ ε_yd; domínio 4: ε_s < ε_yd). ε_yd aparece na figura APENAS como rótulo de abscissa, SEM valor e SEM expressão — lacuna ABERTA."
+    variaveis:
+      y_C:         {descricao: "distância do polo C à borda comprimida da seção", unidade: "m", valor: null}
+      epsilon_cu:  {descricao: "deformação específica de encurtamento do concreto na ruptura (8.2.10.1)", unidade: "adimensional (‰)", valor: null}
+      epsilon_c2:  {descricao: "deformação específica de encurtamento do concreto no início do patamar plástico (8.2.10.1)", unidade: "adimensional (‰)", valor: null}
+      h:           {descricao: "altura total da seção transversal", unidade: "m", valor: null}
+    dominio_validade: >-
+      Diagrama normativo dos domínios de deformação no ELU de solicitações
+      normais, para seções de vigas e pilares. É ele que fixa os limites da
+      varredura numérica da envoltória N_Rd–M_Rd.
+      ε_c2 e ε_cu NÃO são constantes: dependem da classe do concreto por
+      8.2.10.1 (até C50: 2,0‰ e 3,5‰; de C55 a C90: expressões). A figura
+      NÃO os quantifica — só os nomeia.
+      A Norma escreve APENAS a expressão literal de y_C. Substituir ε_c2 = 2,0‰
+      e ε_cu = 3,5‰ para obter y_C = 3h/7 é conta do agente, NÃO transcrição —
+      e só vale para concreto até C50.
+      LACUNA QUE PERMANECE: ε_yd continua sem valor e sem expressão em toda a
+      Norma. ε_yd = f_yd/E_s é leitura da geometria da Figura 8.5, ou seja,
+      INTERPRETAÇÃO — decisão pendente do a2.
+    leitura_visual:
+      passada_1: "página PDF 140 (impressa 122) inteira a 300 dpi"
+      passada_2: "três recortes independentes a 650 dpi — polo A e eixo inferior (para confirmar o valor 10‰ e a ausência de valor junto a ε_yd), polos B e C com a cota de y_C, e a região da reta b (para confirmar que o rótulo 'b' pertence à vertical de ε_c2)"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-15.3.1-kappa-sec
+    norma: "NBR 6118:2023"
+    item: "15.3.1"
+    pagina: 101
+    clausula_ref: NBR6118-15.3.1-rigidez-secante-adimensional-e-mencao-a-abacos
+    titulo: "Rigidez secante adimensional κ_sec — registrada só por ser o contexto da única menção a ábacos em toda a Norma"
+    latex: "\\kappa_{sec} = \\frac{(EI)_{sec}}{A_c \\cdot h^{2} \\cdot f_{cd}}"
+    sympy: "Eq(kappa_sec, EI_sec/(A_c*h**2*f_cd))"
+    variaveis:
+      kappa_sec: {descricao: "rigidez secante adimensional", unidade: "adimensional", valor: null}
+      EI_sec:    {descricao: "rigidez secante, caracterizada pela reta AB da relação momento-curvatura da Figura 15.1", unidade: "kN.m2", valor: null}
+      A_c:       {descricao: "área da seção de concreto", unidade: "m2", valor: null}
+      h:         {descricao: "altura da seção considerada", unidade: "m", valor: null}
+      f_cd:      {descricao: "resistência de cálculo à compressão do concreto (12.3.3)", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      Relação momento-curvatura de uma seção sob força normal constante, para
+      uso nos processos aproximados de efeitos locais de 2ª ordem (15.8.3.3).
+      FORA DO ESCOPO DE CÁLCULO desta feature (pilarete = pilar curto).
+      Registrado por UM motivo só: a frase que segue esta equação é a ÚNICA
+      ocorrência da palavra "ábaco" em toda a NBR 6118:2023 — "Esse valor da
+      rigidez secante adimensional pode ser colocado, em conjunto com os
+      valores últimos de N_Rd e M_Rd, em ábacos de interação força
+      normal-momento fletor."
+      A Norma apenas CONSTATA que ábacos existem. Não os prescreve como método,
+      não reproduz nenhum, não cita autor nem fonte, e não define as variáveis
+      adimensionais ν e μ que a bibliografia usa para indexá-los. Qualquer
+      ábaco ν–μ de terceiros é FONTE SECUNDÁRIA e não está no acervo.
+      Ver kb/clausulas.jsonl, NBR6118-BUSCA-NEG-abacos-adimensionais-nu-mu.
+    leitura_visual:
+      passada_1: "recorte da equação na página PDF 119 (impressa 101) a 700 dpi"
+      passada_2: "recorte independente a 420 dpi com enquadramento diferente, incluindo a frase de definição que a antecede"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5

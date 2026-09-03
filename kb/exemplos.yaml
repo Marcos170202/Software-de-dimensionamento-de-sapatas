@@ -286,3 +286,64 @@ exemplos:
       - "Carga centrada e Mx = My = 0: nao exercita o momento minimo M_1d,min de 11.3.3.4.3."
     status: AGUARDA_A2
     rodada: "2026-09-02 backlog #13 pilarete"
+
+  # ===========================================================================
+  # RODADA 2026-09-03 — backlog #13, rodada 3.
+  # BUSCA NEGATIVA: o acervo NÃO tem caso de teste para a envoltória
+  # N_Rd–M_Rd. Este registro existe para que a lacuna de validação seja
+  # visível ao a7 ANTES do GATE 3, e não descoberta durante ele.
+  # ===========================================================================
+
+  - id: BUSCA-NEG-exemplo-pilar-flexao-composta-obliqua
+    tipo: BUSCA_NEGATIVA
+    fonte_procurada:
+      - "Sapatas.pdf — BASTOS, P.S., UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p. (camada de texto limpa, 189.689 caracteres)"
+      - "Fundacoes_Diretas_Projeto_Geotecnico_Jos.pdf — CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H., Oficina de Textos, 2011, 142 p. (imagem escaneada pura, 0 caracteres extraíveis)"
+    clausula_ref: BIBLIO-BUSCA-NEG-exemplo-pilar-flexao-composta-obliqua
+    pergunta: >-
+      Existe no acervo exemplo resolvido de seção de PILAR sob N + Mx + My
+      simultâneos — mesmo que não seja pilarete de fundação — que sirva de caso
+      de teste ao a7 para a envoltória N_Rd–M_Rd e para a interação de 17.2.5?
+    resposta: "NÃO."
+    o_que_foi_encontrado_e_descartado:
+      - item: "Bastos, 1.6.7.4 — Exemplo 4: Sapata Isolada Sob Flexão Oblíqua (exemplo de Edja L. Silva, dissertação de mestrado, 1988, EESC-USP), páginas 53 a 56 da apostila"
+        por_que_nao_serve: >-
+          É a única ocorrência de "oblíqua" em toda a apostila e é um problema
+          GEOTECNICO, não de seção de concreto: calcula e_x = M_x/N e
+          e_y = M_y/N, obtém σ₁ por ábaco de tensões na base (Figura 1.81 da
+          apostila), calcula as tensões nos quatro vértices da sapata, compara
+          com 1,3·P_adm e verifica tombamento. Não dimensiona nenhuma seção à
+          flexão composta oblíqua, não calcula M_Rd, não usa 17.2.5, não usa
+          domínio de deformação nem envoltória de interação. Foi lido
+          integralmente para descartar a hipótese de conter, além da parte
+          geotécnica, um dimensionamento de seção.
+    termos_buscados_sem_resultado:
+      - "pilarete (0 ocorrências)"
+      - "flexo-compressão (0)"
+      - "esbeltez (0)"
+      - "envoltória (0)"
+      - "N_Rd / NRd (0)"
+      - "dimensionamento do pilar (0)"
+      - "domínio — 5 ocorrências, TODAS 'domínio 2' em flexão SIMPLES da armadura da sapata, via tabela K_c/K_s"
+    consequencia_para_o_a7: >-
+      A envoltória numérica desta feature NÃO terá caso de teste de
+      bibliografia. Isto é uma LACUNA DE VALIDAÇÃO e precisa ser dita ao
+      usuário antes do GATE 3. Sugestões de validação por PROPRIEDADE INTERNA,
+      que não substituem um caso de bibliografia mas são verificáveis sem
+      fonte externa (proposta deste extrator, a ser aceita ou recusada pelo
+      a2/a7 — NÃO são requisito normativo):
+        1. a envoltória calculada deve passar pelo ponto (N_Rd0, M = 0), com
+           N_Rd0 vindo da derivação já aprovada da reta b (ε = ε_c2);
+        2. deve passar pelo ponto (N = 0, M_Rd de flexão simples), calculável
+           pelo mesmo integrador;
+        3. a interação de 17.2.5 com α = 1 deve ser sempre conservadora em
+           relação a α = 1,2 (a Norma declara α = 1 "a favor da segurança") —
+           se a implementação inverter isso, há erro de sinal ou de expoente;
+        4. para M_Sd,y = 0 a verificação oblíqua deve degenerar exatamente na
+           flexão composta normal em torno de x, e vice-versa;
+        5. a elipse mínima de 11.3.3.4.3 (expoente 2) e a envoltória resistente
+           de 17.2.5 (expoente α) devem ser mantidas como objetos DISTINTOS:
+           um teste que troque um expoente pelo outro deve falhar.
+      Alternativa preferível: caso de teste fornecido por engenheiro humano.
+    status: LACUNA_DE_VALIDACAO_AGUARDA_A2
+    rodada: "2026-09-03 backlog #13 pilarete — rodada 3 (flexão composta oblíqua)"
