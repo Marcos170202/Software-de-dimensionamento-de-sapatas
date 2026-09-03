@@ -10,10 +10,125 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 11
-escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — sem verificação de ELU de seção"
-data_congelamento: "2026-08-28"   # da v8; v9/v10/v11 NÃO congelam — ver ruleset.lock
+versao: 12
+escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua), e SEM ELU de força cortante (17.4, não extraído)"
+data_congelamento: "2026-08-28"   # da v8; v9/v10/v11/v12 NÃO congelam — ver ruleset.lock
 
+# =============================================================================
+# VERSÃO 12 — fecha o ELU do pilarete: o software passa a poder APROVAR, e não
+#             só REJEITAR. Backlog do usuário, item #13, rodada 3.
+#
+# AVISO OBRIGATÓRIO (CLAUDE.md regra 5): esta versão ALTERA requisitos da v11
+# (REQ-PILARETE-01, -04, -06, -11, -12, -13). Como nenhuma linha de
+# `calc_core/estrutural/` foi escrita ainda — o pacote não existe —, NÃO há
+# aprovação de A6/A7 sobre ele a invalidar. As aprovações de A6/A7 sobre
+# `calc_core/geotecnico/` e sobre `ui/` continuam VÁLIDAS: as listas
+# `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem desta versão IDÊNTICAS às da v11, e
+# nenhuma das 45 regras da v11 foi alterada — só houve acréscimo. Conferido por
+# comparação estrutural (`yaml.safe_load` da v11 em `git show HEAD:ruleset.yaml`
+# contra o arquivo novo, chave a chave).
+#
+# FONTE DESTA RODADA: extração do a1, commit e82abdb (16 cláusulas, 5 fórmulas,
+# 1 registro em exemplos.yaml). NBR 6118:2023 + Emenda 1:2026.
+#
+# O QUE O a2 CONFERIU POR CONTA PRÓPRIA, e não é releitura do relatório do a1:
+#   - LEITURA VISUAL INDEPENDENTE, renderizando as páginas do PDF, de TODAS as
+#     páginas que sustentam regra aprovada nesta versão: 61 (Figura 11.3
+#     inteira), 101 (15.3.1 + cabeçalho de 15.3.2), 102 (Figura 15.2), 116
+#     (16.3), 122 (Figura 17.1), 123 (17.2.4.1), 125 (17.2.5). Nenhuma
+#     divergência com a extração do a1 em nenhuma delas — inclusive no EXPOENTE
+#     2 da Figura 11.3, no sinal de IGUALDADE de 17.2.5, no "10 ‰" junto ao
+#     polo A e na cota (eps_cu - eps_c2)h/eps_cu do polo C.
+#   - VARREDURA PRÓPRIA DA EMENDA 1:2026 nas duas páginas que listam as
+#     alterações das p. 103 a 137 do texto-base (Emenda, p. impressas 9 e 10).
+#     ACHADO DO a2 QUE A BUSCA NEGATIVA DO a1 NÃO EXPLICITAVA: existe SIM uma
+#     entrada da Emenda para a PÁGINA 125 — e ela é de 17.3.1 ("2ª designação
+#     da equação", troca de "centro de gravidade" por "centroide"), NÃO de
+#     17.2.5. A conclusão do a1 está certa; a prova é mais fina do que ele
+#     escreveu, e o motivo importa: 17.2.5 e 17.3.1 dividem a página 125.
+#   - CHECAGEM DIMENSIONAL das expressões novas em tools/checar_dimensoes.py
+#     (seção 7, acrescentada nesta rodada): 12 casos novos, 4 MUTANTES
+#     plantados (todos rejeitados pelo pint) e 3 casos declarados NÃO
+#     detectáveis por análise dimensional, com o motivo caso a caso.
+#   - SANITY CHECK NUMÉRICO com varredura de seção implementada pelo próprio a2
+#     (fora de calc_core/), descrito em DER-NBR6118-17.2.2-MRd-varredura.
+#
+# QUATRO ACHADOS DO a2 QUE MUDAM O QUE FOI DESPACHADO:
+#
+#   D1. COLISÃO DE SÍMBOLO NOVA, NA MESMA PÁGINA, QUE O a1 NÃO REGISTROU. A
+#       página 125 tem DOIS alpha diferentes, a 15 linhas de distância, e os
+#       DOIS têm valor declarado "para seções retangulares":
+#         • 17.2.5 — alpha = expoente de interação; 1 em geral, 1,2 retangular;
+#         • 17.3.1 — alpha = fator de forma do momento de fissuração M_r;
+#           1,5 para seções retangulares.
+#       Somados aos que já estavam no ruleset (alpha_c de 17.2.2, alpha_b de
+#       15.8.2, alpha de 9.4.2.5), são CINCO alphas. Vira namespace obrigatório
+#       em REQ-PILARETE-01. Um `alpha = 1.5` escrito por memória no lugar do
+#       expoente de interação passa por toda a checagem dimensional e produz
+#       resultado do lado INSEGURO (expoente maior = envoltória mais cheia).
+#
+#   D2. O CRITÉRIO DA FIGURA 11.3 NÃO É UM PONTO, É UMA CURVA — e o "M_d =
+#       max(M_entrada, M_1d,min) por direção" da v11 (REQ-PILARETE-04) é o
+#       CANTO do retângulo, não a elipse. Medido: para o pilarete 30x30 do
+#       sanity check, o canto exige M_R >= 48,00 kN·m e a elipse exige
+#       M_R >= 33,94 kN·m — 41 % mais severo do que a Norma escreve. Como o
+#       canto é conservador, ele é aceito como ATALHO QUE SÓ PODE APROVAR:
+#       se passa, aprova; se falha, NÃO reprova — cai no critério exato. Está
+#       em REQ-PILARETE-15.
+#
+#   D3. A INCLUSÃO DE UMA ENVOLTÓRIA NA OUTRA TEM FORMA FECHADA EXATA COM
+#       alpha = 1. Maximizar M_x/M_Rd,xx + M_y/M_Rd,yy sobre a elipse de
+#       semieixos (p, q) dá sqrt((p/M_Rd,xx)² + (q/M_Rd,yy)²) por
+#       Cauchy-Schwarz. Conferido contra varredura de 200.000 pontos: coincide
+#       em 6 casas, em seção quadrada e em seção 20x40. Isso elimina o erro de
+#       discretização de uma classe inteira de defeitos e é a razão técnica —
+#       somada à declaração da própria Norma de que alpha = 1 é "a favor da
+#       segurança" — para o VEREDITO usar alpha = 1,0 e não alpha = 1,2.
+#
+#   D4. LACUNA DE ESCOPO QUE O VEREDITO TORNA PERIGOSA: 17.4 (ELU de força
+#       cortante em elementos lineares) NUNCA FOI EXTRAÍDO. Enquanto a v11 não
+#       emitia veredito nenhum, isso era inócuo. A partir do momento em que o
+#       software escreve "ELU atendido", um pilarete com H != 0 na base tem
+#       força cortante NÃO VERIFICADA. Não é motivo de recusa — é motivo de
+#       ROTULAGEM ESTRITA (o mesmo padrão de REQ-UI-SIGMA-01, "parcela de ELU
+#       ... §7.4 NÃO verificado"): o veredito se chama "ELU de solicitações
+#       NORMAIS", nunca "pilarete OK". Devolvido ao a1 o pedido de extração de
+#       17.4 (a Emenda 1:2026 altera 17.4.1.1.3 e 17.4.2.2 — partir da Emenda).
+#       kb/pendencias.md > V17, PRIORIDADE ALTA.
+#
+# DECISÃO DO USUÁRIO APLICADA NESTA VERSÃO (V13, fechada em 2026-09-03):
+#   junta declarada aderente COM H != 0 na base do pilarete passa de AVISO
+#   OBRIGATÓRIO a RECUSA. REQ-PILARETE-11 reescrito. O a2 tinha registrado que
+#   recusar seria julgamento de engenharia que ele não podia fazer sozinho; o
+#   usuário decidiu RECUSAR, pela mesma doutrina já usada no projeto (recusar
+#   em vez de aproximar sem fonte normativa de verificação, dado que a ABNT
+#   NBR 9062 não está no acervo).
+#
+# REGRA DE PROCESSO CRIADA NESTA VERSÃO, e ela vale para TODO o repositório:
+#   NENHUMA BUSCA NEGATIVA POR VALOR NUMÉRICO PODE SER DECLARADA COM BASE
+#   APENAS NO TEXTO DECODIFICADO. As figuras da NBR 6118 são vetorizadas e
+#   nenhuma busca textual alcança rótulo de figura. Foi assim que o "10 ‰" foi
+#   dado como ausente na rodada 2112b3d e reencontrado na Figura 17.1 nesta.
+#   Consequência auditada pelo a2 nesta rodada, e a decisão está registrada em
+#   kb/pendencias.md > V16: as buscas negativas ANTERIORES por valor numérico
+#   (sigma_adm de SPT/CPT, cunha de solo, eps_su, eps_yd) NÃO foram reabertas
+#   agora, porque nenhuma delas sustenta regra APROVADA — todas terminaram em
+#   RECUSA ou em PENDENTE_HUMANO, e reabrir não muda comportamento de software
+#   nenhum. Fica registrado como dívida explícita, não como esquecimento.
+#
+# DÍVIDA DE RASTREABILIDADE ENCONTRADA NESTA RODADA, e ela é PRÉ-EXISTENTE e
+# BLOQUEANTE DE GATE 1: 25 das 52 regras — todas anteriores à v9, quando a
+# convenção de hash foi adotada — NÃO TÊM o campo `hash`. A cascata do
+# a2-verificador §1 exige norma + item + página + HASH e manda REJEITAR sem
+# apelo quem não tiver os quatro. Não foram rejeitadas agora porque nenhuma
+# delas foi tocada nesta versão e porque rejeitá-las derrubaria módulos já
+# aprovados por A6/A7 e em uso; mas ELAS NÃO PODEM ENTRAR CONGELADAS NO
+# GATE 1 sem que o a1 reextraia o trecho e produza o hash. Lista completa
+# gerável com: [r['id'] for r in regras if not r.get('hash')]. As 7 regras da
+# v12 têm hash, item e página conferidos um a um.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e não é por causa desta versão.
 # =============================================================================
 # VERSÃO 11 — pilarete de concreto como pilar curto e a transferência de
 #             esforços pilarete -> sapata. Backlog do usuário, item #13.
@@ -2579,6 +2694,334 @@ regras:
       1,4 é o valor da Tabela 12.1 para combinações normais e que o projetista
       responde por casos específicos. kb/pendencias.md > V14.
 
+  # ---------------------------------------------------------------------------
+  # VERSÃO 12 — ELU de solicitações NORMAIS do pilarete (flexão composta
+  # oblíqua). São as regras que permitem o veredito de APROVAÇÃO. Fonte: a1,
+  # commit e82abdb. Todas conferidas por leitura visual independente do a2.
+  # ---------------------------------------------------------------------------
+
+  - id: NBR6118-16.3-proibicao-de-carga-centrada
+    norma: "NBR 6118:2023"
+    item: "16.3 (Critérios de projeto)"
+    pagina: 116
+    hash: "sha256:8151dbe8b5fe1a14bba56f1a147f238e4d04ceb224e3cf3dd1d4260ec9d52357"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete (ausência estrutural de caminho de compressão centrada — REQ-PILARETE-04)"
+    checagem_dimensional: "Item de prosa normativa, sem grandeza física."
+    checagem_numerica: "Não se aplica."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 134 = impressa 116). A frase
+      está isolada em parágrafo próprio e é literal: "Deve-se observar, também,
+      que não se aceita o dimensionamento de pilares para carga centrada". Um
+      parágrafo adiante, sobre a Seção 19: "Como se exige na Seção 17, o
+      dimensionamento de pilares sempre com carga excêntrica, quando não
+      oblíqua".
+      O QUE ESTE ITEM MUDA NO RULESET: até a v11 a impossibilidade da compressão
+      centrada era INFERIDA de 11.3.3.4.3 (existe M_1d,min, logo não há
+      centrada), e a `observacao` daquela regra registra que a inferência exigia
+      um passo — 11.3.3.4.3 diz que as imperfeições locais "PODEM ser
+      substituídas" pelo momento mínimo, não que a compressão centrada seja
+      proibida. Agora a proibição tem ITEM-FONTE PRÓPRIO, em prosa direta, e a
+      regra de código deixa de depender daquele passo.
+      NÃO há exceção declarada para pilar curto, para pilarete, para pedestal
+      nem para pequena excentricidade. A frase final do item sobre punção
+      centrada ("Só em casos particulares deve ser verificada a punção como
+      centrada") pertence à Seção 19 e NÃO transfere permissão alguma para o
+      dimensionamento do pilar — armadilha de leitura registrada de propósito.
+
+  - id: NBR6118-17.2.1-envoltoria-criterio-de-seguranca
+    norma: "NBR 6118:2023"
+    item: "17.2.1 (Introdução)"
+    pagina: 120
+    hash: "sha256:1bd64112598760c5ffdeade9024aeaf9b762ce4913503eddf239521f787a7bcc"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.verificar_elu_solicitacoes_normais"
+    checagem_dimensional: "Critério de comparação entre pares (N, M) homogêneos: kN contra kN e kN·m contra kN·m."
+    checagem_numerica: "Não se aplica — é o critério, não uma expressão."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 138 = impressa 120). É o
+      critério de segurança de mais alto nível desta feature e a ÚNICA coisa
+      que a Norma escreve como critério de aprovação no ELU de solicitações
+      normais: "O dimensionamento das armaduras longitudinais deve conduzir a
+      um conjunto de esforços resistentes (N_Rd, M_Rd) que constituam envoltória
+      dos esforços solicitantes (N_Sd, M_Sd)".
+      LIMITE DO ITEM, e é o que justifica as derivações desta versão: não há
+      aqui NENHUMA expressão, NENHUMA desigualdade escrita e NENHUM
+      procedimento. A operacionalização vem de 17.2.2 (hipóteses), da Figura
+      17.1 (limites dos domínios) e, no caso oblíquo, de 17.2.5. O verbo
+      "constituir envoltória" é o que autoriza — e obriga — o teste de INCLUSÃO
+      de conjuntos, não a comparação de dois números.
+
+  - id: NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3, Figura 11.3 e os dois parágrafos que a seguem"
+    pagina: 61
+    hash: "sha256:598a6b6738232470d7de10228e025128a1114c723c47e06bca8bca68d57f99a2"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.envoltoria_minima_1a_ordem"
+    checagem_dimensional: >-
+      (M_1d,min,x/M_1d,min,xx)² + (M_1d,min,y/M_1d,min,yy)² é adimensional.
+      Rodado em tools/checar_dimensoes.py (NBR6118-Fig11.3-elipse-minima, OK).
+      LIMITE DECLARADO DA CHECAGEM: o pint NÃO pega a troca do expoente 2 pelo
+      alpha de 17.2.5, nem a troca de h por b nos semieixos — as duas passam
+      adimensionais e em kN·m. Registrado como caso EMPIRICA
+      (NBR6118-Fig11.3-cruzamento-eixo-dimensao) e só o teste numérico pega.
+    checagem_numerica: >-
+      N_d = 1000 kN, seção 30×30 cm: semieixos M_1d,min,xx = M_1d,min,yy =
+      24,00 kN·m. Seção 20×40 cm com N_d = 800 kN: M_1d,min,xx = 21,60 kN·m
+      (usa h = 0,40 m) e M_1d,min,yy = 16,80 kN·m (usa b = 0,20 m) — a troca
+      dos dois altera o índice de inclusão de 0,5114 para 0,6113 no sanity
+      check do a2, isto é, 20 %.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 79 = impressa 61), com atenção
+      deliberada aos dois pontos de maior risco. CONFIRMADOS OS DOIS:
+      (1) O EXPOENTE É 2 (elipse), e NÃO o alpha de 17.2.5. São duas expressões
+          de interação diferentes, com expoentes diferentes e em LADOS OPOSTOS
+          da verificação: a da Figura 11.3 é a envoltória SOLICITANTE mínima; a
+          de 17.2.5 é a envoltória RESISTENTE. Trocá-las é o erro provável desta
+          feature.
+      (2) A CORRESPONDÊNCIA DIMENSÃO↔EIXO É CRUZADA e está escrita na figura:
+          o croqui traz h na vertical e b na horizontal; a seta HORIZONTAL é
+          rotulada M_1d,mín,xx = N_d(0,015 + 0,03 h) e a seta VERTICAL é
+          rotulada M_1d,mín,yy = N_d(0,015 + 0,03 b). Cada momento mínimo usa a dimensão
+          da seção medida NO PLANO EM QUE ELE FLEXIONA. O registro genérico de
+          11.3.3.4.3 ("h é a altura total da seção na direção considerada") não
+          desambigua; a figura, sim. h e b em METROS.
+      CRITÉRIO DE APROVAÇÃO — é o achado que destrava esta versão. O parágrafo
+      logo abaixo da figura: "a verificação do momento mínimo pode ser
+      considerada atendida quando, no dimensionamento adotado, obtém-se uma
+      envoltória resistente que englobe a envoltória mínima de 1ª ordem".
+      A Norma manda ENGLOBAR e NÃO escreve o teste de inclusão de uma curva na
+      outra — o teste é derivação, ver DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias.
+      DOMÍNIO: uso declarado FACULTATIVO e "a favor da segurança", e SÓ para
+      seção retangular. Só basta enquanto os efeitos locais de 2ª ordem forem
+      dispensados; havendo 2ª ordem em qualquer direção vale ainda a envoltória
+      mínima com 2ª ordem de 15.3.2 (regra REJEITADA por escopo, abaixo) — a
+      remissão é obrigatória e o pilarete só escapa dela porque REQ-PILARETE-05
+      RECUSA tudo que não seja pilar curto.
+
+  - id: NBR6118-17.2.5-flexao-composta-obliqua
+    norma: "NBR 6118:2023"
+    item: "17.2.5 (Processo aproximado para o dimensionamento à flexão composta oblíqua)"
+    pagina: 125
+    hash: "sha256:35a01133677f5494da75cdca096ece1dbcb8ea682153bf8fc28f164b8466bd58"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.interacao_flexao_obliqua"
+    uso_autorizado: >-
+      A expressão [M_Rd,x/M_Rd,xx]^alpha + [M_Rd,y/M_Rd,yy]^alpha = 1 como
+      DESCRIÇÃO DA SUPERFÍCIE da envoltória resistente, para um N_Rd = N_Sd
+      fixado, com M_Rd,xx e M_Rd,yy obtidos por varredura de equilíbrio de
+      seção (DER-NBR6118-17.2.2-MRd-varredura).
+      alpha = 1,0 para o VEREDITO. É o valor que a própria Norma declara "a
+      favor da segurança", é o autorizado "em geral" (sem condição de forma de
+      seção), e é o único para o qual o teste de inclusão tem forma fechada
+      exata (D3 do cabeçalho da v12) — o que elimina erro de discretização numa
+      verificação que NÃO tem nenhum caso de conferência de terceiros no acervo.
+      alpha = 1,2 pode ser CALCULADO E EXIBIDO como valor informativo, rotulado
+      "margem adicional autorizada por 17.2.5 para seção retangular", e NUNCA
+      pode ser o que decide o veredito nesta versão.
+    nao_autorizado: >-
+      (1) Usar alpha = 1,2 (ou qualquer alpha > 1) como critério de APROVAÇÃO
+          sem decisão humana registrada — kb/pendencias.md > V18. Não é que a
+          Norma proíba: ela autoriza expressamente para seção retangular. É que
+          alpha maior = envoltória mais cheia = critério MENOS conservador
+          (verificado pelo a2 em 20.000 pares aleatórios: nenhuma exceção), e
+          quem decide gastar essa margem num modelo sem validação externa é o
+          engenheiro, não o agente.
+      (2) Qualquer outro valor de alpha. A Norma declara que alpha depende da
+          força normal, da forma da seção, do arranjo e da taxa de armadura mas
+          NÃO fornece tabela nem expressão — lacuna da própria fonte. É PROIBIDO
+          interpolar, extrapolar, ou importar expoente de Bresler, do
+          Eurocódigo, do ACI ou de bibliografia. A expressão TEM a forma de uma
+          interação tipo Bresler, mas é a expressão da própria NBR 6118:2023,
+          com os expoentes que ela mesma declara.
+      (3) Aplicá-la a seção NÃO retangular (o alpha = 1,2 é condicionado; e o
+          software só aceita seção retangular, por REQ-PILARETE-03).
+      (4) Usá-la sem que M_Rd,xx e M_Rd,yy tenham sido calculados PARA O MESMO
+          N_Rd = N_Sd. A condição está escrita no item e é o erro silencioso
+          mais provável de quem reaproveita um M_Rd calculado para outra normal.
+    checagem_dimensional: >-
+      Razões de momento, adimensionais; soma adimensional. Rodado em
+      tools/checar_dimensoes.py (NBR6118-17.2.5-interacao, OK) com dois
+      mutantes REJEITADOS pelo pint: MUTANTE-17.2.5-normal-no-lugar-do-momento
+      (N_Sd no numerador) e MUTANTE-17.2.5-expoente-no-momento (expoente
+      aplicado ao momento e não à razão).
+      LIMITE DECLARADO: o expoente é adimensional e a troca de alpha NÃO é
+      detectável por análise dimensional. Caso EMPIRICA registrado.
+    checagem_numerica: >-
+      Pilarete 30×30 cm, C25, CA-50, 4 phi 16 (8,04 cm²), d' = 5,8 cm,
+      N_Sd = 1000 kN: M_Rd,xx = M_Rd,yy = 63,95 kN·m por varredura. Com
+      M_Sd,x = M_Sd,y = 24,00 kN·m (= M_1d,min): interação = 0,617 com
+      alpha = 1,2 e 0,750 com alpha = 1,0. Ordem correta (alpha = 1 mais
+      severo). Sobre a elipse mínima inteira, o máximo cai para 0,531
+      (alpha = 1) e 0,407 (alpha = 1,2) — ver a derivação de inclusão.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 143 = impressa 125). Confirmado
+      deliberadamente o SINAL DE IGUALDADE ("= 1", não "<= 1") e os dois
+      expoentes alpha sobre os colchetes.
+      TRÊS ARMADILHAS REGISTRADAS:
+      (a) A Norma escreve "= 1". A expressão descreve a SUPERFÍCIE da envoltória
+          resistente, não um teste de utilização. Converter em "<= 1" é
+          INTERPRETAÇÃO do agente — aprovada separadamente, e como derivação,
+          em DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1. Nunca registrar
+          "<= 1" como transcrição.
+      (b) O item NÃO FECHA o problema. M_Rd,xx e M_Rd,yy são flexões compostas
+          NORMAIS que a Norma não ensina a calcular por fórmula em lugar
+          nenhum (busca negativa do a1, aceita pelo a2:
+          NBR6118-BUSCA-NEG-sem-formula-fechada-MRd-NRd-secao-retangular).
+          17.2.5 REDUZ o problema oblíquo de duas variáveis a dois problemas
+          normais de uma variável — evita varrer linha neutra INCLINADA — mas
+          não dispensa a varredura numérica da seção.
+      (c) COLISÃO DE SÍMBOLO NA MESMA PÁGINA, achado do a2 e não do a1: quinze
+          linhas abaixo, 17.3.1 usa alpha para o FATOR DE FORMA do momento de
+          fissuração, e declara "alpha = 1,5 para seções retangulares". Os dois
+          alpha estão na página 125, os dois têm valor "para seção retangular",
+          e são grandezas sem nenhuma relação. Namespace obrigatório em
+          REQ-PILARETE-01.
+      EMENDA 1:2026 — CONFERIDO PELO a2, e a conferência é mais fina do que a
+      busca negativa do a1 sugeria: existe SIM uma entrada da Emenda para a
+      página 125, e ela é de 17.3.1 ("2ª designação da equação": "centro de
+      gravidade" -> "centroide"). 17.2.5 NÃO é alterado pela Emenda.
+
+  - id: NBR6118-17.2.2-fig17.1-limites-dos-dominios
+    norma: "NBR 6118:2023"
+    item: "17.2.2, alínea g) — Figura 17.1 (Domínios de estado-limite último de uma seção transversal)"
+    pagina: 122
+    hash: "sha256:253f6c1e630fd88147187d24ea3e68f9a1c4ae39f9d72055adc85b242cef394a"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.perfil_de_deformacao (polos A, B, C e reta b)"
+    checagem_dimensional: >-
+      y_C = (eps_cu - eps_c2)·h/eps_cu: deformações adimensionais, resultado em
+      metros. Rodado em tools/checar_dimensoes.py (NBR6118-Fig17.1-polo-C, OK)
+      com o mutante MUTANTE-Fig17.1-polo-C-com-h-ao-quadrado REJEITADO.
+      LIMITE DECLARADO: como eps_cu e eps_c2 são adimensionais, trocar um pelo
+      outro, trocar o sinal da diferença ou medir y_C da borda TRACIONADA em
+      vez da COMPRIMIDA passa incólume pelo pint.
+    checagem_numerica: >-
+      Até C50 (eps_c2 = 2,0 ‰, eps_cu = 3,5 ‰): y_C = (3,5-2,0)/3,5 · h =
+      3h/7 = 0,1286 m para h = 0,30 m. Verificado pelo a2, na varredura
+      própria, que com x -> infinito o perfil que pivota em C tende à
+      deformação uniforme eps_c2 e a varredura reproduz N_Rd0 = 1703,8 kN
+      com diferença de 0,000 % contra a forma fechada já aprovada em
+      DER-NBR6118-NRd0-compressao-centrada. É a melhor contra-prova interna
+      disponível para esta figura.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 140 = impressa 122). A figura
+      traz os valores que faltavam ao ruleset:
+      (1) POLO A: "10 ‰" escrito ao lado do ponto A, sobre a borda tracionada.
+          É o limite convencional de alongamento do ELU.
+      (2) POLO B: eps_cu na borda comprimida.
+      (3) POLO C: sobre a vertical de eps_c2, à distância (eps_cu - eps_c2)·h/
+          eps_cu MEDIDA DO NÍVEL DA BORDA COMPRIMIDA.
+      (4) RETA b (compressão uniforme) = a linha VERTICAL de abscissa eps_c2.
+          É a figura, e não o texto, que estabelece isso — e era exatamente o
+          PASSO 1 (o "mais forte") da derivação de N_Rd0 aprovada na v11. Esta
+          regra dá a esse passo o respaldo de item que ele não tinha.
+      CORREÇÃO DE ROTA REGISTRADA, e ela vira regra de processo do repositório:
+      a rodada 2112b3d declarou o valor 10 ‰ AUSENTE da Norma. Estava errado —
+      o valor está na Figura 17.1, não no texto corrido, e rótulos de figura da
+      NBR 6118 são vetorizados, fora do alcance de qualquer busca textual,
+      inclusive depois de tools/decodificar_nbr.py. O registro errado NÃO foi
+      apagado do kb/; coexiste, com o campo `corrige` apontando para ele.
+      NENHUMA BUSCA NEGATIVA POR VALOR NUMÉRICO PODE SER DECLARADA COM BASE
+      APENAS NO TEXTO DECODIFICADO. Ver kb/pendencias.md > V16.
+      LACUNA QUE PERMANECE: eps_yd aparece na figura APENAS como rótulo de
+      abscissa (fronteira dos domínios 3 e 4), SEM valor e SEM expressão —
+      reconfirmado agora também na figura. eps_su continua sem valor em toda a
+      Norma. Consequência para o código em
+      DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil.
+      eps_c2 e eps_cu NÃO são constantes: dependem da classe por 8.2.10.1. A
+      figura não os quantifica, só os nomeia — escrever y_C = 3h/7 no código é
+      conta do agente válida SÓ até C50, e por isso o código deve calcular a
+      expressão, não o número.
+
+  - id: NBR6118-17.2.4.1-concentracao-de-armaduras
+    norma: "NBR 6118:2023, com Em1:2026"
+    item: "17.2.4.1 (Armaduras ativas e passivas — Generalidades), 1º parágrafo"
+    pagina: 123
+    hash: "sha256:e49f83b56fa220a3351ed05653ce89caa6f987eb55e12f4259854b761c046a7c"
+    hash_emenda: "sha256:06156ce3402cbccc3fc046b162b22fcda291fd043f28d8b2a9428153c4b03181"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "NENHUMA — ver uso_autorizado. É permissão que o software escolhe não usar."
+    uso_autorizado: >-
+      Registrada para DELIMITAR: o item é uma PERMISSÃO ("as forças nas
+      armaduras PODEM ser consideradas concentradas no centroide
+      correspondente, SE a distância deste centroide ao centro da armadura mais
+      afastada, medida normalmente à linha neutra, for menor que 10 % de h"),
+      e é CONDICIONADA. O software NÃO a usa: a varredura de seção soma barra a
+      barra (camada a camada), o que é exato e nunca precisa da condição dos
+      10 %. Uso autorizado: citar o item no memorial para justificar que a
+      simplificação NÃO foi empregada.
+    nao_autorizado: >-
+      Agrupar armaduras no centroide sem verificar a condição dos 10 % de h.
+      Num pilarete de seção pequena com barras nos quatro vértices a condição
+      tipicamente NÃO é atendida (para 30×30 cm com d' = 5,8 cm, a distância do
+      centroide da armadura à barra mais afastada é ~9,2 cm contra o limite de
+      3,0 cm), e o agrupamento seria do lado INSEGURO por superestimar o braço
+      de alavanca da armadura comprimida e subestimar a deformação da tracionada.
+    checagem_dimensional: "Comparação de comprimento com 10 % de h: m contra m. Homogêneo."
+    checagem_numerica: >-
+      Seção 30×30 cm, 4 phi 16, d' = 5,8 cm: limite = 0,10·0,30 = 3,0 cm;
+      distância real do centroide da armadura à camada mais afastada =
+      (0,30 - 2·0,058)/2 = 9,2 cm > 3,0 cm. Condição NÃO atendida — a
+      simplificação seria ILEGÍTIMA neste caso, o que confirma a decisão de
+      não implementá-la.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 nas DUAS redações (PDF p. 141 =
+      impressa 123 do texto-base; p. 13 do PDF da Emenda = impressa 9).
+      É o ÚNICO item deste universo tocado pela Emenda 1:2026, e a alteração é
+      TERMINOLÓGICA e SEM EFEITO NUMÉRICO: "centro de gravidade" passa a
+      "centroide" nas duas ocorrências do parágrafo. Registradas as duas
+      redações com hashes separados, como já se fez em
+      NBR6118-12.3.3-12.4.1-valores-de-calculo.
+      A troca "centro de gravidade" -> "centroide" aparece ainda em 17.1
+      (p. 119), 17.3.1 (p. 125) e 17.4.2.2 (p. 137) — é uma padronização de
+      vocabulário da Emenda em toda a Seção 17, não uma mudança de critério.
+
+  - id: NBR6118-15.3.2-fig15.2-envoltoria-minima-2a-ordem
+    norma: "NBR 6118:2023"
+    item: "15.3.2 (Imperfeições geométricas) e Figura 15.2"
+    pagina: 102
+    hash: "sha256:6e076eb2553af3e5342d9b374171a341886b1a372883f0d3e5c7bd7a73393cc1"
+    metodo: calculo
+    status: REJEITADA
+    implementacao: "NENHUMA. Encontrar isto implementado em calc_core/ é VETO do a6."
+    motivo_da_rejeicao: >-
+      FORA DO ESCOPO POR CONSTRUÇÃO. Esta é a envoltória mínima COM 2ª ordem, e
+      só se aplica "quando houver a necessidade de calcular os efeitos locais de
+      2ª ordem". O pilarete desta feature é PILAR CURTO por definição:
+      REQ-PILARETE-05 RECUSA (não calcula, não aproxima) qualquer caso com
+      lambda >= lambda_1, e a regra NBR6118-15.8.3-metodos-de-2a-ordem já está
+      REJEITADA pelo mesmo motivo desde a v11. No escopo atual vale a Figura
+      11.3, nunca esta.
+    checagem_dimensional: "Não aplicável — regra rejeitada, sem implementação."
+    checagem_numerica: "Não aplicável."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 119-120 = impressas 101-102).
+      Registrada, apesar de rejeitada, para marcar a FRONTEIRA e para prevenir
+      um erro específico e provável: a Figura 15.2 tem o MESMO EXPOENTE 2 e o
+      MESMO croqui da Figura 11.3, mudando apenas M_1d,mín por M_d,tot,mín. No
+      gráfico as duas elipses aparecem CONCÊNTRICAS, a interna sendo a de 1ª
+      ordem. Quem for ampliar o escopo para pilar esbelto troca a elipse, não o
+      expoente — e passa a precisar de 15.8.3 (e, por 15.8.3.1/15.8.3.2, de
+      fluência acima de lambda = 90 e do método geral acima de 140).
+      ACHADO ÚTIL PARA ESSE DIA, já transcrito: a Norma autoriza explicitamente
+      obter M_d,tot,mín,xx e M_d,tot,mín,yy por DUAS ANÁLISES DE FLEXÃO COMPOSTA
+      NORMAL ISOLADAS, uma por direção principal — não exige análise oblíqua
+      acoplada. É a mesma estratégia de redução que 17.2.5 usa no lado
+      resistente.
+      ATENÇÃO À NUMERAÇÃO: a Figura 15.2 está na página 102, mas o item que a
+      introduz é 15.3.2, cujo título é "Imperfeições geométricas" e cujo
+      cabeçalho está na página 101 — conferido pelo a2 na própria página, porque
+      um item numerado errado é defeito de rastreabilidade e a p. 102 não traz
+      cabeçalho de item nenhum antes de 15.4.
+
 # =============================================================================
 # ACHADO COLATERAL desta rodada — NÃO é regra, é aviso para quem for
 # implementar a pendência de pilar de borda/canto (ver CLAUDE.md, "Pendente em
@@ -3925,6 +4368,16 @@ derivacoes:
       qualquer patamar de ruptura), mas QUALQUER verificação que dependa do FIM
       do patamar — flexão composta com armadura tracionada em domínio 2 ou 3 —
       está FORA desta aprovação e fora desta versão.
+    revisado_na_v12: >-
+      ESTA RESTRIÇÃO FOI LEVANTADA, e NÃO por mudança de opinião: a v12 extraiu
+      a Figura 17.1, que fixa o alongamento máximo convencional do ELU em 10 ‰
+      (polo A). Dentro dos domínios que a própria Norma define, |eps_s| nunca
+      passa de 10 ‰, e por isso o fim do patamar deixa de ser alcançável. O
+      levantamento está registrado, com seus passos, em derivação SEPARADA —
+      DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil — e é ela, não esta, que a
+      varredura de M_Rd cita. Esta derivação-mãe continua valendo como está;
+      quem ler só ela e aplicar o `limite_declarado` acima à varredura estará
+      lendo uma versão vencida do escopo.
 
   - id: DER-GEOM-raio-de-giracao
     natureza: DERIVACAO_GEOMETRICA
@@ -4029,6 +4482,259 @@ derivacoes:
       de tensão média na seção bruta, contra f_cd = 17,9 MPa — coerente, já que
       a armadura mínima quase compensa a redução de 0,85. Com N_d = 1000 kN,
       nu = 0,66. Faixa plausível para pilarete de fundação.
+    revisado_na_v12: >-
+      O campo `nao_autorizado` acima continua VALENDO na v12 — N_d <= N_Rd0
+      continua NÃO produzindo aprovação. O que mudou é que a v12 fornece o
+      caminho que faltava: o veredito passa a vir de REQ-PILARETE-15
+      (envoltória completa), e N_Rd0 permanece exatamente com o mesmo estatuto
+      de limite superior informativo e guarda de recusa. A justificativa
+      escrita em `nao_autorizado` menciona que "a Figura 11.3 e 17.2.5 não
+      foram extraídas": as duas AGORA estão extraídas e aprovadas, e é por isso
+      que a proibição de aprovar por N_Rd0 sozinho deixa de ser a única saída —
+      mas ela não é revogada, porque a condição continua sendo necessária e não
+      suficiente. N_Rd0 ganha nesta versão UMA função nova, de verificação
+      cruzada: a varredura de M_Rd tem de reproduzir N_Rd0 quando a linha
+      neutra vai ao infinito (reta b). Conferido pelo a2: 0,000 % de diferença.
+
+  - id: DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    estende: DER-NBR6118-8.3.6-sigma-s
+    formula: "sigma_s(eps_s) = sinal(eps_s)·min(E_s·|eps_s| , f_yd), válida para |eps_s| <= 10 ‰"
+    itens_de_origem:
+      - "NBR 6118:2023, 8.3.6 e Figura 8.5 (p. 29-30): diagrama simplificado — ramo reto de inclinação E_s e patamar em f_yd, aplicável à tração E à compressão"
+      - "NBR 6118:2023, 17.2.2 alínea g) e Figura 17.1 (p. 122): o polo A fixa o alongamento máximo convencional do ELU em 10 ‰ — regra NBR6118-17.2.2-fig17.1-limites-dos-dominios"
+      - "DER-NBR6118-8.3.6-sigma-s e DER-NBR6118-12.3.1-fyd"
+    passos_de_interpretacao:
+      - "PASSO 1 — a derivação-mãe (v11) declarou-se válida só 'no ramo reto ou no início do patamar', e excluiu expressamente 'flexão composta com armadura tracionada em domínio 2 ou 3'. A varredura de M_Rd PRECISA desses domínios. Esta derivação levanta a restrição, e o levantamento é passo de interpretação, não transcrição."
+      - "PASSO 2 — o que autoriza levantar: a própria Norma limita o alongamento do ELU a 10 ‰ (polo A da Figura 17.1). O ponto de trabalho da armadura NUNCA sai do intervalo |eps_s| <= 10 ‰ dentro dos domínios que a Norma define. E o diagrama de 8.3.6, como desenhado, não declara nenhum fim do patamar antes disso: se declarasse, o próprio diagrama de domínios da Norma seria incoerente com o diagrama do aço da Norma."
+      - "PASSO 3 — logo, para |eps_s| <= 10 ‰, sigma_s = min(E_s·|eps_s|, f_yd), com o sinal da deformação. É a mesma expressão da derivação-mãe, com o domínio de validade agora ANCORADO num item (17.2.2-g) em vez de ancorado numa ressalva de prudência."
+    uso_autorizado: >-
+      Avaliação de sigma_s em QUALQUER camada de armadura, tracionada ou
+      comprimida, dentro da varredura de equilíbrio de seção do pilarete, desde
+      que |eps_s| <= 10 ‰ — o que os perfis de deformação da Figura 17.1
+      garantem por construção.
+    nao_autorizado: >-
+      (1) Avaliar sigma_s para |eps_s| > 10 ‰. Não é conservadorismo: é que
+          eps_su NÃO TEM VALOR NA NORMA (busca negativa reconfirmada nesta
+          rodada, agora também na Figura 17.1) e portanto não existe base para
+          dizer o que acontece com o aço além do limite convencional. Se a
+          varredura produzir |eps_s| > 10 ‰, o código RECUSA — não extrapola.
+      (2) Usar esta derivação para qualquer verificação de ELS, de fadiga ou de
+          ductilidade que dependa do FIM do patamar. Continua fora.
+    checagem_dimensional: "GPa · adimensional -> MPa, comparado com MPa. Homogêneo (já rodado como DER-NRd0-parcela-aco)."
+    checagem_numerica: >-
+      CA-50: eps_yd = f_yd/E_s = 434,78/210000 = 2,070 ‰. Em 10 ‰ o aço está no
+      patamar: sigma_s = 434,78 MPa. Em 2,0 ‰ (compressão da reta b):
+      min(420; 434,78) = 420 MPa, coincidindo com o valor já usado em N_Rd0 —
+      a continuidade das duas derivações é verificável no mesmo ponto.
+    observacao: >-
+      É esta derivação que responde à pergunta do despacho sobre eps_yd, e a
+      resposta é: eps_yd NÃO É MAIS LACUNA PARA O CÁLCULO. Ele não entra em
+      nenhuma conta — sigma_s sai de min(E_s·eps, f_yd), que não precisa saber
+      onde fica o joelho. eps_yd = f_yd/E_s (já aprovado na v11) é necessário
+      apenas para NOMEAR o domínio no memorial (domínio 3 se eps_s >= eps_yd,
+      domínio 4 se eps_s < eps_yd, conforme as alíneas de 17.2.2 transcritas em
+      NBR6118-17.2.2-hipoteses-basicas-ELU-normal). Nome de domínio impresso em
+      relatório não altera número nenhum.
+      A LACUNA QUE SOBRA É OUTRA, e é eps_su, não eps_yd: a Norma não diz onde o
+      patamar termina. Ela foi NEUTRALIZADA POR ESCOPO — o teto de 10 ‰ da
+      Figura 17.1 é mais restritivo do que qualquer eps_su plausível — e não por
+      hipótese sobre o material. kb/pendencias.md > V16.
+
+  - id: DER-NBR6118-17.2.2-MRd-varredura
+    natureza: DERIVACAO_ALGEBRICA_SOBRE_A_NORMA
+    citacao_em_codigo: "[deriv: DER-NBR6118-17.2.2-MRd-varredura]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    formula: >-
+      Para cada profundidade de linha neutra x compatível com a Figura 17.1:
+      N_Rd(x) = integral_Ac sigma_c(eps(y)) dA + Soma_i A_si·sigma_s(eps(y_i));
+      M_Rd(x) = integral_Ac sigma_c(eps(y))·(h/2 - y) dA
+                + Soma_i A_si·sigma_s(eps(y_i))·(h/2 - y_i).
+      M_Rd,xx = M_Rd(x*) com x* tal que N_Rd(x*) = N_Sd, resolvido por direção
+      principal separadamente.
+    itens_de_origem:
+      - "NBR 6118:2023, 17.2.1 (p. 120): os esforços resistentes (N_Rd, M_Rd) devem constituir envoltória dos solicitantes — regra NBR6118-17.2.1-envoltoria-criterio-de-seguranca"
+      - "NBR 6118:2023, 17.2.2 alíneas a), b), d), g) (p. 120-122): seções planas; solidariedade aço-concreto (igualdade de deformações); tração do concreto desprezada; domínios da Figura 17.1"
+      - "NBR 6118:2023, 17.2.2 alínea g) e Figura 17.1 (p. 122): polo A a 10 ‰, polo B em eps_cu, polo C a (eps_cu - eps_c2)h/eps_cu da borda comprimida, reta b = vertical de eps_c2 — regra NBR6118-17.2.2-fig17.1-limites-dos-dominios"
+      - "NBR 6118:2023, 8.2.10.1 (p. 26): sigma_c(eps_c) parábola-retângulo com eta_c, n, eps_c2, eps_cu — regra NBR6118-8.2.10.1-diagrama-idealizado-do-concreto"
+      - "NBR 6118:2023, 8.3.5/8.3.6 (p. 29-30) via DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil"
+      - "NBR 6118:2023, 17.2.5 (p. 125): é o item que declara que M_Rd,xx e M_Rd,yy são 'calculados a partir do arranjo e da quantidade de armadura em estudo' e que o N_Rd é o mesmo nas duas direções — regra NBR6118-17.2.5-flexao-composta-obliqua"
+      - "NBR 6118:2023, 17.2.4.1 com Em1:2026 (p. 123): o braço de alavanca é medido ao CENTROIDE; a permissão de agrupar armaduras NÃO é usada — regra NBR6118-17.2.4.1-concentracao-de-armaduras"
+    passos_de_interpretacao:
+      - "PASSO 1 — parametrizar o ELU pela profundidade x da linha neutra e pelos três polos da Figura 17.1. A Norma DESENHA os domínios e não escreve nenhuma equação de eps(y). A leitura de que eps(y) é linear com pivô no polo do domínio é a alínea a) (seções planas) aplicada ao desenho."
+      - "PASSO 2 — integrar sigma_c sobre a área comprimida. A Norma dá a LEI sigma_c(eps_c) em 8.2.10.1 e manda desprezar a tração em 17.2.2-d; a INTEGRAÇÃO é cálculo, não item normativo. Adotada a parábola-retângulo integral, e NÃO o bloco retangular simplificado de 17.2.2-e: os dois são autorizados, mas MISTURÁ-LOS é defeito, e o exato dispensa a discussão sobre lambda e alpha_c."
+      - "PASSO 3 — somar as parcelas das camadas de armadura com a deformação do PRÓPRIO nível de cada camada (17.2.2-b), barra a barra, sem agrupar no centroide (17.2.4.1 não é usado)."
+      - "PASSO 4 — tomar momentos em relação ao CENTROIDE da seção bruta. A escolha do polo de momentos não é item da Norma; é convenção de estática, e tem de ser a MESMA usada para M_Sd, sob pena de erro silencioso."
+      - "PASSO 5 — resolver N_Rd(x) = N_Sd em x. Equação de equilíbrio; a Norma não prescreve método numérico nenhum."
+      - "PASSO 6 — para o problema OBLÍQUO, resolver DUAS vezes, uma por eixo principal, e nunca com linha neutra inclinada. Quem autoriza a redução é 17.2.5, e o preço da redução é ela ser 'processo aproximado' declarado."
+    uso_autorizado: >-
+      Obtenção de M_Rd,xx e M_Rd,yy para alimentar a interação de 17.2.5, e
+      obtenção de N_Rd0 como caso-limite (x -> infinito, reta b). Seção
+      RETANGULAR, armadura passiva, concreto C20 a C90, j >= 28 dias — o mesmo
+      domínio já fixado em REQ-PILARETE-02/06.
+    nao_autorizado: >-
+      (1) Linha neutra INCLINADA / varredura oblíqua direta. Não porque seja
+          errada, mas porque não foi auditada: o caminho aprovado é o de 17.2.5.
+      (2) Armadura ATIVA (protensão): 17.2.4.2 exige pré-alongamentos, não
+          extraído. RECUSA.
+      (3) Emitir M_Rd sem que a varredura tenha ENCONTRADO equilíbrio. Se
+          N_Sd > N_Rd0, ou se a raiz não estiver colchetada, o código RECUSA com
+          mensagem — é PROIBIDO devolver o valor do último passo da iteração.
+      (4) Reaproveitar um M_Rd,xx calculado para outro N_Sd.
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: DER-MRd-varredura-parcela-N-concreto
+      (sigma·b·dy -> kN, OK), DER-MRd-varredura-parcela-M-concreto
+      (sigma·b·dy·braço -> kN·m, OK), DER-MRd-varredura-parcela-M-aco
+      (A_s·sigma_s·braço -> kN·m, OK). Mutante REJEITADO pelo pint:
+      MUTANTE-MRd-varredura-sem-braco (parcela de força somada ao momento) —
+      é o erro clássico de esquecer o braço de alavanca numa das parcelas.
+    checagem_numerica: >-
+      VARREDURA IMPLEMENTADA PELO PRÓPRIO a2, fora de calc_core/, com 4000
+      faixas, para o pilarete 30×30 cm, C25, CA-50, 4 phi 16 (8,04 cm²),
+      d' = 5,8 cm (cob. 45 + estribo 5 + phi/2 8):
+        • x -> infinito (reta b): N = 1703,8 kN e M = 0,000 kN·m, contra
+          N_Rd0 = 1703,8 kN da forma fechada de
+          DER-NBR6118-NRd0-compressao-centrada. Diferença 0,000 %. É a
+          verificação cruzada mais forte disponível sem fonte externa: dois
+          caminhos independentes, um numérico e um algébrico, no mesmo ponto.
+        • N_Sd = 0: x = 5,44 cm, M_Rd = 39,05 kN·m. Contra-prova de ordem de
+          grandeza pela regra do braço: A_s,tracionada·f_yd·0,9d =
+          4,02 cm²·434,8 MPa·0,218 m = 38,1 kN·m. Fecha em 2,5 %.
+        • N_Sd = 500 kN: M_Rd,xx = 78,70 kN·m (nu = 0,29; mu = 0,163).
+        • N_Sd = 1000 kN: M_Rd,xx = 63,95 kN·m (nu = 0,59; mu = 0,133).
+        • N_Sd = 1400 kN: M_Rd,xx = 32,21 kN·m (nu = 0,82; mu = 0,067).
+      A curva tem o BOJO característico (M máximo em N intermediário, próximo
+      da flexão composta balanceada) e cai para zero quando N -> N_Rd0 —
+      comportamento físico correto, e um resultado monótono em N seria sinal de
+      defeito. Faixa de mu entre 0,07 e 0,16, plausível para taxa mecânica
+      omega = A_s·f_yd/(A_c·f_cd) = 0,22.
+      SEÇÃO NÃO QUADRADA (20×40 cm, N_Sd = 800 kN): M_Rd,xx = 91,41 kN·m
+      (flexão no plano de h = 0,40 m) e M_Rd,yy = 37,05 kN·m — razão 2,47,
+      coerente com a razão de alturas úteis. Caso obrigatório de teste: em
+      seção quadrada TODA troca de eixo é invisível.
+    limite_declarado: >-
+      A varredura é NUMÉRICA e a Norma não fixa tolerância. O a5 deve declarar o
+      critério de convergência (refinamento até variação de M_Rd abaixo de um
+      limiar declarado) e o a7 deve verificá-lo; um número fixo de faixas
+      escolhido a esmo é defeito. O teste de reprodução de N_Rd0 na reta b é a
+      âncora de aceitação da discretização.
+
+  - id: DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1
+    natureza: INTERPRETACAO_DE_ITEM_NORMATIVO
+    citacao_em_codigo: "[deriv: DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    formula: "(M_Sd,x/M_Rd,xx)^alpha + (M_Sd,y/M_Rd,yy)^alpha <= 1, com alpha = 1,0 e N_Rd = N_Sd"
+    itens_de_origem:
+      - "NBR 6118:2023, 17.2.5 (p. 125): [M_Rd,x/M_Rd,xx]^alpha + [M_Rd,y/M_Rd,yy]^alpha = 1 — regra NBR6118-17.2.5-flexao-composta-obliqua"
+      - "NBR 6118:2023, 17.2.1 (p. 120): (N_Rd, M_Rd) devem CONSTITUIR ENVOLTÓRIA de (N_Sd, M_Sd) — regra NBR6118-17.2.1-envoltoria-criterio-de-seguranca"
+    passos_de_interpretacao:
+      - "PASSO 1 — ler a expressão de 17.2.5 como a SUPERFÍCIE de um conjunto: para N_Rd fixo, o conjunto dos pares (M_x, M_y) resistentes é {(M_x,M_y) : (|M_x|/M_Rd,xx)^alpha + (|M_y|/M_Rd,yy)^alpha <= 1}, cuja fronteira é a igualdade que a Norma escreve. A Norma escreve a fronteira; o INTERIOR é leitura do agente."
+      - "PASSO 2 — aplicar 17.2.1: 'constituir envoltória dos esforços solicitantes' significa que o par solicitante pertence a esse conjunto. Substituir (M_Rd,x, M_Rd,y) por (M_Sd,x, M_Sd,y) e trocar '=' por '<=' é essa aplicação, e é o passo que a Norma NÃO escreve."
+      - "PASSO 3 — verificar que a substituição preserva o sentido da segurança: o lado esquerdo é monotonamente crescente em |M_Sd| e decrescente em M_Rd. Um erro de sinal produziria um critério que aprova o que deveria reprovar; a monotonicidade é verificável por teste e vira requisito de GATE 3."
+      - "PASSO 4 — usar valores ABSOLUTOS dos momentos solicitantes. A envoltória é simétrica nos quatro quadrantes SE a armadura for simétrica nos dois eixos; o código deve VERIFICAR a simetria do arranjo e, se não houver, avaliar os quatro quadrantes em vez de assumir simetria. Passo do agente, não da Norma."
+    uso_autorizado: >-
+      Critério de aceitação do par solicitante (M_Sd,x, M_Sd,y) no ELU de
+      solicitações NORMAIS do pilarete, com alpha = 1,0 e M_Rd,xx/M_Rd,yy
+      calculados para N_Rd = N_Sd por DER-NBR6118-17.2.2-MRd-varredura.
+    nao_autorizado: >-
+      (1) Registrar esta forma como TRANSCRIÇÃO. O código cita
+          [deriv: DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1] e o memorial
+          diz que a Norma escreve "= 1" e que a leitura como "<= 1" é
+          interpretação declarada. Um
+          [rule: NBR6118-17.2.5-flexao-composta-obliqua] apontando para a
+          DESIGUALDADE (e não para a igualdade transcrita) é DEFEITO com veto
+          do a6.
+      (2) alpha != 1,0 no veredito — ver NBR6118-17.2.5-flexao-composta-obliqua,
+          `nao_autorizado` (1).
+    checagem_dimensional: "Adimensional. Rodado (NBR6118-17.2.5-interacao, OK) com dois mutantes rejeitados."
+    checagem_numerica: >-
+      Pilarete 30×30, N_Sd = 1000 kN, M_Rd,xx = M_Rd,yy = 63,95 kN·m, com
+      M_Sd,x = M_Sd,y = 24,0 kN·m: 0,375 + 0,375 = 0,750 <= 1 -> ATENDIDO com
+      alpha = 1,0. Com alpha = 1,2: 0,617. A ordenação (alpha = 1 mais severo
+      que alpha = 1,2 para razões em [0,1]) foi verificada pelo a2 em 20.000
+      pares aleatórios, ZERO violações — é consequência de t^1,2 <= t em [0,1],
+      e não uma observação empírica.
+    observacao: >-
+      Esta é a conversão que o despacho pediu que o a2 decidisse. DECIDIDA E
+      APROVADA como interpretação, com a justificativa em dois pés: (i) a
+      leitura de "envoltória" em 17.2.1 exige um conjunto, e conjunto tem
+      interior; (ii) a alternativa — usar só a igualdade — tornaria o item
+      inutilizável para verificação, o que contradiria o próprio título do
+      item ("Processo aproximado para o DIMENSIONAMENTO à flexão composta
+      oblíqua"). O que NÃO é aprovado é escondê-la: ela é declarada no
+      memorial, sempre.
+
+  - id: DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias
+    natureza: DERIVACAO_GEOMETRICA
+    citacao_em_codigo: "[deriv: DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias]"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    formula: >-
+      Envoltória resistente ENGLOBA a envoltória mínima de 1ª ordem se e somente
+      se, com alpha = 1,0,
+      sqrt( (M_1d,min,xx / M_Rd,xx)² + (M_1d,min,yy / M_Rd,yy)² ) <= 1.
+    itens_de_origem:
+      - "NBR 6118:2023, 11.3.3.4.3 e Figura 11.3 (p. 61): a envoltória mínima é a ELIPSE de expoente 2 com semieixos M_1d,min,xx = N_d(0,015+0,03h) e M_1d,min,yy = N_d(0,015+0,03b), e 'a verificação do momento mínimo pode ser considerada atendida quando ... obtém-se uma envoltória resistente que englobe a envoltória mínima de 1ª ordem' — regra NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem"
+      - "NBR 6118:2023, 17.2.5 (p. 125): a envoltória resistente é a curva de expoente alpha — regra NBR6118-17.2.5-flexao-composta-obliqua"
+      - "DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1 (o conjunto resistente e seu interior)"
+    passos_de_interpretacao:
+      - "PASSO 1 — 'englobar' é INCLUSÃO DE CONJUNTOS. A Norma usa o verbo e não define o teste. Traduzir 'englobar' em 'todo ponto da elipse pertence ao conjunto resistente' é o passo de interpretação."
+      - "PASSO 2 — basta testar a CURVA, não a região: o conjunto resistente de expoente alpha >= 1 é CONVEXO e contém a origem; se a curva elíptica está contida, seu fecho convexo (o disco elíptico) também está. Álgebra convexa, não item normativo."
+      - "PASSO 3 — para alpha = 1 o teste tem FORMA FECHADA EXATA. Maximizar M_x/M_Rd,xx + M_y/M_Rd,yy sobre a elipse (M_x,M_y) = (p·cos t, q·sin t) dá sqrt((p/M_Rd,xx)² + (q/M_Rd,yy)²), por Cauchy-Schwarz. Não há discretização, não há passo de varredura, não há máximo perdido entre dois pontos amostrados."
+      - "PASSO 4 — as duas curvas têm EXPOENTES DIFERENTES (2 na solicitante, alpha na resistente) e isso é da Norma, não erro de leitura: a Figura 11.3 é o lado solicitante e 17.2.5 é o lado resistente."
+    uso_autorizado: >-
+      Verificação do momento mínimo de 11.3.3.4.3 no pilarete de seção
+      retangular, com alpha = 1,0, e com M_Rd,xx/M_Rd,yy de
+      DER-NBR6118-17.2.2-MRd-varredura para N_Rd = N_Sd.
+    nao_autorizado: >-
+      (1) Usar a forma fechada com alpha != 1. Ela vale SÓ para alpha = 1; com
+          alpha = 1,2 o máximo sobre a elipse não tem forma fechada e exige
+          varredura com refinamento declarado. Aplicar a raiz quadrada a um
+          caso com alpha = 1,2 é defeito silencioso.
+      (2) Omitir a raiz quadrada. Erro do lado INSEGURO e invisível à análise
+          dimensional: no sanity check do a2 o valor sem raiz é 0,2817 contra
+          0,5307 correto — 47 % do valor certo. Registrado como caso EMPIRICA
+          em tools/checar_dimensoes.py e obrigatório no GATE 3.
+      (3) Substituir o teste da elipse pelo teste do CANTO (M_1d,min,xx e
+          M_1d,min,yy simultâneos) para REPROVAR. O canto é mais severo que a
+          Norma: 41 % mais exigente no sanity check. Ele pode APROVAR (se passa
+          no canto, passa na elipse — o retângulo contém a elipse e o conjunto
+          resistente é convexo), mas nunca REPROVAR.
+      (4) Aplicar a seção não retangular: a envoltória mínima elíptica só é
+          declarada para seção retangular.
+    checagem_dimensional: >-
+      Adimensional. Rodado em tools/checar_dimensoes.py
+      (DER-inclusao-envoltorias-forma-fechada-alpha-1, OK) e
+      (NBR6118-Fig11.3-elipse-minima, OK). Dois modos de erro NÃO detectáveis
+      pelo pint estão registrados como EMPIRICA: a omissão da raiz e o
+      cruzamento h/b dos semieixos.
+    checagem_numerica: >-
+      (a) Seção 30×30 cm, N_d = 1000 kN, M_Rd = 63,95 kN·m nas duas direções:
+          p = q = 24,00 kN·m; forma fechada = 0,5307; varredura de 200.000
+          pontos sobre a elipse = 0,5307 (coincidência em 6 casas decimais);
+          canto = 0,7506. M_R mínimo necessário: 33,94 kN·m pela elipse contra
+          48,00 kN·m pelo canto.
+      (b) Seção 20×40 cm, N_d = 800 kN, M_Rd,xx = 91,41 e M_Rd,yy = 37,05 kN·m;
+          p = 21,60 (usa h = 0,40) e q = 16,80 kN·m (usa b = 0,20): forma
+          fechada = 0,511360; varredura de 400.000 pontos = 0,511360; canto =
+          0,689792. TROCANDO h por b nos semieixos o índice vai a 0,611333 —
+          20 % de erro, do lado inseguro ou seguro conforme a geometria. É por
+          isso que o caso de teste do GATE 3 tem de ser NÃO QUADRADO.
+      (c) Com alpha = 1,2 (informativo) o máximo sobre a elipse cai a 0,4070 no
+          caso (a) e 0,408192 no caso (b) — sempre abaixo do valor de alpha = 1,
+          como esperado.
+    observacao: >-
+      Este é o teste de "uma envoltória engloba a outra" que o despacho pediu
+      que o a2 decidisse. DECIDIDO E APROVADO, com a forma fechada de alpha = 1
+      como implementação obrigatória — o que transforma uma verificação
+      geométrica aproximada numa identidade algébrica exata e elimina, de uma
+      vez, o risco de máximo perdido por discretização numa feature que não tem
+      nenhum caso de conferência de terceiros.
 
 # =============================================================================
 requisitos_para_a4:
@@ -4539,6 +5245,27 @@ requisitos_para_a5:
       Também: `gamma_n` (13.2.3, seção reduzida) x `gamma_n1` (15.8.1, 2ª ordem
       para lambda > 140) — nomes completos sempre, e o segundo não existe nesta
       versão.
+      COLISÃO ACRESCENTADA NA v12, e é a pior de todas porque as duas grandezas
+      estão na MESMA PÁGINA 125 e as duas declaram valor "para seção
+      retangular". São agora CINCO `alpha` no ruleset:
+        - `alpha_interacao` — expoente de 17.2.5; 1,0 em geral, 1,2 retangular.
+          É o do VEREDITO, e nesta versão vale 1,0.
+        - `alpha_fissuracao` — fator de forma de M_r em 17.3.1; 1,5 retangular.
+          NÃO EXISTE nesta versão (é ELS) e é PROIBIDO introduzi-lo.
+        - `alpha_c` — 0,85 do bloco retangular, 17.2.2-e (já em `materiais.py`).
+        - `alpha_b` — 15.8.2, alíneas a) a d).
+        - `alpha_ancoragem` — 9.4.2.5, = 1,0 para barra comprimida.
+      É PROIBIDO um símbolo chamado `alpha` em qualquer lugar de
+      `calc_core/estrutural/`. Encontrar `alpha` nu, ou `alpha = 1.5` na
+      interação, é VETO do a6 — o 1,5 passa por toda a checagem dimensional e
+      produz envoltória mais cheia, isto é, erro do lado INSEGURO.
+      E mais duas colisões de momento, que são de SUBSCRITO e não de letra:
+        - `M_Rd_x` (componente OBLÍQUA, incógnita de 17.2.5) x `M_Rd_xx`
+          (resistente em flexão composta NORMAL). Um "x" a mais ou a menos
+          troca o significado. Usar `M_Rd_obliquo_x` e `M_Rd_normal_xx`.
+        - `M_1d_min_*` (Figura 11.3, lado SOLICITANTE, expoente 2) x
+          `M_d_tot_min_*` (Figura 15.2, com 2ª ordem, REJEITADA por escopo).
+          O segundo não pode existir no código.
 
   - id: REQ-PILARETE-02-entradas-explicitas-e-recusa-por-ausencia
     texto: >-
@@ -4591,19 +5318,41 @@ requisitos_para_a5:
       defeito.
 
   - id: REQ-PILARETE-04-M1d-min-obrigatorio-nas-duas-direcoes
+    revisado_na_v12: true
     texto: >-
-      [rule: NBR6118-11.3.3.4.3-momento-minimo-pilarete].
+      [rule: NBR6118-11.3.3.4.3-momento-minimo-pilarete],
+      [rule: NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem],
+      [rule: NBR6118-16.3-proibicao-de-carga-centrada].
       NÃO EXISTE, na API do pilarete, caminho de "compressão centrada pura".
       Mesmo que o motor geotécnico chame o caso de "carga centrada" e passe
-      M = 0, o núcleo calcula M_1d,min = N_d·(0,015 + 0,03·h_secao) em CADA
-      direção e usa `M_d = max(M_entrada, M_1d,min)` por direção. A ausência
-      desse caminho é estrutural, não convencional: não deve existir função
-      pública que aceite só N_d e devolva veredito.
+      M = 0, o núcleo calcula M_1d,min em CADA direção. A ausência desse caminho
+      é estrutural, não convencional: não deve existir função pública que aceite
+      só N_d e devolva veredito. A proibição tem, desde a v12, ITEM-FONTE
+      PRÓPRIO — 16.3, p. 116, "não se aceita o dimensionamento de pilares para
+      carga centrada" — e não depende mais de inferência sobre 11.3.3.4.3.
+      CRUZAMENTO EIXO↔DIMENSÃO, agora desambiguado pela Figura 11.3 e
+      OBRIGATÓRIO: M_1d,min,xx = N_d·(0,015 + 0,03·h) e
+      M_1d,min,yy = N_d·(0,015 + 0,03·b), h e b em METROS, cada momento usando a
+      dimensão da seção medida no plano em que ele flexiona. Em seção QUADRADA a
+      troca é invisível — o teste que a pega tem de usar seção não quadrada
+      (REQ-PILARETE-13).
+      CORREÇÃO DA v11, e é o achado D2 do cabeçalho: a v11 mandava usar
+      `M_d = max(M_entrada, M_1d,min)` POR DIREÇÃO e tratar o resultado como o
+      par de projeto. Tomar os dois máximos SIMULTANEAMENTE é o CANTO do
+      retângulo circunscrito à elipse da Figura 11.3, e é 41 % mais severo do
+      que o critério que a Norma escreve (medido: 48,00 contra 33,94 kN·m no
+      sanity check). Passa a valer:
+        (a) `max(M_entrada, M_1d,min)` por direção CONTINUA sendo o que alimenta
+            e_1 e lambda_1 em REQ-PILARETE-05 — ali é grandeza por direção e a
+            v11 está certa;
+        (b) para o VEREDITO de ELU, o critério é o de REQ-PILARETE-15: o par
+            solicitante REAL de um lado, e a ELIPSE inteira do outro. O canto
+            só pode ser usado como atalho que APROVA, nunca que reprova.
       O memorial imprime SEMPRE M_1d,min das duas direções e a frase de que a
-      NBR 6118 não admite dimensionar pilar à compressão estritamente centrada,
-      com a hipótese declarada de que M_1d,min substitui as imperfeições locais
-      de 11.3.3.4.2 (ver `observacao` da regra: é ~10x mais conservador que a
-      rota alternativa para um pilarete de 1 m).
+      NBR 6118 não admite dimensionar pilar à compressão estritamente centrada
+      (16.3, citado com página), com a hipótese declarada de que M_1d,min
+      substitui as imperfeições locais de 11.3.3.4.2 (ver `observacao` da regra:
+      é ~10x mais conservador que a rota alternativa para um pilarete de 1 m).
 
   - id: REQ-PILARETE-05-esbeltez-com-recusa-fora-do-pilar-curto
     texto: >-
@@ -4636,6 +5385,14 @@ requisitos_para_a5:
             comprimido).
 
   - id: REQ-PILARETE-06-NRd0-e-a-recusa-de-veredito-de-ELU
+    revisado_na_v12: true
+    nota_de_id: >-
+      O id é da v11 e ficou parcialmente vencido: a v12 PASSA a emitir veredito
+      de ELU, por REQ-PILARETE-15. O id NÃO foi renomeado de propósito —
+      identificador citado em relatórios e em kb/ é estável, e renomeá-lo
+      quebraria rastreabilidade para economizar uma palavra. O que este
+      requisito continua proibindo, e a v12 mantém intacto, é o veredito SAIR
+      DE N_Rd0.
     texto: >-
       [deriv: DER-NBR6118-NRd0-compressao-centrada],
       [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto],
@@ -4656,10 +5413,17 @@ requisitos_para_a5:
       (C) N_Rd0 é EXPOSTO como valor informativo e como denominador de
           nu = N_d/N_Rd0. É PROIBIDO qualquer caminho de código em que
           `N_d <= N_Rd0` produza "aprovado", cor verde, ou ausência de aviso.
-          O relatório desta versão diz, com todas as letras, que a verificação
-          de ELU de seção sob flexo-composta NÃO é feita e que o resultado é
-          verificação de DETALHAMENTO e DOMÍNIO, não de resistência. N_d > N_Rd0
-          PODE reprovar (condição suficiente para reprovar).
+          N_d > N_Rd0 PODE reprovar (condição suficiente para reprovar).
+          ALTERADO NA v12: a frase da v11 — "o relatório diz que a verificação
+          de ELU de seção sob flexo-compressão NÃO é feita" — CAI, porque agora
+          ela é feita, por REQ-PILARETE-15. O que NÃO cai é a proibição acima:
+          N_Rd0 continua sendo condição NECESSÁRIA E NÃO SUFICIENTE, e o
+          veredito continua PROIBIDO de sair dele. N_Rd0 ganha duas funções
+          novas: (i) guarda de entrada da varredura — se N_Sd > N_Rd0 o
+          equilíbrio não existe e o código RECUSA em vez de iterar; (ii)
+          verificação cruzada obrigatória — a varredura de M_Rd tem de
+          reproduzir N_Rd0 na reta b (x -> infinito), e o desvio admitido é o
+          declarado no critério de convergência (REQ-PILARETE-13).
       (D) RECUSAR verificação em idade j < 28 dias
           [rule: NBR6118-12.3.3-12.4.1-valores-de-calculo], citando 12.3.3-b e
           a exigência de dupla verificação (aos t dias e aos 28).
@@ -4746,43 +5510,84 @@ requisitos_para_a5:
       Figura 9.5 — não conferidos por leitura vetorial (V11). Remeter ao
       projetista com aviso no memorial.
 
-  - id: REQ-PILARETE-11-junta-de-concretagem-tres-casos-e-uma-recusa
+  - id: REQ-PILARETE-11-junta-de-concretagem-tres-casos-e-duas-recusas
+    revisado_na_v12: true
+    decisao_humana: >-
+      V13 RESPONDIDA PELO USUÁRIO EM 2026-09-03: RECUSAR, e não avisar. Razão
+      dada: mais restritivo, mais seguro — a mesma doutrina já adotada no
+      projeto de recusar em vez de aproximar quando não há fonte normativa de
+      verificação no acervo. A v11 registrava AVISO OBRIGATÓRIO; esta versão
+      substitui por RECUSA. kb/pendencias.md > V13, fechada.
     texto: >-
       [rule: NBR6118-21.6-junta-de-concretagem-pilarete-sapata].
-      Enumeração fechada, sem default:
-        MONOLITICO -> segue, sem exigência adicional de 21.6.
-        JUNTA_COM_ADERENCIA_DECLARADA -> segue. A declaração é
+      Enumeração fechada, sem default. O tipo de junta é ENTRADA OBRIGATÓRIA
+      (REQ-PILARETE-02-e) e H (força horizontal na base do pilarete) também.
+        MONOLITICO -> segue, sem exigência adicional de 21.6. Com H != 0 vale
+          ainda REQ-PILARETE-16 (rotulagem do que 17.4 não verifica).
+        JUNTA_COM_ADERENCIA_DECLARADA e H == 0 -> segue. A declaração é
           DECLARADO_PELO_USUARIO, vai LITERAL no memorial junto com a exigência
           do 1º parágrafo de 21.6 (o projeto de execução deve indicar de forma
           precisa o local e a configuração da superfície da junta), e a espera
           dimensionada por 9.5.2.3 é a armadura que atravessa a junta.
-        JUNTA_SEM_ADERENCIA_ASSEGURADA -> RECUSA. Mensagem: 21.6 exige armadura
-          de costura, a NBR 6118 não fornece modelo de cisalhamento na
-          interface (sem coeficiente de atrito, sem coesão, sem rugosidade em
-          mm, sem taxa mínima) e a ABNT NBR 9062 NÃO ESTÁ NO ACERVO. É PROIBIDO
-          calcular por aproximação, por Eurocódigo ou por ACI.
-      MITIGAÇÃO ACRESCENTADA PELO a2 (não estava no despacho): quando houver
-      H != 0 na junta do caso JUNTA_COM_ADERENCIA_DECLARADA, o memorial traz
-      AVISO de que a NBR 6118 não fornece verificação de transferência de
-      cortante na junta e de que a adequação repousa na especificação de
-      execução e na ART. Aviso, não recusa — recusar seria julgamento de
-      engenharia que o a2 não pode aprovar sozinho. Pergunta em
-      kb/pendencias.md > V13.
+        JUNTA_COM_ADERENCIA_DECLARADA e H != 0 -> RECUSA. É A MUDANÇA DA v12.
+          Mensagem obrigatória, com estes elementos e nesta ordem: (i) o valor
+          de H declarado; (ii) que a junta foi declarada aderente; (iii) que a
+          NBR 6118:2023, item 21.6 (p. 181), trata a junta apenas por armadura
+          de costura e NÃO fornece nenhum modelo de transferência de CORTANTE
+          na interface — sem coeficiente de atrito, sem coesão, sem rugosidade
+          em milímetros, sem taxa mínima; (iv) que a ABNT NBR 9062, que
+          forneceria o modelo de cisalhamento-atrito, NÃO ESTÁ NO ACERVO; (v)
+          que a alternativa é executar a ligação MONOLITICA. É PROIBIDO
+          oferecer "prosseguir mesmo assim", caixa de confirmação, aviso no
+          memorial em lugar da recusa, ou qualquer cálculo por Eurocódigo, ACI
+          ou analogia com atrito-cisalhamento.
+          SEM TOLERÂNCIA NUMÉRICA: o gatilho é H != 0 como DECLARADO. É PROIBIDO
+          criar faixa de "H pequeno", "H desprezível" ou fração de N — não há
+          base normativa nenhuma para o limiar, e inventá-lo seria exatamente o
+          que a decisão do usuário recusou.
+        JUNTA_SEM_ADERENCIA_ASSEGURADA -> RECUSA, com ou sem H. Mensagem: 21.6
+          exige armadura de costura, a NBR 6118 não fornece modelo de
+          cisalhamento na interface e a ABNT NBR 9062 NÃO ESTÁ NO ACERVO.
+      TESTE OBRIGATÓRIO no GATE 3, porque recusa que não recusa é pior que
+      recusa nenhuma: JUNTA_COM_ADERENCIA_DECLARADA com H = 0,001 kN tem de
+      RECUSAR; com H = 0,0 tem de seguir. Testar em cima do zero.
 
   - id: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer
+    revisado_na_v12: true
     texto: >-
       O relatório do pilarete imprime, sem exceção: (a) os itens normativos de
       cada verificação com página; (b) M_1d,min das duas direções e a frase
-      sobre compressão centrada não ser estado admissível; (c) lambda,
-      lambda_1, i e ell_e por direção, com a vinculação DECLARADA; (d) N_Rd0 e
-      nu = N_d/N_Rd0 rotulados como INFORMATIVOS, com a frase "esta versão não
-      verifica o ELU de seção sob flexo-compressão"; (e) gamma_c e gamma_s
-      efetivamente usados e se a correção × 1,1 de 12.4.1 foi aplicada; (f) o
-      tipo de junta e, no caso declarado, o texto da declaração; (g) as
-      hipóteses declaradas: j >= 28 dias, eta_2 de aderência, cobrimento de
-      45 mm aplicado ao pilarete inteiro, M_1d,min substituindo as imperfeições
-      locais fora de estrutura reticulada.
-      É PROIBIDO o memorial do pilarete emitir "APROVADO"/"OK" global.
+      sobre compressão centrada não ser estado admissível, citando 16.3 p. 116;
+      (c) lambda, lambda_1, i e ell_e por direção, com a vinculação DECLARADA;
+      (d) N_Rd0 e nu = N_d/N_Rd0 rotulados como INFORMATIVOS; (e) gamma_c e
+      gamma_s efetivamente usados e se a correção × 1,1 de 12.4.1 foi aplicada;
+      (f) o tipo de junta, o valor de H e, no caso declarado, o texto da
+      declaração; (g) as hipóteses declaradas: j >= 28 dias, eta_2 de aderência,
+      cobrimento de 45 mm aplicado ao pilarete inteiro, M_1d,min substituindo as
+      imperfeições locais fora de estrutura reticulada.
+      ACRESCENTADO NA v12, junto com o veredito:
+        (h) M_Rd,xx e M_Rd,yy com o N_Sd para o qual foram calculados, a
+            profundidade de linha neutra x de cada um e o DOMÍNIO em que cada
+            um caiu (nomeado conforme a Figura 17.1; é para nomear o domínio,
+            e só para isso, que eps_yd = f_yd/E_s é usado);
+        (i) os dois índices de verificação, com a fórmula ao lado: o do par
+            solicitante real e o da inclusão da envoltória mínima;
+        (j) a declaração, literal, de que a Norma escreve "= 1" em 17.2.5 e que
+            o uso como "<= 1" é interpretação declarada
+            [deriv: DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1];
+        (k) o alpha usado (1,0) COM a frase de que 17.2.5 autorizaria 1,2 para
+            seção retangular, seguido do valor que o índice teria com 1,2,
+            rotulado "informativo — não usado no veredito";
+        (l) a frase de escopo de REQ-PILARETE-16 sobre 17.4, sempre, e não só
+            quando H != 0.
+      O VEREDITO PASSA A SER PERMITIDO, com o nome exato e nunca outro:
+      "ELU de solicitações NORMAIS (NBR 6118:2023, 17.2.1): ATENDIDO" ou
+      "NÃO ATENDIDO". CONTINUA PROIBIDO o memorial emitir "APROVADO"/"OK"
+      global, "pilarete verificado", cor verde de peça inteira ou qualquer
+      formulação que um leitor apressado leia como aprovação do elemento — o
+      que foi verificado é o ELU de solicitações normais mais o detalhamento,
+      e não o ELU de força cortante, nem ELS, nem fadiga, nem a ligação com a
+      sapata além da emenda por traspasse.
 
   - id: REQ-PILARETE-13-testes-sem-exemplo-de-terceiros
     texto: >-
@@ -4810,6 +5615,54 @@ requisitos_para_a5:
             contra o valor de tabela clássico de 38·phi; e sigma_s2 = 420 MPa
             para CA-50 em eps_c2 = 2 ‰. Usar como fixtures, declarando que a
             referência é tabela consagrada e não fonte do acervo.
+      ACRESCENTADO NA v12 — a envoltória agrava a lacuna de validação, porque a
+      busca negativa do a1 (reconferida pelo a2) mostrou que NÃO HÁ NO ACERVO um
+      único exemplo resolvido de seção de pilar sob N + Mx + My. O "Exemplo 4 —
+      Sapata Isolada Sob Flexão Oblíqua" de Bastos NÃO serve: é problema
+      GEOTÉCNICO de pressões na base (e_x = M_x/N, tensões nos quatro vértices,
+      tombamento), não dimensiona seção nenhuma. Testes obrigatórios adicionais,
+      todos de propriedade interna:
+        (7) DEGENERAÇÃO NA RETA b: a varredura com x -> infinito tem de
+            reproduzir N_Rd0 da forma fechada já aprovada, dentro do critério de
+            convergência declarado. É a única verificação cruzada forte
+            disponível — dois caminhos independentes, um numérico e um
+            algébrico. Medido pelo a2: 0,000 % de diferença com 4000 faixas.
+        (8) DEGENERAÇÃO UNIAXIAL: com M_Sd,y = 0 a verificação oblíqua tem de
+            dar exatamente a normal em torno de x, e vice-versa.
+        (9) ORDENAÇÃO DOS CRITÉRIOS: canto >= indice(alpha=1) >= indice(alpha
+            =1,2), sempre. Se a implementação inverter, há erro de expoente ou
+            de sinal. (Consequência de t^1,2 <= t em [0,1]; verificado pelo a2
+            em 20.000 pares, zero violações.)
+        (10) FORMA FECHADA CONTRA VARREDURA: o índice de inclusão por
+            sqrt((p/M_Rd,xx)² + (q/M_Rd,yy)²) tem de coincidir com o máximo
+            numérico da interação alpha = 1 sobre a elipse. Conferido pelo a2 em
+            6 casas decimais, em seção quadrada e em 20×40.
+        (11) SEÇÃO NÃO QUADRADA OBRIGATÓRIA em pelo menos um caso: 20×40 cm,
+            N_d = 800 kN -> M_Rd,xx = 91,41 e M_Rd,yy = 37,05 kN·m,
+            M_1d,min,xx = 21,60 (usa h) e M_1d,min,yy = 16,80 kN·m (usa b),
+            índice = 0,5114. Trocando h por b nos semieixos o índice vai a
+            0,6113. EM SEÇÃO QUADRADA ESSA TROCA É INVISÍVEL — um conjunto de
+            testes só com 30×30 não prova nada sobre o cruzamento de eixos.
+        (12) MUTAÇÃO DA RAIZ: remover a raiz quadrada do índice de inclusão tem
+            de QUEBRAR um teste. Sem raiz o valor cai de 0,5307 para 0,2817 no
+            caso do sanity check — lado inseguro, e invisível ao pint.
+        (13) MUTAÇÃO DO EXPOENTE: trocar 2 (elipse mínima) por 1,2 (interação),
+            ou por 1,5 (o alpha de 17.3.1, mesma página 125), tem de quebrar
+            testes DIFERENTES — é assim que se prova que os dois expoentes são
+            objetos distintos no código.
+        (14) FÍSICA DA CURVA N-M: M_Rd tem de subir e depois descer quando N
+            cresce de 0 a N_Rd0 (bojo da flexão composta balanceada), e valer
+            zero em N_Rd0. Uma curva monótona é sinal de defeito. Valores do
+            a2 para 30×30/C25/CA-50/4 phi 16: 39,05 (N=0), 78,70 (N=500),
+            63,95 (N=1000), 32,21 kN·m (N=1400).
+        (15) RECUSA POR FALTA DE EQUILÍBRIO: N_Sd > N_Rd0 tem de RECUSAR com
+            mensagem, nunca devolver o último valor da iteração.
+      NENHUM DESTES SUBSTITUI CONFERÊNCIA DE TERCEIRO. Continua registrado como
+      LACUNA DE VALIDAÇÃO de GATE 3 (kb/exemplos.yaml >
+      BUSCA-NEG-exemplo-pilar-flexao-composta-obliqua): o a7 NÃO pode declarar
+      confiança ALTA nesta feature com base só em propriedade interna, e o
+      caminho para fechá-la é um caso resolvido por engenheiro humano. Isto NÃO
+      bloqueia o GATE 1.
 
   - id: REQ-PILARETE-14-proibicao-de-mistura-de-metodo-e-de-majoracao-por-vento
     texto: >-
@@ -4831,6 +5684,123 @@ requisitos_para_a5:
             pilarete pelos coeficientes de combinação da NBR 8681/NBR 6118
             §11, do lado das AÇÕES, e só. Encontrar em `estrutural/` qualquer
             referência a 6.3.2/6.3.3 é veto do a6.
+
+  - id: REQ-PILARETE-15-veredito-de-ELU-de-solicitacoes-normais
+    criado_na_v12: true
+    texto: >-
+      É O REQUISITO QUE SUBSTITUI A RECUSA DE VEREDITO DA v11. A v11 só podia
+      REJEITAR (N_Rd0 como limite superior); esta versão fecha o critério de
+      APROVAÇÃO. Regras e derivações que o sustentam:
+      [rule: NBR6118-17.2.1-envoltoria-criterio-de-seguranca],
+      [rule: NBR6118-17.2.5-flexao-composta-obliqua],
+      [rule: NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem],
+      [rule: NBR6118-17.2.2-fig17.1-limites-dos-dominios],
+      [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto],
+      [rule: NBR6118-8.3.5-8.3.6-aco-passivo],
+      [rule: NBR6118-17.2.4.1-concentracao-de-armaduras] (citado para dizer que
+      NÃO é usado),
+      [deriv: DER-NBR6118-17.2.2-MRd-varredura],
+      [deriv: DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil],
+      [deriv: DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1],
+      [deriv: DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias],
+      [deriv: DER-NBR6118-NRd0-compressao-centrada] (guarda e verificação
+      cruzada).
+      SEQUÊNCIA OBRIGATÓRIA, e cada passo tem seu motivo de recusa próprio:
+        (1) PRÉ-CONDIÇÕES. Só entra aqui quem já passou por REQ-PILARETE-03
+            (seção retangular, limites de 13.2.3), -05 (pilar curto, lambda <
+            lambda_1 estrito), -06-D (j >= 28 dias) e -11 (junta). Falhou
+            qualquer um: RECUSA antes de calcular envoltória nenhuma. O critério
+            elíptico da Figura 11.3 e o alpha = 1,2 de 17.2.5 são AMBOS
+            condicionados a seção retangular — sem essa guarda, os dois caem.
+        (2) GUARDA DE N. Se N_Sd > N_Rd0: RECUSA, citando
+            [deriv: DER-NBR6118-NRd0-compressao-centrada] e os dois valores.
+            Não existe equilíbrio a procurar.
+        (3) VARREDURA, UMA POR EIXO PRINCIPAL. Calcular M_Rd,xx (flexão no
+            plano de h) e M_Rd,yy (flexão no plano de b), AMBOS para
+            N_Rd = N_Sd, por DER-NBR6118-17.2.2-MRd-varredura: perfis de
+            deformação pivotando nos polos A (10 ‰), B (eps_cu) e C
+            (eps_c2, a (eps_cu-eps_c2)h/eps_cu da borda comprimida) da Figura
+            17.1; sigma_c pela parábola-retângulo de 8.2.10.1 integrada sobre a
+            área comprimida (tração do concreto desprezada, 17.2.2-d); sigma_s
+            camada a camada, sem agrupar no centroide; momentos tomados no
+            CENTROIDE da seção bruta. É PROIBIDO misturar a parábola-retângulo
+            com o bloco retangular simplificado de 17.2.2-e no mesmo cálculo.
+            Se |eps_s| > 10 ‰ em qualquer camada: RECUSA (fora do domínio
+            aprovado da derivação do aço).
+            Se a raiz de N_Rd(x) = N_Sd não estiver colchetada: RECUSA. É
+            PROIBIDO devolver o valor do último passo da iteração.
+        (4) VERIFICAÇÃO A — PAR SOLICITANTE REAL (17.2.1 + 17.2.5):
+              I_A = (|M_Sd,x|/M_Rd,xx)^alpha + (|M_Sd,y|/M_Rd,yy)^alpha <= 1,
+            com alpha = 1,0. M_Sd,x e M_Sd,y são os momentos de cálculo REAIS na
+            base do pilarete, na combinação considerada.
+        (5) VERIFICAÇÃO B — INCLUSÃO DA ENVOLTÓRIA MÍNIMA (11.3.3.4.3):
+              I_B = sqrt( (M_1d,min,xx/M_Rd,xx)² + (M_1d,min,yy/M_Rd,yy)² ) <= 1,
+            forma fechada EXATA do máximo da interação alpha = 1 sobre a elipse
+            (Cauchy-Schwarz). É PROIBIDO omitir a raiz — lado inseguro,
+            invisível à checagem dimensional. É PROIBIDO usar esta forma fechada
+            com alpha != 1.
+        (6) VEREDITO = A **e** B. As duas são necessárias e nenhuma implica a
+            outra: A cobre o esforço real, B cobre o momento mínimo que a Norma
+            impõe independentemente do carregamento. Aprovar com uma só é
+            defeito com veto do a6.
+        (7) ATALHO PERMITIDO, COM DIREÇÃO ÚNICA. O teste do CANTO —
+            (max(|M_Sd,x|, M_1d,min,xx)/M_Rd,xx) + (max(|M_Sd,y|,
+            M_1d,min,yy)/M_Rd,yy) <= 1 — implica (4) e (5) simultaneamente,
+            porque o retângulo contém a elipse e o conjunto resistente de
+            17.2.5 com alpha >= 1 é convexo. Ele PODE ser usado para aprovar
+            direto. NÃO PODE, em nenhuma hipótese, reprovar: falhando o canto,
+            o código É OBRIGADO a calcular (4) e (5). O canto é 41 % mais severo
+            que a Norma no caso do sanity check (48,00 contra 33,94 kN·m de
+            M_R exigido) e reprovar por ele seria substituir o critério escrito
+            na Figura 11.3 por outro, mais duro, inventado aqui.
+        (8) SIMETRIA. A redução aos valores absolutos em (4) pressupõe arranjo
+            de armadura simétrico nos dois eixos. O código VERIFICA a simetria
+            do arranjo; se não for simétrico, avalia os quatro quadrantes com
+            os sinais, ou RECUSA. É PROIBIDO assumir simetria.
+        (9) alpha = 1,2 é calculado e EXIBIDO como informativo
+            (REQ-PILARETE-12-k) e é PROIBIDO que ele decida o veredito nesta
+            versão — ver NBR6118-17.2.5-flexao-composta-obliqua,
+            `nao_autorizado` (1), e kb/pendencias.md > V18.
+      NOME DO VEREDITO: "ELU de solicitações NORMAIS: ATENDIDO / NÃO ATENDIDO".
+      Nunca "pilarete OK". Ver REQ-PILARETE-12 e REQ-PILARETE-16.
+
+  - id: REQ-PILARETE-16-escopo-do-veredito-e-o-cortante-nao-verificado
+    criado_na_v12: true
+    prioridade: ALTA
+    texto: >-
+      LACUNA DE ESCOPO QUE O VEREDITO TORNA PERIGOSA (achado D4 do cabeçalho da
+      v12). O item 17.4 da NBR 6118:2023 — ELU de elementos lineares sujeitos a
+      FORÇA CORTANTE — NUNCA FOI EXTRAÍDO para este ruleset. Enquanto a v11 não
+      emitia veredito, isso era inócuo. A partir do momento em que o software
+      escreve "ELU atendido", um pilarete com H != 0 na base tem força cortante
+      NÃO VERIFICADA e um leitor apressado lerá o veredito como cobertura do
+      elemento inteiro.
+      NÃO é motivo de recusa: 17.4 existe na Norma e simplesmente não foi
+      extraído — é lacuna de ESCOPO deste pipeline, não vazio normativo (que é o
+      caso da junta de V13, onde a NBR 9062 falta do acervo). O tratamento é o
+      mesmo já aprovado em REQ-UI-SIGMA-01 para a tensão admissível: ROTULAGEM
+      ESTRITA.
+      OBRIGATÓRIO:
+        (a) O veredito se chama "ELU de solicitações NORMAIS (17.2.1)" em todo
+            lugar — API, relatório, tela. Nenhum atalho para "ELU", "resistência
+            do pilarete" ou "verificação do pilarete".
+        (b) O memorial traz, SEMPRE (não só quando H != 0), a frase: "ELU de
+            força cortante (NBR 6118:2023, 17.4) NÃO verificado — fora do escopo
+            desta versão. O dimensionamento dos estribos segue os critérios de
+            DETALHAMENTO de 18.4.3, que não são verificação de resistência ao
+            cortante."
+        (c) Quando H != 0 a frase é REPETIDA junto ao valor de H, com o valor.
+        (d) É PROIBIDO a `estrutural/` conter qualquer expressão de V_Rd, V_Sd,
+            V_c, V_sw ou tau_wd. Encontrar uma é veto do a6 — significaria
+            17.4 implementado sem regra aprovada, violando a regra 2 do
+            CLAUDE.md.
+      ARMADILHA DE LEITURA, registrada de propósito: os estribos JÁ SÃO
+      dimensionados por REQ-PILARETE-08, e é fácil concluir que o cortante está
+      coberto. Não está. 18.4.3 fixa phi_t, espaçamento e ancoragem por
+      DETALHAMENTO de pilar; nada ali resolve V_Sd <= V_Rd.
+      DESPACHO PARA O a1 (não bloqueia o GATE 1): extrair 17.4 para o pilarete,
+      PARTINDO DA EMENDA 1:2026 — conferido pelo a2 que a Emenda altera
+      17.4.1.1.3 (p. 135) e 17.4.2.2 (p. 137). kb/pendencias.md > V17.
 
   - id: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro
     prioridade: ALTA

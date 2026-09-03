@@ -1258,6 +1258,45 @@ concluirá — erradamente — que há defeito de transcrição.
 
 ---
 
+## V13 — Junta declarada aderente COM força horizontal: recusar ou avisar? — **RESOLVIDA em 2026-09-03 por decisão do usuário: RECUSAR**
+
+> **STATUS: FECHADA.** Decisão do usuário registrada em 2026-09-03, no despacho
+> da rodada 3 do backlog #13 (ruleset v11 → v12).
+>
+> **Resposta:** **RECUSAR**, e não avisar.
+>
+> **Razão dada pelo usuário:** mais restritivo, mais seguro — a mesma doutrina
+> já usada no projeto de recusar em vez de aproximar quando não existe fonte
+> normativa de verificação no acervo.
+>
+> **O que mudou no ruleset (v12):** `REQ-PILARETE-11` deixou de se chamar
+> "três casos e uma recusa" e passou a "três casos e DUAS recusas". O caso
+> `JUNTA_COM_ADERENCIA_DECLARADA` foi partido em dois pelo valor de H:
+> com `H == 0` segue; com `H != 0` **RECUSA**, com mensagem obrigatória que
+> nomeia o valor de H, cita a NBR 6118:2023 §21.6 (p. 181) como item que trata
+> a junta só por armadura de costura e não fornece modelo de transferência de
+> cortante na interface, registra que a **ABNT NBR 9062 não está no acervo** e
+> aponta a ligação MONOLÍTICA como alternativa. Ficou explicitamente **proibido**
+> oferecer "prosseguir mesmo assim", caixa de confirmação, ou aviso no memorial
+> em lugar da recusa.
+>
+> **Guarda contra o erro seguinte, acrescentada pelo a2:** é PROIBIDO criar
+> faixa de tolerância para H ("H pequeno", "H desprezível", fração de N). Não há
+> base normativa nenhuma para o limiar e inventá-lo reintroduziria pela porta
+> dos fundos exatamente o que a decisão recusou. O gatilho é `H != 0` como
+> DECLARADO, e o GATE 3 testa em cima do zero (H = 0,001 kN recusa; H = 0,0
+> segue).
+>
+> **O que continua aberto e não foi decidido aqui:** trazer a ABNT NBR 9062 para
+> o acervo continua sendo o que destravaria a terceira via (junta sem aderência
+> assegurada, com modelo de cisalhamento-atrito), hoje também RECUSA. E o
+> pilarete MONOLÍTICO com H != 0 tem outra lacuna, que é de escopo e não de
+> acervo — ver **V17**.
+
+---
+
+### Registro histórico da pergunta (mantido para auditoria)
+
 ## V13 — Junta declarada aderente COM força horizontal: recusar ou avisar? — PRIORIDADE ALTA (decisão de escopo já parcialmente tomada)
 
 *Pergunta objetiva:* o usuário decidiu que o software só admite (a) pilarete
@@ -1389,3 +1428,143 @@ temporariamente `Concreto` a f_ck <= 40 MPa no motor amplo.
 consequente nova rodada de A6/A7 sobre a superfície de flexão da sapata. Nada
 disso é do escopo do pilarete — é dívida preexistente que esta rodada tornou
 visível.
+
+---
+
+# RODADA 2026-09-03 (ruleset versão 12) — ELU do pilarete: o software passa a poder APROVAR
+
+Três pendências novas (V16 a V18). **Nenhuma bloqueia o GATE 1** e nenhuma
+bloqueia a implementação de `REQ-PILARETE-15` — todas foram desenhadas para que
+o software funcione sem elas, do lado conservador. O que elas destravam é
+ALCANCE (V18), CONFIANÇA (V17) e DÍVIDA DE PROCESSO (V16).
+
+---
+
+## V16 — Buscas negativas por VALOR NUMÉRICO feitas só no texto decodificado: reabrir as antigas? — PRIORIDADE MÉDIA (dívida de processo, não de segurança)
+
+*Pergunta objetiva:* a rodada 2112b3d declarou que o valor **10 ‰** estava
+ausente da NBR 6118:2023. Estava errado — o valor está na **Figura 17.1**
+(p. 122), e rótulos de figura da 6118 são vetorizados, fora do alcance de
+qualquer busca textual, inclusive depois de `tools/decodificar_nbr.py`. A regra
+de processo que fica é: **nenhuma busca negativa por valor numérico pode ser
+declarada com base apenas no texto decodificado**. A pergunta ao usuário é se
+vale gastar uma rodada de a1 reabrindo as buscas negativas ANTERIORES por valor
+numérico, ou se isso fica registrado como dívida.
+
+*Trecho literal da fonte* (NBR 6118:2023, Figura 17.1, p. impressa 122, lido por
+visão pelo a2 nesta rodada):
+
+> [junto ao polo A, sobre a borda tracionada, a figura escreve] "10‰"
+> [e sobre o eixo inferior, um único outro rótulo] "ε_yd" [sem valor e sem
+> expressão]
+
+*Leitura proposta pelo a2:* **NÃO reabrir agora**, e o motivo é verificável, não
+é economia de esforço. As buscas negativas por valor numérico anteriores desta
+sessão — σ_adm a partir de SPT/CPT (§7.3.3), cunha de solo, ε_su, ε_yd — têm uma
+coisa em comum: **nenhuma delas sustenta regra APROVADA**. Todas terminaram em
+RECUSA (o software não calcula) ou em PENDENTE_HUMANO. Reabri-las não muda
+comportamento de software nenhum hoje; no máximo transformaria uma recusa em
+regra nova, o que é ganho de alcance e não correção de defeito. O caso do 10 ‰
+foi diferente exatamente porque ele BLOQUEAVA uma feature.
+
+*Impacto se a leitura estiver errada:* se alguma dessas buscas negativas estiver
+errada como a do 10 ‰ estava, o software está recusando caso que a Norma cobre —
+custo de ALCANCE, nunca de segurança. Uma busca negativa errada só produz
+recusa a mais, jamais aprovação indevida. É por isso que a prioridade é MÉDIA e
+não ALTA.
+
+*Segunda parte, e esta é sobre ε_su:* a Norma **não dá valor nem expressão para
+ε_su** em lugar nenhum, reconfirmado agora também na Figura 17.1. Isso NÃO
+bloqueia a varredura de M_Rd, porque foi neutralizado **por escopo** e não por
+hipótese sobre o material: o teto de 10 ‰ do polo A é mais restritivo que
+qualquer ε_su plausível, e a derivação `DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil`
+RECUSA se a varredura produzir |ε_s| > 10 ‰. Fica registrado que a Norma tem
+essa lacuna e que o software não a preenche por conta própria.
+
+*Quem responde destrava o quê:* uma rodada de a1 relendo por VISÃO as figuras
+que sustentam as buscas negativas antigas. Barata em risco, cara em tempo, e o
+ganho é alcance — não correção.
+
+---
+
+## V17 — ELU de FORÇA CORTANTE (17.4) do pilarete nunca foi extraído, e agora o software emite veredito — PRIORIDADE ALTA
+
+*Pergunta objetiva:* a partir da v12 o software escreve "ELU de solicitações
+NORMAIS: ATENDIDO". Um pilarete com H ≠ 0 na base tem força cortante que
+**nenhuma regra deste ruleset verifica**, porque o item 17.4 da NBR 6118:2023
+nunca foi extraído. A rotulagem estrita (REQ-PILARETE-16) basta, ou o software
+deve RECUSAR quando H ≠ 0 também no caso MONOLÍTICO?
+
+*Trecho literal da fonte:* não há trecho a citar — é precisamente o ponto. O que
+existe no ruleset sobre estribos de pilarete é `NBR6118-18.4.3-armaduras-
+transversais-pilarete`, que é **detalhamento**: fixa φ_t ≥ max(5 mm, φ/4),
+s ≤ min(200 mm, b_min, k_φ·φ) e ancoragem. Nada ali resolve V_Sd ≤ V_Rd.
+
+*Leitura proposta pelo a2:* **rotulagem estrita, não recusa** — e a distinção
+com V13 é o argumento inteiro. Em V13 havia **vazio normativo no acervo**: a
+NBR 6118 não fornece modelo de cisalhamento na interface e a NBR 9062 não está
+no repositório, de modo que nenhuma quantidade de trabalho deste pipeline
+produziria a verificação; recusar era a única saída honesta. Aqui há **lacuna de
+escopo**: 17.4 existe na Norma que está no acervo, é extraível, e o que falta é
+uma rodada de a1. Recusar todo pilarete com H ≠ 0 inutilizaria a feature para o
+caso mais comum, e por um motivo que se resolve trabalhando. O precedente do
+projeto para lacuna de escopo é a rotulagem (REQ-UI-SIGMA-01: "parcela de ELU da
+tensão admissível — §7.4 (ELS/recalque) NÃO verificado"), e é ele que o a2
+aplicou.
+
+*Impacto se a leitura estiver errada:* se o correto for recusar, o software hoje
+emite um veredito positivo sobre um pilarete cuja resistência ao cortante
+ninguém verificou, e a rotulagem — por mais literal que seja — pode não ser lida.
+Lado inseguro mitigado por texto, que é exatamente a configuração que o usuário
+recusou em V13. **Esta é a pendência que mais merece resposta do usuário nesta
+rodada.**
+
+*Quem responde destrava o quê:* (a) uma resposta "recusar" vira guarda dura,
+simétrica à de V13, em REQ-PILARETE-16; (b) uma resposta "rotular" congela o
+comportamento da v12; (c) autorizar uma rodada de a1 sobre 17.4 fecha a questão
+de vez e é o caminho definitivo — **partindo da Emenda 1:2026**, que o a2
+conferiu alterar 17.4.1.1.3 (p. 135) e 17.4.2.2 (p. 137).
+
+---
+
+## V18 — α = 1,2 é autorizado pela Norma para seção retangular e o a2 não o usou no veredito — PRIORIDADE MÉDIA (alcance)
+
+*Pergunta objetiva:* a NBR 6118:2023 §17.2.5 autoriza expressamente α = 1,2 para
+seções retangulares, que é exatamente o caso do pilarete. O a2 adotou α = 1,0
+para o veredito e deixou α = 1,2 apenas como valor informativo no memorial. O
+usuário aceita essa restrição, ou quer que α = 1,2 possa decidir a aprovação?
+
+*Trecho literal da fonte* (NBR 6118:2023, 17.2.5, p. impressa 125, lido por visão
+pelo a2):
+
+> "α é um expoente cujo valor depende de vários fatores, entre eles o valor da
+> força normal, a forma da seção, o arranjo da armadura e de suas porcentagens.
+> Em geral pode ser adotado α = 1, a favor da segurança. No caso de seções
+> retangulares, pode-se adotar α = 1,2."
+
+*Leitura proposta pelo a2:* α = 1,0 no veredito, por três razões cumulativas, e
+nenhuma delas é "a Norma proíbe" — ela não proíbe:
+1. **É a própria Norma que chama α = 1 de "a favor da segurança"**, e é o único
+   valor autorizado sem condição de forma de seção.
+2. **α maior = envoltória resistente mais cheia = critério menos conservador.**
+   Verificado pelo a2 em 20.000 pares aleatórios de razões em [0,1]: zero
+   exceções (consequência de t^1,2 ≤ t nesse intervalo). No sanity check, o
+   índice cai de 0,750 (α = 1) para 0,617 (α = 1,2).
+3. **Só com α = 1 o teste de inclusão da envoltória mínima tem forma fechada
+   exata** — sqrt((p/M_Rd,xx)² + (q/M_Rd,yy)²), por Cauchy-Schwarz. Com α = 1,2
+   é preciso varrer a elipse numericamente e o máximo pode ser perdido entre dois
+   pontos amostrados. Gastar margem menos conservadora num modelo que **não tem
+   um único caso de conferência de terceiros no acervo** (ver V17 e
+   `kb/exemplos.yaml`) é decisão de engenheiro, não de agente.
+
+*Impacto se a leitura estiver errada:* custo de ALCANCE, nunca de segurança. O
+software pode reprovar pilarete que a Norma aprovaria, tipicamente exigindo
+~12 % mais momento resistente (33,94 contra 30,2 kN·m no caso do sanity check).
+O memorial já imprime o valor que o índice teria com α = 1,2, de modo que o
+engenheiro enxerga a margem que está deixando na mesa e pode decidir por fora.
+
+*Quem responde destrava o quê:* um "sim, use 1,2" vira entrada declarada (nunca
+default silencioso) com o valor impresso no memorial, e obriga a implementar o
+máximo sobre a elipse por varredura com refinamento declarado — mais um caminho
+numérico a validar no GATE 3. Um "não" congela o comportamento da v12, que é o
+conservador.

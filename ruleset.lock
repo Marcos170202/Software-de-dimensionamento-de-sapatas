@@ -5,6 +5,62 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 12 (2026-09-03) — fecha o ELU do pilarete: o software passa a poder
+# APROVAR, e não só REJEITAR. Backlog do usuário, item #13, rodada 3.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem IDÊNTICAS às da v11, e NENHUMA das 45
+# regras da v11 foi alterada — só houve acréscimo):
+#   regras (normativas) ............ 34 APROVADA          (eram 30)
+#                                     9 APROVADA_COM_USO_RESTRITO (eram 7)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     2 REJEITADA         (era 1)
+#   derivacoes .....................  3 APROVADA          (inalterado)
+#                                     6 APROVADA_COM_USO_RESTRITO (eram 2)
+#   praticas_consagradas ...........  inalterada
+#   escopo_amplo_em_conferencia ....  inalterada
+#   requisitos_para_a5 .............  17                  (eram 15)
+#
+# REGRAS NOVAS (todas NBR 6118:2023, todas `metodo: calculo`, todas conferidas
+# por LEITURA VISUAL INDEPENDENTE do a2 na página do PDF):
+#   NBR6118-16.3-proibicao-de-carga-centrada ........... APROVADA
+#   NBR6118-17.2.1-envoltoria-criterio-de-seguranca .... APROVADA
+#   NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem  APROVADA
+#   NBR6118-17.2.2-fig17.1-limites-dos-dominios ........ APROVADA
+#   NBR6118-17.2.5-flexao-composta-obliqua ............. APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.2.4.1-concentracao-de-armaduras ......... APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.3.2-fig15.2-envoltoria-minima-2a-ordem .. REJEITADA (escopo)
+#
+# DERIVAÇÕES NOVAS (citação `[deriv: <id>]`, JAMAIS `[rule: ]`):
+#   DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.2.2-MRd-varredura ................... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1 ..... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias ..... APROVADA_COM_USO_RESTRITO
+#
+# O QUE MUDOU NO COMPORTAMENTO DO SOFTWARE, em uma frase: a v11 só podia
+# REJEITAR (N_Rd0 como limite superior informativo); a v12 emite veredito de
+# "ELU de solicitações NORMAIS: ATENDIDO / NÃO ATENDIDO" por REQ-PILARETE-15 —
+# varredura de M_Rd,xx e M_Rd,yy por eixo, interação de 17.2.5 com alpha = 1,0,
+# e inclusão da envoltória mínima elíptica de 11.3.3.4.3 por forma fechada
+# exata. CONTINUA PROIBIDO: veredito a partir de N_Rd0; veredito global
+# "pilarete OK"; alpha = 1,2 decidindo aprovação.
+#
+# DECISÃO HUMANA APLICADA: V13 (junta aderente com H != 0) fechada pelo usuário
+# em 2026-09-03 — RECUSAR, não avisar. REQ-PILARETE-11 reescrito.
+#
+# REQUISITOS ALTERADOS DA v11 (nenhum código aprovado por A6/A7 é afetado,
+# porque `calc_core/estrutural/` ainda não existe): REQ-PILARETE-01, -04, -06,
+# -11, -12, -13. CRIADOS: REQ-PILARETE-15, REQ-PILARETE-16.
+#
+# DÍVIDA DE RASTREABILIDADE, PRÉ-EXISTENTE E BLOQUEANTE DE GATE 1: 25 das 52
+# regras (todas anteriores à v9) NÃO têm o campo `hash`. A cascata §1 exige
+# norma + item + página + hash. Não foram rejeitadas nesta rodada porque
+# nenhuma foi tocada e porque rejeitá-las derrubaria módulos em uso, mas elas
+# NÃO PODEM SER CONGELADAS assim. Exige rodada de a1 para reextrair o trecho e
+# produzir o hash.
+#
+# ===========================================================================
 # VERSÃO 11 (2026-09-02) — pilarete de concreto como pilar curto e a
 # transferência de esforços pilarete -> sapata. Backlog do usuário, item #13.
 #
@@ -246,4 +302,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-ffdcd961bd1df10e2610e73602bbfa8aec8d93fe9fa150dc0587244ec847228f  ruleset.yaml
+5c560bac8f69c7e28723622a0e5a8cd0d2ced4b0d45b45e295370da5f3c219b7  ruleset.yaml

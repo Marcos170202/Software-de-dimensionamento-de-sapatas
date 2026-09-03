@@ -336,6 +336,130 @@ caso(
 )
 
 
+# ===========================================================================
+# 7. ELU DE SOLICITAÇÕES NORMAIS DO PILARETE — flexão composta OBLÍQUA
+#    NBR 6118:2023 17.2.1, 17.2.5, 11.3.3.4.3/Figura 11.3, 17.2.2/Figura 17.1
+#    (backlog #13, rodada 3; ruleset v12)
+#
+#    AVISO DE ALCANCE, escrito porque é a limitação central desta seção: as
+#    deformações (eps_c2, eps_cu, eps_s, 10 ‰) são ADIMENSIONAIS e o expoente
+#    alpha também. O pint NÃO pega troca de expoente (2 <-> 1,2), não pega
+#    troca de eixo (h <-> b) e não pega troca de polo. Esses três erros só são
+#    pegos pelo teste numérico do a5/a7 e pelo sanity check do a2 — estão
+#    registrados como tal em ruleset.yaml, e é por isso que existem os casos
+#    EMPIRICA no fim desta seção.
+# ===========================================================================
+M_Rd_xx = Q(63.95, "kN*m")     # varredura numérica, N_Sd = 1000 kN, 30x30 C25
+M_Rd_yy = Q(63.95, "kN*m")     # seção quadrada -> igual
+M_Sd_x = Q(24.0, "kN*m")       # = M_1d,min,xx
+M_Sd_y = Q(24.0, "kN*m")       # = M_1d,min,yy
+alpha_interacao = 1.2          # 17.2.5, seção retangular
+eps_cu_ = 3.5e-3
+eps_c2_ = 2.0e-3
+
+# --- 17.2.5 — expressão de interação (lado RESISTENTE) ---------------------
+caso(
+    "NBR6118-17.2.5-interacao",
+    "(M_Rd,x/M_Rd,xx)^alpha + (M_Rd,y/M_Rd,yy)^alpha",
+    (M_Sd_x / M_Rd_xx) ** alpha_interacao + (M_Sd_y / M_Rd_yy) ** alpha_interacao,
+    "dimensionless",
+)
+caso(
+    "MUTANTE-17.2.5-normal-no-lugar-do-momento",
+    "(N_Sd/M_Rd,xx)^alpha + ... (força normal no numerador) -- DEVE FALHAR",
+    lambda: (N_d / M_Rd_xx) ** alpha_interacao + (M_Sd_y / M_Rd_yy) ** alpha_interacao,
+    "dimensionless",
+)
+caso(
+    "MUTANTE-17.2.5-expoente-no-momento",
+    "M_Rd,x^alpha/M_Rd,xx + ... (expoente aplicado ao momento, não à razão) "
+    "-- DEVE FALHAR",
+    lambda: M_Sd_x ** alpha_interacao / M_Rd_xx,
+    "dimensionless",
+)
+
+# --- Figura 11.3 — envoltória mínima de 1a ordem (lado SOLICITANTE) --------
+M1min_xx = N_d * (Q(0.015, "m") + 0.03 * h_sec)   # usa h  (11.3.3.4.3/Fig 11.3)
+M1min_yy = N_d * (Q(0.015, "m") + 0.03 * b_sec)   # usa b  (11.3.3.4.3/Fig 11.3)
+caso(
+    "NBR6118-Fig11.3-elipse-minima",
+    "(M_1d,min,x/M_1d,min,xx)^2 + (M_1d,min,y/M_1d,min,yy)^2",
+    (M_Sd_x / M1min_xx) ** 2 + (M_Sd_y / M1min_yy) ** 2,
+    "dimensionless",
+)
+caso(
+    "DER-inclusao-envoltorias-forma-fechada-alpha-1",
+    "sqrt((M_1d,min,xx/M_Rd,xx)^2 + (M_1d,min,yy/M_Rd,yy)^2) <= 1 "
+    "(máximo EXATO da interação alpha = 1 sobre a elipse)",
+    ((M1min_xx / M_Rd_xx) ** 2 + (M1min_yy / M_Rd_yy) ** 2) ** 0.5,
+    "dimensionless",
+)
+caso(
+    "DER-inclusao-envoltorias-sem-a-raiz-NAO-PEGO",
+    "(M_1d,min,xx/M_Rd,xx)^2 + (M_1d,min,yy/M_Rd,yy)^2 — esquecer a RAIZ",
+    "EMPIRICA",
+    "Continua adimensional: o pint NAO pega. E pior que inocuo, e do lado "
+    "INSEGURO quando as duas parcelas sao menores que 1 (0,2817 contra 0,5307 "
+    "no sanity check do a2, isto e, 47% do valor correto). So o teste numerico "
+    "contra o maximo por varredura da elipse pega. Obrigatorio no GATE 3.",
+)
+
+# --- Figura 17.1 — posição do polo C ---------------------------------------
+caso(
+    "NBR6118-Fig17.1-polo-C",
+    "y_C = (eps_cu - eps_c2)*h/eps_cu, medido da borda COMPRIMIDA",
+    (eps_cu_ - eps_c2_) * h_sec / eps_cu_,
+    "m",
+)
+caso(
+    "MUTANTE-Fig17.1-polo-C-com-h-ao-quadrado",
+    "y_C = (eps_cu - eps_c2)*h^2/eps_cu -- DEVE FALHAR",
+    (eps_cu_ - eps_c2_) * h_sec ** 2 / eps_cu_,
+    "m",
+)
+
+# --- varredura de equilíbrio: N_Rd(x) e M_Rd(x) ----------------------------
+# Parcela genérica de uma faixa de concreto e de uma camada de armadura, com o
+# braço de alavanca medido ao CENTROIDE da seção (17.2.4.1 com a redação da
+# Em1:2026).
+dy_faixa = Q(0.075, "mm")             # 4000 faixas em 30 cm
+sigma_c_faixa = 0.85 * eta_c * f_cd   # tensão na faixa (8.2.10.1)
+braco = h_sec / 2.0 - Q(0.05, "m")
+caso("DER-MRd-varredura-parcela-N-concreto", "sigma_c*b*dy",
+     sigma_c_faixa * b_sec * dy_faixa, "kN")
+caso("DER-MRd-varredura-parcela-M-concreto", "sigma_c*b*dy*(h/2 - y)",
+     sigma_c_faixa * b_sec * dy_faixa * braco, "kN*m")
+caso("DER-MRd-varredura-parcela-M-aco", "A_s*sigma_s*(h/2 - y)",
+     A_s * sigma_s2 * braco, "kN*m")
+caso(
+    "MUTANTE-MRd-varredura-sem-braco",
+    "sigma_c*b*dy somado a M (parcela de força somada ao momento) -- DEVE FALHAR",
+    lambda: sigma_c_faixa * b_sec * dy_faixa * braco + A_s * sigma_s2,
+    "kN*m",
+)
+
+# --- o que o pint NÃO pega nesta seção -------------------------------------
+caso(
+    "NBR6118-17.2.5-alpha-troca-de-expoente",
+    "alpha = 1,2 (17.2.5, RESISTENTE) trocado por 2 (Figura 11.3, SOLICITANTE) "
+    "ou por 1,5 (alpha de 17.3.1, mesma PÁGINA 125)",
+    "EMPIRICA",
+    "Expoente e deformacoes sao ADIMENSIONAIS: qualquer troca de expoente passa "
+    "pela checagem dimensional sem erro. So o teste numerico pega. Ordem "
+    "verificada pelo a2 em 20.000 pares aleatorios: canto >= alpha=1 >= "
+    "alpha=1,2, sem excecao.",
+)
+caso(
+    "NBR6118-Fig11.3-cruzamento-eixo-dimensao",
+    "M_1d,min,xx usa h e M_1d,min,yy usa b (cruzado, conforme a figura)",
+    "EMPIRICA",
+    "Trocar h por b mantem kN*m e passa pelo pint. Em secao quadrada nem muda o "
+    "numero. Sanity check do a2 em secao 20x40 e N_d = 800 kN: a troca leva o "
+    "indice de inclusao de 0,5114 para 0,6113 (20%). So teste numerico com "
+    "secao NAO quadrada pega.",
+)
+
+
 def main(padrao: str | None = None) -> int:
     falhas = 0
     largura = max(len(i) for i, *_ in CASOS)
