@@ -86,11 +86,74 @@ class Concreto:
 
     # ---------------------------------------------------------------- parâmetros do diagrama
     @property
+    def eta_c(self) -> float:
+        """Fator de redução da resistência do concreto de alta resistência.
+
+        Ref.: ABNT NBR 6118:2023, item 8.2.10.1 (Figura 8.2 e o parágrafo
+        seguinte), p. impressa 26.
+        [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto]
+
+            eta_c = 1,0                     para f_ck <= 40 MPa
+            eta_c = (40/f_ck)^(1/3)         para f_ck  > 40 MPa
+
+        O limiar é 40 MPa e NÃO 50 MPa: um código que só distinga
+        "<= C50 / > C50" erra em silêncio na faixa 40 < f_ck <= 50, onde
+        eta_c já é menor que 1 (0,9283 em C50) enquanto alpha_c ainda vale
+        0,85. Ver ruleset.yaml, achado C2 da versão 11.
+
+        Domínio: o de `Concreto.__post_init__` (20 a 90 MPa, campo de
+        aplicação da Norma). f_ck fora dele é RECUSA na construção do objeto,
+        não extrapolação desta expressão.
+        """
+        if self.fck <= 40.0:
+            return 1.0
+        return (40.0 / self.fck) ** (1.0 / 3.0)
+
+    @property
     def alpha_c(self) -> float:
-        """Coeficiente do diagrama retangular - NBR 6118, 17.2.2."""
+        """Coeficiente do diagrama retangular - NBR 6118, 17.2.2.
+
+        ATENÇÃO: alpha_c SOZINHO não é a tensão do bloco. A tensão constante
+        do diagrama retangular é `alpha_c * eta_c * f_cd` (17.2.2, alínea e) —
+        use `sigma_cd_bloco`, nunca `alpha_c * fcd`.
+        """
         if self.fck <= 50.0:
             return 0.85
         return 0.85 * (1.0 - (self.fck - 50.0) / 200.0)
+
+    @property
+    def sigma_cd_bloco(self) -> float:
+        """Tensão constante do diagrama retangular de tensões [MPa].
+
+        Ref.: ABNT NBR 6118:2023, item 17.2.2, alínea e), p. impressa 121;
+        com eta_c do item 8.2.10.1, p. impressa 26.
+        [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto]
+        [req: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro]
+
+            sigma_cd = alpha_c * eta_c * f_cd
+
+        Texto da alínea e), conferido por leitura visual do a2-verificador:
+        "a tensão constante atuante até a profundidade y pode ser tomada igual
+        a: alpha_c eta_c f_cd, no caso da largura da seção, medida
+        paralelamente à linha neutra, não diminuir a partir desta para a borda
+        comprimida; 0,9 alpha_c eta_c f_cd, no caso contrário".
+
+        ESTE SOFTWARE IMPLEMENTA APENAS O PRIMEIRO RAMO. A seção de
+        dimensionamento à flexão da sapata é a faixa RETANGULAR de largura b_w
+        constante (`sapata.py::_armadura_flexao_simples`), em que a largura não
+        diminui da linha neutra para a borda comprimida. O ramo de 0,9 não é
+        implementado porque essa geometria não é modelada aqui; aplicá-lo por
+        analogia a outra seção seria decisão de engenharia fora do ruleset.
+
+        DEFEITO CORRIGIDO (lado INSEGURO, ver kb/pendencias.md > V15): até a
+        versão anterior o código usava `alpha_c * f_cd` sem eta_c, o que
+        SUPERESTIMAVA o bloco comprimido em 1/eta_c para f_ck > 40 MPa —
+        +4,0 % (C45), +7,7 % (C50), +14,5 % (C60), +31,0 % (C90) — produzindo
+        armadura de flexão a MENOS e x/d subestimado (a verificação de
+        dutilidade x/d <= csi_limite podia PASSAR quando devia REPROVAR).
+        Para f_ck <= 40 MPa eta_c = 1,0 e o resultado é idêntico ao anterior.
+        """
+        return self.alpha_c * self.eta_c * self.fcd
 
     @property
     def lambda_x(self) -> float:

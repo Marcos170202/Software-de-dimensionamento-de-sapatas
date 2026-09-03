@@ -688,17 +688,32 @@ class Sapata:
     def _armadura_flexao_simples(self, Md: float, bw: float, d: float
                                  ) -> tuple[float, float, bool]:
         """
-        Flexão simples com diagrama retangular (NBR 6118, 17.2.2):
-            M_d = alpha_c * f_cd * b_w * (lambda*x) * (d - lambda*x/2)
+        Flexão simples com diagrama retangular de tensões.
+
+        Ref.: ABNT NBR 6118:2023, item 17.2.2, alínea e), p. impressa 121;
+        eta_c do item 8.2.10.1, p. impressa 26.
+        [rule: NBR6118-8.2.10.1-diagrama-idealizado-do-concreto]
+        [req: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro]
+
+            M_d = sigma_cd * b_w * (lambda*x) * (d - lambda*x/2)
+            sigma_cd = alpha_c * eta_c * f_cd     (17.2.2-e)
+
+        A tensão do bloco vem INTEIRA de `Concreto.sigma_cd_bloco`, e é
+        PROIBIDO escrever `alpha_c * fcd` aqui. Sem eta_c o bloco fica
+        superestimado em 1/eta_c para f_ck > 40 MPa, o que devolve armadura a
+        MENOS e x/d subestimado — os dois efeitos do lado inseguro
+        (kb/pendencias.md > V15). Protegido por
+        tests/test_eta_c_bloco_retangular.py.
+
         Retorna (As [m2], x/d, dominio_ok).
         """
         if Md <= 0:
             return 0.0, 0.0, True
-        fcd = self.concreto.fcd * KPA
+        sigma_cd = self.concreto.sigma_cd_bloco * KPA
         fyd = self.aco.fyd * KPA
-        ac, lam = self.concreto.alpha_c, self.concreto.lambda_x
+        lam = self.concreto.lambda_x
 
-        A = ac * fcd * bw * lam
+        A = sigma_cd * bw * lam
         disc = (A * d) ** 2 - 2.0 * A * lam * Md
         if disc < 0:
             return math.inf, math.inf, False

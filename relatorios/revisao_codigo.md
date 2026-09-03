@@ -1324,3 +1324,68 @@ confirmados por mim mesmo. `calc_core/` não foi tocado por esta rodada
 (confirmado junto com o GATE 2 acima) e a fronteira `ler_solo()` continua
 sendo pura leitura de `StringVar`, sem preferência por proveniência —
 confirmado por dimensionamento completo idêntico entre os dois casos.
+
+## Adendo 2026-09-02 — V15: η_c ausente no bloco retangular de tensões
+## (`calc_core/sapata_isolada/materiais.py`/`sapata.py`, REQ-ETA-C-01): GATE 2
+## (a6) — **APROVADO** na rodada 1
+
+**Contexto.** Defeito descoberto pelo a2 ao auditar a extração normativa do
+backlog #13 (pilarete) — não é do pilarete, é dívida preexistente no motor
+`sapata_isolada/` já aprovado por A6/A7. `Concreto.alpha_c` (NBR 6118 §17.2.2,
+coeficiente do diagrama retangular de tensões) não aplicava `η_c` (§8.2.10.1:
+`η_c=1,0` para f_ck≤40MPa, `η_c=(40/f_ck)^(1/3)` acima), superestimando a
+tensão do bloco comprimido para f_ck>40MPa — armadura de flexão A MENOS e x/d
+SUBESTIMADO, com a verificação de dutilidade `x/d≤ξ_limite` podendo passar
+quando deveria reprovar. Lado inseguro, em código já em produção. Usuário
+autorizou correção imediata, em ciclo próprio, paralelo ao backlog #13.
+
+**Correção.** Nova propriedade `Concreto.eta_c` (fórmula acima) e
+`Concreto.sigma_cd_bloco = alpha_c·eta_c·fcd`, único ponto de aplicação da
+tensão do bloco — `sapata.py::_armadura_flexao_simples` passou a consumir
+`sigma_cd_bloco` em vez de `alpha_c*fcd` cru. Implementa só o primeiro ramo de
+§17.2.2-e (largura não decrescente da linha neutra para a borda comprimida,
+que é a geometria modelada); o ramo `0,9·α_c·η_c·f_cd` fica documentado como
+fora de escopo, não implementado por analogia. `bielas.py` (α_v2, coeficiente
+genuinamente diferente) foi verificado e confirmado como corretamente
+intocado.
+
+**Achado do a5 sobre o próprio relato do a2.** No cenário C90/M_d=2500 citado
+pelo a2 como exemplo de inversão de veredito, o a6 confirmou por reprodução
+independente que o veredito NÃO inverte (0,486 e 0,700 reprovam ambos contra
+ξ_lim=0,35) — o efeito é real, mas o cenário não o demonstra. O a5 isolou o
+cenário que demonstra a inversão de fato (C90, M_d=1500 kN·m/m: x/d 0,267
+PASSAVA → 0,363 REPROVA), e o a6 confirmou essa correção por conta própria
+antes de aceitá-la — nenhum dos dois números foi aceito de segunda mão.
+
+**Verificação independente do a6** (não releitura do relato do a5): 5
+mutantes plantados (remover η_c da fórmula; trocar limiar 40→50; trocar
+limiar 40→45, o mais fino da faixa 40-50 avisada pelo próprio a2; expoente
+1/3→1/2; reverter o consumidor para `alpha_c*fcd` com a propriedade intacta)
+— todos mortos pela suíte. Limiar de 40MPa (não 50) confirmado por execução:
+em C45/C50, η_c<1 enquanto α_c ainda vale 0,85. Retrocompatibilidade exata
+para f_ck≤40MPa confirmada bit a bit (`eta_c` devolve o float `1.0` literal).
+`ruff` sem regressão (74→74), `bandit` limpo, 655 testes passando (rodado
+duas vezes pelo a6, sob Xvfb/`python3.12`).
+
+**Nota final: 4,6** (E1 4,8 · E2 4,8 · E3 4,0 · E4 4,5 · E5 4,3). Sem veto.
+
+**Defeitos abertos, nenhum bloqueante:**
+- MÉDIA/E3 (`sapata.py:719`): a correção do η_c amplia o ramo `disc<0`
+  (seção que não resiste a M_d) — o M_d que dispara essa condição cai de
+  4426 para 3378 kN·m/m em C90; o chamador mascara `inf` para `0,0` e a
+  mensagem final fica autocontraditória ("x/d = 0.000 acima do limite").
+  Sem cobertura de teste. Recomendação: sinalizador próprio de "seção
+  insuficiente à compressão" com M_lim explícito na mensagem.
+- BAIXA/E4 (`relatorio.py:70`): o memorial só imprime `f_cd`, nunca η_c nem
+  a tensão final do bloco — o engenheiro que assina a ART não vê se a
+  correção foi aplicada num memorial C90.
+- BAIXA/E5 (`materiais.py:110`): `mypy --strict` novo `no-any-return`
+  (baseline 455→456) — falta `float(...)` no retorno.
+- BAIXA/E4, roteados ao a2 (não ao a5, que agiu certo em não tocar): não
+  existe regra aprovada em `ruleset.yaml` v11 para §17.2.2 nem §14.6.4.3 —
+  `alpha_c`/`lambda_x`/`csi_limite` continuam sem `[rule:]`, e a correção
+  do η_c aumenta a sensibilidade do veredito a `csi_limite`, que é
+  justamente o valor não auditado.
+
+**Próximo passo:** a7-validador (GATE 3), sobre a superfície de flexão do
+motor amplo — não o motor inteiro.
