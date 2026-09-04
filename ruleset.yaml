@@ -10,10 +10,159 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 12
-escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua), e SEM ELU de força cortante (17.4, não extraído)"
-data_congelamento: "2026-08-28"   # da v8; v9/v10/v11/v12 NÃO congelam — ver ruleset.lock
+versao: 13
+escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua); a partir da v13, COM ELU de FORÇA CORTANTE (17.4, Modelos I e II) quando o pilarete satisfaz a definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)), e com RECUSA explícita do cortante quando não satisfaz"
+data_congelamento: "2026-08-28"   # da v8; v9 a v13 NÃO congelam — ver ruleset.lock
 
+# =============================================================================
+# VERSÃO 13 — fecha o ELU de FORÇA CORTANTE do pilarete (§17.4) e, com ele, a
+#             última lacuna que a v12 tinha deixado aberta no ELU. Backlog do
+#             usuário, item #13, rodada 4.
+#
+# AVISO OBRIGATÓRIO (CLAUDE.md regra 5): esta versão ALTERA requisitos da v12
+# (REQ-PILARETE-01, -02, -08, -11, -12 e -16, este último reescrito) e ALTERA
+# COMPORTAMENTO já especificado — o detalhamento do estribo fica MAIS
+# RESTRITIVO (18.3.3.2 passa a compor com 18.4.3: 154,2 mm contra 192,0 mm na
+# geometria de referência) e o memorial da FAIXA B ganha duas frases novas.
+# Como `calc_core/estrutural/` continua NÃO EXISTINDO — nenhuma linha foi
+# escrita ainda —, NÃO há aprovação de A6/A7 sobre ele a invalidar. As
+# aprovações de A6/A7 sobre `calc_core/geotecnico/` e sobre `ui/` continuam
+# VÁLIDAS: as listas `praticas_consagradas`, `requisitos_para_a4`,
+# `requisitos_para_a3` e `escopo_amplo_em_conferencia` saem desta versão
+# IDÊNTICAS às da v12, e NENHUMA das 52 regras da v12 foi alterada — só houve
+# acréscimo. Conferido por comparação estrutural (`yaml.safe_load` da v12 em
+# `git show HEAD:ruleset.yaml` contra o arquivo novo, chave a chave).
+#
+# FONTE DESTA RODADA: extração do a1, commit b8ca591 (18 cláusulas, 9 fórmulas,
+# 1 exemplo). NBR 6118:2023 + Emenda 1:2026.
+#
+# O QUE O a2 CONFERIU POR CONTA PRÓPRIA, e não é releitura do relatório do a1:
+#   - LEITURA VISUAL INDEPENDENTE, renderizando as páginas do PDF a 300 dpi, de
+#     TODAS as páginas que sustentam regra aprovada nesta versão: 101 (14.4.1
+#     integral), 152 (17.4.1.1.1 com a equação, e 17.4.1.1.2-c) palavra a
+#     palavra), 154 (17.4.2.1 e o 0,27 do Modelo I), 155 (V_sw, os três ramos de
+#     V_c, V_c0, f_ctd e a frase "gamma_f e gamma_p iguais a 1,0 e 0,9"), 156
+#     (a expressão de M_0 com W_1, e o 0,54 com sen² do Modelo II), 157 (V_sw e
+#     V_c1 do Modelo II, com o "< 2 V_c1" de menor ESTRITO), 137 (lista de
+#     símbolos: V_c0 para theta = 45°, V_c1 para 30°-45°), 168 e 169 (18.3.3.2
+#     inteiro, com os quatro pares de limiares). Mais, na Emenda 1:2026 (PDF sem
+#     camada de texto), as páginas PDF 14 e 16 (impressas 10 e 12).
+#     Nenhuma divergência de VALOR com a extração do a1 em nenhuma delas.
+#   - VARREDURA PRÓPRIA DA EMENDA 1:2026: confirmado que a lista de alterações
+#     salta de "Página 137" (última entrada da p. impressa 10) direto para
+#     "Página 141" (primeira da p. 11). Isso PROVA, por salto ordenado, que
+#     17.4.2.3 (Modelo II, p. 138-139) e todo o restante de §17.4 permanecem na
+#     redação de 2023 — a busca negativa do a1 está certa e agora tem prova
+#     própria.
+#   - CHECAGEM DIMENSIONAL das expressões novas em tools/checar_dimensoes.py
+#     (seção 8, reescrita nesta rodada): 40 casos, 3 MUTANTES plantados (todos
+#     rejeitados pelo pint) e 6 casos declarados NÃO detectáveis por análise
+#     dimensional, com o motivo caso a caso. Zero falhas.
+#   - SANITY CHECK NUMÉRICO em TRÊS geometrias, e cada uma existe por um motivo
+#     (ver o cabeçalho da seção 8 do checador).
+#   - REPRODUÇÃO INDEPENDENTE DA CONTRAPROVA DE TERCEIROS: quatro constantes da
+#     Tabela A-4/A-5 do Bastos reconstruídas a partir das expressões literais da
+#     Norma, sem olhar a tabela — 0,35487 vs 0,35; 2,5543 e 0,16938 vs 2,55 e
+#     0,17; 0,10093 vs 0,101; 0,70974 vs 0,71.
+#
+# AS DUAS DECISÕES QUE O DESPACHO DELEGOU AO a2, E COMO FORAM FECHADAS:
+#
+#   V21 — APLICABILIDADE DE §17.4 AO PILARETE CURTO. Doutrina (a), recusar >
+#       extrapolar. DUAS FAIXAS, decididas por ell/máx(b,h) >= 3,0 (14.4.1):
+#       na FAIXA A o veredito passa a ser ELU COMPLETO (N+M+V); na FAIXA B o
+#       cortante é RECUSADO, sem número, com mensagem citando a razão obtida, o
+#       limite, a lista de exclusões de 17.4.1 e o silêncio da Seção 22 — e o
+#       veredito volta a ser o ESCOPADO da v12, com dois avisos novos.
+#       §17.2 NÃO é recusado na FAIXA B, e a assimetria está na FONTE: §17.4
+#       traz lista expressa de exclusões (elementos de volume, vigas-parede,
+#       consolos curtos) e assenta num modelo de TRELIÇA de elemento; §17.2 não
+#       traz exclusão alguma e declara tratar da resistência das SEÇÕES "de
+#       vigas, PILARES e tirantes". Manter §17.2 continua sendo interpretação e
+#       está declarada como tal.
+#       ACHADO QUANTITATIVO QUE MUDA A EXPECTATIVA SOBRE A FEATURE: no caso
+#       ENGASTADO_BASE_LIVRE_TOPO e sob M_1d,mín, lambda < lambda_1 = 35 exige
+#       ell/b_mín < 5,052; com 14.4.1 exigindo ell >= 3·h_máx, as duas
+#       fronteiras só coexistem se h_máx/b_mín < 1,684. A seção 30×30 tem janela
+#       [0,90; 1,515) m; a 25×40, [1,20; 1,263) m; a 20×40 — que é a seção do
+#       teste (11) de REQ-PILARETE-13 — tem janela VAZIA. A FAIXA B NÃO é caso
+#       de borda: é o pilarete robusto e baixo, que é o caso de uso central.
+#
+#   V20 — AS TRÊS AMBIGUIDADES DE M_0. Doutrina (b), lado conservador:
+#       (1) f_ctk sem sufixo em 17.4.1.1.2-c) -> f_ctk,inf (o mais restritivo,
+#           que torna a dispensa mais difícil e arma mais pilaretes);
+#       (2) o N do numerador de M_0 é o da combinação com gamma_f = 1,0, que é o
+#           que a Norma ESCREVE — aqui a leitura literal e a conservadora
+#           coincidem. E ele é ENTRADA DECLARADA: é PROIBIDO obtê-lo dividindo
+#           N_d por gamma_f suposto, e sem ele o software NÃO majora V_c;
+#       (3) W_1 sob flexão oblíqua -> calcular a razão M_0/M_Sd,máx nos DOIS
+#           planos, emparelhada por plano, e adotar a MENOR.
+#
+# CINCO ACHADOS DO a2 QUE MUDAM O QUE FOI DESPACHADO OU O QUE O a1 ENTREGOU:
+#
+#   E1. DEFEITO NO PRÓPRIO TRABALHO DO a2, encontrado ao reauditar a sessão
+#       anterior: a fixture de estribo da seção 8 do checador usava
+#       A_sw/s = 0,20 cm²/cm com o comentário "2 phi 5,0 c/20 cm", que dá
+#       0,0196 cm²/cm — um fator 10. O V_sw saía 201 kN num pilarete 30×30,
+#       valor implausível. Corrigido para 2 phi 5,0 c/12,5 cm (0,03142 cm²/cm,
+#       que é o menor arranjo que satisfaz rho_sw,mín), com V_sw = 31,59 kN. O
+#       sanity check numérico (cascata §4) pegou o que a análise dimensional não
+#       pegaria, e pegou trabalho do próprio a2.
+#
+#   E2. O CASO TÍPICO MASCARA A DECISÃO V20(2). Com M_Sd,máx = M_1d,mín, tanto
+#       o N correto quanto o N_d majorado estouram o teto de 2·V_c0 e dão o
+#       MESMO número. Um conjunto de testes construído sobre o caso típico não
+#       prova nada sobre M_0. Foi preciso construir um caso com M_Sd,máx maior
+#       (60 kN·m) para que a diferença apareça: 94,63 contra 108,77 kN. O caso
+#       discriminante virou teste obrigatório (REQ-PILARETE-19(4)).
+#
+#   E3. "ADOTAR O MENOR DOS LIMITES" É PERIGOSO SE APLICADO MECANICAMENTE. O a1
+#       registrou, corretamente, que 18.4.3 resolve a sobreposição com 18.3.3.2
+#       mandando "adotar o menor dos limites". Mas os dois itens contêm limites
+#       de DOIS SINAIS: tetos (espaçamento, diâmetro máximo) e PISOS (diâmetro
+#       mínimo, taxa rho_sw). Tomar "o menor" de dois PISOS afrouxa a exigência
+#       — lado INSEGURO. A composição correta é TETOS pelo MENOR e PISOS pelo
+#       MAIOR, e virou derivação própria. Consequência medida: o detalhamento
+#       fica mais restritivo do que a v12 exigia.
+#
+#   E4. A FRONTEIRA ENTRE OS MODELOS É SÓ DE V_Rd2. O a1 registrou, certo, que
+#       em theta = 45° e alpha = 90° V_Rd2(II) = V_Rd2(I) exatamente — bom teste.
+#       O a2 acrescenta o que faltava e que é o erro provável: V_Rd3 NÃO
+#       coincide ali, porque V_c1 <= V_c0 sempre que V_Sd > V_c0 (medido:
+#       46,25 contra 59,33 kN). Um teste que exija V_Rd3(II) == V_Rd3(I) em
+#       theta = 45° quebra uma implementação CORRETA.
+#
+#   E5. ERRO DE PÁGINA NA EXTRAÇÃO DO a1, sem efeito em valor: `kb/` registra
+#       18.3.3.2 como "página 150 (PDF 167-168)". PDF 167 é a impressa 149
+#       (item 18.3.2.4) e não contém 18.3.3.2; o item começa na impressa 150
+#       (PDF 168) e TODOS os números (0,67; 0,20; 0,6d; 300/200/800/350 mm)
+#       estão na impressa 151 (PDF 169). Este ruleset grava "150-151", lido
+#       diretamente pelo a2; o a1 deve corrigir kb/ na próxima rodada.
+#       (Registrado também um FALSO POSITIVO do próprio a2, que primeiro julgou
+#       truncado um hash de 64 caracteres — era corte do buffer de inspeção. Fica
+#       escrito porque defeito alegado sem reconferência vale tanto quanto
+#       defeito real ignorado.)
+#
+# DELIMITAÇÃO CONFERIDA, porque o despacho pediu explicitamente: tau_Rd2
+# (19.5.3.1, punção, TENSÃO em contorno crítico) e V_Rd2 (17.4.2.2, elemento
+# linear, FORÇA em b_w·d) são itens DIFERENTES que compartilham o coeficiente
+# 0,27 por coincidência de calibração e cujos símbolos diferem por UM caractere
+# (alpha_v x alpha_v2). NENHUMA regra preexistente foi contaminada:
+# NBR6118-19.5.3.1-tauRd2, -19.5.3.2-tauRd1 e -19.5.2.2-K-Wp saem da v13
+# idênticas às da v12, apontando para `sapata_isolada.sapata`. O namespace dos
+# dois mundos está fixado em REQ-PILARETE-01 e em
+# NBR6118-DELIMITACAO-17.4-vs-19.4-19.5.
+#
+# FILA HUMANA: V20 e V21 estão FECHADAS PELO PRÓPRIO a2 e registradas como tal
+# em kb/pendencias.md (não como decisão humana). Sobem duas novas, V23 e V24,
+# nenhuma bloqueante — as duas foram desenhadas para que o software funcione
+# sem elas, do lado conservador. V22 (falta de caso de terceiros para a
+# interação N-V) segue aberta e é matéria de GATE 3, não de GATE 1.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e não é por causa desta versão: seguem abertas
+# a dívida de hash das 25 regras anteriores à v9 e as 7 pendências humanas de
+# escopo amplo. Todas as 13 regras e as 5 derivações NOVAS desta versão estão
+# em APROVADA, APROVADA_COM_USO_RESTRITO ou REJEITADA — nenhuma PENDENTE_HUMANO
+# foi criada em `regras` nesta rodada.
 # =============================================================================
 # VERSÃO 12 — fecha o ELU do pilarete: o software passa a poder APROVAR, e não
 #             só REJEITAR. Backlog do usuário, item #13, rodada 3.
@@ -3022,6 +3171,794 @@ regras:
       um item numerado errado é defeito de rastreabilidade e a p. 102 não traz
       cabeçalho de item nenhum antes de 15.4.
 
+  # ---------------------------------------------------------------------------
+  # VERSÃO 13 — ELU DE FORÇA CORTANTE DO PILARETE (NBR 6118:2023 §17.4)
+  # Fonte: extração do a1, commit b8ca591. Todas conferidas por LEITURA VISUAL
+  # INDEPENDENTE do a2 nas páginas do PDF (101, 152, 154, 155, 156, 157, 168,
+  # 169 e Emenda 1 p. PDF 14 e 16).
+  # ---------------------------------------------------------------------------
+
+  - id: NBR6118-14.4.1-elemento-linear-classificacao
+    norma: "NBR 6118:2023"
+    item: "14.4.1 (Elementos lineares), lido com 14.4.1.2 (Pilares)"
+    pagina: 83
+    hash: "sha256:3e41668700f1a280c497ac62d3dde6f4ddb4317ecb77f131106d79cee391b53e"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.classificacao.razao_elemento_linear (GUARDA de aplicabilidade de §17.4 — REQ-PILARETE-17)"
+    uso_autorizado: >-
+      Calcular `razao_14_4_1 = ell / max(b, h)` e usá-la como GUARDA
+      DETERMINÍSTICA de aplicabilidade da Seção 17.4 ao pilarete.
+      `ell` é o COMPRIMENTO LONGITUDINAL REAL do pilarete. É PROIBIDO usar
+      `ell_e` (comprimento equivalente de 15.6/15.8.2) nesta razão: no caso
+      ENGASTADO_BASE_LIVRE_TOPO ell_e = 2·ell e a razão DOBRA, classificando
+      como elemento linear um pilarete que a Norma não classifica. Erro do lado
+      INSEGURO por CITAÇÃO, invisível à checagem dimensional.
+      Critério adotado: `razao_14_4_1 >= 3,0` -> é elemento linear (FAIXA A).
+      `razao_14_4_1 < 3,0` -> NÃO é elemento linear (FAIXA B), e §17.4 é
+      RECUSADO — ver REQ-PILARETE-17 e
+      DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante.
+      A razão obtida vai SEMPRE ao memorial, nas duas faixas, com o limite de
+      3,0 ao lado. Imprimir só "aplicável/não aplicável" sem o número é defeito.
+    nao_autorizado: >-
+      (1) Usar ell_e no lugar de ell (ver acima).
+      (2) Confundir esta verificação com lambda <= lambda_1 de 15.8.2. São
+          exigências DIFERENTES e independentes: 15.8.2 decide se os efeitos
+          locais de 2ª ordem podem ser dispensados; 14.4.1 decide a CLASSE do
+          elemento. Um pilarete pode passar em 15.8.2 e não ser elemento
+          linear — a geometria B do sanity check (30×30, ell = 0,80 m) é
+          exatamente isso: lambda = 18,5 < 35 e razão = 2,67 < 3.
+      (3) Aplicar §17.4 por analogia quando a razão for menor que 3,0.
+      (4) Tratar o valor 3,0 como calibrável, arredondável ou "aproximadamente".
+    checagem_dimensional: >-
+      Razão de comprimentos, adimensional. Rodado em tools/checar_dimensoes.py
+      (NBR6118-14.4.1-razao-elemento-linear-geomA / -geomB-RECUSA / -geomC).
+      LIMITE DECLARADO: a razão é adimensional nas DUAS leituras (com ell e com
+      ell_e); a troca NÃO é detectável por análise dimensional. Caso EMPIRICA
+      MUTANTE-14.4.1-com-ell-e-no-lugar-de-ell registrado.
+    checagem_numerica: >-
+      Geometria A (30×30, ell = 1,00 m): 3,333 -> FAIXA A.
+      Geometria B (30×30, ell = 0,80 m): 2,667 -> FAIXA B, com lambda = 18,48.
+      Geometria C (25×40, ell = 1,25 m): 3,125 -> FAIXA A, com lambda = 34,64.
+      ACHADO QUANTITATIVO DO a2, e é o que dá a medida do problema: no caso
+      ENGASTADO_BASE_LIVRE_TOPO (ell_e = 2·ell) e sob M_1d,mín (onde
+      REQ-PILARETE-13(1) já provou que lambda_1 = 35 exatamente), lambda < 35
+      exige ell/b_mín < 35/(2·raiz(12)) = 5,052. Combinando com 14.4.1
+      (ell >= 3·h_máx), as duas fronteiras só são simultaneamente satisfeitas
+      se h_máx/b_mín < 5,052/3 = 1,684 — e então apenas na janela
+      3·h_máx <= ell < 5,052·b_mín. Consequências, todas verificadas:
+        • seção QUADRADA 30×30: janela ell em [0,90 ; 1,515) m — confortável;
+        • seção 25×40 (h/b = 1,60): janela [1,20 ; 1,263) m — 6 cm de folga;
+        • seção 20×40 (h/b = 2,00): janela VAZIA — nenhuma altura satisfaz as
+          duas. É a mesma seção 20×40 do teste (11) de REQ-PILARETE-13.
+      Com momento de 1ª ordem REAL maior que M_1d,mín, lambda_1 sobe (até 90) e
+      a janela alarga; com VINCULADO_DOIS_EXTREMOS (ell_e = ell) o limite passa
+      a ell/b_mín < 10,10 e h_máx/b_mín < 3,37. A FAIXA B é, portanto, comum e
+      não é caso de borda — é o caso do pilarete robusto e baixo.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 101 = impressa 83). Texto
+      literal: "São aqueles em que o comprimento longitudinal supera em pelo
+      menos três vezes a maior dimensão da seção transversal, sendo também
+      denominados barras."
+      NÃO_DECLARADO_NA_FONTE, registrado e decidido pelo a2: "supera em pelo
+      menos três vezes" admite leitura ESTRITA (ell > 3·máx) e não estrita
+      (ell >= 3·máx). Adotada a NÃO ESTRITA, que é a leitura corrente e a que a
+      própria redação "pelo menos" sugere. A diferença tem medida nula e o
+      memorial imprime a razão obtida, de modo que o engenheiro vê o caso de
+      fronteira. Não foi inventada faixa de tolerância em torno de 3,0.
+      A Emenda 1:2026 NÃO altera 14.4.1 (varredura do a2 na lista de alterações
+      da Emenda: não há entrada para a página 83).
+
+  - id: NBR6118-17.4.1-campo-de-aplicacao-do-cortante
+    norma: "NBR 6118:2023"
+    item: "17.4 (título) e 17.4.1 (Hipóteses básicas)"
+    pagina: 133
+    hash: "sha256:51c408537d4cdbdce78437eeb9346bad7842b83cfb7762b547411a9235febea0"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.cortante (guarda de campo de aplicação)"
+    uso_autorizado: >-
+      Delimitar o campo: §17.4 aplica-se a ELEMENTOS LINEARES (14.4.1) armados,
+      "submetidos a forças cortantes, eventualmente combinadas com outros
+      esforços solicitantes" — é esta expressão que autoriza usar §17.4 sob
+      flexo-compressão, que é o estado do pilarete. Os dois modelos de cálculo
+      (I e II) são apresentados pela Norma sem critério de escolha.
+      EXCLUSÕES EXPRESSAS a transcrever e a citar na mensagem de recusa da
+      FAIXA B: "Não se aplicam a elementos de volume, lajes, vigas-parede e
+      consolos curtos, que são tratados em outras Seções desta Norma."
+    nao_autorizado: >-
+      (1) Aplicar §17.4 a elemento que não satisfaça 14.4.1.
+      (2) Reaproveitar qualquer expressão de §19.4 (laje sem armadura de
+          cortante, V_Rd1) ou §19.5 (punção) dentro de `estrutural/`, e
+          vice-versa. Ver NBR6118-DELIMITACAO-17.4-vs-19.4-19.5.
+      (3) Concluir, de "elementos de volume" não estar definido na Norma, que a
+          exclusão não alcança o pilarete curto. A conclusão do a2 é a oposta:
+          a existência dessa lista de exclusões — toda ela de elementos
+          atarracados e de regiões D — é evidência POSITIVA de que o modelo de
+          treliça de §17.4 não foi escrito para eles.
+    checagem_dimensional: "Item de campo de aplicação; sem expressão."
+    checagem_numerica: "Não aplicável."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 151-152 = impressas 133-134).
+      A Emenda 1:2026 não altera 17.4.1 (a lista de alterações salta de p. 133,
+      item 17.3.5.2.4, para p. 135, item 17.4.1.1.3 — varredura própria do a2 na
+      Emenda, p. impressa 10).
+
+  - id: NBR6118-17.4.1.1.1-armadura-transversal-minima-por-resistencia
+    norma: "NBR 6118:2023"
+    item: "17.4.1.1.1"
+    pagina: 134
+    hash: "sha256:bb101754e7d5911ac852ce8eb086b77b91f58696684f1ff4ebbf4889727e9fcc"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.cortante.rho_sw_min"
+    uso_autorizado: >-
+      rho_sw = A_sw/(b_w·s·sen alpha) >= 0,2·f_ct,m/f_ywk, com f_ct,m de 8.2.5
+      (= 0,3·f_ck^(2/3) para f_ck <= 50 MPa) e f_ct,m e f_ywk na MESMA unidade.
+      sen(alpha) NO DENOMINADOR — conferido por leitura visual do a2, porque a
+      camada de texto do PDF devolve a equação embaralhada.
+      Coeficiente 0,2 (dois décimos) e sinal ">=" — os dois conferidos
+      visualmente pelo mesmo motivo.
+      Esta é a armadura mínima por RESISTÊNCIA. Ela é DISTINTA e CUMULATIVA com
+      os mínimos de DETALHAMENTO de 18.4.3 e 18.3.3.2.
+    nao_autorizado: >-
+      (1) Pôr sen(alpha) no numerador. Com estribo vertical (alpha = 90°) o
+          número nem muda — o erro fica dormente até alguém habilitar estribo
+          inclinado.
+      (2) Ler 0,2 como 0,02 (a camada de texto parte o "0,2" em "0 2"), ou
+          inverter a desigualdade (o ">=" aparece ANTES da fração no texto
+          decodificado).
+      (3) Aplicar a regra do "menor dos limites" de 18.4.3 a ESTA taxa. Aquela
+          regra é para TETOS (espaçamento, diâmetro máximo); rho_sw,mín é um
+          PISO. Tomar o menor de dois pisos é erro do lado INSEGURO. Ver
+          DER-NBR6118-composicao-18.3.3.2-com-18.4.3.
+      (4) Dispensar esta armadura fora da exceção de 17.4.1.1.2-c), e mesmo
+          dentro dela sem verificar as DUAS condições simultâneas.
+    checagem_dimensional: >-
+      f_ct,m/f_ywk adimensional; A_sw/(b_w·s) adimensional. Rodado em
+      tools/checar_dimensoes.py (NBR6118-17.4.1.1.1-rho-sw-min e
+      -Asw-sobre-s-min, OK). Caso EMPIRICA
+      MUTANTE-17.4.1.1.1-sen-alpha-no-numerador registrado.
+    checagem_numerica: >-
+      C25, CA-50: f_ct,m = 2,565 MPa; rho_sw,mín = 0,2×2,565/500 = 0,001026;
+      com b_w = 30 cm, (A_sw/s)_mín = 3,078 cm²/m. O estribo do sanity check
+      (2 phi 5,0 c/12,5 cm = 3,142 cm²/m) satisfaz com 2 % de folga.
+      CONTRAPROVA EXTERNA REPRODUZIDA PELO a2, e é a melhor do acervo: a Tabela
+      A-4 do BASTOS (p. impressa 111) traz, para C20, V_Sd,mín = 0,101·b_w·d.
+      Reconstruindo esse número só das expressões literais da Norma — f_ct,m =
+      0,3·20^(2/3) = 2,2104 MPa; f_ctk,inf = 1,5473; f_ctd = 1,1052 MPa;
+      V_c0 = 0,06631·b_w·d; A_sw[cm²/m] = 2,5543·V_Sd/d − 0,16938·b_w; e
+      resolvendo A_sw = 100·rho_sw,mín·b_w = 0,088416·b_w — resulta
+      V = 0,10093·b_w·d. Fecha na terceira casa. UM ÚNICO número de terceiros
+      amarra, ao mesmo tempo, o 0,2 de 17.4.1.1.1, o 0,6 e o f_ctk,inf de
+      V_c0, o 0,9·d e o teto de 435 MPa de f_ywd. FONTE SECUNDÁRIA.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 152 = impressa 134).
+      A Emenda 1:2026 NÃO altera este item.
+
+  - id: NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-sem-sufixo
+    norma: "NBR 6118:2023"
+    item: "17.4.1.1.2, alíneas a) e c), e o período final"
+    pagina: 134
+    hash: "sha256:efde48905d641a611ab688c610bf7e39ff9c27130c9988c165e060e93a25af04"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.cortante.dispensa_17_4_1_1_2_c"
+    uso_autorizado: >-
+      ALÍNEA c) — dispensa da armadura mínima de 17.4.1.1.1 para "os pilares e
+      elementos lineares de fundação submetidos predominantemente à compressão".
+      É a remissão NOMINAL que autoriza aplicar §17.4 a pilar; ela é EXPRESSA e
+      não precisa ser interpretada. As DUAS condições são CUMULATIVAS
+      ("simultaneamente"), avaliadas "na combinação mais desfavorável das ações
+      em estado-limite último" e com "a seção calculada em ESTÁDIO I":
+        (i)  em nenhum ponto ultrapassar a tensão f_ctk;
+        (ii) V_Sd <= V_c, com V_c de 17.4.2.2.
+      DECISÃO V20(1) DO a2 — f_ctk = f_ctk,inf. O símbolo `f_ctk` sem sufixo
+      NÃO EXISTE em 8.2.5, que define f_ctk,inf = 0,7·f_ct,m e f_ctk,sup =
+      1,3·f_ct,m (86 % de diferença). Adotado o INFERIOR, por ser o limite mais
+      restritivo: com ele a dispensa é mais difícil de obter e o pilarete é
+      armado em mais casos. Doutrina (b) do despacho: ambiguidade de símbolo se
+      resolve pelo lado conservador, com a escolha declarada. Vai LITERAL no
+      memorial: "a NBR 6118:2023, 17.4.1.1.2-c), escreve f_ctk sem sufixo; 8.2.5
+      define f_ctk,inf e f_ctk,sup; este software adota f_ctk,inf, o mais
+      restritivo — interpretação declarada, não transcrição."
+      Atendidas as duas condições, "a armadura transversal mínima é a definida
+      na Seção 18" — isto é, os mínimos de 18.4.3 e 18.3.3.2 CONTINUAM valendo
+      integralmente. A dispensa alcança SÓ a taxa rho_sw de 17.4.1.1.1.
+      ALÍNEA a) — b_w > 5·d manda tratar como laje (19.4). Implementar como
+      asserção: a guarda de 13.2.3 (h_máx <= 5·b_mín, REQ-PILARETE-03(4)) já
+      torna este ramo inalcançável em qualquer seção admitida (conferido:
+      b_w − 5d = −98,5 cm na geometria A). Se algum dia disparar, é sinal de
+      que a guarda de 13.2.3 foi rompida: RECUSA, não desvio para 19.4.
+    nao_autorizado: >-
+      (1) Adotar f_ctk,sup, ou "f_ctk" como se fosse símbolo definido. Com
+          f_ctk,sup a dispensa é 86 % mais fácil e o pilarete deixa de ser
+          armado onde a leitura conservadora manda armar — lado INSEGURO.
+      (2) Concluir da dispensa que a VERIFICAÇÃO DE RESISTÊNCIA de 17.4.2 fica
+          dispensada. O item não diz isso; pelo contrário, uma das duas
+          condições É a verificação V_Sd <= V_c. A dispensa é só da TAXA MÍNIMA.
+      (3) Usar V_c do Modelo II na condição (ii). O texto remete
+          nominalmente a "V_c definido em 17.4.2.2", que é o Modelo I — mesmo
+          num projeto que adote o Modelo II na verificação de resistência.
+      (4) Quantificar "predominantemente à compressão" por conta própria. A
+          Norma não fixa limiar em lugar nenhum de §17.4 —
+          NAO_DECLARADO_NA_FONTE. Enquanto não houver decisão humana, o
+          software só aplica a dispensa quando a força normal for de
+          COMPRESSÃO em TODAS as combinações verificadas, e mesmo assim
+          registra no memorial que "predominantemente" não é quantificado pela
+          Norma. Em qualquer outro caso, NÃO dispensa (lado conservador).
+      (5) Avaliar as condições em estádio II. O texto diz ESTÁDIO I (seção
+          não fissurada, concreto íntegro à tração) — outra grandeza.
+      (6) Deduzir o que fazer quando as condições NÃO são atendidas a partir
+          deste item: ele é silente. O que vale nesse caso é 17.4.1.1.1 mais a
+          verificação de 17.4.2, que é o caminho geral e já está aprovado.
+    checagem_dimensional: >-
+      Tensão contra tensão em (i); força contra força em (ii). Rodado o ramo da
+      alínea a) em tools/checar_dimensoes.py
+      (NBR6118-17.4.1.1.2-a-bw-maior-que-5d, OK, valor negativo como previsto).
+      LIMITE DECLARADO: f_ctk,inf e f_ctk,sup são AMBOS tensões e passam
+      identicamente pelo pint. Caso EMPIRICA NBR6118-17.4.1.1.2-c-qual-f-ctk
+      registrado — só teste numérico com a constante trocada pega.
+    checagem_numerica: >-
+      C25: f_ct,m = 2,565 MPa; f_ctk,inf = 1,796 MPa; f_ctk,sup = 3,335 MPa.
+      Razão 1,857 — a diferença de 86 % citada na fonte confere.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 152 = impressa 134), alínea c)
+      lida palavra a palavra. Confirmado: "f_ctk" aparece SEM sufixo no texto
+      impresso; não é falha de extração do a1.
+      STATUS APROVADA_COM_USO_RESTRITO, e não APROVADA, exatamente porque a
+      transcrição é fiel mas o USO exige duas interpretações declaradas (o
+      sufixo de f_ctk e a não quantificação de "predominantemente").
+      A Emenda 1:2026 NÃO altera este item.
+
+  - id: NBR6118-17.4.1.1.5-17.4.1.1.6-intervalo-de-alpha-e-remissao-a-secao-18
+    norma: "NBR 6118:2023"
+    item: "17.4.1.1.5 e 17.4.1.1.6 (com 17.4.1.1.3 na redação da Em1:2026)"
+    pagina: 135
+    hash: "sha256:041a39fd82c4ae81b0ed49d408c159efd909b4cc2e635a37b1700457fa9accc0"
+    hash_emenda1: "sha256:1749bc6fb53dcc919d979ea4d696678253398ff6299d6582ed10139ab0ebb829"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.cortante (domínio de alpha) e .detalhamento (remissão à Seção 18)"
+    uso_autorizado: >-
+      17.4.1.1.5 fixa o DOMÍNIO do ângulo da armadura transversal:
+      45° <= alpha <= 90°. Estribo vertical é alpha = 90° (sen = 1, cos = 0,
+      cotg = 0).
+      17.4.1.1.6 é a remissão que faz os espaçamentos da Seção 18 entrarem
+      OBRIGATORIAMENTE na verificação de cortante: "os espaçamentos máximos e
+      mínimos entre elementos da armadura devem atender às exigências da
+      Seção 18". Junto com o período final de 17.4.1.1.2-c) e com o último
+      parágrafo de 18.4.3, é o que sustenta
+      DER-NBR6118-composicao-18.3.3.2-com-18.4.3.
+      RESTRIÇÃO DE ESCOPO DESTA VERSÃO, decidida pelo a2 e declarada como
+      escopo (não como exigência da Norma): o pilarete só aceita alpha = 90°.
+      Valor diferente -> RECUSA citando o escopo desta versão, nunca a Norma.
+      Motivo: (a) alpha = 90° é o lado conservador em V_sw do Modelo I
+      (sen+cos vale 1 a 90° e 1,414 a 45°); (b) 18.4.3 detalha pilar com
+      estribo transversal, não inclinado; (c) o caminho de código com
+      sen/cos != trivial ficaria sem nenhum caso de validação.
+      A expressão geral (com sen e cos) é implementada INTEIRA mesmo assim, para
+      que a ampliação futura não exija reescrevê-la, e é exercitada por teste de
+      propriedade em alpha = 45° — teste de álgebra, não caminho certificado.
+      17.4.1.1.3 (barras dobradas limitadas a 60 % da força total resistida —
+      redação da Em1:2026, que trocou "esforço total resistido" por "força total
+      resistida" sem efeito numérico) é transcrito e NÃO se aplica ao pilarete,
+      cuja armadura transversal é constituída só por estribos.
+    nao_autorizado: >-
+      (1) Aceitar alpha fora de [45°, 90°] em qualquer circunstância (é a
+          Norma), nem alpha != 90° nesta versão (é o escopo).
+      (2) Tratar os espaçamentos da Seção 18 como alternativa aos de §17.4:
+          17.4.1.1.6 diz "devem atender", é cumulativo.
+      (3) Implementar barras dobradas.
+    checagem_dimensional: "Ângulos e razões; sem expressão dimensional própria."
+    checagem_numerica: >-
+      alpha = 90°: sen + cos = 1,000; cotg alpha = 0. alpha = 45°:
+      sen + cos = 1,414; cotg alpha = 1,000.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 153 = impressa 135) e, para a
+      Emenda, na p. PDF 14 (impressa 10) do PDF da Em1:2026, que não tem camada
+      de texto. As duas redações de 17.4.1.1.3 (2023 e Em1) ficam registradas
+      com hashes separados, como já se fez em
+      NBR6118-12.3.3-12.4.1-valores-de-calculo.
+
+  - id: NBR6118-17.4.1.2.1-reducoes-junto-aos-apoios
+    norma: "NBR 6118:2023"
+    item: "17.4.1.2.1 (Cargas próximas aos apoios)"
+    pagina: 135
+    hash: "sha256:33f50b03c32f86680a024790b527d05f409726249f8d38e1bb07fa8d4ce398fc"
+    metodo: calculo
+    status: REJEITADA
+    implementacao: "NENHUMA. Encontrar isto implementado em calc_core/estrutural/ é VETO do a6."
+    motivo_da_rejeicao: >-
+      REJEITADA POR FALTA DE DOMÍNIO, não por escopo de conveniência. As
+      reduções de 17.4.1.2.1 são FACULTATIVAS ("pode ser"), valem SÓ em apoio
+      direto ("se a carga e a reação de apoio forem aplicadas em faces opostas
+      do elemento estrutural, comprimindo-o") e SÓ para o cálculo da ARMADURA
+      TRANSVERSAL — a própria Norma as PROÍBE na verificação da compressão
+      diagonal (V_Rd2) e em apoios indiretos.
+      Elas REDUZEM V_Sd. Aplicá-las fora de domínio é erro do lado INSEGURO, e
+      não há em §17.4 remissão alguma a pilar que autorize ler o engaste de um
+      pilarete na sapata como "apoio direto" — seria INTERPRETAÇÃO, sobre um
+      item cujo efeito é aliviar a solicitação. Doutrina (a): recusar.
+      Consequência prática: o V_Sd do pilarete entra INTEGRAL na verificação, o
+      que é conservador. A não implementação é ganho de segurança, não perda de
+      alcance, e está declarada no memorial.
+    checagem_dimensional: "Não aplicável — regra rejeitada, sem implementação."
+    checagem_numerica: "Não aplicável."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 153 = impressa 135).
+      17.4.1.2.2 (componente tangencial de protensão) e 17.4.1.2.3 (altura
+      variável) ficam fora por escopo: o pilarete não é protendido nem de
+      altura variável. Registrado como lacuna deliberada.
+
+  - id: NBR6118-17.4.2.1-duas-condicoes-simultaneas-do-ELU-de-cortante
+    norma: "NBR 6118:2023"
+    item: "17.4.2 e 17.4.2.1 (Cálculo da resistência)"
+    pagina: 136
+    hash: "sha256:b21e785c9164e4a50f7a02b0b2ecf0ed701380f34965b8ad521fa6a1159f2e1e"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "estrutural.pilarete.cortante.verificar (critério de aprovação/reprovação)"
+    uso_autorizado: >-
+      Critério de segurança do ELU de força cortante, POR SEÇÃO TRANSVERSAL:
+        V_Sd <= V_Rd2   e   V_Sd <= V_Rd3 = V_c + V_sw,
+      as duas SIMULTANEAMENTE. Falhar em uma reprova.
+      V_Rd2 e V_Rd3 vêm do MODELO adotado (17.4.2.2 ou 17.4.2.3), e o modelo é
+      ENTRADA DECLARADA (REQ-PILARETE-18).
+      Este é o item que autoriza o software a emitir veredito de cortante — e é
+      o análogo, para o cortante, do que 17.2.1 é para as solicitações normais.
+      A seção verificada é a de MAIOR V_Sd do pilarete; num pilarete engastado
+      na base com H no topo, é a seção da base, e é a mesma seção em que
+      REQ-PILARETE-15 verifica N+M. O memorial diz qual seção foi verificada.
+    nao_autorizado: >-
+      (1) Aprovar com uma só das duas condições.
+      (2) Aplicar as reduções de 17.4.1.2.1 (regra REJEITADA acima) — e, em
+          particular, aplicá-las a V_Rd2, que a Norma proíbe expressamente.
+      (3) Reaproveitar o critério tau_Sd <= tau_Rd2 de 19.5.3.1: lá é TENSÃO em
+          perímetro crítico, aqui é FORÇA em b_w·d.
+      (4) Emitir veredito de cortante quando o elemento estiver na FAIXA B de
+          14.4.1, ou sob cortante biaxial (REQ-PILARETE-17 e -18).
+    checagem_dimensional: >-
+      Forças contra forças (kN). Rodado em tools/checar_dimensoes.py
+      (NBR6118-17.4.2.1-VRd3-modelo-I, OK).
+    checagem_numerica: >-
+      Geometria A, caso A2: V_Rd2 = 334,6 kN e V_Rd3 = 94,63 + 31,59 =
+      126,2 kN. A condição que governa é a segunda, com folga de 2,6× na
+      primeira — ordem de grandeza correta para um pilarete pouco solicitado ao
+      cortante.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 154 = impressa 136).
+      A Emenda 1:2026 NÃO altera este item.
+
+  - id: NBR6118-17.4.2.2-modelo-I-VRd2-Vsw-Vc
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2 (Modelo de cálculo I), alíneas a) e b) — a alínea c) é rejeitada em regra própria"
+    pagina: "136-138"
+    hash: "sha256:fe95fde2712fe466c9a45dc013e2df06344f8396e750df398cc366ffa9b99b0a"
+    hash_emenda1: "sha256:e67d638225b8227efd0f8d40abfa6078a41e8675993b0e6c42cba80a68fc15f5"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.cortante.modelo_I"
+    uso_autorizado: >-
+      Modelo I, theta = 45° FIXO (não há escolha de theta neste modelo):
+        V_Rd2 = 0,27·alpha_v2·f_cd·b_w·d, com alpha_v2 = (1 − f_ck/250),
+                f_ck OBRIGATORIAMENTE EM MPa dentro de alpha_v2;
+        V_sw  = (A_sw/s)·0,9·d·f_ywd·(sen alpha + cos alpha);
+        V_c0  = 0,6·f_ctd·b_w·d, com f_ctd = f_ctk,inf/gamma_c;
+        V_c   = 0                      (tracionado, LN fora da seção);
+        V_c   = V_c0                   (flexão simples e flexo-tração com a LN
+                                        cortando a seção);
+        V_c   = V_c0·(1 + M_0/M_Sd,máx) <= 2·V_c0   (flexo-compressão);
+        M_0   = P_d·(W_1/A_c + e_p) + N_Sd·(W_1/A_c), com P_d = 0 e e_p
+                irrelevante em concreto armado, logo M_0 = N_Sd·W_1/A_c.
+      b_w é a MENOR largura da seção ao longo da altura útil d, no plano em que
+      atua V_Sd. d é a altura útil da seção NESSE MESMO PLANO — na redação da
+      Em1:2026, "distância da borda comprimida ao CENTROIDE da armadura de
+      tração" (troca terminológica, sem efeito numérico).
+      f_ywd <= f_yd para estribos e NUNCA superior a 435 MPa. O teto governa
+      CA-60 (f_yd = 521,7 MPa) e NÃO governa CA-50 (434,8 MPa) — implementá-lo é
+      obrigatório de qualquer modo; omiti-lo é erro do lado INSEGURO.
+      O braço 0,9·d é FIXO na expressão; não é o z calculado da seção.
+      TRÊS DECISÕES DO a2 SOBRE M_0, todas do lado conservador, todas
+      declaradas no memorial com o item citado:
+        V20(1) — f_ctk,inf, ver
+                 NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-sem-sufixo;
+        V20(2) — o N_Sd do numerador de M_0 é o da combinação com
+                 gamma_f = 1,0, ver
+                 DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento;
+        V20(3) — W_1 sob flexão oblíqua, ver
+                 DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada.
+      O TETO 2·V_c0 É OBRIGATÓRIO: com M_Sd,máx -> 0 a razão M_0/M_Sd,máx
+      explode e o teto é o único freio. Teste de mutação que o remova TEM de
+      quebrar (REQ-PILARETE-19).
+    nao_autorizado: >-
+      (1) Misturar as unidades de f_ck: MPa dentro de alpha_v2 e f_cd na
+          unidade coerente com b_w·d. É o erro clássico deste item.
+      (2) Omitir o teto de 435 MPa em f_ywd, ou o teto 2·V_c0 em V_c.
+      (3) Usar N_d majorado no numerador de M_0 (V20(2)).
+      (4) Usar o W_1 da fibra que der o MAIOR M_0 sob flexão oblíqua (V20(3)).
+      (5) Aplicar a majoração de V_c a estado que não seja flexo-compressão. A
+          classificação do estado (tracionado com LN fora / flexão simples ou
+          flexo-tração com LN cortando / flexo-compressão) é feita ANTES e é
+          impressa no memorial.
+      (6) Trocar b_w e d de plano: b_w é a dimensão PERPENDICULAR ao plano de
+          atuação de V_Sd e d é medido NO plano de V_Sd. Numa seção retangular
+          não quadrada a troca muda V_Rd2 e V_c0 na mesma proporção e passa por
+          toda a checagem dimensional.
+      (7) Reaproveitar o coeficiente 0,27 vindo de 19.5.3.1 (tau_Rd2): mesmo
+          número, item diferente, grandeza diferente, símbolo diferente
+          (alpha_v x alpha_v2). É defeito de RASTREABILIDADE mesmo sem mudar
+          número nenhum.
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: NBR6118-17.4.2.2-VRd2-modelo-I,
+      -Vsw-modelo-I, -Vc0, -M0-concreto-armado, -Vc-flexo-compressao-A1/-A2,
+      todos OK. TRÊS MUTANTES plantados e REJEITADOS pelo pint:
+      MUTANTE-VRd2-com-perimetro-no-lugar-de-bw-d (a forma de 19.5.3.1, que é
+      tensão), MUTANTE-Vsw-sem-dividir-por-s e MUTANTE-M0-sem-dividir-por-Ac.
+      LIMITES DECLARADOS (casos EMPIRICA): o nível de carregamento de N em M_0
+      e a escolha de W_1 são invisíveis ao pint — as duas leituras dão kN e cm³.
+    checagem_numerica: >-
+      Geometria A (30×30 cm, d = 25,7 cm, C25, CA-50, gamma_c = 1,4):
+        alpha_v2 = 0,900; f_cd = 17,857 MPa;
+        V_Rd2 = 334,6 kN  (tensão de esmagamento 4,34 MPa — é a tensão de
+                BIELA, NÃO confundir com a faixa de 0,3-1,5 MPa de tau_Rd, que
+                é a de concreto sem armadura de cortante);
+        V_c0 = 59,33 kN   (tensão de referência 0,770 MPa — dentro da faixa);
+        V_sw = 31,59 kN   (2 phi 5,0 c/12,5 cm, que satisfaz rho_sw,mín);
+        M_0 = 35,70 kN·m  (N a gamma_f = 1,0 declarado = 714 kN);
+        caso A1, M_Sd,máx = 24 kN·m: V_c = 118,7 kN — o TETO 2·V_c0 GOVERNA;
+        caso A2, M_Sd,máx = 60 kN·m: V_c = 94,63 kN — o teto não governa.
+      O caso A1 MASCARA a decisão V20(2): com N_d = 1000 kN em vez de 714 kN as
+      DUAS leituras estouram o teto e dão o mesmo número. Só o caso A2
+      discrimina, e a diferença lá é de 14,14 kN (+14,9 %, lado INSEGURO). Esta
+      é a razão de existir do caso A2 e ele é OBRIGATÓRIO no GATE 3.
+      CONTRAPROVA EXTERNA (FONTE SECUNDÁRIA, reproduzida pelo a2): BASTOS,
+      Tabela A-4, C20, V_Rd2 = 0,35·b_w·d — contra 0,27×0,92×(20/1,4)/10 =
+      0,35487 pela Norma. Fecha, com o arredondamento do autor declarado. E o
+      V_Sd,mín = 0,101·b_w·d fecha em 0,10093 (ver a regra de 17.4.1.1.1).
+      O exemplo do Bastos é de FLEXÃO SIMPLES: a majoração de V_c na
+      flexo-compressão FICA SEM CONTRAPROVA EXTERNA no acervo (V22).
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 nas TRÊS páginas (PDF 154, 155 e 156 =
+      impressas 136, 137 e 138), uma por uma, incluindo a expressão de M_0 e a
+      frase "sendo essa tensão calculada com valores de gamma_f e gamma_p iguais
+      a 1,0 e 0,9, respectivamente". A camada de texto do PDF perde o
+      coeficiente 0,27 inteiro e devolve M_0 como uma pilha de símbolos soltos —
+      sem leitura visual não há este item.
+      STATUS APROVADA_COM_USO_RESTRITO porque a transcrição é fiel mas o uso
+      depende de TRÊS interpretações declaradas (V20(1), V20(2), V20(3)), cada
+      uma com derivação própria.
+      A Emenda 1:2026 altera SÓ a designação de d ("centro de gravidade" ->
+      "centroide"), sem efeito numérico — conferido pelo a2 na Emenda, p. PDF 14
+      (impressa 10), onde a lista salta de "Página 137" direto para "Página
+      141", provando que 17.4.2.3 e o restante de §17.4 não são tocados.
+
+  - id: NBR6118-17.4.2.2-c-17.4.2.3-c-decalagem
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-c) e 17.4.2.3-c) (decalagem / deslocamento do diagrama)"
+    pagina: "138-139"
+    hash: "sha256:fe95fde2712fe466c9a45dc013e2df06344f8396e750df398cc366ffa9b99b0a"
+    metodo: calculo
+    status: REJEITADA
+    implementacao: "NENHUMA. Encontrar a_l, F_Sd,cor ou decalagem em calc_core/estrutural/ é VETO do a6."
+    motivo_da_rejeicao: >-
+      FORA DO ESCOPO POR INCOMPATIBILIDADE DE MODELO, e a razão está no próprio
+      texto da alínea: a decalagem vale "quando a armadura longitudinal de
+      tração for determinada através do equilíbrio de esforços na seção normal
+      ao eixo do elemento estrutural" e opera sobre um DIAGRAMA de força no
+      banzo tracionado ao longo de um vão. O pilarete tem armadura LONGITUDINAL
+      SIMÉTRICA dimensionada por flexão composta OBLÍQUA (REQ-PILARETE-15), não
+      por banzo tracionado, e não tem diagrama de momentos de vão. Transportar
+      a_l para cá seria analogia, não aplicação.
+      Registrada, e não simplesmente omitida, porque o item 17.4.2.2 foi
+      transcrito INTEGRALMENTE e porque a ausência precisa ser deliberada e
+      rastreável.
+    checagem_dimensional: "Não aplicável — regra rejeitada."
+    checagem_numerica: "Não aplicável."
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 156 e 157 = impressas 138 e
+      139). Registrada a diferença entre as duas versões da expressão, que é
+      real: o Modelo I escreve a_l = d[V/(2(V−V_c))·(1+cotg alpha) − cotg alpha]
+      e o Modelo II escreve a_l = 0,5d[V/(V−V_c)·(cotg theta + cotg alpha) −
+      cotg alpha]. São a mesma expressão em theta = 45°, e o Modelo I ainda
+      acrescenta o piso "a_l = d para |V_Sd,máx| <= |V_c|", que o Modelo II
+      omite. Quem for implementar um dia precisa das duas.
+
+  - id: NBR6118-17.4.2.3-modelo-II-theta-arbitrado
+    norma: "NBR 6118:2023"
+    item: "17.4.2.3 (Modelo de cálculo II), alíneas a) e b)"
+    pagina: "138-139"
+    hash: "sha256:5d4c55eea5287236c463ef1b5166bca23f57b0782495e56f7d44a7b20455bf9f"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.cortante.modelo_II"
+    uso_autorizado: >-
+      Modelo II, com theta ARBITRADO PELO PROJETISTA no intervalo
+      30° <= theta <= 45°:
+        V_Rd2 = 0,54·alpha_v2·f_cd·b_w·d·sen²(theta)·(cotg alpha + cotg theta);
+        V_sw  = (A_sw/s)·0,9·d·f_ywd·(cotg alpha + cotg theta)·sen alpha;
+        V_c   = 0 / V_c1 / V_c1·(1 + M_0/M_Sd,máx), nos mesmos três estados do
+                Modelo I, com o teto 2·V_c1;
+        V_c1  = V_c0 quando V_Sd <= V_c0; V_c1 = 0 quando V_Sd = V_Rd2;
+                interpolação linear entre os dois (ver
+                DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear).
+      "São mantidas a notação e as limitações definidas em 17.4.2.2" — logo
+      V_c0, f_ctd, M_0, o teto de 435 MPa em f_ywd, o intervalo de alpha e as
+      três decisões V20(1)/(2)/(3) valem aqui SEM ALTERAÇÃO.
+      theta é ENTRADA DECLARADA do projetista, e a escolha do modelo também
+      (REQ-PILARETE-18). A Norma NÃO fixa theta, NÃO dá critério de escolha,
+      NÃO recomenda valor e NÃO manda otimizar; em 17.5.1.1 (torção), com o
+      mesmo intervalo, ela escreve "pode ser arbitrada pelo projeto" — o que
+      confirma a leitura. Mesma doutrina já aplicada a ell_e no pilarete.
+      PROPRIEDADE DE FRONTEIRA, obrigatória como teste (REQ-PILARETE-19): em
+      theta = 45° e alpha = 90°, sen²theta = 0,5 e cotg theta = 1, logo
+      V_Rd2(II) = 0,27·alpha_v2·f_cd·b_w·d = V_Rd2(I), EXATAMENTE.
+      TETO 2·V_c1: a Norma escreve "< 2 V_c1" (menor ESTRITO) no Modelo II e
+      "<= 2 V_c0" no Modelo I. Transcrito como está. DECISÃO DO a2: implementar
+      os dois como teto NÃO estrito (min com 2·V_c1). A diferença tem medida
+      nula, não há nota da Norma explicando a assimetria, e reprovar um valor
+      exatamente igual ao teto seria inventar critério.
+    nao_autorizado: >-
+      (1) OTIMIZAR theta, varrer o intervalo, ou tentar vários valores e adotar
+          o que faz a peça passar. É o oposto de verificar. Encontrar em
+          `estrutural/` qualquer laço sobre theta é VETO do a6.
+      (2) Adotar um theta "padrão" — 30°, 45° ou qualquer outro — como default
+          silencioso. Sem theta declarado, o Modelo II não está disponível.
+      (3) Trocar sen²(theta) por sen(theta). Em theta = 45° isso leva o
+          coeficiente de 0,27 para 0,382 (+41 %, lado INSEGURO) e passa
+          inteiramente pela checagem dimensional.
+      (4) Concluir da propriedade de fronteira que os DOIS MODELOS COINCIDEM em
+          theta = 45°. Coincidem em V_Rd2 e em V_sw; NÃO coincidem em V_Rd3,
+          porque V_c1 <= V_c0 sempre que V_Sd > V_c0. Medido na geometria A com
+          V_Sd = 120 kN: V_c1 = 46,25 kN contra V_c0 = 59,33 kN — o Modelo II é
+          13,08 kN MAIS conservador ali. Um teste que exija igualdade de V_Rd3
+          em theta = 45° está errado, e é um erro provável.
+      (5) Usar V_c1 na condição (ii) da dispensa de 17.4.1.1.2-c), que remete
+          nominalmente a 17.4.2.2.
+    checagem_dimensional: >-
+      Rodado em tools/checar_dimensoes.py: NBR6118-17.4.2.3-VRd2-modelo-II-45,
+      -VRd2-modelo-II-30, -Vsw-modelo-II-30, NBR6118-17.4-fronteira-VRd2-modelo
+      -I-igual-modelo-II (diferença 0,0 kN) e SANITY-modelo-II-NAO-coincide-com
+      -I-em-VRd3 (−13,08 kN), todos OK.
+      LIMITE DECLARADO: theta é adimensional e sen² -> sen não é detectável.
+      Caso EMPIRICA MUTANTE-modelo-II-sem-sen-ao-quadrado registrado.
+    checagem_numerica: >-
+      Geometria A, alpha = 90°:
+        theta = 45°: V_Rd2(II) = 334,6 kN = V_Rd2(I) (diferença 0,0 kN);
+                     V_sw = 31,59 kN = V_sw(I);
+                     V_c1 (V_Sd = 120 kN) = 46,25 kN < V_c0 = 59,33 kN;
+        theta = 30°: V_Rd2(II) = 289,7 kN (menor que o do Modelo I, correto) e
+                     V_sw = 54,72 kN (maior, correto: theta menor -> cotg maior).
+      A troca não é neutra e o sentido dela confere com o texto: theta menor
+      aumenta V_sw e diminui V_Rd2.
+      CONTRAPROVA EXTERNA de FORMA (não de flexo-compressão): BASTOS, Tabela
+      A-5, C20, V_Rd2 = 0,71·b_w·d·sen(theta)·cos(theta); pela Norma
+      0,54×0,92×(20/1,4)/10 = 0,70974 e sen²theta·cotg theta =
+      sen theta·cos theta. Fecha em forma e em valor. A tabela do Bastos NÃO
+      cobre flexo-compressão e NENHUM exemplo resolvido da apostila usa o
+      Modelo II.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 (PDF p. 156 e 157 = impressas 138 e
+      139), incluindo o coeficiente 0,54, o expoente 2 sobre o seno, o intervalo
+      "30° e 45°", o "< 2 V_c1" com o menor estrito e a frase "interpolando-se
+      linearmente". A camada de texto perde o 0,54 e o intervalo inteiro
+      ("com T variável livremente entre  e ").
+      A Emenda 1:2026 NÃO altera 17.4.2.3 — verificado pelo a2 na própria
+      Emenda: a lista salta de "Página 137" (p. impressa 10 da Emenda) para
+      "Página 141" (p. impressa 11).
+
+  - id: NBR6118-18.3.3.2-detalhamento-do-estribo-por-cortante
+    norma: "NBR 6118:2023"
+    item: "18.3.3.1 e 18.3.3.2, com a INCLUSÃO da Emenda 1:2026"
+    pagina: "150-151"
+    hash: "sha256:1e6c8843d4d45972b968c049cc10b3446c32065ee7f080cb6d5d0b9dc7ea7b5b"
+    hash_emenda1: "sha256:0d427016d8e998eb8572ea2597ba76fcb4f40315c9072a7b8a0e6988454f09b4"
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    implementacao: "estrutural.pilarete.detalhamento.estribo_por_cortante"
+    uso_autorizado: >-
+      Aplicável ao pilarete por TRÊS remissões expressas, e nenhuma delas é
+      interpretação: 17.4.1.1.6 ("os espaçamentos máximos e mínimos ... devem
+      atender às exigências da Seção 18"), 17.4.1.1.2-c) ("nesse caso, a
+      armadura transversal mínima é a definida na Seção 18") e o último
+      parágrafo de 18.4.3 ("... devem ser comparados com os mínimos
+      especificados em 18.3 para vigas, adotando-se o menor dos limites
+      especificados").
+      DIÂMETRO: phi_t >= 5 mm e phi_t <= b_w/10. Barra lisa: phi_t <= 12 mm.
+      Tela soldada: mínimo pode cair a 4,2 mm com precauções contra corrosão —
+      NÃO implementado (o pilarete usa estribo de barra).
+      ESPAÇAMENTO LONGITUDINAL:
+        V_d <= 0,67·V_Rd2 -> s_máx = min(0,6·d ; 300 mm);
+        V_d >  0,67·V_Rd2 -> s_máx = min(0,3·d ; 200 mm).
+      ESPAÇAMENTO TRANSVERSAL ENTRE RAMOS:
+        V_d <= 0,20·V_Rd2 -> s_t,máx = min(d ; 800 mm);
+        V_d >  0,20·V_Rd2 -> s_t,máx = min(0,6·d ; 350 mm).
+      EMENDA 1:2026, INCLUSÃO com efeito direto sobre o pilarete: "Nos cantos
+      dos estribos fechados e nos ganchos dos estribos abertos, se não houver
+      barras longitudinais determinadas pelo cálculo, devem ser colocadas barras
+      de amarração com diâmetro pelo menos igual ao do estribo. Se houver barras
+      longitudinais, elas devem possuir diâmetro pelo menos igual ao do
+      estribo." Ou seja: phi_longitudinal >= phi_t em TODA barra de canto.
+      Combinada com o phi_t >= phi/4 de 18.4.3, as duas ENCAIXOTAM a relação em
+      phi/4 <= phi_t <= phi — par de desigualdades que NENHUMA das duas fontes
+      enuncia junto e que o software verifica em conjunto.
+      DUAS INTERPRETAÇÕES DECLARADAS, e é por elas que o status é restrito:
+        (a) "V_d" (símbolo deste item) é lido como V_Sd (símbolo de todo o
+            §17.4). A Norma não declara que são o mesmo objeto —
+            NAO_DECLARADO_NA_FONTE. Adotado V_d = V_Sd (força cortante de
+            CÁLCULO), que é a leitura conservadora: usar um valor menor
+            afrouxaria a escolha do ramo de s_máx.
+        (b) "1/10 da largura da alma da VIGA" é lido, no pilarete, como
+            b_mín/10 (menor dimensão da seção). Leitura natural e conservadora,
+            mas é INTERPRETAÇÃO: 18.4.3 não traz teto de diâmetro de estribo,
+            só piso.
+      As duas vão ao memorial, com o item citado.
+    nao_autorizado: >-
+      (1) Substituir os limites de 18.4.3 por estes, ou vice-versa. São
+          CUMULATIVOS — ver DER-NBR6118-composicao-18.3.3.2-com-18.4.3.
+      (2) Inventar valor para o espaçamento MÍNIMO. O critério da Norma é
+          qualitativo ("suficiente para permitir a passagem do vibrador,
+          garantindo um bom adensamento da massa") e não tem número. Qualquer
+          número adotado é hipótese declarada, nunca requisito normativo, e o
+          software NÃO reprova por ele.
+      (3) Usar V_Rd2 de um modelo na fórmula e V_Rd2 do outro na verificação. O
+          V_Rd2 destes limiares é o do MODELO ADOTADO — e como V_Rd2(II) < V_Rd2
+          (I) para theta < 45°, o Modelo II torna os limiares MAIS restritivos.
+      (4) Implementar emenda por traspasse de estribo (permitida só com telas ou
+          barras de alta aderência) — fora do escopo.
+    checagem_dimensional: >-
+      Comprimentos contra comprimentos; razões de força adimensionais. Rodado em
+      tools/checar_dimensoes.py: NBR6118-18.3.3.2-s-max, -s-t-max,
+      -phi-t-teto-b-sobre-10, NBR6118-Em1-18.3.3.2-phi-long-maior-que-phi-t,
+      todos OK.
+    checagem_numerica: >-
+      Geometria A, V_Sd = 120 kN, V_Rd2 = 334,6 kN:
+        0,67·V_Rd2 = 224,2 kN > 120 -> s_máx = min(154,2 ; 300) = 154,2 mm;
+        0,20·V_Rd2 = 66,9 kN  < 120 -> s_t,máx = min(154,2 ; 350) = 154,2 mm;
+        18.4.3 dá min(200 ; 300 ; 12×16 = 192) = 192 mm;
+        COMPOSIÇÃO (menor dos tetos) = 154,2 mm; o s adotado de 125 mm passa com
+        29,2 mm de folga.
+        phi_t = 5 mm: piso max(5 ; 16/4 = 4) = 5 mm OK; teto b/10 = 30 mm OK;
+        Emenda: phi_l = 16 >= phi_t = 5 OK.
+      Note que quem GOVERNA o espaçamento aqui é 18.3.3.2 (154,2 mm) e não
+      18.4.3 (192 mm) — isto é, acrescentar o cortante ao escopo TORNOU o
+      detalhamento mais restritivo do que a v12 exigia. É consequência
+      esperada, e é o teste que prova que a composição está implementada.
+    observacao: >-
+      Conferido por LEITURA VISUAL DO a2 em DUAS páginas (PDF 168 e 169 =
+      impressas 150 e 151) e, para a Emenda, na p. PDF 16 (impressa 12) do PDF
+      da Em1:2026, palavra a palavra.
+      CORREÇÃO DE RASTREABILIDADE SOBRE A EXTRAÇÃO DO a1, encontrada por esta
+      conferência: `kb/formulas.yaml` e `kb/clausulas.jsonl` registram este item
+      como "página 150 (PDF 167-168)". O mapeamento está errado em uma unidade —
+      PDF 167 é a página impressa 149 (item 18.3.2.4) e NÃO contém 18.3.3.2. O
+      item COMEÇA na impressa 150 (PDF 168) e os NÚMEROS (0,67; 0,20; 0,6d;
+      300/200/800/350 mm) estão todos na impressa 151 (PDF 169). Este registro
+      grava "150-151" e o a1 deve corrigir os dois arquivos de kb/ na próxima
+      rodada. Nenhum VALOR foi afetado — os quatro pares de limiares foram lidos
+      diretamente pelo a2 na p. 151.
+      A Emenda 1:2026 não toca número algum deste item; a alteração é uma
+      INCLUSÃO de parágrafo.
+
+  - id: NBR6118-DELIMITACAO-17.4-vs-19.4-19.5
+    norma: "NBR 6118:2023"
+    item: "Desambiguação: 14.4.1, 17.4.1, 17.4.1.1.2-a), 17.4.2.2, 19.4.1, 19.4.2, 19.5.2.7, 19.5.3.1"
+    pagina: "83, 133-136, 161-162, 166-167"
+    hash: "sha256:596103d973c8fd71c7287dff71c5d2ab74d313d138d442439754b9b6f6b07210"
+    hash_19_5_2_7: "sha256:cf02638f57c2393d4e68b2f2fd91803ae647aa24745b1bc2f62344aa099e5a5d"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "NENHUMA expressão. É regra de NAMESPACE e de rastreabilidade, verificável pelo a6 por inspeção."
+    uso_autorizado: >-
+      REGRA DE SEPARAÇÃO, conferida pelo a2 e não herdada do relatório do a1.
+      (1) tau_Rd2 de 19.5.3.1 (punção de laje) e V_Rd2 de 17.4.2.2 (elemento
+          linear) são itens DIFERENTES. Um é TENSÃO em contorno crítico
+          (0,27·alpha_v·f_cd, em MPa, verificada sobre u_0·d); o outro é FORÇA
+          sobre b_w·d, em kN. O coeficiente 0,27 é o mesmo e a definição de
+          alpha_v e alpha_v2 é idêntica — mas o NOME não é, e é UM CARACTERE de
+          diferença.
+      (2) NAMESPACE OBRIGATÓRIO, e é a sexta colisão de símbolo registrada
+          nesta feature (as cinco anteriores são os cinco `alpha` de
+          REQ-PILARETE-01):
+            estrutural.pilarete.cortante.alpha_v2   (17.4.2.2/17.4.2.3)
+            sapata_isolada.sapata.<punção>.alpha_v  (19.5.3.1, já existente)
+          É PROIBIDO um símbolo chamado `alpha_v` em `calc_core/estrutural/` e
+          um chamado `alpha_v2` em `calc_core/sapata_isolada/`. Também é
+          PROIBIDO um `V_Rd2` em `sapata_isolada/` e um `tau_Rd2` em
+          `estrutural/`.
+      (3) CONFERIDO PELO a2 NESTA RODADA que a extração de §17.4 NÃO contaminou
+          nenhuma regra preexistente: NBR6118-19.5.3.1-tauRd2,
+          NBR6118-19.5.3.2-tauRd1 e NBR6118-19.5.2.2-K-Wp saem da v13
+          IDÊNTICAS às da v12, com `implementacao` apontando para
+          `sapata_isolada.sapata.Sapata._verificar_puncao` e nenhuma delas
+          citando 17.4. Verificação feita por comparação estrutural das duas
+          árvores YAML.
+      (4) A INTERAÇÃO N-V É OPOSTA NOS DOIS REGIMES, e isso é TEXTO da Norma,
+          não interpretação: 17.4.2.2 MAJORA V_c com a compressão (até 2·V_c0);
+          19.5.2.7 diz "Não se exige a verificação da influência das
+          solicitações normais, decorrentes de flexão simples ou composta da
+          laje, na resistência à punção". É PROIBIDO transportar a majoração de
+          V_c para a punção da sapata, e é PROIBIDO transportar a dispensa da
+          punção para o pilarete.
+      (5) 19.4.2 manda a laje COM estribo ser verificada por "os critérios
+          estabelecidos em 17.4.2", acrescentando tetos próprios de f_ywd (250
+          MPa até 15 cm de espessura, 435 MPa acima de 35 cm, interpolação
+          linear). Esses tetos são de LAJE e é PROIBIDO aplicá-los ao pilarete,
+          cujo teto é o 435 MPa de 17.4.2.2, sem interpolação por espessura.
+    nao_autorizado: >-
+      (1) Reaproveitar qualquer regra do motor amplo (19.4/19.5/22.6) dentro de
+          `estrutural/`, e qualquer regra de §17.4 dentro de
+          `sapata_isolada/`. São cadeias normativas separadas.
+      (2) Citar 19.5.3.1 no memorial do pilarete, ou 17.4.2.2 no da sapata.
+    checagem_dimensional: >-
+      É exatamente o que o pint PEGA, e o mutante está plantado:
+      MUTANTE-VRd2-com-perimetro-no-lugar-de-bw-d em
+      tools/checar_dimensoes.py foi REJEITADO ("Cannot convert from
+      'megapascal * centimeter' to 'kilonewton'"). Trocar b_w·d por um perímetro
+      quebra a dimensão — este é um dos poucos erros desta rodada que a análise
+      dimensional pega sozinha.
+    checagem_numerica: >-
+      C25: alpha_v = alpha_v2 = 0,900 nas duas expressões, e 0,27·0,900·17,857 =
+      4,34 MPa nas duas. O NÚMERO coincide; a GRANDEZA não. É por isso que a
+      separação tem de ser de nomenclatura e não de valor.
+    observacao: >-
+      Este registro responde à pergunta explícita do despacho ("confirme que
+      nenhuma regra existente foi contaminada e que o namespace fica distinto").
+      Resposta: nenhuma regra foi contaminada, e o namespace está fixado acima.
+
+  - id: NBR6118-BUSCA-NEG-cortante-em-pilar-no-acervo
+    norma: "Acervo bibliográfico do repositório"
+    item: "Sapatas.pdf (BASTOS, UNESP Bauru, Out/2023, 119 p.) e Fundacoes_Diretas (CINTRA/AOKI/ALBIERO, 2011)"
+    pagina: "Sapatas.pdf: 119 páginas varridas; Fundações Diretas: sem camada de texto"
+    hash: "sha256:a365126cedb68a0a31307d8c761e57a4a684e1f5126957a11ae25c60ad74ccc5"
+    metodo: calculo
+    status: APROVADA
+    implementacao: "NENHUMA. Registro de LACUNA DE VALIDAÇÃO para o GATE 3."
+    uso_autorizado: >-
+      BUSCA NEGATIVA, aceita pelo a2: NÃO HÁ no acervo exemplo resolvido de
+      força cortante em PILAR. Termos com zero ocorrência em Sapatas.pdf:
+      "pilarete", "17.4", "17.4.2.2", "18.4.3", "armadura transversal do pilar".
+      O QUE EXISTE, e é a primeira contraprova de terceiros deste backlog:
+      BASTOS, item 1.13 (viga alavanca / sapata de divisa), p. impressas 85-86,
+      dimensiona a armadura transversal de uma VIGA pelo Modelo I, com V_Rd2,
+      A_sw, A_sw,mín de 17.4.1.1.1 e os espaçamentos de 18.3.3.2; e as Tabelas
+      A-4 e A-5 (p. impressa 111) trazem as expressões simplificadas dos dois
+      modelos para o Grupo I.
+      VALIDA (parcialmente, e é FONTE SECUNDÁRIA): V_Rd2 do Modelo I, V_c0,
+      rho_sw,mín, o teto de 435 MPa em f_ywd, os limiares de 18.3.3.2 e a FORMA
+      do V_Rd2 do Modelo II.
+      NÃO VALIDA, e estas três ficam sem caso externo nenhum: (i) a majoração
+      V_c = V_c0(1 + M_0/M_Sd,máx) da FLEXO-COMPRESSÃO — o exemplo do Bastos é
+      de flexão simples; (ii) o Modelo II com theta arbitrado (nenhum exemplo
+      resolvido da apostila o usa); (iii) a exceção de 17.4.1.1.2-c) para
+      pilares.
+    nao_autorizado: >-
+      (1) Declarar confiança ALTA no GATE 3 para a interação N-V com base só em
+          propriedade interna. Ver REQ-PILARETE-19 e kb/pendencias.md > V22.
+      (2) Usar o caso do Bastos como teste de FRONTEIRA dos 0,67·V_Rd2 sem
+          declarar o arredondamento: o autor usa 0,35 no lugar de 0,35487, e o
+          caso cai a 0,1 kN da fronteira. Com o valor exato da Norma a folga
+          passa a 8,1 kN e o ramo é o mesmo — mas o caso é frágil por
+          construção.
+    checagem_dimensional: "Não aplicável — busca negativa."
+    checagem_numerica: >-
+      Reproduzidas pelo a2, a partir das expressões literais da Norma e sem
+      olhar a tabela: 0,35487 contra 0,35 de V_Rd2/b_w·d (C20); 2,5543 e
+      0,16938 contra 2,55 e 0,17 da expressão de A_sw; 0,10093 contra 0,101 de
+      V_Sd,mín; 0,70974 contra 0,71 do Modelo II. Quatro coincidências
+      independentes. É a melhor amarração de terceiros do acervo para §17.4.
+    observacao: >-
+      FALSO POSITIVO DO PRÓPRIO a2, registrado de propósito: numa primeira
+      leitura este hash pareceu TRUNCADO (32 caracteres). Reconferido lendo o
+      campo diretamente do JSONL, ele tem os 64 caracteres — o corte era do
+      buffer de saída da ferramenta de inspeção, não do arquivo. Fica escrito
+      porque a cascata §1 exige hash presente e um "defeito" de rastreabilidade
+      alegado sem reconferência valeria tanto quanto um defeito real ignorado.
+      Varredura completa feita na sequência: todas as entradas de
+      kb/clausulas.jsonl têm hash de 64 caracteres, exceto quatro registros de
+      BUSCA NEGATIVA cujo campo traz o hash SEGUIDO de uma explicação em texto
+      — formato antigo, sem efeito, não reaberto nesta rodada.
+
 # =============================================================================
 # ACHADO COLATERAL desta rodada — NÃO é regra, é aviso para quem for
 # implementar a pendência de pilar de borda/canto (ver CLAUDE.md, "Pendente em
@@ -4736,6 +5673,378 @@ derivacoes:
       vez, o risco de máximo perdido por discretização numa feature que não tem
       nenhum caso de conferência de terceiros.
 
+  # ---------------------------------------------------------------------------
+  # DERIVAÇÕES DA VERSÃO 13 — as cinco decisões que o a2 tomou SOZINHO, com a
+  # autoridade delegada no despacho desta rodada: (a) recusar em vez de
+  # extrapolar quando a aplicabilidade normativa é ambígua; (b) resolver pelo
+  # lado CONSERVADOR quando a ambiguidade é de símbolo ou de composição.
+  # NENHUMA delas é decisão humana e NENHUMA se apresenta como tal. Todas vão
+  # LITERAIS ao memorial, rotuladas como INTERPRETAÇÃO, com o item citado.
+  # ---------------------------------------------------------------------------
+
+  - id: DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante
+    natureza: INTERPRETACAO_DE_ITEM_NORMATIVO
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    decidida_por: "a2-verificador (V21), doutrina (a) do despacho — recusar > extrapolar. NÃO é decisão humana."
+    formula: >-
+      razao_14_4_1 = ell / max(b, h);
+      razao >= 3,0 -> FAIXA A: veredito de ELU COMPLETO (17.2.1 + 17.4.2.1);
+      razao <  3,0 -> FAIXA B: §17.4 RECUSADO; veredito volta a ser o ESCOPADO
+                      de solicitações NORMAIS, com dois avisos obrigatórios.
+    itens_de_origem:
+      - "NBR 6118:2023, 14.4.1 (p. 83): elemento linear é aquele cujo comprimento longitudinal supera em pelo menos três vezes a maior dimensão da seção transversal — regra NBR6118-14.4.1-elemento-linear-classificacao"
+      - "NBR 6118:2023, 17.4.1 (p. 133): as prescrições aplicam-se a elementos lineares e NÃO se aplicam a elementos de volume, lajes, vigas-parede e consolos curtos — regra NBR6118-17.4.1-campo-de-aplicacao-do-cortante"
+      - "NBR 6118:2023, 17.4.1.1.2-c) (p. 134): remissão NOMINAL a 'os pilares e elementos lineares de fundação' — regra NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-sem-sufixo"
+      - "NBR 6118:2023, 17.2.1 (p. 120): critérios para os esforços resistentes das SEÇÕES de vigas, PILARES e tirantes — regra NBR6118-17.2.1-envoltoria-criterio-de-seguranca"
+      - "NBR 6118:2023, 21.1 e Seção 22: elementos especiais; busca negativa própria do a2 (v11) confirma que 'pilarete' tem ZERO ocorrências na 6118 e na 6122, e 'pedestal' tem UMA, em 24.6.2 (concreto simples) — kb/clausulas.jsonl, NBR6118-LACUNA-17.4-pilarete-curto-nao-e-elemento-linear, sha256:710c1fc858c7a1f21ac30d777896c81707db377f943297d955b49ac39861c529"
+    passos_de_interpretacao: >-
+      (1) §17.4 alcança PILAR por duas vias independentes e nenhuma delas é
+          interpretação: taxonômica (17.4.1 -> elementos lineares; 14.4.1.2 ->
+          pilar é elemento linear) e nominal (17.4.1.1.2-c) escreve "os pilares
+          e elementos lineares DE FUNDAÇÃO"). Isso está resolvido e é mais do
+          que se esperava.
+      (2) A ressalva não está em §17.4, está três Seções antes: 14.4.1
+          condiciona a classe a ell >= 3·máx(b,h). Um pilarete de fundação é,
+          por uso, curto — 30×30 exige 90 cm, 40×40 exige 120 cm.
+      (3) Abaixo disso não há rota alternativa na Norma. 21.1 manda os elementos
+          "que por sua forma ou proporções caracterizam uma descontinuidade
+          generalizada" para a Seção 22, e a Seção 22 trata vigas-parede,
+          consolos, dentes Gerber, sapatas, blocos e pilares-parede — NÃO trata
+          pilarete, pedestal nem pilar curto de fundação. É VAZIO NORMATIVO no
+          cortante, não lacuna de escopo deste pipeline. Doutrina (a): RECUSA.
+      (4) §17.2 NÃO recebe o mesmo tratamento, e a assimetria está na FONTE, não
+          na conveniência do agente. §17.4 traz uma LISTA EXPRESSA DE EXCLUSÕES
+          — toda ela de elementos atarracados e de regiões de descontinuidade —
+          e assenta declaradamente num modelo de TRELIÇA de banzos paralelos ao
+          longo do elemento, que pressupõe região B. §17.2 não traz lista de
+          exclusão alguma e 17.2.1 declara estabelecer critérios "para a
+          determinação dos esforços resistentes das SEÇÕES de vigas, PILARES e
+          tirantes": é resistência de SEÇÃO, com hipóteses de seção (17.2.2).
+      (5) Manter §17.2 na FAIXA B É, AINDA ASSIM, UMA INTERPRETAÇÃO, e está
+          declarada: a Seção 17 inteira se intitula para elementos lineares. O
+          a2 escolheu não recusar §17.2 porque isso removeria, sem base
+          normativa PARA A REMOÇÃO, uma capacidade já certificada na v12, e
+          porque a alternativa adotada — rótulo alto, explícito e impresso — não
+          produz nenhum número novo. Quem discordar tem o caminho aberto: é uma
+          linha de configuração em REQ-PILARETE-17, não uma reescrita.
+    uso_autorizado: >-
+      FAIXA A (razao >= 3,0): §17.4 aplicável. Satisfeitas também
+      REQ-PILARETE-03, -05, -11, -17 e -18, o software emite o veredito
+      COMPLETO: "ELU de solicitações NORMAIS (17.2.1) e ELU de FORÇA CORTANTE
+      (17.4.2.1): ATENDIDO / NÃO ATENDIDO".
+      FAIXA B (razao < 3,0):
+        (i)  §17.4 RECUSADO. Sem cálculo, sem número, sem V_Rd de espécie
+             alguma. A mensagem traz, nesta ordem: a razão OBTIDA; o limite
+             3,0; o valor 3·máx(b,h) que faltou atingir, em metros; a citação
+             de 14.4.1 com a página; a lista de exclusões de 17.4.1; e a
+             constatação de que a Seção 22 não cobre o pilarete.
+        (ii) §17.2 continua verificado e o veredito volta a ser o ESCOPADO da
+             v12 — "ELU de solicitações NORMAIS (17.2.1)" e nada mais —
+             acrescido de DUAS frases obrigatórias: que o elemento não satisfaz
+             14.4.1 (com a razão) e que, por isso, o ELU de força cortante NÃO
+             FOI VERIFICADO POR NORMA NENHUMA, cabendo ao engenheiro tratá-lo
+             por modelo de bielas e tirantes ou outro caminho fora deste
+             software.
+      A razão obtida vai ao memorial NAS DUAS FAIXAS, e a faixa é campo próprio
+      do valor de retorno da API — não só texto.
+    nao_autorizado: >-
+      (1) Usar ell_e (comprimento equivalente) no lugar de ell na razão. No caso
+          engastado-livre isso DOBRA o valor e classifica como elemento linear
+          um pilarete de 45 cm.
+      (2) Emitir veredito completo (N+M+V) na FAIXA B, por qualquer caminho.
+      (3) Oferecer "prosseguir mesmo assim", caixa de confirmação, ou aplicação
+          de §17.4 por analogia na FAIXA B.
+      (4) Tratar a FAIXA B como caso raro na documentação ou na interface. NÃO
+          É: no caso ENGASTADO_BASE_LIVRE_TOPO sob M_1d,mín as duas fronteiras
+          (lambda < lambda_1 e razão >= 3) só coexistem se h_máx/b_mín < 1,684,
+          e a seção 20×40 dos testes da v12 tem janela VAZIA.
+      (5) Silenciar a lacuna em qualquer superfície.
+    citacao_em_codigo: "[deriv: DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante]"
+    checagem_dimensional: >-
+      Razão adimensional. Rodado em tools/checar_dimensoes.py
+      (NBR6118-14.4.1-razao-elemento-linear-geomA/-geomB-RECUSA/-geomC e
+      DER-FRONTEIRA-14.4.1-com-15.8.2-engastado-livre). LIMITE DECLARADO: a
+      troca ell -> ell_e é invisível ao pint (caso EMPIRICA registrado).
+    checagem_numerica: >-
+      Geometria B (30×30, ell = 0,80 m): razão 2,667 -> FAIXA B; lambda = 18,48
+      < 35 -> passa em 15.8.2. Demonstra que as duas verificações são
+      INDEPENDENTES e que a FAIXA B é alcançável por geometria corriqueira.
+      Fronteira quantificada pelo a2 (ell_e = 2·ell, lambda_1 = 35): lambda < 35
+      exige ell/b_mín < 35/(2·raiz(12)) = 5,052; com 14.4.1 exigindo
+      ell >= 3·h_máx, as duas só coexistem se h_máx/b_mín < 1,684. Janelas:
+      30×30 -> ell em [0,90; 1,515) m; 25×40 -> [1,20; 1,263) m; 20×40 -> VAZIA.
+    observacao: >-
+      Esta derivação FECHA V21 e é o motivo pelo qual REQ-PILARETE-16 foi
+      reescrito como REQ-PILARETE-16 (v13).
+      DÉBITO DA v12 QUE ELA TORNA VISÍVEL, e que ninguém tinha visto: a v12
+      aprovou §17.2 para o pilarete SEM NUNCA verificar 14.4.1 — nenhuma regra
+      da v11 nem da v12 verificava a proporção geométrica. A v13 passa a
+      verificar, e por isso ALTERA o comportamento da v12 até na parte de
+      solicitações normais (o memorial ganha duas frases na FAIXA B).
+
+  - id: DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento
+    natureza: INTERPRETACAO_DE_ITEM_NORMATIVO
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    decidida_por: "a2-verificador (V20, item 2), doutrina (b) — lado conservador. NÃO é decisão humana."
+    formula: >-
+      M_0 = N_(gamma_f=1,0) · W_1/A_c   (P_d = 0 em concreto armado);
+      N_(gamma_f=1,0) é ENTRADA DECLARADA. Sem ela, V_c = V_c0 (não majora).
+    itens_de_origem:
+      - "NBR 6118:2023, 17.4.2.2-b), designação de M_0 (p. 137): '... sendo essa tensão calculada com valores de gamma_f e gamma_p iguais a 1,0 e 0,9, respectivamente' — regra NBR6118-17.4.2.2-modelo-I-VRd2-Vsw-Vc"
+      - "NBR 6118:2023, 17.4.2.2-b), mesma designação (p. 137-138): 'os momentos correspondentes a essas forças normais não podem ser considerados no cálculo dessa tensão pois são considerados em M_Sd,máx'"
+      - "NBR 6118:2023, 17.4.2.2-b), designação de M_Sd,máx (p. 138): 'é o momento fletor de CÁLCULO máximo na seção em análise'"
+    passos_de_interpretacao: >-
+      (1) A Norma manda calcular a tensão que M_0 anula com gamma_f = 1,0 — a
+          frase está no texto e foi lida visualmente pelo a2 na p. impressa 137.
+          Logo o N do numerador NÃO é o N_d majorado da combinação.
+      (2) O denominador M_Sd,máx é de CÁLCULO — a designação está na p. 138 e diz
+          "de cálculo" com todas as letras. A fração mistura, portanto, dois
+          níveis de ponderação.
+      (3) A mistura NÃO é descuido de redação: a mesma alínea explica por que os
+          momentos das forças normais ficam fora do numerador ("pois são
+          considerados em M_Sd,máx"). É a repartição que o item declara, e não
+          cabe ao software "corrigi-la" majorando o numerador.
+      (4) Usar N_d infla M_0, infla V_c e é do lado INSEGURO. A leitura LITERAL
+          coincide aqui com a CONSERVADORA — não há conflito entre transcrição e
+          doutrina (b).
+    uso_autorizado: >-
+      M_0 = N_(gamma_f=1,0)·W_1/A_c, com o valor N_(gamma_f=1,0) fornecido pelo
+      engenheiro em CAMPO PRÓPRIO, sem default silencioso.
+      SEM ESSE VALOR O SOFTWARE NÃO MAJORA: V_c = V_c0 (Modelo I) ou V_c1
+      (Modelo II). É o lado conservador e evita o pior caminho, que seria
+      inferir o número.
+      O memorial imprime os DOIS valores lado a lado — N_d e N_(gamma_f=1,0) —
+      com a frase literal de que a NBR 6118:2023, 17.4.2.2, manda calcular a
+      tensão que M_0 anula com gamma_f = 1,0 enquanto M_Sd,máx é de cálculo, e
+      de que a majoração de V_c foi (ou não foi) aplicada.
+    nao_autorizado: >-
+      (1) Usar N_d no numerador de M_0.
+      (2) OBTER N_(gamma_f=1,0) dividindo N_d por um gamma_f suposto. O software
+          não conhece a composição da combinação (repartição
+          permanente/variável, coeficientes psi) e 1,4 não é necessariamente a
+          razão efetiva entre os dois níveis. Uma "conversão automática" seria
+          um número inventado com aparência de cálculo. Encontrar em
+          `estrutural/` uma divisão de N_d por gamma_f para este fim é VETO
+          do a6.
+      (3) Majorar V_c quando a força normal não for de compressão, ou quando o
+          estado não for flexo-compressão.
+      (4) Remover o teto 2·V_c0 / 2·V_c1.
+      (5) Validar esta decisão APENAS com o caso A1 do sanity check — ele a
+          mascara. Ver a checagem numérica.
+    citacao_em_codigo: "[deriv: DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento]"
+    checagem_dimensional: >-
+      kN·cm nas duas leituras — o pint NÃO distingue. Caso EMPIRICA
+      NBR6118-17.4.2.2-M0-nivel-de-carregamento registrado em
+      tools/checar_dimensoes.py. O que o pint pega é a ausência de A_c
+      (MUTANTE-M0-sem-dividir-por-Ac, REJEITADO).
+    checagem_numerica: >-
+      Geometria A, N_d = 1000 kN, N_(gamma_f=1,0) declarado = 714 kN,
+      W_1/A_c = h/6 = 5,0 cm:
+        M_0 correto = 35,70 kN·m ; M_0 com N_d = 50,00 kN·m.
+        Caso A1 (M_Sd,máx = 24 kN·m): AS DUAS LEITURAS estouram o teto de
+        2·V_c0 e dão 118,7 kN — o erro fica INVISÍVEL exatamente no caso
+        típico, em que M_Sd,máx = M_1d,mín.
+        Caso A2 (M_Sd,máx = 60 kN·m): o teto não governa; 94,63 kN contra
+        108,77 kN, diferença de 14,14 kN (+14,9 %, lado INSEGURO).
+      O caso A2 é OBRIGATÓRIO no GATE 3.
+    observacao: >-
+      Nenhum caso de terceiros valida esta majoração: o exemplo do Bastos é de
+      flexão simples, onde V_c = V_c0 e M_0 nem entra. Ver
+      NBR6118-BUSCA-NEG-cortante-em-pilar-no-acervo e kb/pendencias.md > V22.
+
+  - id: DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada
+    natureza: INTERPRETACAO_DE_ITEM_NORMATIVO
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    decidida_por: "a2-verificador (V20, item 3), doutrina (b) — lado conservador. NÃO é decisão humana."
+    formula: >-
+      r_x = (N_(gf=1)·W_1x/A_c)/M_Sd,máx,x  com W_1x = b·h²/6;
+      r_y = (N_(gf=1)·W_1y/A_c)/M_Sd,máx,y  com W_1y = h·b²/6;
+      V_c = V_c0·(1 + min(r_x, r_y)) <= 2·V_c0.
+    itens_de_origem:
+      - "NBR 6118:2023, 17.4.2.2-b), designação de M_0 (p. 138): 'sendo W_1 o módulo de resistência na fibra mais tracionada' — designação UNIAXIAL"
+      - "NBR 6118:2023, 17.4.2.2-b), designação de M_Sd,máx (p. 138): 'momento fletor de cálculo máximo na seção em análise' — designação UNIAXIAL"
+      - "NBR 6118:2023, 11.3.3.4.3 e Figura 11.3 (p. 60-61): M_1d,mín obrigatório nas DUAS direções — regra NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem"
+      - "NBR 6118:2023, 16.3 (p. 116): não se aceita dimensionar pilar para carga centrada — regra NBR6118-16.3-proibicao-de-carga-centrada"
+    passos_de_interpretacao: >-
+      (1) As duas designações do item são UNIAXIAIS: pressupõem uma direção de
+          flexão e uma fibra mais tracionada.
+      (2) O pilarete está SEMPRE sob flexão oblíqua, mesmo sem momento aplicado,
+          porque M_1d,mín é obrigatório nas duas direções (REQ-PILARETE-04) e
+          16.3 proíbe a compressão centrada. Logo há duas fibras candidatas e
+          dois M_Sd,máx, um por plano principal, e a Norma não diz qual usar.
+      (3) V_c cresce com M_0/M_Sd,máx. O lado conservador é o MENOR V_c, isto é,
+          a MENOR razão entre os dois pares legítimos.
+      (4) O EMPARELHAMENTO POR PLANO é parte da decisão: cruzar o W_1 de um
+          plano com o M_Sd,máx do outro produziria uma razão que não corresponde
+          a estado nenhum. São dois pares legítimos, e adota-se o menor deles —
+          não o menor W_1 com o maior M_Sd, que seria mais conservador ainda
+          mas fisicamente arbitrário.
+    uso_autorizado: >-
+      Calcular r_x e r_y como na fórmula, emparelhados por plano, e adotar o
+      MENOR. M_Sd,máx,x e M_Sd,máx,y são os momentos de CÁLCULO efetivamente
+      usados no veredito de REQ-PILARETE-15 — isto é, já incluem M_1d,mín quando
+      ele governa — e por isso são sempre estritamente positivos.
+      O memorial imprime r_x, r_y, qual governou, os dois W_1 e a frase de que a
+      Norma não declara qual fibra usar sob flexão oblíqua.
+    nao_autorizado: >-
+      (1) Adotar o W_1 que der o MAIOR M_0 (lado inseguro).
+      (2) Cruzar W_1 de um plano com M_Sd,máx do outro.
+      (3) Deixar a divisão explodir se algum M_Sd,máx vier nulo ou negativo. Se
+          isso ocorrer por qualquer caminho, o software RECUSA em vez de
+          encostar no teto de 2·V_c0.
+      (4) Validar esta decisão em seção QUADRADA. Ali W_1x = W_1y e a escolha é
+          invisível — mesma armadilha do cruzamento h↔b de REQ-PILARETE-13(11).
+    citacao_em_codigo: "[deriv: DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada]"
+    checagem_dimensional: >-
+      W_1x e W_1y têm a MESMA dimensão (cm³) e as razões são adimensionais — o
+      pint NÃO distingue. Caso EMPIRICA
+      NBR6118-17.4.2.2-W1-fibra-mais-tracionada registrado.
+    checagem_numerica: >-
+      Geometria C (25×40 cm, ell = 1,25 m — a única classe NÃO QUADRADA que
+      satisfaz as duas fronteiras de REQ-PILARETE-17), N_(gf=1) = 857 kN,
+      M_Sd,x = 90 e M_Sd,y = 70 kN·m, cortante no plano de h (b_w = 25 cm,
+      d = 35,7 cm):
+        W_1x/A_c = 6,667 cm -> M_0x = 57,13 kN·m -> r_x = 0,6348;
+        W_1y/A_c = 4,167 cm -> M_0y = 35,71 kN·m -> r_y = 0,5102;
+        V_c0 = 68,68 kN; V_c conservador = 103,7 kN; V_c otimista = 112,3 kN.
+        Diferença: 8,56 kN (+8,3 %, lado INSEGURO se escolhido o maior).
+      Na geometria A (30×30) a diferença é exatamente ZERO. O caso 25×40 é
+      OBRIGATÓRIO no GATE 3.
+    observacao: >-
+      NAO_DECLARADO_NA_FONTE reconfirmado por leitura visual do a2 na p.
+      impressa 138: a designação de W_1 está na mesma linha da expressão de M_0
+      e não há nota alguma sobre flexão oblíqua em todo o §17.4.
+
+  - id: DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear
+    natureza: DERIVACAO_ALGEBRICA_DE_ITEM_NORMATIVO
+    metodo: calculo
+    status: APROVADA_COM_USO_RESTRITO
+    decidida_por: "a2-verificador. Álgebra sobre dois pontos que a Norma escreve; não é interpretação de mérito."
+    formula: >-
+      V_c1 = V_c0                                 , se V_Sd <= V_c0;
+      V_c1 = V_c0·(V_Rd2 − V_Sd)/(V_Rd2 − V_c0)   , se V_c0 < V_Sd <= V_Rd2.
+      V_Rd2 é o do MODELO II com o theta DECLARADO, nunca o do Modelo I.
+    itens_de_origem:
+      - "NBR 6118:2023, 17.4.2.3-b) (p. 139): 'V_c1 = V_c0 quando V_Sd <= V_c0; V_c1 = 0 quando V_Sd = V_Rd2, interpolando-se linearmente para valores intermediários' — regra NBR6118-17.4.2.3-modelo-II-theta-arbitrado"
+      - "NBR 6118:2023, lista de símbolos (p. 119): 'V_c0 — valor de referência para V_c, quando theta = 45°' e 'V_c1 — valor de referência para V_c, quando 30° <= theta <= 45°' — conferido visualmente pelo a2"
+    passos_de_interpretacao: >-
+      A Norma dá DOIS PONTOS e a palavra "linearmente"; a expressão fechada NÃO
+      está escrita em lugar nenhum. Escrevê-la é DERIVAÇÃO — legítima, e
+      declarada como tal, JAMAIS registrada como transcrição. Reta por
+      (V_c0, V_c0) e (V_Rd2, 0) na variável V_Sd.
+    uso_autorizado: >-
+      A fórmula acima, no Modelo II, dentro de 30° <= theta <= 45° declarado.
+      DEGENERAÇÃO OBRIGATÓRIA COMO TESTE: nos dois extremos a expressão tem de
+      reproduzir EXATAMENTE V_c0 e 0.
+    nao_autorizado: >-
+      (1) Extrapolar a reta para V_Sd > V_Rd2. Nesse caso 17.4.2.1 já REPROVOU
+          e o software reprova ANTES de avaliar V_c1. É PROIBIDO devolver V_c1
+          negativo ou truncá-lo em zero em silêncio.
+      (2) Usar V_Rd2 do Modelo I na interpolação.
+      (3) Concluir que os DOIS MODELOS COINCIDEM em theta = 45°. Coincidem em
+          V_Rd2 e em V_sw; NÃO coincidem em V_Rd3, porque V_c1 <= V_c0 sempre
+          que V_Sd > V_c0. Um teste que exija V_Rd3(II) == V_Rd3(I) em
+          theta = 45° está ERRADO e quebra uma implementação correta.
+    citacao_em_codigo: "[deriv: DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear]"
+    checagem_dimensional: >-
+      kN·(kN/kN) = kN. Rodado em tools/checar_dimensoes.py
+      (DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear, OK) e
+      SANITY-modelo-II-NAO-coincide-com-I-em-VRd3 (−13,08 kN).
+    checagem_numerica: >-
+      Geometria A, theta = 45°, V_Sd = 120 kN, V_Rd2 = 334,6 kN, V_c0 =
+      59,33 kN: V_c1 = 59,33 × 214,6/275,27 = 46,25 kN.
+      Extremos: V_Sd = 59,33 kN -> V_c1 = 59,33 kN; V_Sd = 334,6 kN -> 0,00 kN.
+    observacao: >-
+      Sem contraprova externa: a Tabela A-5 do Bastos traz só V_Rd2 do Modelo II
+      e nenhum exemplo resolvido da apostila usa o modelo.
+
+  - id: DER-NBR6118-composicao-18.3.3.2-com-18.4.3
+    natureza: INTERPRETACAO_DE_ITEM_NORMATIVO
+    metodo: calculo
+    status: APROVADA
+    decidida_por: "a2-verificador. A Norma resolve metade da composição; a outra metade é lógica de requisitos simultâneos, declarada aqui."
+    formula: >-
+      TETOS (espaçamentos, diâmetro máximo do estribo): adota-se o MENOR entre
+      18.4.3 e 18.3.3.2.
+      PISOS (diâmetro mínimo do estribo, phi_long >= phi_t, taxa rho_sw,mín):
+      adota-se o MAIOR. Nunca o menor.
+    itens_de_origem:
+      - "NBR 6118:2023, 18.4.3, último parágrafo (p. 154): '... devem ser comparados com os mínimos especificados em 18.3 para vigas, adotando-se o menor dos limites especificados' — regra NBR6118-18.4.3-armaduras-transversais-pilarete"
+      - "NBR 6118:2023, 18.3.3.2 (p. 150-151): diâmetro e espaçamentos máximos do estribo por cortante, mais a INCLUSÃO da Em1:2026 — regra NBR6118-18.3.3.2-detalhamento-do-estribo-por-cortante"
+      - "NBR 6118:2023, 17.4.1.1.6 (p. 135): 'os espaçamentos máximos e mínimos entre elementos da armadura devem atender às exigências da Seção 18' — regra NBR6118-17.4.1.1.5-17.4.1.1.6-intervalo-de-alpha-e-remissao-a-secao-18"
+      - "NBR 6118:2023, 17.4.1.1.2-c), período final (p. 134): 'Nesse caso, a armadura transversal mínima é a definida na Seção 18'"
+      - "NBR 6118:2023, 17.4.1.1.1 (p. 134): rho_sw >= 0,2 f_ct,m/f_ywk — regra NBR6118-17.4.1.1.1-armadura-transversal-minima-por-resistencia"
+    passos_de_interpretacao: >-
+      (1) A própria Norma resolve a sobreposição de TETOS: 18.4.3 manda comparar
+          com 18.3 "adotando-se o menor dos limites especificados".
+      (2) A frase é PERIGOSA se aplicada mecanicamente, porque os dois itens
+          contêm limites de DOIS SINAIS: tetos (espaçamento máximo, diâmetro
+          máximo) e PISOS (diâmetro mínimo, taxa mínima). Tomar "o menor" de
+          dois PISOS AFROUXA a exigência — erro do lado INSEGURO, e é
+          exatamente o erro que uma leitura literal-preguiçosa produz.
+      (3) A leitura correta é a única compatível com requisitos SIMULTÂNEOS: a
+          condição resultante é a INTERSEÇÃO dos conjuntos admissíveis. Em teto
+          isso é o mínimo; em piso, o máximo. A frase da Norma se refere ao caso
+          de teto, que é o que os dois itens têm em comum no espaçamento.
+    uso_autorizado: >-
+      TETOS (adota-se o MENOR):
+        s   <= min(200 mm, b_mín, k_phi·phi)            [18.4.3; k_phi = 12
+                                                         (CA-50) ou 24 (CA-25)]
+        s   <= min(0,6·d, 300 mm) se V_Sd <= 0,67·V_Rd2,
+               senão min(0,3·d, 200 mm)                 [18.3.3.2]
+        s_t <= min(d, 800 mm) se V_Sd <= 0,20·V_Rd2,
+               senão min(0,6·d, 350 mm)                 [18.3.3.2]
+        phi_t <= b_mín/10                               [18.3.3.2, interpretado]
+        phi_t <= 12 mm se barra lisa                    [18.3.3.2]
+      PISOS (adota-se o MAIOR):
+        phi_t >= max(5 mm, phi/4)                       [18.4.3]
+        phi_t >= 5 mm                                   [18.3.3.2]
+        phi_long >= phi_t nas barras de canto           [18.3.3.2, Em1:2026]
+        A_sw/(b_w·s·sen alpha) >= 0,2·f_ct,m/f_ywk      [17.4.1.1.1, salvo a
+                                                         exceção de
+                                                         17.4.1.1.2-c)]
+      A alternativa phi_t < phi/4 de 18.4.3, com o s_máx adicional de
+      90000·(phi_t²/phi)/f_yk, continua valendo como em REQ-PILARETE-08 e é
+      ADICIONAL, nunca substitutiva.
+      O memorial imprime, para cada teto e cada piso, o valor de CADA fonte e o
+      valor adotado, com o item que governou.
+    nao_autorizado: >-
+      (1) Aplicar "o menor dos limites" a qualquer linha do bloco PISOS.
+      (2) Substituir um bloco pelo outro. São CUMULATIVOS.
+      (3) Usar V_Rd2 de um modelo nos limiares de 18.3.3.2 e do outro na
+          verificação de 17.4.2.1.
+      (4) Inventar valor numérico para o espaçamento MÍNIMO: o critério da Norma
+          é qualitativo ("suficiente para permitir a passagem do vibrador") e o
+          software NÃO reprova por ele.
+    citacao_em_codigo: "[deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3]"
+    checagem_dimensional: >-
+      Comprimentos contra comprimentos. Rodado em tools/checar_dimensoes.py
+      (DER-COMPOSICAO-18.4.3-com-18.3.3.2-TETOS e -PISOS, OK).
+    checagem_numerica: >-
+      Geometria A (30×30, phi 16, phi_t 5, d = 25,7 cm, V_Sd = 120 kN,
+      V_Rd2 = 334,6 kN):
+        teto por 18.4.3 ..... 192,0 mm
+        teto por 18.3.3.2 ... 154,2 mm
+        ADOTADO (menor) ..... 154,2 mm   <- quem governa é 18.3.3.2
+        piso por 18.4.3 ..... 5,0 mm ; piso por 18.3.3.2 ... 5,0 mm
+        ADOTADO (maior) ..... 5,0 mm
+        phi_t <= b/10 = 30 mm OK ; phi_long 16 >= phi_t 5 OK (Em1:2026).
+      RESULTADO QUE PRECISA SER DITO EM VOZ ALTA: acrescentar o cortante ao
+      escopo TORNOU o detalhamento MAIS RESTRITIVO do que a v12 exigia
+      (154,2 mm contra 192,0 mm). Um pilarete detalhado conforme a v12 pode
+      REPROVAR na v13. Isso não é regressão — é a v12 estar incompleta — e é
+      mais um motivo pelo qual esta versão invalida aprovações anteriores
+      (CLAUDE.md, regra 5).
+    observacao: >-
+      Este é o ponto em que a extração do a1 estava certa na conclusão ("adotar
+      o menor dos limites") e incompleta no alcance: ela não separava tetos de
+      pisos, e aplicada literalmente ao rho_sw,mín de 17.4.1.1.1 ou ao
+      phi_t >= phi/4 de 18.4.3 produziria erro do lado inseguro. A separação por
+      sinal é acréscimo do a2.
+
 # =============================================================================
 requisitos_para_a4:
   - id: REQ-PROP-01-pressao-liquida
@@ -5266,6 +6575,37 @@ requisitos_para_a5:
         - `M_1d_min_*` (Figura 11.3, lado SOLICITANTE, expoente 2) x
           `M_d_tot_min_*` (Figura 15.2, com 2ª ordem, REJEITADA por escopo).
           O segundo não pode existir no código.
+      COLISÕES ACRESCENTADAS NA v13 pelo ELU de força cortante, e a primeira
+      delas atravessa a fronteira entre os dois motores do repositório:
+        - `alpha_v2` (17.4.2.2/17.4.2.3, elemento linear) x `alpha_v` (19.5.3.1,
+          punção de laje, já em uso no motor amplo). A DEFINIÇÃO é idêntica
+          (1 − f_ck/250); o NOME difere por UM CARACTERE e os itens são
+          diferentes. É PROIBIDO um símbolo `alpha_v` em
+          `calc_core/estrutural/` e um `alpha_v2` em
+          `calc_core/sapata_isolada/`. Confundir os dois não muda número nenhum
+          e QUEBRA a rastreabilidade do memorial — item citado errado. Isso
+          agora são SEIS `alpha` no ruleset. Ver
+          [rule: NBR6118-DELIMITACAO-17.4-vs-19.4-19.5].
+        - `V_Rd2` (17.4.2.2, FORÇA em b_w·d, kN) x `tau_Rd2` (19.5.3.1, TENSÃO
+          em contorno crítico, MPa). É PROIBIDO um `V_Rd2` em
+          `sapata_isolada/` e um `tau_Rd2` em `estrutural/`.
+        - `theta` (17.4.2.3, inclinação da BIELA, 30°-45°, entrada do
+          projetista) x `alpha_estribo` (17.4.1.1.5, inclinação da ARMADURA,
+          45°-90°). Dois ângulos, dois papéis, na mesma expressão. Usar
+          `theta_biela` e `alpha_estribo`, nomes completos, sempre. É PROIBIDO
+          um símbolo chamado `theta` nu.
+        - `d` (17.4.2.2, altura útil NO PLANO de V_Sd) x `d_util` das
+          solicitações normais x `d` = profundidade de assentamento no domínio
+          geotécnico. Usar `d_util_no_plano_do_cortante` no módulo de cortante.
+        - `b_w` (17.4.2.2, menor largura NO PLANO de V_Sd) x `b_min_cm`
+          (13.2.3) x `B` (largura da sapata, em metros). Usar
+          `b_w_no_plano_do_cortante`.
+        - `V_c0` (theta = 45°) x `V_c1` (30° <= theta <= 45°) x `V_c` (o valor
+          efetivamente usado, já com o ramo de estado e a majoração). Três
+          objetos distintos que a lista de símbolos da p. 119 separa
+          explicitamente; nomes completos sempre.
+      `tau_wd` é PROIBIDO em qualquer lugar de `calc_core/`: é símbolo da NBR
+      6118:2014, não existe na edição de 2023 e não há regra que o sustente.
 
   - id: REQ-PILARETE-02-entradas-explicitas-e-recusa-por-ausencia
     texto: >-
@@ -5296,11 +6636,29 @@ requisitos_para_a5:
             (12.4.1: gamma_c × 1,1 é OBRIGATÓRIO quando previstas, e "concretagem
             deficiente por concentração de armadura" é caso plausível num
             pilarete de seção pequena com 100 % das barras emendadas).
+      ACRESCENTADO NA v13, para o ELU de força cortante — os detalhes de cada
+      um estão em REQ-PILARETE-18, que é onde eles são usados:
+        (i) H_x e H_y, as DUAS componentes da força horizontal de cálculo na
+            base (a v11/v12 exigia um H escalar; passam a ser duas, porque a
+            recusa do cortante biaxial depende de saber que são duas);
+        (j) MODELO_DE_CALCULO {MODELO_I, MODELO_II} — escolha do projetista,
+            sem default;
+        (k) theta_biela, só com MODELO_II, em [30°, 45°];
+        (l) alpha_estribo (só 90° nesta versão);
+        (m) N_gamma_f_1, a normal da combinação com gamma_f = 1,0, para o
+            numerador de M_0 — campo PRÓPRIO, e sem ele o software não majora
+            V_c;
+        (n) A_sw e s do estribo adotado.
       GUARDA DE UNIDADE (a checagem dimensional NÃO pega estes erros, e está
       registrado por que): h em METROS na expressão de M_1d,min e b em
       CENTÍMETROS na de gamma_n; nos dois casos o coeficiente carrega a unidade
       e um valor na unidade errada produz número plausível. Parâmetros nomeados
       com a unidade (`h_secao_m`, `b_min_cm`) e validação de faixa.
+      ACRESCENTADA NA v13 uma guarda de unidade nova, do mesmo tipo: em
+      alpha_v2 = (1 − f_ck/250) o f_ck entra OBRIGATORIAMENTE EM MPa, enquanto
+      f_cd, na mesma expressão de V_Rd2, entra na unidade coerente com b_w·d.
+      Misturar as duas é o erro clássico deste item e produz número plausível.
+      Parâmetro nomeado `f_ck_MPa` na expressão de alpha_v2.
 
   - id: REQ-PILARETE-03-geometria-limite-e-recusas-duras
     texto: >-
@@ -5460,6 +6818,21 @@ requisitos_para_a5:
       existe, e o mutante correspondente está em tools/checar_dimensoes.py.
       A NOTA de 18.4.3 sobre C55-C90 (reduzir 50 %, ganchos a 135°) é
       RECOMENDAÇÃO: pode virar aviso, JAMAIS verificação de reprovação.
+      ALTERADO NA v13, e é alteração de COMPORTAMENTO, não de redação: quando
+      há verificação de força cortante (FAIXA A de REQ-PILARETE-17), estes
+      limites de 18.4.3 deixam de ser os únicos e passam a ser COMPOSTOS com os
+      de 18.3.3.2 por [deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3] —
+      TETOS pelo MENOR, PISOS pelo MAIOR. Na geometria de referência
+      (30×30, phi 16, d = 25,7 cm) quem passa a governar o espaçamento é
+      18.3.3.2, com 154,2 mm contra os 192,0 mm de 18.4.3: um pilarete
+      detalhado conforme a v12 pode REPROVAR na v13. Acrescenta-se ainda a
+      exigência NOVA da Emenda 1:2026 em 18.3.3.2 (phi_long >= phi_t nas barras
+      de canto), que junto com o phi_t >= phi/4 daqui encaixota a relação em
+      phi/4 <= phi_t <= phi — par de desigualdades que nenhuma das duas fontes
+      enuncia junto e que o software verifica em conjunto.
+      É PROIBIDO aplicar a regra do "menor dos limites" ao PISO phi_t >=
+      max(5 mm, phi/4): tomar o menor de dois pisos afrouxa a exigência, e é
+      erro do lado INSEGURO.
 
   - id: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata
     texto: >-
@@ -5523,7 +6896,14 @@ requisitos_para_a5:
       Enumeração fechada, sem default. O tipo de junta é ENTRADA OBRIGATÓRIA
       (REQ-PILARETE-02-e) e H (força horizontal na base do pilarete) também.
         MONOLITICO -> segue, sem exigência adicional de 21.6. Com H != 0 vale
-          ainda REQ-PILARETE-16 (rotulagem do que 17.4 não verifica).
+          ainda REQ-PILARETE-16 (rotulagem do veredito por faixa de 14.4.1) e,
+          na FAIXA A, a verificação de força cortante de REQ-PILARETE-18 — que
+          na v13 deixou de ser lacuna e passou a ser cálculo. ATENÇÃO: são
+          coisas DIFERENTES e é fácil confundi-las. 21.6 trata da JUNTA entre
+          pilarete e sapata (transferência na interface); §17.4 trata do
+          CORTANTE AO LONGO DA ALTURA do pilarete. Verificar §17.4 NÃO cobre a
+          junta, e a recusa da junta aderente com H != 0 continua valendo
+          integralmente — a NBR 9062 continua ausente do acervo.
         JUNTA_COM_ADERENCIA_DECLARADA e H == 0 -> segue. A declaração é
           DECLARADO_PELO_USUARIO, vai LITERAL no memorial junto com a exigência
           do 1º parágrafo de 21.6 (o projeto de execução deve indicar de forma
@@ -5578,16 +6958,51 @@ requisitos_para_a5:
         (k) o alpha usado (1,0) COM a frase de que 17.2.5 autorizaria 1,2 para
             seção retangular, seguido do valor que o índice teria com 1,2,
             rotulado "informativo — não usado no veredito";
-        (l) a frase de escopo de REQ-PILARETE-16 sobre 17.4, sempre, e não só
-            quando H != 0.
-      O VEREDITO PASSA A SER PERMITIDO, com o nome exato e nunca outro:
-      "ELU de solicitações NORMAIS (NBR 6118:2023, 17.2.1): ATENDIDO" ou
-      "NÃO ATENDIDO". CONTINUA PROIBIDO o memorial emitir "APROVADO"/"OK"
-      global, "pilarete verificado", cor verde de peça inteira ou qualquer
-      formulação que um leitor apressado leia como aprovação do elemento — o
-      que foi verificado é o ELU de solicitações normais mais o detalhamento,
-      e não o ELU de força cortante, nem ELS, nem fadiga, nem a ligação com a
-      sapata além da emenda por traspasse.
+        (l) SUBSTITUÍDO NA v13 — a frase da v12 ("ELU de força cortante NÃO
+            verificado, fora do escopo desta versão") era verdadeira enquanto
+            §17.4 não existia no ruleset e passou a ser FALSA na FAIXA A.
+            Vale agora a rotulagem por faixa de REQ-PILARETE-16.
+      ACRESCENTADO NA v13, junto com o ELU de força cortante:
+        (m) a razão de 14.4.1 (ell/máx(b,h)), o limite 3,0 e a FAIXA
+            resultante, SEMPRE e nas duas faixas, com o mesmo destaque de
+            lambda e lambda_1 — e a advertência de que as duas verificações são
+            independentes;
+        (n) na FAIXA A: o MODELO declarado (I ou II) e, se II, o theta
+            declarado, com a frase de que a escolha do modelo e de theta é do
+            PROJETISTA e que este software não a faz nem a otimiza; V_Sd,
+            V_Rd2, V_c0 (e V_c1 no Modelo II), M_0, a razão M_0/M_Sd,máx
+            adotada e qual das duas fibras a governou, V_c, V_sw, V_Rd3, o
+            ESTADO da seção que escolheu o ramo de V_c, e se o teto de 2·V_c0
+            (ou 2·V_c1) governou;
+        (o) na FAIXA A: os DOIS valores de normal lado a lado — N_d e
+            N_(gamma_f=1,0) — com a frase literal de que a Norma manda calcular
+            a tensão que M_0 anula com gamma_f = 1,0 e que M_Sd,máx é de
+            cálculo; e, quando N_(gamma_f=1,0) não foi declarado, a frase de que
+            a majoração de V_c NÃO foi aplicada;
+        (p) na FAIXA A: a declaração de que "f_ctk" de 17.4.1.1.2-c) foi lido
+            como f_ctk,inf (a Norma escreve o símbolo sem sufixo e 8.2.5 só
+            define inf e sup), e de que "predominantemente à compressão" não é
+            quantificado pela Norma;
+        (q) na FAIXA A: as duas ausências deliberadas — reduções de V_Sd junto
+            aos apoios (17.4.1.2.1) e decalagem (17.4.2.2-c) NÃO aplicadas, com
+            o motivo;
+        (r) na FAIXA A: para cada teto e cada piso de detalhamento, o valor de
+            CADA fonte (18.4.3 e 18.3.3.2) e o adotado, com o item que governou;
+        (s) na FAIXA B: as duas frases obrigatórias de REQ-PILARETE-16-(e), e a
+            declaração de que §17.2 é aplicado por interpretação declarada.
+      O VEREDITO PASSA A SER PERMITIDO, com o nome exato e nunca outro, e o
+      nome DEPENDE DA FAIXA (REQ-PILARETE-16):
+        FAIXA A: "ELU de solicitações NORMAIS (NBR 6118:2023, 17.2.1) e ELU de
+                  FORÇA CORTANTE (NBR 6118:2023, 17.4.2.1): ATENDIDO /
+                  NÃO ATENDIDO";
+        FAIXA B: "ELU de solicitações NORMAIS (NBR 6118:2023, 17.2.1):
+                  ATENDIDO / NÃO ATENDIDO", com os avisos de 14.4.1.
+      CONTINUA PROIBIDO o memorial emitir "APROVADO"/"OK" global, "pilarete
+      verificado", cor verde de peça inteira ou qualquer formulação que um
+      leitor apressado leia como aprovação do elemento. Mesmo na FAIXA A, o que
+      foi verificado é o ELU de solicitações normais, o ELU de força cortante e
+      o detalhamento — e NÃO o ELS, nem a fadiga, nem a torção (§17.5, não
+      extraída), nem a ligação com a sapata além da emenda por traspasse.
 
   - id: REQ-PILARETE-13-testes-sem-exemplo-de-terceiros
     texto: >-
@@ -5766,41 +7181,328 @@ requisitos_para_a5:
 
   - id: REQ-PILARETE-16-escopo-do-veredito-e-o-cortante-nao-verificado
     criado_na_v12: true
+    reescrito_na_v13: true
+    prioridade: ALTA
+    nota_de_id: >-
+      O id ficou VENCIDO e foi mantido DE PROPÓSITO, pela mesma razão registrada
+      em REQ-PILARETE-06: identificador citado em relatórios, em kb/ e nos
+      requisitos vizinhos (-11 e -12) é estável, e renomeá-lo quebraria
+      rastreabilidade para economizar uma palavra. Leia-se o sufixo
+      "e-o-cortante-nao-verificado" como histórico: na v12 este requisito
+      existia porque §17.4 NÃO TINHA SIDO EXTRAÍDO e o veredito precisava de
+      rotulagem estrita. A v13 extraiu, conferiu e aprovou §17.4 — a rotulagem
+      deixa de ser tapa-buraco de escopo e passa a ser a expressão de uma
+      FRONTEIRA NORMATIVA REAL (14.4.1). O título corrente do requisito é
+      "escopo do veredito e as duas faixas de 14.4.1".
+    texto: >-
+      [deriv: DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante].
+      O QUE CAI DA v12, e é preciso dizer explicitamente porque é uma proibição
+      que some:
+        • Cai a alínea (d) da v12 ("é PROIBIDO a `estrutural/` conter qualquer
+          expressão de V_Rd, V_Sd, V_c, V_sw ou tau_wd"). Ela existia porque
+          §17.4 não tinha regra aprovada; agora tem. `estrutural/` PASSA A
+          PODER conter V_Rd2, V_Rd3, V_c, V_c0, V_c1, V_sw e V_Sd, cada um com
+          `[rule: ]` para a regra correspondente da v13.
+        • `tau_wd` CONTINUA PROIBIDO: é símbolo da NBR 6118:2014, não existe na
+          edição de 2023, e não há regra aprovada que o sustente.
+        • Cai a frase obrigatória "ELU de força cortante (17.4) NÃO verificado —
+          fora do escopo desta versão", que passa a ser FALSA na FAIXA A.
+      O QUE PASSA A VALER — DUAS FAIXAS, decididas pela guarda de
+      REQ-PILARETE-17:
+        FAIXA A (razao_14_4_1 >= 3,0, e demais guardas satisfeitas):
+          (a) O veredito se chama, em todo lugar (API, relatório, tela):
+              "ELU de solicitações NORMAIS (NBR 6118:2023, 17.2.1) e ELU de
+              FORÇA CORTANTE (NBR 6118:2023, 17.4.2.1): ATENDIDO" ou
+              "NÃO ATENDIDO". Nenhum atalho para "ELU", "resistência do
+              pilarete" ou "pilarete OK".
+          (b) O veredito é a CONJUNÇÃO dos dois: REQ-PILARETE-15 (N+M) E
+              REQ-PILARETE-18 (V). Falhar em qualquer um reprova.
+          (c) O memorial continua dizendo, sempre, o que NÃO foi verificado:
+              ELS, fadiga, torção (§17.5), e a ligação com a sapata além da
+              emenda por traspasse. A lista encolheu — não desapareceu.
+        FAIXA B (razao_14_4_1 < 3,0):
+          (d) O veredito volta a se chamar EXATAMENTE "ELU de solicitações
+              NORMAIS (NBR 6118:2023, 17.2.1): ATENDIDO / NÃO ATENDIDO", como
+              na v12, e é PROIBIDA qualquer formulação que contenha "ELU" sem o
+              qualificador "de solicitações NORMAIS".
+          (e) O memorial traz, SEMPRE e não só quando H != 0, DUAS frases, com
+              estes elementos: (i) "Este pilarete NÃO satisfaz a definição de
+              elemento linear da NBR 6118:2023, 14.4.1 (p. 83): a razão
+              comprimento/maior dimensão da seção é <razão>, abaixo do mínimo
+              de 3,0 (seriam necessários <3·máx(b,h)> m)."; (ii) "Por esse
+              motivo o ELU de força cortante NÃO FOI VERIFICADO. A Seção 17.4
+              da NBR 6118:2023 aplica-se a elementos lineares e exclui
+              expressamente elementos de volume, vigas-parede e consolos
+              curtos; a Seção 22 (elementos especiais) não trata pilarete,
+              pedestal nem pilar curto de fundação. Não há, na Norma, rota
+              alternativa para este caso — o cortante é responsabilidade do
+              engenheiro, por modelo de bielas e tirantes ou outro caminho,
+              fora deste software."
+          (f) Quando H != 0 as duas frases são REPETIDAS junto ao valor de H,
+              com o valor.
+          (g) A verificação de §17.2 continua sendo feita, e o memorial declara
+              que ela é aplicada com base na remissão nominal a "pilares" de
+              17.2.1 e na natureza de SEÇÃO da verificação — INTERPRETAÇÃO
+              declarada [deriv: DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante].
+      EM AMBAS AS FAIXAS:
+        (h) A razão obtida e o limite 3,0 vão ao memorial, com o número.
+        (i) A FAIXA é campo próprio do valor de retorno da API (enumeração
+            fechada), não apenas texto. Um consumidor programático tem de poder
+            distinguir sem interpretar string.
+        (j) CONTINUA PROIBIDO emitir "APROVADO"/"OK" global, "pilarete
+            verificado", cor verde de peça inteira ou qualquer formulação que um
+            leitor apressado leia como aprovação do elemento.
+      ARMADILHA DE LEITURA, mantida da v12 e AGORA COM A OUTRA METADE: na v12 o
+      risco era concluir, dos estribos de 18.4.3, que o cortante estava coberto
+      (não estava). Na v13 o risco é o simétrico e maior: concluir que, porque
+      §17.4 foi implementado, ele se aplica sempre. NÃO SE APLICA — a FAIXA B é
+      comum, e a `checagem_numerica` de
+      NBR6118-14.4.1-elemento-linear-classificacao mostra que, no caso
+      engastado-livre sob M_1d,mín, seções com h/b >= 1,684 NUNCA entram na
+      FAIXA A.
+
+  - id: REQ-PILARETE-17-guarda-de-elemento-linear-14.4.1
+    criado_na_v13: true
     prioridade: ALTA
     texto: >-
-      LACUNA DE ESCOPO QUE O VEREDITO TORNA PERIGOSA (achado D4 do cabeçalho da
-      v12). O item 17.4 da NBR 6118:2023 — ELU de elementos lineares sujeitos a
-      FORÇA CORTANTE — NUNCA FOI EXTRAÍDO para este ruleset. Enquanto a v11 não
-      emitia veredito, isso era inócuo. A partir do momento em que o software
-      escreve "ELU atendido", um pilarete com H != 0 na base tem força cortante
-      NÃO VERIFICADA e um leitor apressado lerá o veredito como cobertura do
-      elemento inteiro.
-      NÃO é motivo de recusa: 17.4 existe na Norma e simplesmente não foi
-      extraído — é lacuna de ESCOPO deste pipeline, não vazio normativo (que é o
-      caso da junta de V13, onde a NBR 9062 falta do acervo). O tratamento é o
-      mesmo já aprovado em REQ-UI-SIGMA-01 para a tensão admissível: ROTULAGEM
-      ESTRITA.
-      OBRIGATÓRIO:
-        (a) O veredito se chama "ELU de solicitações NORMAIS (17.2.1)" em todo
-            lugar — API, relatório, tela. Nenhum atalho para "ELU", "resistência
-            do pilarete" ou "verificação do pilarete".
-        (b) O memorial traz, SEMPRE (não só quando H != 0), a frase: "ELU de
-            força cortante (NBR 6118:2023, 17.4) NÃO verificado — fora do escopo
-            desta versão. O dimensionamento dos estribos segue os critérios de
-            DETALHAMENTO de 18.4.3, que não são verificação de resistência ao
-            cortante."
-        (c) Quando H != 0 a frase é REPETIDA junto ao valor de H, com o valor.
-        (d) É PROIBIDO a `estrutural/` conter qualquer expressão de V_Rd, V_Sd,
-            V_c, V_sw ou tau_wd. Encontrar uma é veto do a6 — significaria
-            17.4 implementado sem regra aprovada, violando a regra 2 do
-            CLAUDE.md.
-      ARMADILHA DE LEITURA, registrada de propósito: os estribos JÁ SÃO
-      dimensionados por REQ-PILARETE-08, e é fácil concluir que o cortante está
-      coberto. Não está. 18.4.3 fixa phi_t, espaçamento e ancoragem por
-      DETALHAMENTO de pilar; nada ali resolve V_Sd <= V_Rd.
-      DESPACHO PARA O a1 (não bloqueia o GATE 1): extrair 17.4 para o pilarete,
-      PARTINDO DA EMENDA 1:2026 — conferido pelo a2 que a Emenda altera
-      17.4.1.1.3 (p. 135) e 17.4.2.2 (p. 137). kb/pendencias.md > V17.
+      [rule: NBR6118-14.4.1-elemento-linear-classificacao],
+      [rule: NBR6118-17.4.1-campo-de-aplicacao-do-cortante],
+      [deriv: DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante].
+      GUARDA NOVA, que NENHUMA regra da v11 nem da v12 fazia. Ela é
+      determinística, barata e decide se metade da feature existe.
+      SEQUÊNCIA OBRIGATÓRIA:
+        (1) `razao_14_4_1 = ell / max(b_secao, h_secao)`, com `ell` o
+            COMPRIMENTO LONGITUDINAL REAL do pilarete (o mesmo `ell` de
+            REQ-PILARETE-02-a). É PROIBIDO usar `ell_e` aqui — no caso
+            ENGASTADO_BASE_LIVRE_TOPO ell_e = 2·ell e a razão DOBRA. Nome
+            obrigatório do parâmetro: `ell` (nunca `ell_e`, nunca `L`), e o
+            teste de mutação que troca um pelo outro tem de quebrar
+            (REQ-PILARETE-19).
+        (2) Classificar: `razao_14_4_1 >= 3,0` -> FAIXA_A_ELEMENTO_LINEAR;
+            caso contrário -> FAIXA_B_FORA_DE_14_4_1. Enumeração fechada,
+            exposta no retorno da API.
+        (3) FAIXA B: a função de verificação de cortante LEVANTA EXCEÇÃO
+            (`RecusaForaDeDominio`) com a mensagem de REQ-PILARETE-16-(e). NÃO
+            devolve None, NÃO devolve zero, NÃO devolve "não aplicável" como se
+            fosse resultado. É PROIBIDO qualquer parâmetro, flag, variável de
+            ambiente ou caixa de diálogo que permita prosseguir.
+        (4) FAIXA B: a verificação de REQ-PILARETE-15 (N+M) SEGUE normalmente e
+            o veredito é o escopado de REQ-PILARETE-16-(d).
+        (5) A ordem importa: esta guarda roda DEPOIS de REQ-PILARETE-03
+            (geometria) e -05 (pilar curto) e ANTES de qualquer expressão de
+            §17.4. Um V_Rd2 calculado antes de a faixa ser conhecida é defeito
+            com veto do a6, mesmo que o valor nunca chegue à tela.
+      ESTA VERIFICAÇÃO É DIFERENTE DE lambda <= lambda_1, E A CONFUSÃO É O ERRO
+      MAIS PROVÁVEL AQUI. 15.8.2 decide se os efeitos locais de 2ª ordem podem
+      ser dispensados; 14.4.1 decide a CLASSE do elemento. As duas são
+      independentes e o software as verifica SEPARADAMENTE, imprimindo os dois
+      resultados. A geometria 30×30 com ell = 0,80 m passa em uma e reprova na
+      outra.
+      FRONTEIRA QUANTIFICADA, e ela precisa estar na documentação da feature
+      porque muda o que o usuário deve esperar: com
+      ENGASTADO_BASE_LIVRE_TOPO (ell_e = 2·ell) e sob M_1d,mín (lambda_1 = 35,
+      já provado em REQ-PILARETE-13(1)), as duas fronteiras só coexistem se
+      h_máx/b_mín < 1,684, e então só na janela 3·h_máx <= ell < 5,052·b_mín.
+      Seção 30×30: janela [0,90; 1,515) m. Seção 25×40: [1,20; 1,263) m —
+      6 cm. Seção 20×40: VAZIA. Com M real > M_1d,mín, lambda_1 sobe e a janela
+      alarga; com VINCULADO_DOIS_EXTREMOS ela alarga muito mais.
+      A UI (a3) exibe a razão e a faixa junto de lambda e lambda_1, com o mesmo
+      destaque — não em nota de rodapé.
+
+  - id: REQ-PILARETE-18-verificacao-de-forca-cortante
+    criado_na_v13: true
+    prioridade: ALTA
+    texto: >-
+      [rule: NBR6118-17.4.2.1-duas-condicoes-simultaneas-do-ELU-de-cortante],
+      [rule: NBR6118-17.4.2.2-modelo-I-VRd2-Vsw-Vc],
+      [rule: NBR6118-17.4.2.3-modelo-II-theta-arbitrado],
+      [rule: NBR6118-17.4.1.1.1-armadura-transversal-minima-por-resistencia],
+      [rule: NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-sem-sufixo],
+      [rule: NBR6118-17.4.1.1.5-17.4.1.1.6-intervalo-de-alpha-e-remissao-a-secao-18],
+      [rule: NBR6118-18.3.3.2-detalhamento-do-estribo-por-cortante],
+      [rule: NBR6118-17.4.1.2.1-reducoes-junto-aos-apoios] (REJEITADA — citada
+      para dizer que NÃO é usada),
+      [rule: NBR6118-17.4.2.2-c-17.4.2.3-c-decalagem] (REJEITADA — idem),
+      [deriv: DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento],
+      [deriv: DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada],
+      [deriv: DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear],
+      [deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3].
+
+      ENTRADAS NOVAS E OBRIGATÓRIAS, todas sem default silencioso, todas com
+      RECUSA nomeando o campo e o item quando faltarem (acrescentam-se às de
+      REQ-PILARETE-02):
+        (i) H_x e H_y — as duas componentes da força horizontal de CÁLCULO na
+            base do pilarete, em eixos da seção. Já eram exigidas por
+            REQ-PILARETE-11 como um H escalar; passam a ser DUAS componentes
+            declaradas, porque a decisão de recusar o cortante biaxial depende
+            de saber que são duas.
+        (j) MODELO_DE_CALCULO — enumeração fechada {MODELO_I, MODELO_II}. É
+            ESCOLHA DO PROJETISTA e a Norma não escolhe. Sem declaração:
+            RECUSA. É PROIBIDO default, é PROIBIDO "tentar os dois", é PROIBIDO
+            adotar o que aprova.
+        (k) theta — SÓ quando MODELO_II, no intervalo 30° <= theta <= 45°
+            (17.4.2.3). Fora do intervalo: RECUSA citando o item. Ausente com
+            MODELO_II declarado: RECUSA. É PROIBIDO otimizar, varrer ou inferir
+            theta; encontrar em `estrutural/` qualquer laço sobre theta é VETO
+            do a6. Mesma doutrina já aplicada a ell_e.
+        (l) alpha_estribo — inclinação da armadura transversal. A Norma admite
+            45° <= alpha <= 90°; ESTA VERSÃO só aceita 90° e RECUSA o resto
+            citando o ESCOPO desta versão, nunca a Norma (motivo em
+            NBR6118-17.4.1.1.5-...: alpha = 90° é o lado conservador em V_sw, é
+            o que 18.4.3 detalha para pilar, e o caminho com sen/cos != trivial
+            ficaria sem validação). A expressão geral é implementada INTEIRA.
+        (m) N_gamma_f_1 — a força normal da combinação com gamma_f = 1,0, para
+            o numerador de M_0. Campo PRÓPRIO. Sem ele o software NÃO majora
+            V_c (V_c = V_c0 / V_c1). É PROIBIDO obtê-lo dividindo N_d por
+            gamma_f suposto [deriv:
+            DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento].
+        (n) A_sw e s do estribo adotado (ou o par que o software propõe, se
+            houver dimensionamento) — a verificação é de um estribo CONCRETO,
+            não de uma área abstrata.
+
+      SEQUÊNCIA OBRIGATÓRIA, e cada passo tem seu motivo de recusa próprio:
+        (1) PRÉ-CONDIÇÕES. Só entra aqui quem já passou por REQ-PILARETE-03,
+            -05, -06-D, -11 e -17 (FAIXA A). Falhou qualquer um: RECUSA antes de
+            calcular V_Rd nenhum.
+        (2) GUARDA DE CORTANTE BIAXIAL. Se H_x != 0 E H_y != 0: RECUSA. §17.4 é
+            escrito para UM V_Sd atuando no plano de b_w·d, e a Norma NÃO
+            fornece regra de interação entre duas cortantes — o contraste com
+            17.2.5, que fornece a interação para os MOMENTOS oblíquos, é
+            evidência de que a omissão não é descuido. É PROIBIDO compor
+            sqrt(V_x² + V_y²), somar linearmente, ou verificar cada direção
+            isoladamente como se fossem independentes. Mensagem citando 17.4.2.1
+            e 17.2.5 (o que existe para momento e não existe para cortante).
+            SEM TOLERÂNCIA NUMÉRICA: o gatilho é "as duas componentes
+            declaradas não nulas", pelo mesmo motivo de REQ-PILARETE-11 — não há
+            base normativa para um limiar de "H_y desprezível" e inventá-lo
+            seria exatamente o que esta doutrina recusa.
+        (3) PLANO DE VERIFICAÇÃO. Com cortante uniaxial, o plano é o de atuação
+            de V_Sd. Nele, `b_w` é a dimensão PERPENDICULAR ao plano de V_Sd e
+            `d` é a altura útil MEDIDA NO plano de V_Sd. A troca dos dois passa
+            por toda a checagem dimensional e muda V_Rd2 e V_c0 na mesma
+            proporção — teste obrigatório em seção NÃO quadrada
+            (REQ-PILARETE-19).
+        (4) CLASSIFICAÇÃO DO ESTADO, antes de escolher o ramo de V_c:
+            tracionado com LN fora da seção -> V_c = 0;
+            flexão simples ou flexo-tração com LN cortando a seção -> V_c = V_c0
+            (Modelo I) ou V_c1 (Modelo II);
+            flexo-compressão -> V_c = V_c0·(1 + M_0/M_Sd,máx) <= 2·V_c0 (ou com
+            V_c1 e teto 2·V_c1 no Modelo II).
+            O estado é IMPRESSO no memorial. Aplicar a majoração fora da
+            flexo-compressão é defeito com veto.
+        (5) M_0 = N_gamma_f_1 · W_1/A_c, com W_1 escolhido por
+            [deriv: DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada]: calcular
+            r_x e r_y emparelhados POR PLANO e adotar o MENOR. Sem
+            N_gamma_f_1 declarado, não majora.
+        (6) V_Rd2 pelo modelo declarado; V_sw pelo modelo declarado; V_c1 por
+            [deriv: DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear] quando
+            MODELO_II.
+        (7) VEREDITO DE CORTANTE = (V_Sd <= V_Rd2) **e** (V_Sd <= V_c + V_sw).
+            As duas, sempre. Aprovar com uma só é defeito com veto do a6.
+        (8) ARMADURA MÍNIMA. Verificar rho_sw >= 0,2·f_ct,m/f_ywk de
+            17.4.1.1.1, SALVO se a exceção de 17.4.1.1.2-c) for atendida — e
+            atendê-la exige as DUAS condições simultâneas, com f_ctk,inf
+            (decisão V20(1)) e com a seção em ESTÁDIO I. Mesmo dentro da
+            exceção, os mínimos da Seção 18 continuam valendo INTEGRALMENTE.
+        (9) DETALHAMENTO COMPOSTO por
+            [deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3]: TETOS pelo
+            MENOR, PISOS pelo MAIOR. É PROIBIDO aplicar "o menor dos limites" a
+            um piso. Inclui a exigência nova da Emenda 1:2026
+            (phi_long >= phi_t nas barras de canto), que junto com o
+            phi_t >= phi/4 de 18.4.3 encaixota phi/4 <= phi_t <= phi.
+        (10) O QUE NÃO SE FAZ, e é deliberado: NÃO se aplicam as reduções de
+            V_Sd junto aos apoios (17.4.1.2.1, regra REJEITADA — reduziriam a
+            solicitação fora de domínio) e NÃO se calcula decalagem
+            (17.4.2.2-c/17.4.2.3-c, regra REJEITADA — o pilarete não tem banzo
+            tracionado de vão). As duas ausências vão ao memorial como
+            deliberadas.
+      INTERAÇÃO N-V — É EXATAMENTE UMA, E SÓ ELA: a majoração de V_c do passo
+      (4). Não há nenhum efeito de N sobre V_Rd2 (a biela). É PROIBIDO
+      introduzir qualquer outra interação N-V por analogia com outra norma, e é
+      PROIBIDO transportar para cá a dispensa de interação da PUNÇÃO
+      (19.5.2.7), que diz o oposto e vale para laje.
+      NAMESPACE: ver REQ-PILARETE-01, bloco acrescentado na v13.
+
+  - id: REQ-PILARETE-19-testes-do-cortante-sem-exemplo-de-terceiros-para-pilar
+    criado_na_v13: true
+    texto: >-
+      COMPLEMENTA REQ-PILARETE-13 e não o substitui. A situação de validação
+      MELHOROU em relação à v12 — pela primeira vez neste backlog há contraprova
+      de terceiros —, mas ela é PARCIAL e o a7 precisa saber exatamente o que
+      ela cobre.
+      O QUE TEM CONTRAPROVA EXTERNA (BASTOS, Sapatas.pdf, FONTE SECUNDÁRIA,
+      reproduzida pelo a2 a partir das expressões literais da Norma, sem olhar a
+      tabela — quatro coincidências independentes):
+        (a) V_Rd2 do Modelo I: 0,35487 contra 0,35·b_w·d da Tabela A-4 (C20);
+        (b) a expressão de A_sw: 2,5543 e 0,16938 contra 2,55 e 0,17;
+        (c) V_Sd,mín: 0,10093 contra 0,101·b_w·d — e este ÚNICO número amarra
+            simultaneamente rho_sw,mín de 17.4.1.1.1, V_c0 de 17.4.2.2 e o teto
+            de 435 MPa de f_ywd. É a melhor fixture do acervo;
+        (d) a FORMA do V_Rd2 do Modelo II: 0,70974 contra 0,71·b_w·d·sen·cos.
+      O QUE NÃO TEM CONTRAPROVA EXTERNA NENHUMA, e são justamente as três coisas
+      novas: (i) a majoração V_c = V_c0(1 + M_0/M_Sd,máx) da FLEXO-COMPRESSÃO;
+      (ii) o Modelo II com theta arbitrado em serviço; (iii) a exceção de
+      17.4.1.1.2-c) para pilares. O a7 NÃO pode declarar confiança ALTA nessas
+      três com base só em propriedade interna — kb/pendencias.md > V22.
+      TESTES DE PROPRIEDADE OBRIGATÓRIOS, todos internos:
+        (1) FRONTEIRA ENTRE MODELOS: em theta = 45° e alpha = 90°,
+            V_Rd2(II) == V_Rd2(I) EXATAMENTE, e V_sw(II) == V_sw(I). Medido:
+            diferença 0,0 kN.
+        (2) NÃO-FRONTEIRA, e este é o teste que uma leitura apressada erra: nas
+            MESMAS condições V_Rd3(II) != V_Rd3(I), porque V_c1 <= V_c0 sempre
+            que V_Sd > V_c0. Medido na geometria A com V_Sd = 120 kN: V_c1 =
+            46,25 contra V_c0 = 59,33 kN. Um teste que exija igualdade de V_Rd3
+            está ERRADO e vai quebrar uma implementação correta.
+        (3) TETO DE V_c: com M_Sd,máx -> 0 o valor tem de travar em exatamente
+            2·V_c0 (ou 2·V_c1). Mutação que remova o teto TEM de quebrar.
+        (4) DISCRIMINANTE DE V20(2), OBRIGATÓRIO: o caso A1 (30×30,
+            M_Sd,máx = 24 kN·m) MASCARA a decisão — as duas leituras estouram o
+            teto e dão 118,7 kN. Só o caso A2 (M_Sd,máx = 60 kN·m) discrimina:
+            94,63 contra 108,77 kN. Um conjunto de testes só com A1 não prova
+            nada sobre M_0.
+        (5) DISCRIMINANTE DE V20(3), OBRIGATÓRIO E EM SEÇÃO NÃO QUADRADA:
+            geometria C (25×40, ell = 1,25 m), N_(gf=1) = 857 kN, M_Sd,x = 90 e
+            M_Sd,y = 70 kN·m -> V_c = 103,7 kN pela fibra conservadora contra
+            112,3 kN pela outra (8,3 %). Em 30×30 a diferença é ZERO.
+        (6) MUTAÇÃO DE 14.4.1: trocar `ell` por `ell_e` na razão tem de QUEBRAR
+            um teste. O caso que pega é a geometria B (30×30, ell = 0,80 m):
+            razão 2,667 -> FAIXA B; com ell_e daria 5,333 -> FAIXA A. Um
+            conjunto de testes só com ell >= 1,50 m não pega.
+        (7) FAIXA B RECUSA DE VERDADE: geometria B tem de levantar exceção na
+            verificação de cortante E emitir veredito escopado em §17.2. Testar
+            EM CIMA da fronteira: razão = 3,000 exata segue (FAIXA A);
+            razão = 2,999 recusa.
+        (8) MUTAÇÃO DE sen²theta: trocar sen²(theta) por sen(theta) tem de
+            quebrar o teste (1) — em theta = 45° leva o coeficiente de 0,27 a
+            0,382, +41 %.
+        (9) MUTAÇÃO DE PLANO: trocar b_w por d (ou o plano de V_Sd) tem de
+            quebrar um teste em seção NÃO quadrada. Em 30×30 é invisível.
+        (10) DEGENERAÇÃO DE V_c1: nos extremos, V_Sd = V_c0 -> V_c1 = V_c0 e
+            V_Sd = V_Rd2 -> V_c1 = 0, exatamente.
+        (11) FÍSICA DE theta: theta menor tem de AUMENTAR V_sw e DIMINUIR
+            V_Rd2, monotonamente em [30°, 45°]. Medido: 30° dá V_Rd2 = 289,7 kN
+            e V_sw = 54,72 kN contra 334,6 e 31,59 kN em 45°.
+        (12) COMPOSIÇÃO DE DETALHAMENTO: numa geometria em que 18.3.3.2 governa
+            (a geometria A: 154,2 mm contra 192,0 mm de 18.4.3), o valor adotado
+            tem de ser 154,2 mm. E a mutação que aplica "o menor dos limites" ao
+            PISO de phi_t tem de quebrar.
+        (13) RECUSA DE CORTANTE BIAXIAL: H_x = 10 kN e H_y = 0,001 kN tem de
+            RECUSAR; H_y = 0,0 tem de seguir. Testar em cima do zero, como já se
+            faz em REQ-PILARETE-11.
+        (14) RECUSA POR MODELO NÃO DECLARADO e por theta fora de [30°, 45°], com
+            mensagem que cite o item.
+        (15) TETO DE f_ywd: um caso com CA-60 tem de usar 435 MPa e não
+            521,7 MPa. Mutação que remova o teto tem de quebrar esse caso e NÃO
+            pode quebrar nenhum caso em CA-50 — é assim que se prova que o teste
+            testa o que diz testar. (CA-60 continua RECUSADO como armadura
+            LONGITUDINAL por REQ-PILARETE-08; este teste é sobre a armadura
+            TRANSVERSAL e pode ser feito em nível de função.)
+      REPRODUZIR O CASO DO BASTOS (viga, flexão simples, Modelo I) como fixture
+      de integração é OBRIGATÓRIO, com duas ressalvas escritas no teste: é VIGA
+      e não pilar, e o autor arredonda 0,35487 para 0,35 — o que põe o caso a
+      0,1 kN da fronteira dos 0,67·V_Rd2. Com o valor exato da Norma a folga
+      passa a 8,1 kN e o ramo é o mesmo, mas o caso é frágil por construção e
+      NÃO deve ser usado como teste de fronteira.
 
   - id: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro
     prioridade: ALTA

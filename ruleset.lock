@@ -5,6 +5,98 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 13 (2026-09-04) — fecha o ELU de FORÇA CORTANTE do pilarete (§17.4) e,
+# com ele, a última lacuna que a v12 tinha deixado no ELU. Backlog #13,
+# rodada 4.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem IDÊNTICAS às da v12, e NENHUMA das 52
+# regras da v12 foi alterada — só houve acréscimo):
+#   regras (normativas) ............ 41 APROVADA          (eram 34)
+#                                    13 APROVADA_COM_USO_RESTRITO (eram 9)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     4 REJEITADA         (eram 2)
+#   derivacoes .....................  4 APROVADA          (eram 3)
+#                                    10 APROVADA_COM_USO_RESTRITO (eram 6)
+#   praticas_consagradas ...........  inalterada
+#   escopo_amplo_em_conferencia ....  inalterada
+#   requisitos_para_a5 .............  20                  (eram 17)
+#
+# REGRAS NOVAS (todas NBR 6118:2023 + Em1:2026, todas `metodo: calculo`, todas
+# conferidas por LEITURA VISUAL INDEPENDENTE do a2 na página do PDF):
+#   NBR6118-14.4.1-elemento-linear-classificacao ............ APROVADA
+#   NBR6118-17.4.1-campo-de-aplicacao-do-cortante ........... APROVADA
+#   NBR6118-17.4.1.1.1-armadura-transversal-minima-por-...... APROVADA
+#   NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-...... APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.4.1.1.5-17.4.1.1.6-intervalo-de-alpha-e-...... APROVADA
+#   NBR6118-17.4.1.2.1-reducoes-junto-aos-apoios ............ REJEITADA (fora de domínio)
+#   NBR6118-17.4.2.1-duas-condicoes-simultaneas-do-ELU-...... APROVADA
+#   NBR6118-17.4.2.2-modelo-I-VRd2-Vsw-Vc ................... APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.4.2.2-c-17.4.2.3-c-decalagem ................. REJEITADA (escopo)
+#   NBR6118-17.4.2.3-modelo-II-theta-arbitrado .............. APROVADA_COM_USO_RESTRITO
+#   NBR6118-18.3.3.2-detalhamento-do-estribo-por-cortante ... APROVADA_COM_USO_RESTRITO
+#   NBR6118-DELIMITACAO-17.4-vs-19.4-19.5 ................... APROVADA
+#   NBR6118-BUSCA-NEG-cortante-em-pilar-no-acervo ........... APROVADA
+#
+# DERIVAÇÕES NOVAS (citação `[deriv: <id>]`, JAMAIS `[rule: ]`):
+#   DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear ............ APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-composicao-18.3.3.2-com-18.4.3 .............. APROVADA
+#
+# O QUE MUDOU NO COMPORTAMENTO DO SOFTWARE, em uma frase: a v12 verificava só
+# solicitações normais e rotulava o cortante como "não verificado"; a v13
+# VERIFICA o cortante por §17.4 (Modelos I e II) quando o pilarete satisfaz a
+# definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)) e o RECUSA, com
+# mensagem, quando não satisfaz. O veredito passa a ter DOIS nomes possíveis,
+# um por faixa (REQ-PILARETE-16).
+#
+# DUAS DECISÕES TOMADAS PELO PRÓPRIO a2 com autoridade delegada — NÃO são
+# decisão humana, e estão registradas como do a2 em kb/pendencias.md:
+#   V21 (aplicabilidade de §17.4 ao pilarete curto): duas faixas, recusa dura
+#       na FAIXA B, §17.2 mantido com rotulagem alta e interpretação declarada.
+#   V20 (as três ambiguidades de M_0): f_ctk,inf; N a gamma_f = 1,0 como ENTRADA
+#       DECLARADA (sem ela não majora, e é proibido dividir N_d por gamma_f);
+#       W_1 pela razão MENOR entre os dois planos.
+#
+# ACHADO QUE MUDA A EXPECTATIVA SOBRE A FEATURE: no caso engastado-livre e sob
+# M_1d,mín, lambda < lambda_1 = 35 exige ell/b_mín < 5,052, enquanto 14.4.1
+# exige ell >= 3·h_máx. As duas fronteiras só coexistem se h_máx/b_mín < 1,684.
+# Janelas: 30×30 -> [0,90; 1,515) m; 25×40 -> [1,20; 1,263) m; 20×40 -> VAZIA.
+# A FAIXA B (cortante recusado) é o caso do pilarete robusto e baixo — não é
+# borda.
+#
+# ALTERAÇÃO DE COMPORTAMENTO QUE ATINGE O QUE A v12 JÁ ESPECIFICAVA: o
+# detalhamento do estribo fica MAIS RESTRITIVO, porque 18.3.3.2 passa a compor
+# com 18.4.3 (TETOS pelo MENOR, PISOS pelo MAIOR). Na geometria de referência
+# quem governa passa a ser 18.3.3.2, com 154,2 mm contra 192,0 mm. Um pilarete
+# detalhado conforme a v12 pode REPROVAR na v13.
+#
+# REQUISITOS ALTERADOS DA v12 (nenhum código aprovado por A6/A7 é afetado,
+# porque `calc_core/estrutural/` continua não existindo): REQ-PILARETE-01, -02,
+# -08, -11, -12 e -16 (este reescrito, id mantido de propósito).
+# CRIADOS: REQ-PILARETE-17, -18, -19.
+#
+# CHECAGEM DIMENSIONAL: tools/checar_dimensoes.py, seção 8 REESCRITA — 40
+# casos, 3 mutantes plantados e rejeitados pelo pint, 6 casos declarados NÃO
+# detectáveis por análise dimensional. Zero falhas em todo o arquivo.
+#
+# DEFEITO ENCONTRADO NO PRÓPRIO TRABALHO DO a2 (sessão anterior) e corrigido
+# nesta: a fixture de estribo usava A_sw/s = 0,20 cm²/cm com comentário
+# "2 phi 5,0 c/20 cm" (fator 10), e V_sw saía 201 kN num pilarete 30×30. Foi o
+# SANITY CHECK NUMÉRICO que pegou, não a análise dimensional.
+#
+# FILA HUMANA: V20 e V21 FECHADAS pelo a2; V23 e V24 abertas (nenhuma
+# bloqueante — o comportamento congelado é o conservador nas duas); V22 segue
+# aberta e é matéria de GATE 3.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e NÃO é por causa desta versão: seguem abertas
+# a dívida de hash das 25 regras anteriores à v9 (a cascata §1 exige norma +
+# item + página + hash) e as 7 pendências humanas de escopo amplo.
+#
+# ===========================================================================
 # VERSÃO 12 (2026-09-03) — fecha o ELU do pilarete: o software passa a poder
 # APROVAR, e não só REJEITAR. Backlog do usuário, item #13, rodada 3.
 #
@@ -302,4 +394,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-5c560bac8f69c7e28723622a0e5a8cd0d2ced4b0d45b45e295370da5f3c219b7  ruleset.yaml
+f1b9b5fb72e6d64be37960f3797a826252184d853eb1292d3a3a85ce6ac2675a  ruleset.yaml

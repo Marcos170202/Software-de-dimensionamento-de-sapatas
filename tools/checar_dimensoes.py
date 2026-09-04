@@ -460,6 +460,361 @@ caso(
 )
 
 
+# ===========================================================================
+# 8. ELU DE FORÇA CORTANTE DO PILARETE — NBR 6118:2023 17.4.1 a 17.4.2.3,
+#    18.3.3.2 (+ Em1:2026) e a classificação de 14.4.1
+#    (backlog #13, rodada 4; ruleset v13)
+#
+#    TRÊS GEOMETRIAS, e cada uma existe por um motivo:
+#      A) 30x30 cm, ell = 1,00 m, C25, CA-50, N_d = 1000 kN — a mesma das
+#         seções 6 e 7. SATISFAZ 14.4.1 (1,00 >= 3 x 0,30 = 0,90 m) e satisfaz
+#         lambda < lambda_1 (23,1 < 35). É o caso em que §17.4 É aplicável.
+#      B) 30x30 cm, ell = 0,80 m — satisfaz lambda < lambda_1 (18,5 < 35) e
+#         NÃO satisfaz 14.4.1 (2,67 < 3). É a FAIXA B: §17.4 RECUSADO.
+#         Existe para provar que a faixa não é hipotética.
+#      C) 25x40 cm, ell = 1,25 m — a única classe de seção NÃO QUADRADA que
+#         satisfaz as DUAS fronteiras, e por muito pouco (razão 3,125 >= 3;
+#         lambda 34,64 < 35). Existe porque em seção quadrada W_1x == W_1y e
+#         a ambiguidade de W_1 da decisão V20(3) fica INVISÍVEL.
+#
+#    AVISO DE ALCANCE: theta, alpha, alpha_v2 e as razões de 14.4.1 são
+#    ADIMENSIONAIS; o pint não pega troca de modelo (0,27 <-> 0,54), não pega
+#    sen^2 trocado por sen, não pega a razão de 14.4.1 calculada com ell_e em
+#    vez de ell e não pega W_1x trocado por W_1y. Casos EMPIRICA no fim.
+# ===========================================================================
+b_w = Q(30.0, "cm")                     # menor largura da seção (17.4.2.2)
+d_util = Q(25.7, "cm")                  # h - (cob + phi_t + phi_l/2) = 30 - 4,3
+f_ck_MPa = 25.0
+alpha_v2 = 1.0 - f_ck_MPa / 250.0       # 17.4.2.2-a) e 17.4.2.3-a): f_ck em MPa
+f_ywd = min(f_yd.to("MPa"), Q(435.0, "MPa"))   # teto de 435 MPa, 17.4.2.2-b)
+
+# --- 14.4.1 — classificação como elemento linear ---------------------------
+# A razão usa o COMPRIMENTO LONGITUDINAL REAL (ell), jamais ell_e.
+razao_linear_A = (ell / max(h_sec, b_sec)).to("dimensionless")
+caso(
+    "NBR6118-14.4.1-razao-elemento-linear-geomA",
+    "ell/max(b,h) >= 3 -> FAIXA A, 17.4 aplicavel (ell = 1,00 m, 30x30)",
+    razao_linear_A,
+    "dimensionless",
+)
+ell_B = Q(0.80, "m")
+razao_linear_B = (ell_B / max(h_sec, b_sec)).to("dimensionless")
+caso(
+    "NBR6118-14.4.1-razao-elemento-linear-geomB-RECUSA",
+    "ell/max(b,h) < 3 -> FAIXA B, 17.4 RECUSADO (ell = 0,80 m, 30x30)",
+    razao_linear_B,
+    "dimensionless",
+)
+lambda_B = (2.0 * ell_B / (b_sec / math.sqrt(12.0))).to("dimensionless")
+caso(
+    "NBR6118-15.8.2-lambda-geomB-passa-enquanto-14.4.1-reprova",
+    "lambda = 2*ell/(b/sqrt(12)) < 35 na MESMA geometria que 14.4.1 recusa",
+    lambda_B,
+    "dimensionless",
+)
+caso(
+    "DER-FRONTEIRA-14.4.1-com-15.8.2-engastado-livre",
+    "ell/b_min maximo por lambda < 35 com ell_e = 2 ell: 35/(2*sqrt(12))",
+    Q(35.0 / (2.0 * math.sqrt(12.0)), "dimensionless"),
+    "dimensionless",
+)
+caso(
+    "MUTANTE-14.4.1-com-ell-e-no-lugar-de-ell",
+    "ell_e/max(b,h) (dobra a razão no caso engastado-livre) -- passa no pint",
+    "EMPIRICA",
+    "A razao e ADIMENSIONAL nas duas leituras: trocar ell por ell_e = 2*ell "
+    "dobra o valor (3,33 -> 6,67 na geometria A) e faz um pilarete de 45 cm "
+    "de altura ser classificado como elemento linear. Erro do lado INSEGURO "
+    "por CITACAO (aplica 17.4 fora de dominio) e invisivel ao pint. So teste "
+    "numerico com ell entre 1,5 e 3,0 vezes a maior dimensao pega — a "
+    "geometria B (ell = 0,80 m) existe para isso.",
+)
+
+# --- 17.4.1.1.1 — armadura transversal mínima por RESISTÊNCIA --------------
+f_ct_m = Q(0.30 * f_ck_MPa ** (2.0 / 3.0), "MPa")     # 8.2.5
+rho_sw_min = 0.2 * f_ct_m / f_yk                       # f_ywk = f_yk = 500 MPa
+caso("NBR6118-17.4.1.1.1-rho-sw-min", "rho_sw,min = 0,2*f_ct,m/f_ywk",
+     rho_sw_min.to("dimensionless"), "dimensionless")
+A_sw_por_s_min = rho_sw_min * b_w * 1.0                # sen(alpha=90) = 1
+caso("NBR6118-17.4.1.1.1-Asw-sobre-s-min",
+     "(A_sw/s)_min = rho_sw,min*b_w*sen(alpha) [cm2 por metro]",
+     (A_sw_por_s_min * Q(100.0, "cm")).to("cm**2"), "cm**2")
+caso(
+    "MUTANTE-17.4.1.1.1-sen-alpha-no-numerador",
+    "rho_sw = A_sw*sen(alpha)/(b_w*s) -- passa no pint",
+    "EMPIRICA",
+    "sen(alpha) e ADIMENSIONAL: po-lo no numerador em vez do denominador "
+    "passa pela checagem dimensional. Para estribo vertical (alpha = 90) nem "
+    "muda o numero. So estribo inclinado a 45 graus pega (fator 1,41). A "
+    "camada de texto do PDF devolve a equacao embaralhada e sugere isso; a "
+    "leitura visual do a2 na p. impressa 134 confirma sen NO DENOMINADOR.",
+)
+
+# --- 17.4.2.2 — Modelo I ---------------------------------------------------
+V_Rd2_I = 0.27 * alpha_v2 * f_cd * b_w * d_util
+caso("NBR6118-17.4.2.2-VRd2-modelo-I", "V_Rd2 = 0,27*alpha_v2*f_cd*b_w*d",
+     V_Rd2_I.to("kN"), "kN")
+caso(
+    "MUTANTE-VRd2-com-perimetro-no-lugar-de-bw-d",
+    "0,27*alpha_v2*f_cd*u_0 (a forma de 19.5.3.1, que e TENSAO) -- DEVE FALHAR",
+    lambda: (0.27 * alpha_v2 * f_cd * (2.0 * (b_w + h_sec.to("cm")))).to("kN"),
+    "kN",
+)
+# Estribo ADOTADO: 2 ramos phi 5,0 mm a cada 12,5 cm.
+#   A_sw = 2 x 0,1963 = 0,3927 cm2 ; A_sw/s = 0,03142 cm2/cm = 3,142 cm2/m
+# Escolhido por SATISFAZER (A_sw/s)_min = 0,03078 cm2/cm de 17.4.1.1.1 — o
+# valor 0,20 cm2/cm da rodada anterior era 6,4x maior que este e NAO
+# correspondia ao estribo descrito no proprio comentario (defeito de fixture
+# encontrado pelo a2 ao reauditar o proprio trabalho; V_sw saia 201 kN, valor
+# implausivel para um pilarete 30x30).
+A_sw_s = Q(0.031416, "cm**2/cm")
+caso("SANITY-estribo-adotado-satisfaz-17.4.1.1.1",
+     "(A_sw/s)_adotado - (A_sw/s)_min, 2 phi 5,0 c/12,5 cm (deve ser >= 0)",
+     ((A_sw_s - A_sw_por_s_min) * Q(100.0, "cm")).to("cm**2"), "cm**2")
+V_sw_I = A_sw_s * 0.9 * d_util * f_ywd * (1.0 + 0.0)   # alpha = 90 graus
+caso("NBR6118-17.4.2.2-Vsw-modelo-I",
+     "V_sw = (A_sw/s)*0,9*d*f_ywd*(sen a + cos a), a = 90 graus",
+     V_sw_I.to("kN"), "kN")
+caso(
+    "MUTANTE-Vsw-sem-dividir-por-s",
+    "A_sw*0,9*d*f_ywd (espaçamento faltando) -- DEVE FALHAR",
+    lambda: (Q(0.3927, "cm**2") * 0.9 * d_util * f_ywd).to("kN"),
+    "kN",
+)
+f_ctk_inf_25 = 0.7 * f_ct_m             # 8.2.5; DECISÃO V20(1): sempre o INF
+f_ctd_25 = f_ctk_inf_25 / gamma_c
+V_c0 = 0.6 * f_ctd_25 * b_w * d_util
+caso("NBR6118-17.4.2.2-Vc0", "V_c0 = 0,6*f_ctd*b_w*d, f_ctd = f_ctk,inf/gamma_c",
+     V_c0.to("kN"), "kN")
+caso("SANITY-tensao-de-referencia-Vc0",
+     "V_c0/(b_w*d) — faixa plausivel de tensao de concreto ao cortante",
+     (V_c0 / (b_w * d_util)).to("MPa"), "MPa")
+caso("SANITY-tensao-de-esmagamento-VRd2",
+     "V_Rd2/(b_w*d) = 0,27*alpha_v2*f_cd — NAO confundir com a faixa de tau_Rd",
+     (V_Rd2_I / (b_w * d_util)).to("MPa"), "MPa")
+
+# --- 17.4.2.2 — M_0 e a majoração de V_c na flexo-compressão ---------------
+# DECISÃO V20(2): o N do numerador de M_0 é o da combinação com gamma_f = 1,0,
+# como a Norma escreve ("essa tensão calculada com valores de gamma_f e gamma_p
+# iguais a 1,0 e 0,9"). É ENTRADA DECLARADA: é PROIBIDO obtê-lo dividindo N_d
+# por um gamma_f suposto — o software não conhece a composição da combinação.
+# Aqui 714 kN é DECLARADO (corresponde a N_d = 1000 kN numa combinação em que
+# todas as ações têm gamma_f = 1,4, mas o software não faz essa conta).
+N_gf1 = Q(714.0, "kN")
+W_1 = b_sec.to("cm") * h_sec.to("cm") ** 2 / 6.0      # 4500 cm3 (secao quadrada)
+M_0 = N_gf1 * (W_1 / A_c.to("cm**2"))
+caso("NBR6118-17.4.2.2-M0-concreto-armado",
+     "M_0 = N*(W_1/A_c), com P_d = 0 (concreto armado) e N a gamma_f = 1,0",
+     M_0.to("kN*m"), "kN*m")
+caso(
+    "MUTANTE-M0-sem-dividir-por-Ac",
+    "M_0 = N*W_1 (A_c faltando) -- DEVE FALHAR",
+    lambda: (N_gf1 * W_1).to("kN*m"),
+    "kN*m",
+)
+# Caso A1 — M_Sd,max = M_1d,min = 24 kN.m: o TETO 2*V_c0 GOVERNA. Este caso
+# MASCARA o erro de V20(2) (as duas leituras estouram o teto) e por isso NAO
+# serve sozinho como fixture de validação.
+M_Sd_max_A1 = Q(24.0, "kN*m")
+V_c_A1 = min((V_c0 * (1.0 + (M_0 / M_Sd_max_A1).to("dimensionless"))).to("kN"),
+             (2.0 * V_c0).to("kN"))
+caso("NBR6118-17.4.2.2-Vc-flexo-compressao-A1-teto-governa",
+     "V_c = min(V_c0*(1 + M_0/M_Sd,max), 2*V_c0), M_Sd,max = 24 kN.m",
+     V_c_A1, "kN")
+# Caso A2 — M_Sd,max = 60 kN.m: o teto NÃO governa e a decisão V20(2) fica
+# VISÍVEL (94,63 kN com gamma_f = 1,0 contra 108,77 kN com N_d majorado,
+# +14,9 % do lado INSEGURO). É ESTE o caso que o a7 tem de usar.
+M_Sd_max_A2 = Q(60.0, "kN*m")
+V_c_A2 = min((V_c0 * (1.0 + (M_0 / M_Sd_max_A2).to("dimensionless"))).to("kN"),
+             (2.0 * V_c0).to("kN"))
+caso("NBR6118-17.4.2.2-Vc-flexo-compressao-A2-teto-nao-governa",
+     "V_c com M_Sd,max = 60 kN.m (fixture DISCRIMINANTE de V20(2))",
+     V_c_A2, "kN")
+V_c_A2_errado = min(
+    (V_c0 * (1.0 + (N_d * (W_1 / A_c.to("cm**2")) / M_Sd_max_A2)
+             .to("dimensionless"))).to("kN"),
+    (2.0 * V_c0).to("kN"))
+caso("SANITY-V20-2-diferenca-entre-as-duas-leituras",
+     "V_c(N_d majorado) - V_c(N a gamma_f = 1,0) no caso A2 (lado INSEGURO)",
+     (V_c_A2_errado - V_c_A2).to("kN"), "kN")
+caso("NBR6118-17.4.2.1-VRd3-modelo-I", "V_Rd3 = V_c + V_sw (caso A2)",
+     (V_c_A2 + V_sw_I).to("kN"), "kN")
+
+# --- V20(3): W_1 sob flexão oblíqua, na geometria C (25x40) ----------------
+b_C, h_C = Q(25.0, "cm"), Q(40.0, "cm")
+A_c_C = b_C * h_C
+ell_C = Q(1.25, "m")
+caso("NBR6118-14.4.1-razao-elemento-linear-geomC",
+     "ell/max(b,h) = 1,25/0,40 (FAIXA A, por pouco)",
+     (ell_C / h_C.to("m")).to("dimensionless"), "dimensionless")
+caso("NBR6118-15.8.2-lambda-geomC",
+     "lambda = 2*ell/(b/sqrt(12)) (< 35, por pouco)",
+     (2.0 * ell_C / (b_C.to("m") / math.sqrt(12.0))).to("dimensionless"),
+     "dimensionless")
+W_1x_C = b_C * h_C ** 2 / 6.0        # flexão no plano de h
+W_1y_C = h_C * b_C ** 2 / 6.0        # flexão no plano de b
+N_gf1_C = Q(857.0, "kN")
+M_0x_C = N_gf1_C * (W_1x_C / A_c_C)
+M_0y_C = N_gf1_C * (W_1y_C / A_c_C)
+caso("NBR6118-17.4.2.2-M0-fibra-x-geomC", "M_0 com W_1x = b*h^2/6",
+     M_0x_C.to("kN*m"), "kN*m")
+caso("NBR6118-17.4.2.2-M0-fibra-y-geomC", "M_0 com W_1y = h*b^2/6",
+     M_0y_C.to("kN*m"), "kN*m")
+M_Sd_x_C, M_Sd_y_C = Q(90.0, "kN*m"), Q(70.0, "kN*m")
+d_C = h_C - Q(4.3, "cm")                       # cortante no plano de h
+V_c0_C = 0.6 * f_ctd_25 * b_C * d_C
+razao_x = (M_0x_C / M_Sd_x_C).to("dimensionless")
+razao_y = (M_0y_C / M_Sd_y_C).to("dimensionless")
+V_c_C_conservador = min((V_c0_C * (1.0 + min(razao_x, razao_y))).to("kN"),
+                        (2.0 * V_c0_C).to("kN"))
+V_c_C_otimista = min((V_c0_C * (1.0 + max(razao_x, razao_y))).to("kN"),
+                     (2.0 * V_c0_C).to("kN"))
+caso("DER-V20-3-Vc-com-W1-conservador-geomC",
+     "V_c com o MENOR M_0/M_Sd,max entre as duas fibras (decisao V20(3))",
+     V_c_C_conservador, "kN")
+caso("SANITY-V20-3-diferenca-entre-as-duas-fibras",
+     "V_c(fibra otimista) - V_c(fibra conservadora) na geometria C",
+     (V_c_C_otimista - V_c_C_conservador).to("kN"), "kN")
+
+# --- 17.4.2.3 — Modelo II, a fronteira e a NÃO-fronteira -------------------
+theta_45 = Q(45.0, "degree")
+sen2_45 = math.sin(theta_45.to("radian").magnitude) ** 2
+cotg_45 = 1.0 / math.tan(theta_45.to("radian").magnitude)
+cotg_alpha = 0.0                        # alpha = 90 graus
+V_Rd2_II_45 = (0.54 * alpha_v2 * f_cd * b_w * d_util * sen2_45
+               * (cotg_alpha + cotg_45))
+caso("NBR6118-17.4.2.3-VRd2-modelo-II-45",
+     "V_Rd2 = 0,54*alpha_v2*f_cd*b_w*d*sen^2(theta)*(cotg a + cotg theta)",
+     V_Rd2_II_45.to("kN"), "kN")
+caso("NBR6118-17.4-fronteira-VRd2-modelo-I-igual-modelo-II",
+     "V_Rd2(II) - V_Rd2(I) em theta = 45 e alpha = 90 (deve ser ~0)",
+     (V_Rd2_II_45 - V_Rd2_I).to("kN"), "kN")
+theta_30 = Q(30.0, "degree")
+sen2_30 = math.sin(theta_30.to("radian").magnitude) ** 2
+cotg_30 = 1.0 / math.tan(theta_30.to("radian").magnitude)
+V_Rd2_II_30 = (0.54 * alpha_v2 * f_cd * b_w * d_util * sen2_30
+               * (cotg_alpha + cotg_30))
+caso("NBR6118-17.4.2.3-VRd2-modelo-II-30",
+     "V_Rd2(II) em theta = 30 graus (menor que o do Modelo I)",
+     V_Rd2_II_30.to("kN"), "kN")
+V_sw_II_30 = A_sw_s * 0.9 * d_util * f_ywd * (cotg_alpha + cotg_30) * 1.0
+caso("NBR6118-17.4.2.3-Vsw-modelo-II-30",
+     "V_sw = (A_sw/s)*0,9*d*f_ywd*(cotg a + cotg theta)*sen a, theta = 30",
+     V_sw_II_30.to("kN"), "kN")
+# DERIVAÇÃO: a Norma dá os dois extremos de V_c1 e a palavra "interpolando-se
+# linearmente", mas NÃO escreve a expressão fechada. Escrevê-la é DERIVAÇÃO.
+V_Sd_ = Q(120.0, "kN")
+V_c1_45 = (V_c0 if V_Sd_ <= V_c0 else
+           V_c0 * ((V_Rd2_II_45 - V_Sd_) / (V_Rd2_II_45 - V_c0)).to("dimensionless"))
+caso("DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear",
+     "V_c1 = V_c0*(V_Rd2 - V_Sd)/(V_Rd2 - V_c0), theta = 45, V_Sd = 120 kN",
+     V_c1_45.to("kN"), "kN")
+caso("SANITY-modelo-II-NAO-coincide-com-I-em-VRd3",
+     "V_c1(theta=45) - V_c0: o Modelo II e MAIS conservador em V_Rd3 mesmo "
+     "na fronteira em que V_Rd2 coincide (deve ser < 0)",
+     (V_c1_45 - V_c0).to("kN"), "kN")
+caso(
+    "MUTANTE-modelo-II-sem-sen-ao-quadrado",
+    "0,54*...*sen(theta)*(cotg a + cotg theta) -- passa no pint",
+    "EMPIRICA",
+    "sen^2(theta) e ADIMENSIONAL: trocar por sen(theta) leva V_Rd2(II) de "
+    "0,27 para 0,382*alpha_v2*f_cd*b_w*d em theta = 45 graus (+41%, lado "
+    "INSEGURO) sem nenhum erro dimensional. A propriedade de fronteira "
+    "V_Rd2(II) == V_Rd2(I) em theta = 45 / alpha = 90 e o teste que pega.",
+)
+
+# --- 18.3.3.2 (p. impressas 150-151) x 18.4.3 (p. impressa 154) ------------
+s_max_1833 = (min(0.6 * d_util.to("mm"), Q(300.0, "mm"))
+              if V_Sd_ <= 0.67 * V_Rd2_I.to("kN")
+              else min(0.3 * d_util.to("mm"), Q(200.0, "mm")))
+caso("NBR6118-18.3.3.2-s-max", "s_max = min(0,6d, 300 mm) se V_d <= 0,67 V_Rd2",
+     s_max_1833, "mm")
+s_t_max_1833 = (min(d_util.to("mm"), Q(800.0, "mm"))
+                if V_Sd_ <= 0.20 * V_Rd2_I.to("kN")
+                else min(0.6 * d_util.to("mm"), Q(350.0, "mm")))
+caso("NBR6118-18.3.3.2-s-t-max",
+     "s_t,max = min(0,6d, 350 mm) se V_d > 0,20 V_Rd2", s_t_max_1833, "mm")
+s_max_1843 = min(Q(200.0, "mm"), b_sec.to("mm"), (12.0 * phi_l).to("mm"))
+caso("NBR6118-18.4.3-s-max-pilar", "s = min(200 mm, b_min, 12 phi) (CA-50)",
+     s_max_1843, "mm")
+caso("DER-COMPOSICAO-18.4.3-com-18.3.3.2-TETOS",
+     "teto de espacamento = MENOR dos dois limites (18.4.3, ultimo paragrafo)",
+     min(s_max_1833, s_max_1843), "mm")
+caso("DER-COMPOSICAO-18.4.3-com-18.3.3.2-PISOS",
+     "piso de diametro do estribo = MAIOR dos dois: max(5 mm, phi/4) e 5 mm",
+     max(max(Q(5.0, "mm"), (phi_l / 4.0).to("mm")), Q(5.0, "mm")), "mm")
+caso("NBR6118-18.3.3.2-phi-t-teto-b-sobre-10",
+     "phi_t <= b_w/10 (18.3.3.2; b_w lido como menor dimensao do pilarete)",
+     (b_sec.to("mm") / 10.0 - phi_t).to("mm"), "mm")
+caso(
+    "NBR6118-Em1-18.3.3.2-phi-long-maior-que-phi-t",
+    "phi_longitudinal - phi_estribo nas barras de canto (Em1:2026, >= 0)",
+    (phi_l - phi_t).to("mm"),
+    "mm",
+)
+caso("SANITY-espacamento-adotado-abaixo-do-teto-composto",
+     "teto composto - s adotado (125 mm) — deve ser >= 0",
+     (min(s_max_1833, s_max_1843) - Q(125.0, "mm")).to("mm"), "mm")
+
+# --- 17.4.1.1.2-a) — o ramo que a guarda de 13.2.3 torna inalcançável ------
+caso("NBR6118-17.4.1.1.2-a-bw-maior-que-5d",
+     "b_w - 5*d (se > 0, tratar como laje por 19.4; com h <= 5*b de 13.2.3 "
+     "nunca ocorre — deve ser NEGATIVO)",
+     (b_w - 5.0 * d_util).to("cm"), "cm")
+
+# --- o que o pint NÃO pega nesta seção -------------------------------------
+caso(
+    "NBR6118-17.4.1.1.2-c-qual-f-ctk",
+    "f_ctk sem sufixo em 17.4.1.1.2-c): f_ctk,inf x f_ctk,sup",
+    "EMPIRICA",
+    "Os dois sao tensoes e passam identicamente pelo pint. f_ctk,sup e 86% "
+    "maior que f_ctk,inf e DISPENSA a armadura minima em pilarete que a "
+    "leitura conservadora manda armar. DECISAO V20(1) do a2: sempre "
+    "f_ctk,inf. So teste numerico com a constante trocada pega.",
+)
+caso(
+    "NBR6118-17.4.2.2-M0-nivel-de-carregamento",
+    "N a gamma_f = 1,0 (numerador de M_0) x N_d majorado",
+    "EMPIRICA",
+    "As duas leituras dao kN e passam pelo pint. DECISAO V20(2) do a2: "
+    "gamma_f = 1,0, que e o que a Norma ESCREVE, e o valor e ENTRADA "
+    "DECLARADA — proibido dividir N_d por gamma_f suposto. Sem o valor "
+    "declarado o software NAO majora (V_c = V_c0). O caso A1 (M_Sd,max = "
+    "24 kN.m) MASCARA o erro porque as duas leituras estouram o teto de "
+    "2*V_c0; so o caso A2 (M_Sd,max = 60 kN.m) discrimina.",
+)
+caso(
+    "NBR6118-17.4.2.2-W1-fibra-mais-tracionada",
+    "W_1 sob flexao obliqua: duas fibras candidatas na secao retangular",
+    "EMPIRICA",
+    "W_1x = b*h^2/6 e W_1y = h*b^2/6 tem a MESMA dimensao (cm3) e em secao "
+    "QUADRADA o MESMO valor — a geometria A (30x30) nao pega nada. DECISAO "
+    "V20(3) do a2: calcular a razao M_0/M_Sd,max nas duas direcoes e adotar "
+    "a MENOR (menor V_c, mais estribo). A geometria C (25x40) existe para "
+    "tornar a escolha visivel.",
+)
+caso(
+    "NBR6118-17.4-cortante-BIAXIAL-sem-regra-na-Norma",
+    "H_x != 0 e H_y != 0 simultaneos: 17.4 e escrito para UM V_Sd em b_w*d",
+    "EMPIRICA",
+    "Nenhuma checagem dimensional detecta a composicao inventada de duas "
+    "cortantes (sqrt(Vx^2+Vy^2), interacao linear, verificacao por direcao "
+    "isolada): todas dao kN. A Norma escreve 17.2.5 para MOMENTOS obliquos e "
+    "NADA para cortante obliqua. DECISAO do a2: RECUSA do cisalhamento "
+    "quando as duas componentes de H sao nao nulas.",
+)
+caso(
+    "NBR6118-17.4.2.3-menor-estrito-em-2-Vc1",
+    "Modelo I escreve '<= 2 V_c0' e Modelo II escreve '< 2 V_c1'",
+    "EMPIRICA",
+    "Diferenca tipografica REAL, conferida por leitura visual do a2 nas p. "
+    "impressas 137 e 139. Nenhuma checagem dimensional a alcanca e a "
+    "diferenca numerica tem medida nula. DECISAO do a2: implementar os dois "
+    "como teto nao estrito (min com 2*V_c1), transcrevendo a tipografia como "
+    "esta na fonte.",
+)
+
+
 def main(padrao: str | None = None) -> int:
     falhas = 0
     largura = max(len(i) for i, *_ in CASOS)
