@@ -1232,3 +1232,38 @@ confirmada, inclusive a janela vazia da seção 20×40; invariância por
 rotação de 90° confirmada; fix de CI confirmado cosmético; mutante M4
 morto pelo novo teste; suíte inteira verde (824/824). Detalhe completo
 em `relatorios/revisao_codigo.md`, mesmo cabeçalho de data.
+
+## Adendo 2026-09-05 — GATE 3, FrozenInstanceError em
+## `calc_core/geotecnico/dominio.py` (`b994fc6`+`22ce3cf`) — **APROVADO**
+
+Portão sobre a correção do `FrozenInstanceError` em
+`ForaDoDominioError`/`NenhumMetodoAplicavelError`, liberada pelo GATE 2
+(a6, nota 4,7, sem veto). Detalhe completo em
+`relatorios/revisao_codigo.md`, mesmo cabeçalho de data; resumo aqui:
+
+- **End-to-end via UI real**: `NenhumMetodoAplicavelError` (N_SPT=25 em
+  argila declarada) propagada por um `contextlib.contextmanager` real
+  inserido no caminho de `ui/completo/dialogo_sigma_adm.py::
+  DialogoSigmaAdm._calcular_semiempirico`, sob Xvfb — pós-correção, dois
+  cards de recusa legíveis, sem crash. Regressão confirmada
+  isoladamente contra o commit pai (`b994fc6^`, via `git worktree`):
+  mesmo cenário propaga `FrozenInstanceError: cannot assign to field
+  '__traceback__'` para fora da UI, não capturado por nenhum `except`
+  da função (`FrozenInstanceError` é `AttributeError`, não `ValueError`).
+- **Identidade de mensagem/campos**: mesma entrada, pré vs. pós-correção
+  — `diff` da mensagem completa e de todos os 8 campos de domínio
+  (inclusive `recusas`) é vazio. A correção não mudou nenhum valor.
+- **Retrocompatibilidade**: 103 testes pré-existentes (extraídos de
+  `b994fc6^` via `git show`, dos três arquivos de teste tocados pelo
+  commit da correção) passam sem alteração contra o código corrigido.
+- **5 defeitos BAIXA do a6**: `del erro.__traceback__` confirmado ainda
+  quebrado (`FrozenInstanceError: cannot delete field`), mas confirmado
+  sem NENHUM chamador em `calc_core/` ou `ui/` — ausência de uso, não só
+  de teste.
+- **Suíte completa**: duas rodadas independentes sob Xvfb, **824
+  passed** em ambas. (Achado operacional registrado no adendo de
+  `revisao_codigo.md`: 1 falha intermitente encontrada numa rodada era
+  bytecode `__pycache__` obsoleto do ambiente de sandbox, não do
+  repositório — some após limpar o cache, 6/6 rodadas limpas depois.)
+
+**Veredito: APROVADO — GATE 3 fechado.** Libera release.
