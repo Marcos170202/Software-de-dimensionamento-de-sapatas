@@ -1531,3 +1531,65 @@ corretude — o software nunca aprova uma seção que não resiste, mesmo
 quando a mensagem que descreve a reprovação está errada. Detalhe
 completo (incluindo o script de reprodução) também referenciado em
 `relatorios/conformidade.md`, mesmo adendo.
+
+## Adendo 2026-09-05 — FrozenInstanceError em ForaDoDominioError/
+## NenhumMetodoAplicavelError (`calc_core/geotecnico/dominio.py`): GATE 2
+## (a6) — **APROVADO**, nota 4,7
+
+**Contexto.** Defeito latente descoberto pelo a6 ao auditar `calc_core/
+estrutural/pilarete/` (backlog #13), fora do escopo dessa feature —
+código de produção já aprovado por A6/A7. `ForaDoDominioError`/
+`NenhumMetodoAplicavelError` são `@dataclass(frozen=True)` herdando de
+`ValueError`. Quando código Python (não o C do interpretador) escreve
+`__traceback__`/`__notes__` numa exceção em trânsito — o que acontece de
+verdade em `contextlib.contextmanager.__exit__` (`contextlib.py:191`,
+`exc.__traceback__ = traceback`) e em `Exception.add_note` — o
+`__setattr__` gerado pelo dataclass frozen recusa, produzindo
+`FrozenInstanceError` em vez da recusa legível (parâmetro/valor/
+intervalo/fonte) que REQ-UI-SIGMA-03 e a doutrina geral do projeto
+exigem. Propagação comum (`raise`/`except` simples) nunca dispara —
+CPython escreve direto na struct C — por isso escapou de A6/A7
+anteriores. Confirmado como defeito PREVENTIVO, não vivo: nenhum caminho
+de produção usa `contextmanager`/`add_note` sobre essas exceções hoje
+(`ui/completo/dialogo_sigma_adm.py` captura com `except` simples).
+
+**Correção (a4).** `__setattr__` customizado instalado nas DUAS classes
+(o dataclass gera um `__setattr__` próprio por classe, mesmo em
+subclasses de outra frozen — instalar só na base deixaria
+`NenhumMetodoAplicavelError`, a exceção que `semiempirico_spt` realmente
+levanta, com o defeito intacto), liberando uma lista fechada de
+atributos da máquina de exceções (`__traceback__`, `__context__`,
+`__cause__`, `__suppress_context__`, `__notes__`, `args`) e mantendo os
+campos de domínio genuinamente imutáveis. Varredura por AST + runtime
+confirma: só três classes no repositório tinham essa estrutura (as duas
+aqui + `RecusaForaDeDominio` em `calc_core/estrutural/dominio.py`, já
+corrigida pelo a5 na mesma sessão, backlog #13).
+
+**Verificação independente do a6** (não releitura do relato do a4):
+reproduziu o defeito revertendo a correção em cópia isolada (4 de 5
+testes falham, `FrozenInstanceError` exatamente como esperado);
+confirmou por dois métodos independentes (AST estática + varredura em
+runtime) que são as mesmas três classes; confirmou que os campos de
+domínio (incluindo `recusas` na subclasse) continuam recusando escrita;
+4 mutantes plantados e mortos (remover `__notes__`/`__traceback__`
+individualmente, ampliar a lista para incluir um campo de domínio,
+instalar só na base). `mypy --strict`/`ruff` limpos, `bandit` limpo,
+100% de cobertura em `dominio.py`. 823/823 testes passando.
+
+**Nota final: 4,7** (E1 4,8 · E2 5,0 · E3 4,3 · E4 4,6 · E5 4,3). Sem
+veto.
+
+**Cinco defeitos BAIXA, nenhum bloqueante** (podem entrar junto com
+trabalho futuro na superfície): teste de imutabilidade só cobre
+`ForaDoDominioError` com 7 nomes escritos à mão, não `recusas` nem a
+subclasse via `dataclasses.fields()`; `__delattr__` não foi corrigido
+(mesma classe de defeito, metade não coberta do protocolo); docstring
+descreve a lista como "mínima" quando só 2 dos 6 atributos liberados têm
+chamador conhecido; o `__setattr__` substituto abandona a guarda
+`type(self) is cls` do dataclass original, apertando o congelamento em
+vez de só preservá-lo (sem consequência hoje, nenhuma subclasse não-
+dataclass existe); citação normativa completa (§7.3.3) em constantes
+sem conteúdo normativo (lista de dunders, tupla de classes).
+
+**Próximo passo:** a7-validador (GATE 3) sobre a superfície `geotecnico/`
+tocada.
