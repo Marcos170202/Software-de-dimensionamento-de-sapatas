@@ -238,7 +238,7 @@ class NenhumMetodoAplicavelError(ForaDoDominioError):
 
 
 def _congelar_campos_mas_deixar_a_maquina_de_excecoes_trabalhar(
-    self: ForaDoDominioError, nome: str, valor: object,
+    self: object, nome: str, valor: object,
 ) -> None:
     """Congela os CAMPOS da recusa, mas deixa o interpretador escrever os seus.
 
