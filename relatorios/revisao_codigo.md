@@ -1593,3 +1593,205 @@ sem conteúdo normativo (lista de dunders, tupla de classes).
 
 **Próximo passo:** a7-validador (GATE 3) sobre a superfície `geotecnico/`
 tocada.
+
+## Adendo 2026-09-05 — GATE 3, `calc_core/estrutural/pilarete/` (backlog
+## #13), commits `b994fc6` + `22ce3cf` — **APROVADO** (a7)
+
+**Escopo.** Validação independente e ponta a ponta do a7 sobre a feature
+liberada pelo GATE 2 (rodada 3/3, nota 4,75, sem veto — ver acima, "GATE
+2, rodada 3"). Ruleset v13 conferido, hash
+`f1b9b5fb72e6d64be37960f3797a826252184d853eb1292d3a3a85ce6ac2675a`,
+inalterado.
+
+**Teste novo exigido pelo a6 antes do release** (recomendação da rodada
+3: "exigir o teste com d'_h ≠ d'_b antes do release"). Escrito e
+verificado por mim: `tests/test_pilarete_elemento_memorial.py::
+test_arranjo_assimetrico_ENTRE_PLANOS_e_o_MENOR_dos_dois_que_governa`.
+Cenário: barras com d'_h = 0,043 m (cobrimento implícito 30 mm,
+INSUFICIENTE) e d'_b = 0,058 m (cobrimento implícito 45 mm, no limite —
+SUFICIENTE), cada plano simétrico em si. Confirmado por execução:
+
+- com o código real (`min`), `verificar_pilarete()` RECUSA citando
+  "plano de h", 45.00/30.00 mm e "INSEGURO" — o teste PASSA;
+- com o mutante M4 aplicado manualmente (`min` → `max` em
+  `ConsistenciaDeCobrimento.cobrimento_implicito_mm`,
+  `geometria.py:358`), o mesmo cenário SEGUE (`DID NOT RAISE
+  RecusaForaDeDominio`) — o teste FALHA, matando o mutante que antes
+  sobrevivia à suíte inteira.
+
+Mutante revertido depois da verificação; `git diff --stat` confirma que
+só `tests/test_pilarete_elemento_memorial.py` mudou (65 linhas
+adicionadas, `geometria.py` bit-idêntico a `b994fc6`).
+
+**Cenário end-to-end completo** (`elemento.py`, do início ao veredito):
+pilarete 30×30 cm, C25, CA-50, 4 φ16, `ell=1,00` m, N_d=1000 kN,
+M_Sd_x=M_Sd_y=24 kN·m, H_x=40 kN, cobrimento 45 mm com barras a d'=58 mm
+(coerente). Resultado: FAIXA A, `elu_normal.atendido=True`,
+`elu_cortante.atendido=True`, `V_Rd2=315,0321` kN,
+`d_util=0,242000` m — e o veredito final (`resultado.atendido`) bate
+exatamente com a conjunção manual dos dois vereditos isolados
+(`elu_normal.atendido and elu_cortante.atendido`), confirmando que
+`elemento.py` não introduz nenhuma lógica extra de agregação.
+
+**Defeito ALTA fechado, ponta a ponta, via `elemento.py`** (não a função
+isolada): reproduzido o cenário exato do a6 (c=45 mm declarado, barras
+a d'=0,043 m) — RECUSA na FAIXA A (mensagem cita "7.4.7.5", 45.00,
+30.00, 58.00, "INSEGURO") e RECUSA igualmente na FAIXA B
+(`ell=0,80`, razão 2,667 < 3,0), confirmando que a guarda em (6-bis) do
+`elemento.py` cobre os dois caminhos, como o a6 relatou.
+
+**Guarda §14.4.1 end-to-end**: pilarete 30×30, `ell=0,80` →
+`FAIXA_B_FORA_DE_14_4_1`, `elu_cortante is None`, `elu_normal` roda
+normalmente (aprovado no caso testado). Razão `ell/max(h,b)=2,6667<3,0`
+confirmada. Janela vazia para seção 20×40 (h_máx/b_mín=2,0 ≥ 1,684, como
+a docstring de `classificacao.py` prediz): varredura de `ell` de 0,60 a
+2,59 m em passos de 1 cm, todos capturados via `verificar_pilarete()`
+completo — nenhum valor produziu FAIXA A com `lambda < lambda_1`
+simultaneamente; toda tentativa ou RECUSA (lambda ≥ lambda_1, guarda de
+15.8.2 que roda ANTES de 14.4.1) ou cai em FAIXA B.
+
+**Invariância por rotação de 90°**: seção 30×40 vs. 40×30 com
+h↔b, M_Sd_x↔M_Sd_y, H_x↔H_y (uma só componente de H não nula por vez —
+domínio de 17.4.2.1 exige cortante uniaxial) rodadas via `elemento.py`
+completo: mesma FAIXA, mesmo veredito final, mesmo `V_Rd2` (bit-idêntico,
+`rel_tol=1e-9`), mesmo veredito de cortante.
+
+**Retrocompatibilidade do fix de CI** (`22ce3cf`): `git diff b994fc6
+22ce3cf --stat` mostra 1 arquivo, `calc_core/geotecnico/dominio.py`, 1
+inserção/1 remoção — fora de `calc_core/estrutural/pilarete/` por
+completo. Confirmado trivialmente cosmético para esta feature (type
+hint de `__setattr__`, sem efeito de runtime).
+
+**Suíte completa**: Xvfb + `/usr/bin/python3.12 -m pytest tests/ -q` →
+**824 passed** (823 pré-existentes + 1 teste novo), 0 skip, 0 fail,
+rodado nesta validação. Cobertura do pacote `pilarete/`: 99% (1210
+stmts, 8 miss) — `geometria.py` e `detalhamento.py` continuam em 100%.
+`ruff --select F,E9` limpo nos arquivos tocados.
+
+**Lacuna de validação registrada, não bloqueante**: zero exemplo
+resolvido de pilar sob N+Mx+My+cortante em todo o acervo bibliográfico
+disponível (a5/a2 já haviam registrado). A confiança desta rodada vem de
+testes de propriedade (equilíbrio, simetria/invariância, envoltória) e
+do exemplo do Bastos para os componentes de cortante isolados — não de
+um caso completo de terceiro para o pilarete inteiro. Fica explícito
+aqui, não implícito: um projeto real ainda precisa de revisão de
+engenheiro habilitado antes de qualquer memorial final, como o
+CLAUDE.md já exige.
+
+**Veredito: APROVADO — GATE 3 fechado para `calc_core/estrutural/
+pilarete/` (backlog #13).** Pipeline completo roda ponta a ponta e
+produz veredito coerente; defeito ALTA da rodada 1 confirmado fechado
+nas duas FAIXAS via `elemento.py`; guarda de 14.4.1 confirmada,
+inclusive a janela vazia da seção 20×40; invariância por rotação
+confirmada; fix de CI confirmado cosmético; teste do mutante M4
+(recomendação do a6) escrito, mata o mutante, e entra na suíte
+permanente — 824/824. Detalhe do exemplo completo, do script de
+reprodução e da lacuna bibliográfica também em
+`relatorios/conformidade.md`, mesmo cabeçalho de data.
+
+## Adendo 2026-09-05 — GATE 3, FrozenInstanceError em
+## `calc_core/geotecnico/dominio.py`, commits `b994fc6`+`22ce3cf`
+## (a6 GATE 2, `c41a260`) — **APROVADO** (a7)
+
+**Escopo.** Validação independente do a7 sobre a correção do
+`FrozenInstanceError` em `ForaDoDominioError`/`NenhumMetodoAplicavelError`
+liberada pelo GATE 2 (nota 4,7, sem veto — adendo acima, "FrozenInstanceError
+em ForaDoDominioError/NenhumMetodoAplicavelError"). Não é releitura do
+relato do a6: reproduzido do zero, com cenário próprio.
+
+**1. Reprodução end-to-end via UI real, com `contextlib.contextmanager`
+genuíno no caminho de chamada.** Cenário `N_SPT=25` + `solo_declarado=
+"argila"` (nenhuma das duas correlações se aplica — regra N/50 recusa por
+faixa, Teixeira recusa por tipo de solo), acionado através de
+`ui/completo/dialogo_sigma_adm.py::DialogoSigmaAdm._calcular_semiempirico`
+de verdade (widgets Tk reais, sob Xvfb), com `semiempirico_spt` envolvida
+por um `@contextlib.contextmanager` comum inserido no caminho de chamada
+(não um `raise`/`except` direto — é exatamente o mecanismo que grava
+`exc.__traceback__ = traceback` em Python puro no `__exit__` do gerador).
+Resultado PÓS-correção: nenhuma exceção escapa da UI; dois cards
+"Recusado — fora do domínio" são desenhados, cada um com o texto completo
+da recusa (parâmetro, valor, intervalo, fonte, força da guarda) — o mesmo
+texto que o núcleo produz sem o gerenciador de contexto no meio.
+
+Confirmação da regressão, para calibrar que o roteiro reproduz o defeito
+de verdade: rodei o MESMO script contra uma cópia isolada do repositório
+no commit pai de `b994fc6` (`git worktree add ... b994fc6^`, sem tocar o
+checkout principal). Resultado PRÉ-correção: `_calcular_semiempirico`
+propaga `dataclasses.FrozenInstanceError: cannot assign to field
+'__traceback__'` para fora da UI (não capturada por nenhum dos `except`
+da função — `FrozenInstanceError` é `AttributeError`, não `ValueError`,
+então nem o `except (MetodoDeSegurancaError, ValueError)` genérico
+pega), exatamente como o defeito descreve. Traceback completo capturado
+no scratchpad desta sessão.
+
+**2. Identidade de campos e mensagens, pré vs. pós-correção.** Construí,
+com os MESMOS parâmetros, (a) um `ForaDoDominioError` direto e (b) o
+`NenhumMetodoAplicavelError` real de `semiempirico_spt` para o cenário
+acima (incluindo a tupla `recusas` inteira), uma vez contra o commit pai
+de `b994fc6` e uma vez contra o código corrigido (`HEAD`). `diff` entre
+as duas saídas (mensagem, `parametro`, `valor`, `intervalo`, `fonte`,
+`forca`, `apoio_no_ruleset`, `sugestao`, e o `repr()` de cada
+`RecusaDeMetodo` em `recusas`) é **vazio** — a correção não mudou
+nenhum valor nem nenhum texto, só a capacidade de sobreviver à máquina
+de exceções. Confirmei também que TODOS os campos de domínio, inclusive
+`recusas` na subclasse, continuam recusando escrita depois de
+construídos (uma tentativa de `setattr` em cada um dos 8 campos, todas
+recusadas com `FrozenInstanceError`, igual a antes).
+
+**3. Retrocompatibilidade.** Extraí (`git show b994fc6^:...`) as versões
+PRÉ-correção de `tests/test_sigma_adm_semiempirico.py`,
+`tests/test_pilarete_elemento_memorial.py` e
+`tests/test_pilarete_detalhamento_ligacao.py` (os três arquivos de teste
+tocados pelo commit da correção) e rodei cada uma isoladamente contra o
+`calc_core` ATUAL (pós-correção): 47 + 23 + 33 = 103 testes, todos
+passando sem alteração — nenhuma asserção pré-existente mudou de
+resultado. Os testes NOVOS (que exercitam exatamente a propagação por
+`contextlib.contextmanager` e por `add_note`, adicionados no mesmo
+commit da correção) foram tratados como parte da correção, não como
+"pré-existentes", e passam também.
+
+**Achado operacional, não do software:** ao rodar a suíte completa uma
+segunda vez encontrei 1 falha intermitente em
+`test_arranjo_assimetrico_ENTRE_PLANOS_e_o_MENOR_dos_dois_que_governa`
+(`c_b` obtido 45.0 vs. esperado 52.0 — um valor que NÃO EXISTE no
+arquivo de teste atual, que pede 45.0). Isolei: era bytecode
+`__pycache__` obsoleto de uma versão anterior deste arquivo de teste,
+sobrevivendo à invalidação por mtime do pytest (ambiente de sandbox, não
+o repositório git). Depois de `find . -name __pycache__ -exec rm -rf`
+a suíte ficou determinística: 6/6 execuções limpas, sem falha. Registro
+aqui para não confundir um futuro `a7` — não é flakiness do código, é
+higiene de cache local; não bloqueia GATE 3 e não pertence a este
+commit.
+
+**4. Regressão dos 5 defeitos BAIXA do a6.** Reproduzido
+`del erro.__traceback__` sobre uma instância real de
+`ForaDoDominioError`: continua levantando `FrozenInstanceError: cannot
+delete field '__traceback__'` — o `__delattr__` gerado pelo dataclass
+frozen não foi tocado pela correção, exatamente como o a6 registrou.
+Busquei em todo `calc_core/` e `ui/` por qualquer `del` que alcance um
+atributo de exceção (`__traceback__`, `__notes__`, `__cause__`,
+`__context__`, `args`) ou qualquer campo de domínio destas duas classes:
+zero ocorrências — os únicos `del` do código de produção são
+`del tolerancia` (variável local, `pilarete/secao.py`), `del
+_classe_de_recusa` (variável de módulo, o próprio `dominio.py`, depois
+do laço que instala o `__setattr__`) e `del self._camadas[indice]`
+(lista de camadas de solo na UI, nada a ver com exceções). Confirma a
+classificação do a6: defeito real, mas sem caminho de produção que o
+dispare — não é "falta de teste", é ausência de uso.
+
+**5. Suíte completa.** `/usr/bin/python3.12 -m pytest` sob Xvfb, duas
+rodadas independentes após a limpeza de cache do item 3: **824 passed**
+em ambas (0 skip com `DISPLAY` presente; 731 passed + 93 skipped sem
+`DISPLAY`, mesma soma). Sem `DISPLAY`, resultado idêntico às duas
+rodadas com `DISPLAY`.
+
+**Veredito: APROVADO — GATE 3 fechado para a correção do
+`FrozenInstanceError` em `calc_core/geotecnico/dominio.py`.** Propagação
+real por `contextlib.contextmanager` confirmada ponta a ponta via UI
+Tk sob Xvfb, inclusive com a regressão pré-correção reproduzida por
+execução isolada no commit pai; nenhuma mensagem ou campo de domínio
+mudou (diff vazio pré/pós); 103 testes pré-existentes dos três arquivos
+tocados continuam passando sem alteração contra o código corrigido;
+suíte completa verde em duas rodadas (824/824); os 5 defeitos BAIXA do
+a6 seguem BAIXA — `__delattr__` confirmado ainda quebrado, mas
+confirmado sem nenhum chamador de produção. Libera release.

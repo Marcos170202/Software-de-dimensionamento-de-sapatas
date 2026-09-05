@@ -1141,3 +1141,94 @@ inversão de veredito confirmada ponta a ponta via `dimensionar()`;
 retrocompatibilidade exata contra exemplo de bibliografia já usado em
 rodadas anteriores; continuidade numérica confirmada; suíte verde.
 Detalhe completo em `relatorios/revisao_codigo.md`, adendo "GATE 3, V15".
+
+## Adendo 2026-09-05 — GATE 3, `calc_core/estrutural/pilarete/` (backlog
+## #13), commits `b994fc6` + `22ce3cf` — **APROVADO**
+
+Portão sobre `calc_core/estrutural/pilarete/` inteiro (§7.4.7.5, 13.2.3,
+14.4.1, 15.8.1/15.8.2, 17.2, 17.4, 18.4.2/18.4.3, 21.6). GATE 2 (a6),
+rodada 3 de 3: nota 4,75, sem veto. Ruleset v13, hash
+`f1b9b5fb72e6d64be37960f3797a826252184d853eb1292d3a3a85ce6ac2675a`.
+Detalhe completo em `relatorios/revisao_codigo.md`, mesmo cabeçalho de
+data.
+
+```yaml
+id: NBR6118-Tab7.2-nota-d-cobrimento-pilarete-cruzamento-entre-planos
+fonte: "ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20 — verificação de fórmula/guarda normativa, não exemplo de livro-texto"
+hipoteses:
+  - "cada plano (h e b) internamente simétrico; d'_h != d'_b ENTRE os planos"
+cenario_do_defeito_ALTA_fechado_na_rodada_2:
+  - {cobrimento_declarado_mm: 45.0, d_linha_m: 0.043, esperado: "RECUSA (7.4.7.5)", faixa: A}
+  - {cobrimento_declarado_mm: 45.0, d_linha_m: 0.043, esperado: "RECUSA (7.4.7.5)", faixa: B, ell: 0.80}
+cenario_novo_desta_rodada_d_h_diferente_de_d_b:
+  - {d_linha_h_m: 0.043, c_implicito_h_mm: 30.0, d_linha_b_m: 0.058, c_implicito_b_mm: 45.0, esperado: "RECUSA pelo plano de h (o MENOR)"}
+tolerancia: "sem tolerância — RecusaForaDeDominio ou não, gatilho exato"
+criticidade: ALTA  # o mutante min->max reabriria o defeito ALTA para arranjo assimétrico entre planos
+```
+
+**Cenário end-to-end completo** (`elemento.py`, do início ao veredito
+final, não a função isolada): pilarete 30×30 cm, C25, CA-50, 4 φ16,
+`ell=1,00` m, N_d=1000 kN, M_Sd_x=M_Sd_y=24 kN·m, H_x=40 kN, cobrimento
+declarado 45 mm com barras coerentes (d'=58 mm). Pipeline completo
+devolve FAIXA A, `elu_normal.atendido=True`, `elu_cortante.atendido=
+True`, `V_Rd2=315,0321` kN, `d_util=0,242000` m; o veredito agregado
+(`resultado.atendido`) é exatamente `elu_normal.atendido and
+elu_cortante.atendido` — sem lógica extra escondida em `elemento.py`.
+
+**O defeito ALTA fechado, reproduzido via `elemento.py` completo** (não
+a função isolada, como o a6 tinha feito): c=45 mm declarado + barras a
+d'=0,043 m → RECUSA na FAIXA A (mensagem cita 7.4.7.5, 45.00, 30.00,
+58.00, INSEGURO) e RECUSA igualmente na FAIXA B (`ell=0,80`, razão
+2,667<3,0) — confirma a medição do a6 de que a brecha antiga da FAIXA B
+(+5,93% em M_Rd_xx) está coberta pela mesma guarda.
+
+**Guarda §14.4.1, incluindo a janela vazia**: 30×30 com `ell=0,80` →
+FAIXA B, `elu_cortante=None`, `elu_normal` roda e aprova normalmente,
+razão `0,80/0,30=2,667<3,0`. Seção 20×40 (h_máx/b_mín=2,0≥1,684):
+varredura de `ell` entre 0,60 e 2,59 m via pipeline completo — nenhum
+valor caiu na janela `lambda<lambda_1 E razão>=3,0` simultaneamente,
+confirmando por execução (não só releitura da docstring de
+`classificacao.py`) que a janela é vazia para essa seção.
+
+**Invariância por rotação de 90°** — pipeline completo, não a função
+isolada: seção 30×40 vs. 40×30 com h↔b, M_Sd_x↔M_Sd_y, H_x↔H_y (uma só
+componente de H por vez — domínio de 17.4.2.1 é cortante uniaxial):
+mesma FAIXA, mesmo veredito final, `V_Rd2` bit-idêntico
+(`rel_tol=1e-9`), mesmo veredito de cortante.
+
+**Retrocompatibilidade do fix de CI** (`22ce3cf`): `git diff b994fc6
+22ce3cf --stat` → 1 arquivo (`calc_core/geotecnico/dominio.py`, 1+/1-),
+zero interseção com `calc_core/estrutural/pilarete/`. Puramente
+cosmético (type hint) para esta feature.
+
+**O teste que faltava (recomendação do a6), escrito e verificado**:
+`tests/test_pilarete_elemento_memorial.py::
+test_arranjo_assimetrico_ENTRE_PLANOS_e_o_MENOR_dos_dois_que_governa` —
+d'_h=0,043 m (c implícito 30 mm, insuficiente) e d'_b=0,058 m (c
+implícito 45 mm, no limite, suficiente), cada plano simétrico em si.
+Com o código real (`min`): RECUSA citando o plano de h. Com o mutante
+M4 aplicado manualmente (`min`→`max` em `geometria.py:358`): o mesmo
+cenário SEGUE — o teste falha e mata o mutante. Mutante revertido depois
+da verificação; `git diff --stat` mostra que só o arquivo de teste
+mudou.
+
+**Suíte completa, rodada nesta validação**: `xvfb-run`-equivalente
+(Xvfb manual em `:99`) + `/usr/bin/python3.12 -m pytest tests/ -q` →
+**824 passed**, 0 skip, 0 fail (823 pré-existentes + 1 novo). Cobertura
+de `calc_core/estrutural/pilarete/`: 99% (1210 stmts, 8 miss),
+`geometria.py`/`detalhamento.py` em 100%.
+
+**Lacuna registrada, não bloqueante**: nenhum exemplo de bibliografia
+resolve N+Mx+My+cortante para um pilar completo — a confiança desta
+validação vem de propriedade (equilíbrio, invariância, envoltória) e do
+Bastos só para componentes isolados de cortante. Revisão de engenheiro
+habilitado continua exigida antes de qualquer memorial final.
+
+**Veredito: APROVADO — GATE 3 fechado para `calc_core/estrutural/
+pilarete/` (backlog #13).** Fórmula/guarda de 7.4.7.5 fechada nas duas
+FAIXAS e agora também no eixo entre-planos, confirmado por execução
+independente ponta a ponta via `elemento.py`; guarda de 14.4.1
+confirmada, inclusive a janela vazia da seção 20×40; invariância por
+rotação de 90° confirmada; fix de CI confirmado cosmético; mutante M4
+morto pelo novo teste; suíte inteira verde (824/824). Detalhe completo
+em `relatorios/revisao_codigo.md`, mesmo cabeçalho de data.

@@ -459,6 +459,71 @@ def test_o_memorial_registra_o_cruzamento_com_os_tres_numeros():
     assert "c declarado = 45.0 mm" in memorial
 
 
+def test_arranjo_assimetrico_ENTRE_PLANOS_e_o_MENOR_dos_dois_que_governa():
+    """d'_h != d'_b (cada plano simétrico EM SI): o MENOR dos dois RECUSA.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    ACHADO DO A6 NO GATE 2 (rodada 3): o mutante M4 — trocar o ``min`` por
+    ``max`` em ``ConsistenciaDeCobrimento.cobrimento_implicito_mm`` — sobrevive
+    à suíte inteira (823/823 continuam passando) porque nenhum teste até aqui
+    tinha d'_h e d'_b DIFERENTES entre si. Todos os testes anteriores desta
+    seção usam ``barras()``, que aplica o MESMO ``d_linha`` nos dois planos.
+
+    Aqui o plano de h tem d'_h = 0,043 m (cobrimento implícito 30 mm,
+    INSUFICIENTE frente ao declarado de 45 mm) e o plano de b tem d'_b =
+    0,058 m (cobrimento implícito 45 mm, exatamente no limite — SUFICIENTE,
+    pois a guarda exige c_implícito >= c_declarado) — cada plano é
+    internamente simétrico (não confundir com arranjo assimétrico DENTRO de
+    um mesmo plano, que é RECUSADO por outra guarda, 17.2.5). O código real
+    usa o MENOR dos dois planos para caracterizar a peça e RECUSA. Com o
+    mutante M4 (min -> max), o plano de b (45 mm, no limite mas suficiente)
+    mascararia o plano de h (30 mm, insuficiente) e o cenário passaria a
+    SEGUIR — reabrindo exatamente o defeito ALTA desta rodada, só que para
+    arranjo assimétrico entre planos em vez de simétrico nos dois.
+    """
+    area = area_barra(16.0)
+    h = b = 0.30
+    d_linha_h = 0.043  # insuficiente: c implícito = 43 - 5 - 8 = 30 mm < 45
+    d_linha_b = 0.058  # no limite:    c implícito = 58 - 5 - 8 = 45 mm >= 45
+    barras_assimetricas_entre_planos = tuple(
+        BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+        for ph in (d_linha_h, h - d_linha_h)
+        for pb in (d_linha_b, b - d_linha_b))
+
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(
+            cobrimento_declarado_mm=45.0,
+            barras=barras_assimetricas_entre_planos,
+            espacamento_entre_eixos_mm=(h - 2 * d_linha_h) * 1000.0))
+
+    mensagem = str(erro.value)
+    assert "7.4.7.5" in mensagem
+    assert "plano de h" in mensagem  # é o plano de h que governa (o MENOR)
+    assert "45.00" in mensagem and "30.00" in mensagem
+    assert "INSEGURO" in mensagem
+
+    # Confirma diretamente a propriedade que o mutante M4 ataca: o cobrimento
+    # implícito da PEÇA é o MENOR dos dois planos, não o maior.
+    from calc_core.estrutural.pilarete.geometria import (
+        cobrimento_implicito_pelas_barras,
+        exigir_cobrimento_consistente_com_as_barras,
+    )
+    c_h = cobrimento_implicito_pelas_barras(
+        d_linha=d_linha_h, phi_longitudinal_mm=16.0, phi_t_mm=5.0)
+    c_b = cobrimento_implicito_pelas_barras(
+        d_linha=d_linha_b, phi_longitudinal_mm=16.0, phi_t_mm=5.0)
+    assert c_h == pytest.approx(30.0)
+    assert c_b == pytest.approx(45.0)  # 58 - 5 - 8 = 45 mm: no limite, suficiente
+    with pytest.raises(RecusaForaDeDominio):
+        exigir_cobrimento_consistente_com_as_barras(
+            d_linha_no_plano_de_h=d_linha_h, d_linha_no_plano_de_b=d_linha_b,
+            phi_longitudinal_mm=16.0, phi_t_mm=5.0,
+            cobrimento_declarado_mm=45.0, cobrimento_minimo_mm=45.0)
+
+
 def test_d_linha_do_cortante_e_o_MESMO_que_passou_pelo_cruzamento():
     """Não há caminho até V_Rd2 que escape do cruzamento.
 
