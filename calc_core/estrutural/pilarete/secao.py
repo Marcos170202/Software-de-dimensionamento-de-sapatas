@@ -749,7 +749,13 @@ def momento_resistente_por_faixas(
         M_aco += A_si * tensao * (altura / 2.0 - y_i)
 
     faixas = faixas_iniciais
-    N_anterior = M_anterior = None
+    # O critério de parada é sobre M_Rd APENAS, e isso é o que a derivação
+    # declara ("refinamento até variação de M_Rd abaixo de um limiar
+    # declarado"). Não se guarda um N anterior porque N não entra no critério:
+    # guardá-lo sem usar sugeriria um teste de convergência que não existe, e
+    # ACRESCENTAR N ao critério seria implementar além do que a derivação
+    # aprovada autoriza.
+    M_anterior = None
     while faixas <= faixas_maximas:
         passo = y_c / faixas
         N_c = 0.0
@@ -763,7 +769,7 @@ def momento_resistente_por_faixas(
             variacao = abs(M_c - M_anterior) / max(1.0, abs(M_c))
             if variacao <= tolerancia_relativa:
                 return N_c + N_aco, M_c + M_aco, faixas
-        N_anterior, M_anterior = N_c, M_c
+        M_anterior = M_c
         faixas *= 2
 
     raise RecusaForaDeDominio(  # pragma: no cover - refinamento não converge

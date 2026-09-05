@@ -756,6 +756,23 @@ caso("SANITY-espacamento-adotado-abaixo-do-teto-composto",
      "teto composto - s adotado (125 mm) — deve ser >= 0",
      (min(s_max_1833, s_max_1843) - Q(125.0, "mm")).to("mm"), "mm")
 
+# --- 7.4.7.5 — o CRUZAMENTO cobrimento x posicoes das barras ---------------
+# A identidade MISTURA UNIDADES: d' entra em METROS (é posição de barra, como
+# h e b) e phi_t/phi_l em MILÍMETROS. Era exatamente aqui que um fator 1000
+# trocado passaria despercebido — o resultado continua "um comprimento" e
+# nenhum teste de veredito o pegaria, porque o número errado só apareceria
+# como um cobrimento implausível. Com d' = 58 mm, phi_t = 5 mm e phi = 16 mm,
+# c = 58 - 5 - 8 = 45 mm, que é o piso da nota (d) da Tabela 7.2.
+d_linha_barra = Q(0.058, "m")   # posição declarada do eixo da barra
+caso("NBR6118-7.4.7.5-cobrimento-implicito-pelas-barras",
+     "c = d' - phi_t - phi_l/2, com d' em METROS e phi em MILIMETROS "
+     "(cobrimento à face externa do ESTRIBO)",
+     (d_linha_barra.to("mm") - phi_t - phi_l / 2.0).to("mm"), "mm")
+caso("SANITY-cobrimento-implicito-nao-menor-que-o-declarado",
+     "c_implicito - c_declarado (45 mm) — deve ser >= 0, senao RECUSA",
+     (d_linha_barra.to("mm") - phi_t - phi_l / 2.0 - Q(45.0, "mm")).to("mm"),
+     "mm")
+
 # --- 17.4.1.1.2-a) — o ramo que a guarda de 13.2.3 torna inalcançável ------
 caso("NBR6118-17.4.1.1.2-a-bw-maior-que-5d",
      "b_w - 5*d (se > 0, tratar como laje por 19.4; com h <= 5*b de 13.2.3 "

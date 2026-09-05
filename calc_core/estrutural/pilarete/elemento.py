@@ -42,6 +42,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from calc_core.estrutural.dominio import (
+    DECLARADO_EM_TEXTO,
     DECLARADO_PELO_USUARIO,
     ESCOPO_DESTA_VERSAO,
     RecusaForaDeDominio,
@@ -63,8 +64,10 @@ from calc_core.estrutural.pilarete.esbeltez import (
     verificar_pilar_curto,
 )
 from calc_core.estrutural.pilarete.geometria import (
+    ConsistenciaDeCobrimento,
     ResultadoDimensoesLimites,
     cobrimento_nominal_minimo,
+    exigir_cobrimento_consistente_com_as_barras,
     verificar_dimensoes_limites,
 )
 from calc_core.estrutural.pilarete.secao import (
@@ -243,6 +246,20 @@ class ResultadoPilarete:
     cobrimento_minimo_mm: float
     cobrimento_declarado_mm: float
     atende_cobrimento: bool
+    consistencia_de_cobrimento: ConsistenciaDeCobrimento
+    """Cruzamento cobrimento DECLARADO × IMPLÍCITO nas posições das barras.
+
+    Ref.: ABNT NBR 6118:2023, item 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    Se este campo existe, o cruzamento PASSOU — ele é feito por
+    :func:`~calc_core.estrutural.pilarete.geometria.exigir_cobrimento_consistente_com_as_barras`
+    ANTES de §17.2 e de §17.4, e o caso inconsistente RECUSA em vez de chegar
+    até aqui. Guardá-lo no resultado é o que põe os três números no memorial:
+    um cruzamento que não aparece no memorial é indistinguível de um
+    cruzamento que não existe.
+    """
     gamma_c_usado: float
     gamma_s_usado: float
     correcao_12_4_1_aplicada: bool
@@ -470,6 +487,7 @@ class ResultadoPilarete:
             + ("atende." if self.atende_cobrimento else "NÃO ATENDE.")
             + " Campo PRÓPRIO do pilarete, distinto do cobrimento da sapata, "
             "medido à face externa do ESTRIBO (7.4.7.5).")
+        linhas.append(self.consistencia_de_cobrimento.linha_de_memorial)
 
         # (n) a (q) na FAIXA A; (s) na FAIXA B.
         if self.elu_cortante is not None:
@@ -512,7 +530,27 @@ class ResultadoPilarete:
         [req: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer]  (n)-(q)
         """
         v = self.elu_cortante
-        assert v is not None  # garantido pelo chamador; FAIXA A tem cortante
+        # NÃO é `assert`: `assert` some inteiro sob `python -O`, e o que
+        # sobraria seria um AttributeError obscuro em `v.modelo_de_calculo` —
+        # ou, pior, linhas de cortante meio formadas num memorial da FAIXA B,
+        # onde §17.4 foi RECUSADO e não existe V_Rd2 nenhum. A guarda de uma
+        # invariante que protege o memorial não pode depender do modo de
+        # execução do interpretador.
+        if v is None:
+            raise RecusaForaDeDominio(
+                parametro="elu_cortante",
+                valor=None,
+                intervalo="ResultadoCortante (só existe na FAIXA A de 14.4.1)",
+                fonte="ABNT NBR 6118:2023, 14.4.1, p. 83 — fora da FAIXA A o "
+                      "elemento não é linear e §17.4 NÃO se aplica: não há "
+                      "cortante verificado para relatar",
+                forca=DECLARADO_EM_TEXTO,
+                apoio_no_ruleset="NBR6118-14.4.1-elemento-linear-classificacao",
+                sugestao="Na FAIXA B o memorial traz as DUAS frases "
+                         "obrigatórias de `frases_obrigatorias_da_faixa_B` em "
+                         "vez destas linhas. É PROIBIDO redigir linhas de "
+                         "cortante para um elemento cujo cortante NÃO FOI "
+                         "VERIFICADO.")
         linhas = [
             f"NBR 6118:2023, 17.4.2 (p. 136-139): MODELO declarado "
             f"{v.modelo_de_calculo}"
@@ -660,6 +698,11 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
        majorado; não existe caminho de compressão centrada (16.3);
     5. 15.8.1/15.8.2 — pilar curto, com lambda < lambda_1 ESTRITO;
     6. 14.4.1 — a FAIXA, que decide se §17.4 existe para este elemento;
+    6-bis. 7.4.7.5 — o CRUZAMENTO entre o cobrimento declarado e o implícito
+       nas posições das barras (REQ-PILARETE-09). Vem antes de 7 e de 8 porque
+       é dali que saem os braços de alavanca de §17.2 e o d' de §17.4: nenhum
+       número pode sair de uma geometria de armadura incoerente com o
+       cobrimento declarado;
     7. 17.2 — o veredito de solicitações normais, SEMPRE, nas duas faixas;
     8. 17.4 — só na FAIXA A; na FAIXA B a chamada nem é feita, e o memorial
        traz as duas frases obrigatórias em vez de um "não aplicável";
@@ -731,6 +774,34 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
     classificacao = classificacao_14_4_1.classificar_faixa(
         ell=dados.ell, h_secao=dados.h_secao, b_secao=dados.b_secao)
 
+    # (6-bis) 7.4.7.5 — CRUZAMENTO do cobrimento declarado com as posições
+    # declaradas das barras, e ele vem ANTES de (7) e (8) de propósito.
+    #
+    # As posições das barras são a ÚNICA fonte da geometria da armadura para os
+    # dois passos seguintes: §17.2 usa `dados.barras` nos braços de alavanca da
+    # varredura de M_Rd e §17.4 usa o d' delas em V_Rd2 e V_c0. O cobrimento
+    # declarado, até aqui, só era comparado ISOLADAMENTE contra o mínimo da
+    # Tabela 7.2 (`atende_cobrimento`, lá embaixo) — os dois canais descreviam a
+    # MESMA distância física e nunca se encontravam. Declarar c = 45 mm e
+    # posicionar as barras como se fosse 30 mm dava d maior, V_Rd2 maior, M_Rd
+    # maior e veredito ATENDIDO, do lado INSEGURO e em silêncio.
+    #
+    # Por isso o cruzamento é feito AQUI e não na montagem do resultado: RECUSA
+    # ANTES de qualquer número sair de uma geometria incoerente, e vale nas DUAS
+    # faixas (a FAIXA B não chama §17.4, mas chama §17.2, que usa as mesmas
+    # barras). O d' é calculado uma vez só, e é o MESMO que (8) consome.
+    cobrimento_minimo = cobrimento_nominal_minimo(
+        classe_de_agressividade=dados.classe_de_agressividade,
+        phi_longitudinal_mm=dados.phi_longitudinal_mm,
+        d_agregado_mm=dados.d_agregado_mm)
+    d_linha_h, d_linha_b = _distancias_ao_centroide_das_barras(dados)
+    consistencia_de_cobrimento = exigir_cobrimento_consistente_com_as_barras(
+        d_linha_no_plano_de_h=d_linha_h, d_linha_no_plano_de_b=d_linha_b,
+        phi_longitudinal_mm=dados.phi_longitudinal_mm,
+        phi_t_mm=dados.phi_t_mm,
+        cobrimento_declarado_mm=dados.cobrimento_declarado_mm,
+        cobrimento_minimo_mm=cobrimento_minimo)
+
     # (7) 17.2 — o veredito de solicitações normais, nas duas faixas.
     secao = SecaoRetangular(h_secao=dados.h_secao, b_secao=dados.b_secao,
                             barras=dados.barras, concreto=concreto,
@@ -750,7 +821,9 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
     V_Sd_para_detalhamento = None
     V_Rd2_para_detalhamento = None
     if classificacao.faixa == classificacao_14_4_1.FAIXA_A_ELEMENTO_LINEAR:
-        d_linha_h, d_linha_b = _distancias_ao_centroide_das_barras(dados)
+        # d_linha_h/d_linha_b vêm de (6-bis), já cruzados com o cobrimento
+        # declarado. Não se recalculam aqui: recalcular reabriria a porta de
+        # um caminho que chega a V_Rd2 sem o cruzamento ter passado.
         elu_cortante = cortante_17_4.verificar(
             classificacao=classificacao, concreto=concreto,
             aco_do_estribo=aco_do_estribo, h_secao=dados.h_secao,
@@ -802,11 +875,9 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
     exigencias = ligacao_9_5_21_6.exigencias_de_armadura_transversal_da_emenda(
         phi_mm=dados.phi_longitudinal_mm, ell_0c=traspasse.ell_0c)
 
-    cobrimento_minimo = cobrimento_nominal_minimo(
-        classe_de_agressividade=dados.classe_de_agressividade,
-        phi_longitudinal_mm=dados.phi_longitudinal_mm,
-        d_agregado_mm=dados.d_agregado_mm)
-
+    # cobrimento_minimo já foi calculado em (6-bis) — é o mesmo número que
+    # entrou no cruzamento, e calcular duas vezes só criaria a chance de
+    # divergirem.
     return ResultadoPilarete(
         faixa=classificacao.faixa,
         classificacao=classificacao,
@@ -822,6 +893,7 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
         cobrimento_minimo_mm=cobrimento_minimo,
         cobrimento_declarado_mm=dados.cobrimento_declarado_mm,
         atende_cobrimento=dados.cobrimento_declarado_mm >= cobrimento_minimo,
+        consistencia_de_cobrimento=consistencia_de_cobrimento,
         gamma_c_usado=gamma_c,
         gamma_s_usado=dados.gamma_s,
         correcao_12_4_1_aplicada=bool(dados.condicoes_desfavoraveis_de_execucao),

@@ -428,3 +428,144 @@ def test_recusas_do_caminho_com_resultado_tem_os_mesmos_campos_do_sem_resultado(
     assert {f.name for f in fields(com_resultado)} == {
         "nome_do_metodo", "pratica", "parametro", "valor", "intervalo",
         "fonte", "forca", "motivo", "apoio_no_ruleset", "sugestao"}
+
+
+# --- 6. A recusa sobrevive à máquina de exceções do Python ------------------
+#
+# DEFEITO REPRODUZIDO POR EXECUÇÃO ANTES DA CORREÇÃO (revisão a6, backlog #13):
+# as recusas são `@dataclass(frozen=True)` herdando de `ValueError`, e o
+# `__setattr__` gerado pelo dataclass frozen recusa QUALQUER atributo numa
+# instância do tipo exato. Quando código Python — e não o C do interpretador —
+# escreve `__traceback__` ou `__notes__` na exceção em trânsito, o usuário
+# recebia `FrozenInstanceError: cannot assign to field '__traceback__'`: um
+# traceback cru de erro interno no lugar da recusa legível com parâmetro,
+# valor, intervalo e fonte que REQ-UI-SIGMA-03 exige.
+#
+# A propagação comum (`raise`/`except`/`raise ... from`) NUNCA disparava o
+# defeito — aí o CPython escreve direto na struct C, sem passar por
+# `__setattr__` —, e é por isso que ele passou por A6/A7 sem aparecer. Os
+# testes abaixo exercitam a PROPAGAÇÃO REAL pelos caminhos que têm código
+# Python no meio, que são os que quebravam.
+
+def _caso_sem_metodo_aplicavel():
+    """N_SPT = 25 em argila declarada: nenhuma das duas correlações se aplica."""
+    return _caso(N_spt=25.0, solo_declarado="argila")
+
+
+def test_recusa_atravessa_gerenciador_de_contexto_sem_traceback_cru():
+    """`@contextlib.contextmanager` faz `exc.__traceback__ = traceback`.
+
+    É Python puro (CPython 3.12, `contextlib.py`, linha 191), logo passa pelo
+    `__setattr__` congelado. ANTES da correção este teste morria com
+    `FrozenInstanceError: cannot assign to field '__traceback__'` em vez de
+    entregar a recusa.
+    """
+    import contextlib
+
+    @contextlib.contextmanager
+    def _passagem():
+        yield
+
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        with _passagem():
+            semiempirico_spt(_caso_sem_metodo_aplicavel())
+
+    # A recusa chega INTEIRA, não degradada num erro interno.
+    assert erro.value.recusas
+    assert "N_spt_medio_bulbo" in erro.value.mensagem
+    assert erro.value.__traceback__ is not None
+
+
+def test_recusa_simples_atravessa_gerenciador_de_contexto():
+    """Mesmo caminho para a recusa de método único (`ForaDoDominioError`)."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def _passagem():
+        yield
+
+    with pytest.raises(ForaDoDominioError) as erro:
+        with _passagem():
+            _areia(N_spt=40.0)
+
+    assert type(erro.value) is ForaDoDominioError
+    assert erro.value.parametro == "N_spt"
+    assert erro.value.__traceback__ is not None
+
+
+def test_recusa_aceita_add_note_do_chamador():
+    """`add_note` faz `self.__notes__ = []` via `PyObject_SetAttr`.
+
+    Também passa pelo `__setattr__` congelado, e também morria com
+    `FrozenInstanceError` antes da correção. É o mecanismo padrão de anotar
+    uma exceção em trânsito, e a recusa não pode quebrar por ser anotada.
+    """
+    with pytest.raises(NenhumMetodoAplicavelError) as erro:
+        try:
+            semiempirico_spt(_caso_sem_metodo_aplicavel())
+        except NenhumMetodoAplicavelError as recusa:
+            recusa.add_note("contexto do chamador: sapata S1")
+            raise
+
+    assert "contexto do chamador: sapata S1" in erro.value.__notes__
+    assert erro.value.recusas          # a recusa segue íntegra
+
+
+def test_campos_da_recusa_continuam_congelados():
+    """A liberação é uma LISTA FECHADA — os campos seguem imutáveis.
+
+    Reescrever `parametro`/`valor`/`fonte` depois de construída falsificaria a
+    `mensagem` já formatada em `__post_init__`, e a recusa perderia a
+    procedência. Atributo arbitrário também continua recusado.
+    """
+    from dataclasses import FrozenInstanceError
+
+    with pytest.raises(ForaDoDominioError) as erro:
+        _areia(N_spt=40.0)
+    recusa = erro.value
+
+    for campo in ("parametro", "valor", "intervalo", "fonte", "forca",
+                  "apoio_no_ruleset", "sugestao"):
+        with pytest.raises(FrozenInstanceError):
+            setattr(recusa, campo, "adulterado")
+
+    with pytest.raises(FrozenInstanceError):
+        recusa.atributo_inventado = 1     # nada fora da lista fechada passa
+
+    assert recusa.parametro == "N_spt"    # nada foi adulterado
+
+
+def test_toda_classe_de_recusa_frozen_sobrevive_a_maquina_de_excecoes():
+    """Varre o módulo: nenhuma classe de recusa frozen pode ficar de fora.
+
+    `dataclasses` gera um `__setattr__` PRÓPRIO no `__dict__` de cada classe
+    frozen, inclusive nas que herdam de outra classe frozen — então herdar a
+    correção NÃO basta e uma subclasse nova reintroduziria o defeito em
+    silêncio. Este teste é a rede: descobre as classes por varredura, não por
+    lista escrita à mão.
+    """
+    import contextlib
+    import dataclasses
+    import inspect
+
+    from calc_core.geotecnico import dominio
+
+    @contextlib.contextmanager
+    def _passagem():
+        yield
+
+    encontradas = [
+        classe for _, classe in inspect.getmembers(dominio, inspect.isclass)
+        if issubclass(classe, ForaDoDominioError)
+        and dataclasses.is_dataclass(classe)
+        and classe.__dataclass_params__.frozen
+    ]
+    assert set(encontradas) == {ForaDoDominioError, NenhumMetodoAplicavelError}
+
+    for classe in encontradas:
+        exemplar = classe(
+            parametro="p", valor=1.0, intervalo="0 a 0", fonte="f",
+            forca=DECLARADO_EM_TEXTO, apoio_no_ruleset="REQ-SIGMA-04")
+        with pytest.raises(classe):        # não FrozenInstanceError
+            with _passagem():
+                raise exemplar

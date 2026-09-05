@@ -354,6 +354,129 @@ def test_cobrimento_insuficiente_reprova_sem_recusar():
     assert "NÃO ATENDE" in " ".join(resultado.memorial())
 
 
+# --- REQ-PILARETE-09: o CRUZAMENTO cobrimento × posições das barras ---------
+#
+# O DEFEITO QUE ESTES TESTES MATAM (backlog #13, GATE 2, rodada 1, commit
+# d466a59 — veto do a6 em E3): o d' que alimenta V_Rd2, V_c0 e a varredura de
+# M_Rd saía de min(pos_h)/min(pos_b) — as posições DECLARADAS das barras — sem
+# NENHUM cruzamento com cobrimento_declarado_mm, que só era comparado,
+# isolado, contra o mínimo da Tabela 7.2 em `atende_cobrimento`. Duas fontes
+# para a MESMA distância física, e elas nunca se encontravam.
+
+def test_barras_que_implicam_cobrimento_MENOR_que_o_declarado_RECUSAM():
+    """O CENÁRIO EXATO DO DEFEITO: c = 45 mm declarado, barras a 43 mm.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    45 mm SATISFAZ `atende_cobrimento` (mínimo 45 mm para phi 16 / CAA II /
+    d_agr 19 mm), mas d' = 0,043 m com phi_t = 5 mm e phi = 16 mm implica
+    c = 43 − 5 − 8 = 30 mm — o cobrimento REAL da peça é 30 mm, e MENOR que o
+    declarado. Antes da correção isso passava em silêncio e dava
+    V_Rd2 = 334,56 kN em vez de 315,03 kN (+6,20 %, do lado INSEGURO), com
+    veredito ATENDIDO. Agora RECUSA.
+    """
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(
+            cobrimento_declarado_mm=45.0,
+            barras=barras(d_linha=0.043),
+            espacamento_entre_eixos_mm=(0.30 - 2 * 0.043) * 1000.0))
+
+    mensagem = str(erro.value)
+    assert "7.4.7.5" in mensagem
+    # Os três números do cruzamento aparecem na recusa: o declarado, o
+    # implícito e o d' que teria de ser adotado para os dois baterem.
+    assert "45.00" in mensagem and "30.00" in mensagem
+    assert "58.00" in mensagem  # d' coerente = 45 + 5 + 16/2 = 58 mm
+    assert "INSEGURO" in mensagem
+
+
+def test_a_recusa_do_cruzamento_vale_TAMBEM_na_faixa_B():
+    """FAIXA B não chama §17.4, mas chama §17.2 — que usa as MESMAS barras.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e 17.2.2, p. 20 e 120-122
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    Se a guarda estivesse dentro do ramo do cortante, a FAIXA B seria uma
+    porta aberta: os braços de alavanca da varredura de M_Rd saem das mesmas
+    posições declaradas, e um d' inflado aumenta M_Rd do mesmo jeito.
+    """
+    with pytest.raises(RecusaForaDeDominio):
+        verificar_pilarete(dados(
+            ell=0.80, cobrimento_declarado_mm=45.0,
+            barras=barras(d_linha=0.043),
+            espacamento_entre_eixos_mm=(0.30 - 2 * 0.043) * 1000.0))
+
+
+def test_barras_MAIS_para_dentro_que_o_declarado_seguem_sem_recusa():
+    """A guarda é de UM LADO SÓ, e o lado é escolhido.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    c implícito (65 − 5 − 8 = 52 mm) MAIOR que o declarado (45 mm): o d' sai
+    MENOR, que é conservador em §17.2 e §17.4. Segue, e o cobrimento continua
+    sendo verificado pelo mínimo da Tabela 7.2 — REQ-PILARETE-09 permanece
+    REPROVAÇÃO, e não recusa.
+    """
+    resultado = verificar_pilarete(dados(
+        cobrimento_declarado_mm=45.0, barras=barras(d_linha=0.065),
+        espacamento_entre_eixos_mm=(0.30 - 2 * 0.065) * 1000.0))
+    consistencia = resultado.consistencia_de_cobrimento
+    assert consistencia.cobrimento_implicito_mm == pytest.approx(52.0)
+    assert resultado.atende_cobrimento is True
+
+
+def test_o_cruzamento_fecha_a_cadeia_ate_o_minimo_da_tabela_7_2():
+    """c_implícito >= c_declarado >= c_mín em TODO veredito ATENDIDO.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    É a composição das duas metades — a guarda de 6-bis dá a primeira
+    desigualdade, `atende_cobrimento` dá a segunda — e é ela que faz o mínimo
+    da Tabela 7.2 valer para a PEÇA, e não para um número declarado à parte.
+    """
+    resultado = verificar_pilarete(dados())
+    assert resultado.atendido is True
+    consistencia = resultado.consistencia_de_cobrimento
+    assert (consistencia.cobrimento_implicito_mm
+            >= resultado.cobrimento_declarado_mm
+            >= resultado.cobrimento_minimo_mm)
+
+
+def test_o_memorial_registra_o_cruzamento_com_os_tres_numeros():
+    """Cruzamento que não aparece no memorial é indistinguível de inexistente.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [req: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer]
+    """
+    memorial = " ".join(verificar_pilarete(dados()).memorial())
+    assert "CRUZAMENTO cobrimento × posições das barras" in memorial
+    assert "45.00 mm (plano de h)" in memorial
+    assert "45.00 mm (plano de b)" in memorial
+    assert "c declarado = 45.0 mm" in memorial
+
+
+def test_d_linha_do_cortante_e_o_MESMO_que_passou_pelo_cruzamento():
+    """Não há caminho até V_Rd2 que escape do cruzamento.
+
+    Ref.: ABNT NBR 6118:2023, 7.4.7.5 e 17.4.2.2, p. 20 e 136
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    Fecha o defeito pelo lado do CONSUMIDOR: o d_útil que o cortante usa tem de
+    ser reconstrutível a partir do cobrimento cruzado. Se alguém voltar a
+    recalcular o d' dentro do ramo de §17.4, esta igualdade quebra.
+    """
+    resultado = verificar_pilarete(dados())
+    consistencia = resultado.consistencia_de_cobrimento
+    d_linha_esperado = (consistencia.cobrimento_implicito_no_plano_de_h_mm
+                        + 5.0 + 16.0 / 2.0) / 1000.0
+    d_util = resultado.elu_cortante.plano.d_util_no_plano_do_cortante
+    assert d_util == pytest.approx(0.30 - d_linha_esperado)
+
+
 # --- Veredito como CONJUNÇÃO -----------------------------------------------
 
 def test_veredito_reprova_quando_o_cortante_reprova():
@@ -372,6 +495,26 @@ def test_na_faixa_B_o_cortante_nao_entra_como_atendido_por_omissao():
     assert resultado.atendido is resultado.elu_normal.atendido
     memorial = " ".join(resultado.memorial())
     assert "NÃO FOI VERIFICADO" in memorial
+
+
+def test_linhas_do_cortante_na_faixa_B_RECUSAM_e_nao_dependem_de_assert():
+    """A invariante é guarda de verdade — `assert` some sob `python -O`.
+
+    Ref.: ABNT NBR 6118:2023, item 14.4.1, p. 83
+    [rule: NBR6118-14.4.1-elemento-linear-classificacao]
+    [req: REQ-PILARETE-16-escopo-do-veredito-e-o-cortante-nao-verificado]
+
+    Chamar `_linhas_do_cortante` num resultado de FAIXA B é erro de wiring, e o
+    que ele produziria é o pior tipo de saída: linhas de cortante num memorial
+    de elemento cujo §17.4 foi RECUSADO. Com `assert`, a proteção existia em
+    modo normal e DESAPARECIA sob `python -O` — a suíte passaria e a produção
+    otimizada não teria guarda nenhuma.
+    """
+    resultado = verificar_pilarete(dados(ell=0.80))
+    assert resultado.elu_cortante is None
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        resultado._linhas_do_cortante()
+    assert "14.4.1" in str(erro.value)
 
 
 # --- Simetria do problema (teste pedido pelo despacho) ---------------------

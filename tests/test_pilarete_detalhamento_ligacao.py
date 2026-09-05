@@ -327,6 +327,58 @@ def test_alternativa_de_estribo_fino_dispensa_phi_sobre_4_mas_nao_o_piso_de_5_mm
     assert fora.atendido is False
 
 
+def test_empate_exato_entre_as_duas_fontes_nomeia_as_DUAS_no_memorial():
+    """Empatou, os DOIS governam — e o desempate não é lexicográfico.
+
+    Ref.: ABNT NBR 6118:2023, itens 18.4.3 e 18.3.3.2, p. 150-154
+    [deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3]
+
+    Caso COMUM, não exótico: com phi 16 mm o phi/4 = 4 mm fica abaixo do piso
+    absoluto, e as DUAS fontes exigem exatamente os mesmos 5 mm. Antes, o
+    desempate saía por acidente da comparação das strings dos rótulos
+    ("18.3.3.2" < "18.4.3"), o que atribuía o empate a lados opostos conforme
+    a natureza fosse TETO ou PISO. O memorial dizia "governou 18.4.3", e quem
+    lesse concluiria que 18.3.3.2 estava folgado ali — quando impõe o mesmo
+    limite.
+    """
+    resultado = verificar_estribos(
+        concreto=C25, aco_longitudinal=CA50, phi_longitudinal_mm=16.0,
+        phi_t_mm=6.0, s_adotado_mm=125.0, h_secao=0.30, b_secao=0.30)
+    piso = resultado.piso_phi_t
+    assert piso.valor_18_4_3 == pytest.approx(5.0)
+    assert piso.valor_18_3_3_2 == pytest.approx(5.0)
+    assert piso.valor_adotado == pytest.approx(5.0)
+    assert piso.item_que_governou == "18.4.3 e 18.3.3.2"
+    assert "governou 18.4.3 e 18.3.3.2" in piso.descricao_para_memorial
+
+    # Sem empate, a atribuição continua sendo a UM item só.
+    assert resultado.teto_s.item_que_governou == "18.4.3"
+
+
+def test_o_default_de_mesmo_aco_e_RESTRITIVO_e_nao_oferece_a_alternativa():
+    """Omitir o parâmetro NÃO pode valer por afirmar a condição de 18.4.3.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.3, p. 153-154
+    [rule: NBR6118-18.4.3-armaduras-transversais-pilarete]
+    [req: REQ-PILARETE-08-estribos-e-a-recusa-do-CA-60]
+
+    ``mesmo_aco_nas_duas_armaduras`` é a CONDIÇÃO que autoriza dispensar o
+    ``phi_t >= phi/4``. Com default ``True`` — como estava — todo chamador que
+    ignorasse o parâmetro ganhava a dispensa de graça, com a condição da Norma
+    presumida satisfeita por omissão: erro do lado INSEGURO numa função
+    pública. Mesmíssima chamada do teste acima, só que SEM o parâmetro: a
+    alternativa não é oferecida e o phi/4 = 6,25 mm volta a valer, reprovando
+    o estribo de 5 mm.
+    """
+    omitido = verificar_estribos(
+        concreto=C25, aco_longitudinal=CA50, phi_longitudinal_mm=25.0,
+        phi_t_mm=5.0, s_adotado_mm=125.0, h_secao=0.30, b_secao=0.30)
+    assert omitido.alternativa_de_estribo_fino_invocada is False
+    assert omitido.piso_phi_t.valor_adotado == pytest.approx(6.25)
+    assert omitido.atende_piso_phi_t is False
+    assert omitido.atendido is False
+
+
 def test_nota_de_C55_a_C90_e_aviso_e_nunca_reprovacao():
     """A NOTA de 18.4.3 escreve "recomenda-se" — recomendação não vira critério."""
     c60 = Concreto(fck=60.0, gamma_c=1.4)

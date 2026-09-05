@@ -29,11 +29,15 @@ __all__ = [
     "CLASSES_DE_AGRESSIVIDADE",
     "COBRIMENTO_TAB7_2_VIGA_PILAR_MM",
     "PISO_NOTA_D_MM",
+    "TOLERANCIA_DE_COBRIMENTO_MM",
     "ResultadoDimensoesLimites",
+    "ConsistenciaDeCobrimento",
     "verificar_dimensoes_limites",
     "verificar_campo_18_4",
     "raio_de_giracao",
     "cobrimento_nominal_minimo",
+    "cobrimento_implicito_pelas_barras",
+    "exigir_cobrimento_consistente_com_as_barras",
 ]
 
 CLASSES_DE_AGRESSIVIDADE: tuple[str, ...] = ("I", "II", "III", "IV")
@@ -307,3 +311,208 @@ def cobrimento_nominal_minimo(*, classe_de_agressividade: str,
         phi_longitudinal_mm,
         d_agregado_mm / 1.2,
     )
+
+
+TOLERANCIA_DE_COBRIMENTO_MM = 1.0e-6
+"""Tolerância do cruzamento cobrimento × posições das barras [mm].
+
+Ref.: ABNT NBR 6118:2023, item 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+[rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+
+É RUÍDO DE PONTO FLUTUANTE, e não margem de projeto: 1e-6 mm = 1 picômetro,
+umas 8 ordens de grandeza acima do erro de representação de um cobrimento na
+casa das dezenas de milímetros (~1e-14 mm) e umas 5 abaixo de qualquer
+diferença que um projeto possa querer declarar. Nenhum afrouxamento cabe aqui
+— uma tolerância "prática" de 0,1 mm ou 1 mm seria um cobrimento a menos
+autorizado em silêncio, que é exatamente o que esta guarda existe para impedir.
+"""
+
+
+@dataclass(frozen=True)
+class ConsistenciaDeCobrimento:
+    """Cruzamento entre o cobrimento DECLARADO e o IMPLÍCITO nas barras.
+
+    Ref.: ABNT NBR 6118:2023, itens 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    Os três números vão ao memorial: sem eles o leitor não tem como saber que
+    o cruzamento foi feito, e um cruzamento que não aparece no memorial é
+    indistinguível de um cruzamento que não existe.
+    """
+
+    cobrimento_declarado_mm: float
+    cobrimento_minimo_mm: float
+    cobrimento_implicito_no_plano_de_h_mm: float
+    """c implícito por ``min(pos_h)``, na direção de ``h_secao`` [mm]."""
+    cobrimento_implicito_no_plano_de_b_mm: float
+    """c implícito por ``min(pos_b)``, na direção de ``b_secao`` [mm]."""
+
+    @property
+    def cobrimento_implicito_mm(self) -> float:
+        """O MENOR dos dois — é ele que caracteriza a peça.
+
+        Ref.: ABNT NBR 6118:2023, item 7.4.7.5, p. 20
+        [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+        """
+        return min(self.cobrimento_implicito_no_plano_de_h_mm,
+                   self.cobrimento_implicito_no_plano_de_b_mm)
+
+    @property
+    def linha_de_memorial(self) -> str:
+        """Linha pronta, com os três números do cruzamento.
+
+        Ref.: ABNT NBR 6118:2023, itens 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+        [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+        [req: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer]
+        """
+        return (
+            "NBR 6118:2023, 7.4.7.5 (p. 20): CRUZAMENTO cobrimento × posições "
+            "das barras — c implícito pelas posições declaradas = "
+            f"{self.cobrimento_implicito_no_plano_de_h_mm:.2f} mm (plano de h) "
+            f"e {self.cobrimento_implicito_no_plano_de_b_mm:.2f} mm (plano de "
+            f"b), contra c declarado = {self.cobrimento_declarado_mm:.1f} mm. "
+            "As posições das barras e o cobrimento declarado são DUAS fontes "
+            "da MESMA grandeza (a distância da borda à armadura) e o software "
+            "RECUSA quando as barras implicam cobrimento MENOR que o "
+            "declarado — é dali que sai o d' de §17.4 e o braço de alavanca "
+            "de §17.2.")
+
+
+def cobrimento_implicito_pelas_barras(*, d_linha: float,
+                                      phi_longitudinal_mm: float,
+                                      phi_t_mm: float) -> float:
+    """Cobrimento [mm] que a posição declarada da barra implica.
+
+    Ref.: ABNT NBR 6118:2023, item 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+        c = 1000·d' − phi_t − phi_longitudinal/2      [mm]
+
+    ``d_linha`` em METROS (distância da borda ao CENTROIDE da barra, que é o
+    que ``BarraLongitudinal.pos_h``/``.pos_b`` declaram); ``phi`` em
+    MILÍMETROS. A identidade é a leitura aritmética de 7.4.7.5 — "o cobrimento
+    é referido à armadura EXTERNA, face externa do ESTRIBO" —, com o estribo
+    envolvendo a barra longitudinal: da face do concreto até o eixo da barra
+    há o cobrimento, mais o diâmetro do estribo, mais meio diâmetro da barra.
+
+    NÃO É VERIFICAÇÃO NORMATIVA, é a conversão entre as duas formas de
+    declarar a MESMA distância. Quem verifica é
+    :func:`exigir_cobrimento_consistente_com_as_barras`.
+    """
+    exigir_positivo("d_linha", d_linha,
+                    fonte="ABNT NBR 6118:2023, 7.4.7.5, p. 20",
+                    apoio_no_ruleset="NBR6118-Tab7.2-nota-d-cobrimento-pilarete")
+    exigir_positivo("phi_longitudinal_mm", phi_longitudinal_mm,
+                    fonte="ABNT NBR 6118:2023, 7.4.7.2, p. 19",
+                    apoio_no_ruleset="NBR6118-Tab7.2-nota-d-cobrimento-pilarete")
+    exigir_positivo("phi_t_mm", phi_t_mm,
+                    fonte="ABNT NBR 6118:2023, 7.4.7.5, p. 20",
+                    apoio_no_ruleset="NBR6118-Tab7.2-nota-d-cobrimento-pilarete")
+    return d_linha * 1000.0 - phi_t_mm - phi_longitudinal_mm / 2.0
+
+
+def exigir_cobrimento_consistente_com_as_barras(
+    *,
+    d_linha_no_plano_de_h: float,
+    d_linha_no_plano_de_b: float,
+    phi_longitudinal_mm: float,
+    phi_t_mm: float,
+    cobrimento_declarado_mm: float,
+    cobrimento_minimo_mm: float,
+) -> ConsistenciaDeCobrimento:
+    """RECUSA quando as barras implicam cobrimento MENOR que o declarado.
+
+    Ref.: ABNT NBR 6118:2023, item 7.4.7.5 e Tabela 7.2, nota (d), p. 20
+    [rule: NBR6118-Tab7.2-nota-d-cobrimento-pilarete]
+    [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
+
+    DUAS FONTES DE VERDADE PARA A MESMA GRANDEZA FÍSICA, e é por isso que esta
+    guarda existe. A distância da borda do concreto à armadura entra no
+    software por DOIS canais independentes:
+
+    1. ``cobrimento_declarado_mm``, que é comparado com o mínimo de 7.4.7 /
+       Tabela 7.2 (:func:`cobrimento_nominal_minimo`) e produz a REPROVAÇÃO de
+       durabilidade;
+    2. ``BarraLongitudinal.pos_h``/``.pos_b``, de onde saem o ``d'`` de §17.4
+       (e portanto ``V_Rd2`` e ``V_c0``) e os braços de alavanca da varredura
+       de ``M_Rd`` de §17.2.
+
+    Sem cruzamento, os dois canais NUNCA SE ENCONTRAM: bastava declarar 45 mm
+    (atendendo nominalmente a nota (d)) e posicionar as barras como se o
+    cobrimento fosse 30 mm para obter um ``d`` maior, um ``V_Rd2`` maior e um
+    veredito ATENDIDO — do lado INSEGURO, em silêncio. Este é o mesmo padrão
+    de guarda de :func:`~calc_core.estrutural.pilarete.detalhamento.verificar_estribos`
+    para ``(d_util, V_Sd, V_Rd2)``: dados que descrevem a mesma coisa chegam
+    coerentes ou não chegam.
+
+    A GUARDA É DE UM LADO SÓ, e o lado é escolhido, não esquecido:
+
+    * ``c_implícito < c_declarado`` -> RECUSA. O ``d`` estaria a favor da
+      segurança que não existe e o cobrimento declarado seria ficção.
+    * ``c_implícito > c_declarado`` -> SEGUE. As barras estão mais para dentro
+      do que o declarado: o ``d``  sai MENOR (conservador em §17.4 e §17.2) e
+      a verificação de durabilidade usa o MENOR dos dois (conservador em
+      7.4.7). É também o que preserva REQ-PILARETE-09 como REPROVAÇÃO e não
+      recusa: declarar 30 mm com barras posicionadas a 45 mm continua sendo
+      reprovado pelo mínimo da Tabela 7.2, sem virar exceção.
+
+    A CADEIA QUE ISSO FECHA, e ela só fecha com as duas metades: esta guarda dá
+    ``c_implícito >= c_declarado`` e a reprovação de durabilidade dá
+    ``c_declarado >= c_mín``; juntas, todo veredito ATENDIDO tem
+    ``c_implícito >= c_mín``, que é o que REQ-PILARETE-09 exige da PEÇA — e não
+    de um número declarado à parte.
+
+    ``d_linha_*`` em METROS, ``phi_*`` e cobrimentos em MILÍMETROS. Os dois
+    ``d'`` são os MESMOS que alimentam §17.4 (a camada mais próxima de cada
+    borda); com arranjo assimétrico a face oposta poderia ter cobrimento menor,
+    mas arranjo assimétrico já é RECUSADO por
+    :func:`~calc_core.estrutural.pilarete.secao.verificar_elu_solicitacoes_normais`
+    (17.2.5), de modo que ``min(pos_h) == h − max(pos_h)`` sempre que se chega
+    até aqui.
+    """
+    c_h = cobrimento_implicito_pelas_barras(
+        d_linha=d_linha_no_plano_de_h,
+        phi_longitudinal_mm=phi_longitudinal_mm, phi_t_mm=phi_t_mm)
+    c_b = cobrimento_implicito_pelas_barras(
+        d_linha=d_linha_no_plano_de_b,
+        phi_longitudinal_mm=phi_longitudinal_mm, phi_t_mm=phi_t_mm)
+    consistencia = ConsistenciaDeCobrimento(
+        cobrimento_declarado_mm=cobrimento_declarado_mm,
+        cobrimento_minimo_mm=cobrimento_minimo_mm,
+        cobrimento_implicito_no_plano_de_h_mm=c_h,
+        cobrimento_implicito_no_plano_de_b_mm=c_b,
+    )
+    implicito = consistencia.cobrimento_implicito_mm
+    if implicito < cobrimento_declarado_mm - TOLERANCIA_DE_COBRIMENTO_MM:
+        plano = "h" if c_h <= c_b else "b"
+        d_linha = (d_linha_no_plano_de_h if plano == "h"
+                   else d_linha_no_plano_de_b)
+        d_linha_coerente = (cobrimento_declarado_mm + phi_t_mm
+                            + phi_longitudinal_mm / 2.0) / 1000.0
+        raise RecusaForaDeDominio(
+            parametro=("(cobrimento_declarado_mm, posições das barras) — "
+                       f"plano de {plano}"),
+            valor=(round(cobrimento_declarado_mm, 4), round(d_linha, 6)),
+            intervalo=("cobrimento implícito pelas posições das barras >= "
+                       "cobrimento declarado"),
+            fonte="ABNT NBR 6118:2023, 7.4.7.5 e Tabela 7.2, nota (d), p. 20 — "
+                  "o cobrimento é referido à face externa do ESTRIBO, de modo "
+                  "que a posição do eixo da barra é c_nom + phi_t + phi/2 e as "
+                  "duas declarações descrevem a MESMA distância",
+            forca=DECLARADO_EM_TEXTO,
+            apoio_no_ruleset="NBR6118-Tab7.2-nota-d-cobrimento-pilarete",
+            sugestao=(
+                f"Declarado c = {cobrimento_declarado_mm:.2f} mm, mas a barra "
+                f"mais próxima da borda está a d' = {d_linha * 1000.0:.2f} mm "
+                f"do eixo, o que com phi_t = {phi_t_mm:.2f} mm e phi = "
+                f"{phi_longitudinal_mm:.2f} mm implica c = {implicito:.2f} mm "
+                f"(mínimo exigido: {cobrimento_minimo_mm:.2f} mm). Um c "
+                "implícito MENOR que o declarado aumenta d, aumenta V_Rd2 e "
+                "aumenta M_Rd: é erro do lado INSEGURO, e o software não "
+                "escolhe entre as duas declarações. Para o c declarado, as "
+                f"barras teriam de estar a d' >= {d_linha_coerente * 1000.0:.2f}"
+                " mm da borda."),
+        )
+    return consistencia

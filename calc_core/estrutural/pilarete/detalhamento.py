@@ -527,6 +527,16 @@ class LimiteComposto:
     valor_18_3_3_2: float | None
     valor_adotado: float
     item_que_governou: str
+    """``"18.4.3"``, ``"18.3.3.2"`` ou ``"18.4.3 e 18.3.3.2"`` no EMPATE EXATO.
+
+    Ref.: ABNT NBR 6118:2023, itens 18.4.3 e 18.3.3.2, p. 150-154
+    [deriv: DER-NBR6118-composicao-18.3.3.2-com-18.4.3]
+
+    O empate é caso REAL e não hipótese remota: com ``phi_t`` abaixo do piso
+    absoluto, os dois itens exigem os mesmos 5 mm. Atribuí-lo a um só dos itens
+    esconderia do memorial que o limite é imposto DUAS vezes — quem lesse
+    "governou 18.3.3.2" concluiria que 18.4.3 foi folgado ali.
+    """
 
     @property
     def descricao_para_memorial(self) -> str:
@@ -565,11 +575,28 @@ def _compor(nome: str, natureza: str, valor_18_4_3: float | None,
             fonte="ABNT NBR 6118:2023, 18.4.3 e 18.3.3.2",
             forca=ESCOPO_DESTA_VERSAO,
             apoio_no_ruleset="DER-NBR6118-composicao-18.3.3.2-com-18.4.3")
-    escolhido = (min(candidatos) if natureza == "TETO" else max(candidatos))
+    # O EMPATE EXATO É TRATADO EXPLICITAMENTE, e não deixado ao acaso da
+    # ordenação de tuplas. `min(candidatos)`/`max(candidatos)` sobre pares
+    # (valor, rótulo) desempatavam comparando as STRINGS "18.3.3.2" e "18.4.3":
+    # determinístico, sim, mas por acidente — o critério era a ordem
+    # lexicográfica dos rótulos, de modo que o TETO atribuía o empate a
+    # "18.3.3.2" e o PISO a "18.4.3" (lados opostos, sem nenhuma razão de
+    # engenharia), e renomear um rótulo inverteria a atribuição.
+    #
+    # `valor_adotado` nunca dependeu disso — num empate os dois números são o
+    # mesmo. O que dependia era `item_que_governou`, que vai ao MEMORIAL: dizer
+    # que um item governou quando os DOIS impõem exatamente o mesmo limite é
+    # falso num documento auditável, e apaga a informação de que o limite é
+    # imposto duas vezes. Empatou, os dois governam, e o memorial diz isso.
+    valores = [valor for valor, _ in candidatos]
+    valor_adotado = min(valores) if natureza == "TETO" else max(valores)
+    governantes = [item for valor, item in candidatos if valor == valor_adotado]
     return LimiteComposto(
         nome=nome, natureza=natureza, valor_18_4_3=valor_18_4_3,
-        valor_18_3_3_2=valor_18_3_3_2, valor_adotado=escolhido[0],
-        item_que_governou=escolhido[1],
+        valor_18_3_3_2=valor_18_3_3_2, valor_adotado=valor_adotado,
+        # A ordem vem da construção de `candidatos` (18.4.3, depois 18.3.3.2),
+        # e não da grafia dos rótulos.
+        item_que_governou=" e ".join(governantes),
     )
 
 
@@ -671,7 +698,7 @@ def verificar_estribos(
     d_util_no_plano_do_cortante: float | None = None,
     V_Sd: float | None = None,
     V_Rd2_valor: float | None = None,
-    mesmo_aco_nas_duas_armaduras: bool = True,
+    mesmo_aco_nas_duas_armaduras: bool = False,
     barra_lisa_no_estribo: bool = False,
 ) -> ResultadoEstribos:
     """Detalhamento do estribo, compondo 18.4.3 com 18.3.3.2. TETOS × PISOS.
@@ -694,6 +721,18 @@ def verificar_estribos(
     ``phi_t >= phi/4`` de 18.4.3 e o ``phi_long >= phi_t`` que a Emenda 1:2026
     inclui em 18.3.3.2 ENCAIXOTAM a relação em ``phi/4 <= phi_t <= phi``. O
     software verifica as duas em conjunto — é composição, não transcrição.
+
+    ``mesmo_aco_nas_duas_armaduras`` TEM DEFAULT RESTRITIVO (``False``), e o
+    default é escolhido, não herdado. Esse parâmetro é a CONDIÇÃO que 18.4.3
+    impõe para OFERECER a alternativa ``phi_t < phi/4``: com ele em ``True`` a
+    função DISPENSA o piso de ``phi/4``. Um default ``True`` numa função
+    pública entregaria a dispensa a todo chamador que simplesmente não soubesse
+    do parâmetro — a condição da Norma seria presumida satisfeita por omissão,
+    que é o lado INSEGURO. Com ``False``, quem não declara nada fica com o
+    ``phi/4`` de 18.4.3 valendo integralmente, e a alternativa só existe para
+    quem AFIRMA a condição. O caminho de integração
+    (:func:`~calc_core.estrutural.pilarete.elemento.verificar_pilarete`) não
+    depende do default: lá o valor é DEDUZIDO das categorias de aço declaradas.
 
     RECUSA (exceção) só para o que a Norma NÃO COBRE: armadura longitudinal
     CA-60, cujo k_phi é NAO_DECLARADO_NA_FONTE. Limite não atendido é

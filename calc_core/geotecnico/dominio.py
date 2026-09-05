@@ -42,7 +42,7 @@ do método testado por último.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import FrozenInstanceError, dataclass
 
 from calc_core.modelos import RecusaDeMetodo
 
@@ -54,6 +54,25 @@ ADOTADO_DA_EXTENSAO_DE_FIGURA = "extensao_de_figura_nao_declarada_em_texto"
 
 DECLARADO_PELO_USUARIO = "declaracao_obrigatoria_do_usuario"
 """Condição que o software não infere e que o usuário tem de declarar."""
+
+_ATRIBUTOS_DA_MAQUINA_DE_EXCECOES = frozenset({
+    "__traceback__", "__context__", "__cause__", "__suppress_context__",
+    "__notes__", "args",
+})
+"""Atributos que o interpretador escreve numa exceção em trânsito.
+
+Ref.: ABNT NBR 6122:2022, item 7.3.3, p. 22
+[rule: NBR6122-7.3.3-metodos-semiempiricos]
+
+Lista FECHADA e mínima: são os únicos atributos que as recusas deste módulo
+deixam passar pelo congelamento do dataclass. Os CAMPOS da recusa
+(``parametro``, ``valor``, ``intervalo``, ``fonte``, ``forca``,
+``apoio_no_ruleset``, ``sugestao``, ``recusas``) continuam imutáveis — se
+fosse possível reescrevê-los depois de construída, a ``mensagem`` já formatada
+deixaria de corresponder ao que a exceção diz carregar, e a recusa perderia a
+procedência que REQ-UI-SIGMA-03 exige dela. Ver o motivo completo em
+:func:`_congelar_campos_mas_deixar_a_maquina_de_excecoes_trabalhar`.
+"""
 
 
 @dataclass(frozen=True)
@@ -216,6 +235,86 @@ class NenhumMetodoAplicavelError(ForaDoDominioError):
             for i, recusa in enumerate(self.recusas, start=1)
         ]
         return "\n".join(linhas)
+
+
+def _congelar_campos_mas_deixar_a_maquina_de_excecoes_trabalhar(
+    self: ForaDoDominioError, nome: str, valor: object,
+) -> None:
+    """Congela os CAMPOS da recusa, mas deixa o interpretador escrever os seus.
+
+    Ref.: ABNT NBR 6122:2022, itens 7.3.2 e 7.3.3, p. 22
+    [rule: NBR6122-7.3.3-metodos-semiempiricos]
+
+    DEFEITO REPRODUZIDO POR EXECUÇÃO ANTES DA CORREÇÃO (revisão a6, backlog
+    #13), e é sutil: um ``@dataclass(frozen=True)`` que herda de ``ValueError``
+    QUEBRA quando código Python atribui ``__traceback__`` à exceção em
+    trânsito. O ``__setattr__`` gerado pelo dataclass frozen recusa QUALQUER
+    atributo numa instância do tipo exato (``if type(self) is cls or name in
+    fields``), não só os campos declarados.
+
+    ONDE ISSO ACONTECE DE VERDADE, medido neste repositório:
+
+    * ``@contextlib.contextmanager`` — ``contextlib.__exit__`` faz
+      ``exc.__traceback__ = traceback`` em Python puro (CPython 3.12,
+      ``contextlib.py``, linha 191). Uma recusa de ``semiempirico_spt`` que
+      atravesse um gerenciador de contexto morria com
+      ``FrozenInstanceError: cannot assign to field '__traceback__'``.
+    * ``erro.add_note(...)`` — a primeira nota faz ``self.__notes__ = []`` via
+      ``PyObject_SetAttr``, e morria com ``cannot assign to field
+      '__notes__'``.
+
+    Nos dois casos o usuário via um TRACEBACK CRU de erro interno, sem
+    parâmetro, sem valor, sem intervalo e sem fonte, no lugar da recusa
+    legível — exatamente o modo de falha que a docstring deste módulo proíbe
+    e que REQ-UI-SIGMA-03 exige que não aconteça. Note que a propagação
+    comum (``raise``/``except``/``raise ... from``) NUNCA disparava o defeito:
+    aí o CPython escreve ``__traceback__`` e ``__cause__`` direto na struct C,
+    sem passar por ``__setattr__``. É por isso que o defeito é latente e
+    escapou de A6/A7 — ele só aparece no caminho de propagação em que há
+    código Python no meio.
+
+    A correção preserva a intenção do congelamento: os CAMPOS declarados
+    continuam imutáveis, e só passam os atributos enumerados em
+    :data:`_ATRIBUTOS_DA_MAQUINA_DE_EXCECOES`.
+
+    POR QUE FORA DA CLASSE: ``@dataclass(frozen=True)`` RECUSA-SE a gerar a
+    classe se ``__setattr__`` estiver definido no corpo dela ("Cannot
+    overwrite attribute __setattr__"). A instalação posterior é a única forma
+    de manter os dois comportamentos.
+
+    POR QUE INSTALADO NAS DUAS CLASSES, e não só na base: ``dataclasses`` gera
+    um ``__setattr__`` PRÓPRIO no ``__dict__`` de cada classe frozen, inclusive
+    das que herdam de outra classe frozen — verificado por execução:
+    ``'__setattr__' in NenhumMetodoAplicavelError.__dict__`` é ``True`` e o
+    objeto é DIFERENTE do da base. Instalar só em ``ForaDoDominioError``
+    deixaria ``NenhumMetodoAplicavelError`` com o defeito intacto, que é
+    justamente a exceção que ``sigma_adm.semiempirico_spt`` levanta quando
+    nenhuma correlação se aplica — o caminho mais provável de chegar ao
+    usuário. Ver :data:`_CLASSES_DE_RECUSA_CONGELADAS`.
+    """
+    if nome in _ATRIBUTOS_DA_MAQUINA_DE_EXCECOES:
+        object.__setattr__(self, nome, valor)
+        return
+    raise FrozenInstanceError(f"cannot assign to field {nome!r}")
+
+
+_CLASSES_DE_RECUSA_CONGELADAS = (ForaDoDominioError, NenhumMetodoAplicavelError)
+"""Toda classe de recusa frozen deste módulo. Ver a função acima.
+
+Ref.: ABNT NBR 6122:2022, item 7.3.3, p. 22
+[rule: NBR6122-7.3.3-metodos-semiempiricos]
+
+Classe de recusa nova que herde de ``ForaDoDominioError`` e leve
+``@dataclass(frozen=True)`` PRECISA entrar nesta tupla — herdar não basta,
+porque o dataclass regenera o ``__setattr__`` na subclasse. O teste
+``test_toda_classe_de_recusa_frozen_sobrevive_a_maquina_de_excecoes`` varre o
+módulo e falha se alguma ficar de fora.
+"""
+
+for _classe_de_recusa in _CLASSES_DE_RECUSA_CONGELADAS:
+    _classe_de_recusa.__setattr__ = (  # type: ignore[method-assign]
+        _congelar_campos_mas_deixar_a_maquina_de_excecoes_trabalhar)
+del _classe_de_recusa
 
 
 def exigir_intervalo(parametro: str, valor: float, minimo: float,
