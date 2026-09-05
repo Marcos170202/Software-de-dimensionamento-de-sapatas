@@ -1,0 +1,397 @@
+# GATE 1 — NÃO CONGELADO. Este arquivo registra o hash corrente de
+# ruleset.yaml para que ninguém trabalhe sobre uma cópia divergente; ele NÃO
+# atesta que o portão foi vencido. O congelamento do GATE 1 exige 100 % dos
+# registros em APROVADA ou com PENDENTE_HUMANO resolvido por decisão humana
+# registrada.
+#
+# ===========================================================================
+# VERSÃO 13 (2026-09-04) — fecha o ELU de FORÇA CORTANTE do pilarete (§17.4) e,
+# com ele, a última lacuna que a v12 tinha deixado no ELU. Backlog #13,
+# rodada 4.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem IDÊNTICAS às da v12, e NENHUMA das 52
+# regras da v12 foi alterada — só houve acréscimo):
+#   regras (normativas) ............ 41 APROVADA          (eram 34)
+#                                    13 APROVADA_COM_USO_RESTRITO (eram 9)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     4 REJEITADA         (eram 2)
+#   derivacoes .....................  4 APROVADA          (eram 3)
+#                                    10 APROVADA_COM_USO_RESTRITO (eram 6)
+#   praticas_consagradas ...........  inalterada
+#   escopo_amplo_em_conferencia ....  inalterada
+#   requisitos_para_a5 .............  20                  (eram 17)
+#
+# REGRAS NOVAS (todas NBR 6118:2023 + Em1:2026, todas `metodo: calculo`, todas
+# conferidas por LEITURA VISUAL INDEPENDENTE do a2 na página do PDF):
+#   NBR6118-14.4.1-elemento-linear-classificacao ............ APROVADA
+#   NBR6118-17.4.1-campo-de-aplicacao-do-cortante ........... APROVADA
+#   NBR6118-17.4.1.1.1-armadura-transversal-minima-por-...... APROVADA
+#   NBR6118-17.4.1.1.2-c-excecao-dos-pilares-e-o-f-ctk-...... APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.4.1.1.5-17.4.1.1.6-intervalo-de-alpha-e-...... APROVADA
+#   NBR6118-17.4.1.2.1-reducoes-junto-aos-apoios ............ REJEITADA (fora de domínio)
+#   NBR6118-17.4.2.1-duas-condicoes-simultaneas-do-ELU-...... APROVADA
+#   NBR6118-17.4.2.2-modelo-I-VRd2-Vsw-Vc ................... APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.4.2.2-c-17.4.2.3-c-decalagem ................. REJEITADA (escopo)
+#   NBR6118-17.4.2.3-modelo-II-theta-arbitrado .............. APROVADA_COM_USO_RESTRITO
+#   NBR6118-18.3.3.2-detalhamento-do-estribo-por-cortante ... APROVADA_COM_USO_RESTRITO
+#   NBR6118-DELIMITACAO-17.4-vs-19.4-19.5 ................... APROVADA
+#   NBR6118-BUSCA-NEG-cortante-em-pilar-no-acervo ........... APROVADA
+#
+# DERIVAÇÕES NOVAS (citação `[deriv: <id>]`, JAMAIS `[rule: ]`):
+#   DER-NBR6118-14.4.1-faixa-B-recusa-do-cortante ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.2-M0-nivel-de-carregamento ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.2-W1-fibra-mais-tracionada ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.4.2.3-Vc1-interpolacao-linear ............ APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-composicao-18.3.3.2-com-18.4.3 .............. APROVADA
+#
+# O QUE MUDOU NO COMPORTAMENTO DO SOFTWARE, em uma frase: a v12 verificava só
+# solicitações normais e rotulava o cortante como "não verificado"; a v13
+# VERIFICA o cortante por §17.4 (Modelos I e II) quando o pilarete satisfaz a
+# definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)) e o RECUSA, com
+# mensagem, quando não satisfaz. O veredito passa a ter DOIS nomes possíveis,
+# um por faixa (REQ-PILARETE-16).
+#
+# DUAS DECISÕES TOMADAS PELO PRÓPRIO a2 com autoridade delegada — NÃO são
+# decisão humana, e estão registradas como do a2 em kb/pendencias.md:
+#   V21 (aplicabilidade de §17.4 ao pilarete curto): duas faixas, recusa dura
+#       na FAIXA B, §17.2 mantido com rotulagem alta e interpretação declarada.
+#   V20 (as três ambiguidades de M_0): f_ctk,inf; N a gamma_f = 1,0 como ENTRADA
+#       DECLARADA (sem ela não majora, e é proibido dividir N_d por gamma_f);
+#       W_1 pela razão MENOR entre os dois planos.
+#
+# ACHADO QUE MUDA A EXPECTATIVA SOBRE A FEATURE: no caso engastado-livre e sob
+# M_1d,mín, lambda < lambda_1 = 35 exige ell/b_mín < 5,052, enquanto 14.4.1
+# exige ell >= 3·h_máx. As duas fronteiras só coexistem se h_máx/b_mín < 1,684.
+# Janelas: 30×30 -> [0,90; 1,515) m; 25×40 -> [1,20; 1,263) m; 20×40 -> VAZIA.
+# A FAIXA B (cortante recusado) é o caso do pilarete robusto e baixo — não é
+# borda.
+#
+# ALTERAÇÃO DE COMPORTAMENTO QUE ATINGE O QUE A v12 JÁ ESPECIFICAVA: o
+# detalhamento do estribo fica MAIS RESTRITIVO, porque 18.3.3.2 passa a compor
+# com 18.4.3 (TETOS pelo MENOR, PISOS pelo MAIOR). Na geometria de referência
+# quem governa passa a ser 18.3.3.2, com 154,2 mm contra 192,0 mm. Um pilarete
+# detalhado conforme a v12 pode REPROVAR na v13.
+#
+# REQUISITOS ALTERADOS DA v12 (nenhum código aprovado por A6/A7 é afetado,
+# porque `calc_core/estrutural/` continua não existindo): REQ-PILARETE-01, -02,
+# -08, -11, -12 e -16 (este reescrito, id mantido de propósito).
+# CRIADOS: REQ-PILARETE-17, -18, -19.
+#
+# CHECAGEM DIMENSIONAL: tools/checar_dimensoes.py, seção 8 REESCRITA — 40
+# casos, 3 mutantes plantados e rejeitados pelo pint, 6 casos declarados NÃO
+# detectáveis por análise dimensional. Zero falhas em todo o arquivo.
+#
+# DEFEITO ENCONTRADO NO PRÓPRIO TRABALHO DO a2 (sessão anterior) e corrigido
+# nesta: a fixture de estribo usava A_sw/s = 0,20 cm²/cm com comentário
+# "2 phi 5,0 c/20 cm" (fator 10), e V_sw saía 201 kN num pilarete 30×30. Foi o
+# SANITY CHECK NUMÉRICO que pegou, não a análise dimensional.
+#
+# FILA HUMANA: V20 e V21 FECHADAS pelo a2; V23 e V24 abertas (nenhuma
+# bloqueante — o comportamento congelado é o conservador nas duas); V22 segue
+# aberta e é matéria de GATE 3.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e NÃO é por causa desta versão: seguem abertas
+# a dívida de hash das 25 regras anteriores à v9 (a cascata §1 exige norma +
+# item + página + hash) e as 7 pendências humanas de escopo amplo.
+#
+# ===========================================================================
+# VERSÃO 12 (2026-09-03) — fecha o ELU do pilarete: o software passa a poder
+# APROVAR, e não só REJEITAR. Backlog do usuário, item #13, rodada 3.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: `praticas_consagradas`, `requisitos_para_a4`, `requisitos_para_a3` e
+# `escopo_amplo_em_conferencia` saem IDÊNTICAS às da v11, e NENHUMA das 45
+# regras da v11 foi alterada — só houve acréscimo):
+#   regras (normativas) ............ 34 APROVADA          (eram 30)
+#                                     9 APROVADA_COM_USO_RESTRITO (eram 7)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     2 REJEITADA         (era 1)
+#   derivacoes .....................  3 APROVADA          (inalterado)
+#                                     6 APROVADA_COM_USO_RESTRITO (eram 2)
+#   praticas_consagradas ...........  inalterada
+#   escopo_amplo_em_conferencia ....  inalterada
+#   requisitos_para_a5 .............  17                  (eram 15)
+#
+# REGRAS NOVAS (todas NBR 6118:2023, todas `metodo: calculo`, todas conferidas
+# por LEITURA VISUAL INDEPENDENTE do a2 na página do PDF):
+#   NBR6118-16.3-proibicao-de-carga-centrada ........... APROVADA
+#   NBR6118-17.2.1-envoltoria-criterio-de-seguranca .... APROVADA
+#   NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem  APROVADA
+#   NBR6118-17.2.2-fig17.1-limites-dos-dominios ........ APROVADA
+#   NBR6118-17.2.5-flexao-composta-obliqua ............. APROVADA_COM_USO_RESTRITO
+#   NBR6118-17.2.4.1-concentracao-de-armaduras ......... APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.3.2-fig15.2-envoltoria-minima-2a-ordem .. REJEITADA (escopo)
+#
+# DERIVAÇÕES NOVAS (citação `[deriv: <id>]`, JAMAIS `[rule: ]`):
+#   DER-NBR6118-8.3.6-sigma-s-ate-10-por-mil ........... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.2.2-MRd-varredura ................... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-17.2.5-criterio-menor-ou-igual-a-1 ..... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-11.3.3.4.3-inclusao-de-envoltorias ..... APROVADA_COM_USO_RESTRITO
+#
+# O QUE MUDOU NO COMPORTAMENTO DO SOFTWARE, em uma frase: a v11 só podia
+# REJEITAR (N_Rd0 como limite superior informativo); a v12 emite veredito de
+# "ELU de solicitações NORMAIS: ATENDIDO / NÃO ATENDIDO" por REQ-PILARETE-15 —
+# varredura de M_Rd,xx e M_Rd,yy por eixo, interação de 17.2.5 com alpha = 1,0,
+# e inclusão da envoltória mínima elíptica de 11.3.3.4.3 por forma fechada
+# exata. CONTINUA PROIBIDO: veredito a partir de N_Rd0; veredito global
+# "pilarete OK"; alpha = 1,2 decidindo aprovação.
+#
+# DECISÃO HUMANA APLICADA: V13 (junta aderente com H != 0) fechada pelo usuário
+# em 2026-09-03 — RECUSAR, não avisar. REQ-PILARETE-11 reescrito.
+#
+# REQUISITOS ALTERADOS DA v11 (nenhum código aprovado por A6/A7 é afetado,
+# porque `calc_core/estrutural/` ainda não existe): REQ-PILARETE-01, -04, -06,
+# -11, -12, -13. CRIADOS: REQ-PILARETE-15, REQ-PILARETE-16.
+#
+# DÍVIDA DE RASTREABILIDADE, PRÉ-EXISTENTE E BLOQUEANTE DE GATE 1: 25 das 52
+# regras (todas anteriores à v9) NÃO têm o campo `hash`. A cascata §1 exige
+# norma + item + página + hash. Não foram rejeitadas nesta rodada porque
+# nenhuma foi tocada e porque rejeitá-las derrubaria módulos em uso, mas elas
+# NÃO PODEM SER CONGELADAS assim. Exige rodada de a1 para reextrair o trecho e
+# produzir o hash.
+#
+# ===========================================================================
+# VERSÃO 11 (2026-09-02) — pilarete de concreto como pilar curto e a
+# transferência de esforços pilarete -> sapata. Backlog do usuário, item #13.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave: as listas `praticas_consagradas`, `requisitos_para_a4`,
+# `requisitos_para_a3` e `escopo_amplo_em_conferencia` saem IDÊNTICAS às da
+# v10, e as 26 regras antigas saem intactas):
+#   regras (normativas) ............ 30 APROVADA          (eram 19)
+#                                     7 APROVADA_COM_USO_RESTRITO (eram 0)
+#                                     7 PENDENTE_HUMANO   (inalterado)
+#                                     1 REJEITADA         (era 0)
+#   derivacoes (SEÇÃO NOVA) ........  3 APROVADA
+#                                     2 APROVADA_COM_USO_RESTRITO
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA           (inalterado)
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO     (inalterado)
+#   requisitos_para_a5 (SEÇÃO NOVA)  15
+#
+# REGRAS NOVAS (todas NBR 6118:2023, todas `metodo: calculo` — é o primeiro
+# bloco inteiramente de VALORES DE CÁLCULO deste ruleset):
+#   NBR6118-13.2.3-dimensoes-limites-pilarete .......... APROVADA
+#   NBR6118-11.3.3.4.3-momento-minimo-pilarete ......... APROVADA
+#   NBR6118-15.4.4-elementos-isolados .................. APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.6-comprimento-equivalente ............... APROVADA_COM_USO_RESTRITO
+#   NBR6118-15.8.1-campo-de-aplicacao-esbeltez ......... APROVADA
+#   NBR6118-15.8.2-dispensa-2a-ordem-local ............. APROVADA
+#   NBR6118-15.8.3-metodos-de-2a-ordem ................. REJEITADA
+#   NBR6118-17.3.5.3-armaduras-limite-pilarete ......... APROVADA
+#   NBR6118-18.4.1-campo-de-aplicacao-detalhamento ..... APROVADA
+#   NBR6118-18.4.2-armaduras-longitudinais-pilarete .... APROVADA
+#   NBR6118-18.4.3-armaduras-transversais-pilarete ..... APROVADA_COM_USO_RESTRITO
+#   NBR6118-Tab7.2-nota-d-cobrimento-pilarete .......... APROVADA
+#   NBR6118-9.5.2.1-emenda-100-por-cento-comprimida .... APROVADA
+#   NBR6118-9.5.2.3-traspasse-comprimidas .............. APROVADA
+#   NBR6118-9.5.2.4.2-armadura-transversal-na-emenda ... APROVADA_COM_USO_RESTRITO
+#   NBR6118-21.6-junta-de-concretagem-pilarete-sapata .. APROVADA_COM_USO_RESTRITO
+#   NBR6118-8.2.10.1-diagrama-idealizado-do-concreto ... APROVADA
+#   NBR6118-8.3.5-8.3.6-aco-passivo .................... APROVADA_COM_USO_RESTRITO
+#   NBR6118-12.3.3-12.4.1-valores-de-calculo ........... APROVADA_COM_USO_RESTRITO
+#
+# DERIVAÇÕES (categoria CRIADA nesta versão; citação `[deriv: <id>]`, JAMAIS
+# `[rule: ]` e JAMAIS `[pratica: ]` — é álgebra sobre a própria NBR 6118, sem
+# fonte externa nenhuma, com cada passo apontando para um item que está em
+# `regras`):
+#   DER-NBR6118-12.3.1-fyd ............................. APROVADA
+#   DER-NBR6118-8.3.6-sigma-s .......................... APROVADA
+#   DER-GEOM-raio-de-giracao ........................... APROVADA
+#   DER-NBR6118-15.8.2-e1-de-M1d-min ................... APROVADA_COM_USO_RESTRITO
+#   DER-NBR6118-NRd0-compressao-centrada ............... APROVADA_COM_USO_RESTRITO
+#
+# A RECUSA CENTRAL DESTA VERSÃO, dita sem eufemismo: N_Rd0 é aprovado como
+# LIMITE SUPERIOR informativo e como condição SUFICIENTE PARA REPROVAR, e é
+# PROIBIDO derivar dele qualquer veredito de aprovação. Motivo normativo: por
+# 11.3.3.4.3 há M_1d,min nas duas direções, logo o estado é flexo-compressão
+# oblíqua e o critério é a envoltória (N_Rd, M_Rd) de 17.2.1 — que exige a
+# Figura 11.3 e 17.2.5, NENHUMA DAS DUAS EXTRAÍDA. Esta versão entrega
+# verificação de DOMÍNIO e DETALHAMENTO do pilarete, não de resistência de
+# seção. Devolvido ao a1: extrair 17.2.5, a Figura 11.3 e os limites numéricos
+# dos domínios da Figura 17.1.
+#
+# MÓDULO DECIDIDO: pacote NOVO `calc_core/estrutural/` (pilarete.py e
+# materiais_6118.py), NÃO extensão de `calc_core/sapata_isolada/`. Quatro
+# razões no cabeçalho de `requisitos_para_a5`; a principal é que
+# `sapata_isolada/` é o pacote PARCIALMENTE auditado e o pilarete nasce 100 %
+# rastreado — misturá-los apagaria a informação que o memorial precisa dar.
+#
+# ACHADO DO LADO INSEGURO EM CÓDIGO JÁ EM USO (não é do pilarete; foi esta
+# rodada que o revelou, por ter extraído 8.2.10.1 pela primeira vez):
+# `Concreto.alpha_c` não aplica eta_c, exigido por 17.2.2-e. Para f_ck > 40 MPa
+# o bloco comprimido é superestimado em até 31 % (C90); medido por execução, o
+# déficit de A_s chega a 9 % e x/d sai 0,486 contra 0,700 corretos — a
+# verificação de dutilidade PASSA quando deveria REPROVAR. REQ-ETA-C-01 e
+# kb/pendencias.md > V15. CONSERTAR ISSO INVALIDA A6/A7 para a superfície de
+# flexão da sapata — por isso o conserto NÃO foi feito nesta rodada e está
+# despachado, não escondido.
+#
+# ALCANCE DA REGRA 5 DO CLAUDE.md NESTA VERSÃO: as aprovações de A6 (GATE 2) e
+# A7 (GATE 3) NÃO ficam invalidadas por ela, porque nada do que já existe muda
+# — as listas antigas saem idênticas e o que a v11 autoriza é um pacote novo
+# que ainda não existe. Ficarão invalidadas, para a superfície de flexão da
+# sapata, no momento em que REQ-ETA-C-01 for implementado.
+#
+# FILA HUMANA: sete pendências novas, V9 a V15, em kb/pendencias.md. Nenhuma
+# bloqueia o que a v11 aprovou. Prioridade ALTA: V13 (junta aderente com H != 0
+# — recusar ou avisar) e V15 (eta_c, lado inseguro, código em uso).
+#
+# FERRAMENTA: tools/checar_dimensoes.py ganhou a seção 6 (pilarete), com 24
+# casos novos, 7 deles mutantes. Todos os mutantes foram rejeitados pelo pint,
+# inclusive o que reproduz a leitura ERRADA que a camada de texto do PDF sugere
+# para s_max de 18.4.3 (raiz quadrada inexistente) — a checagem dimensional
+# pegou sozinha uma transcrição falsa plausível.
+#
+# ===========================================================================
+# VERSÃO 10 (2026-09-02) — camada única de dados: phi'/c'/gamma na base
+# derivados da camada em h_f. Backlog do usuário, item #12.
+#
+# CONTAGEM INALTERADA em relação à v9 (conferido por comparação estrutural das
+# duas árvores YAML, chave a chave):
+#   regras (normativas) ............ 19 APROVADA, 7 PENDENTE_HUMANO
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO
+#
+# A VERSÃO 10 É EXCLUSIVAMENTE DE INTERFACE. Nenhuma regra, prática ou
+# formulação foi criada, alterada ou teve status mudado; nenhuma linha de
+# `calc_core/` é autorizada a mudar por ela. O que acrescenta são SETE
+# requisitos de tela em `requisitos_para_a3`:
+#   REQ-UI-CAMADA-01-gatilho-e-fonte-da-derivacao
+#   REQ-UI-CAMADA-02-guardas-de-recusa-e-extrapolacao-nunca-silenciosa
+#   REQ-UI-CAMADA-03-proveniencia-conjunta-e-invalidacao-pelos-tres
+#   REQ-UI-CAMADA-04-preencher-solo-nao-deriva-e-a-assimetria-do-guard
+#   REQ-UI-CAMADA-05-gamma-solo-tem-dois-papeis-e-o-aviso-e-obrigatorio
+#   REQ-UI-CAMADA-06-importacao-de-perfil-por-excel-nao-e-carregamento-de-arquivo
+#   REQ-UI-CAMADA-07-fronteira-com-o-nucleo-e-com-o-memorial
+#
+# CLAUDE.md REGRA 5, com o alcance dito por extenso: as aprovações de A6
+# (GATE 2) e A7 (GATE 3) ficam INVALIDADAS PARA A SUPERFÍCIE TOCADA — seção
+# "Solo de apoio" de `ui/completo/formulario.py` (campos soltos, perfil em
+# camadas, `preencher_solo`) e ramo do perfil geotécnico em
+# `ui/completo/app.py::_importar_excel`. Nova rodada de a6 e a7 sobre essa
+# superfície é obrigatória antes de release. NÃO ficam invalidados os
+# resultados de `calc_core/`: nenhum arquivo do núcleo muda e `ler_solo()`
+# mantém contrato idêntico (REQ-UI-CAMADA-07) — o número que o núcleo recebe é
+# do mesmo tipo que já recebia.
+#
+# TRÊS ACHADOS DO a2 QUE MUDARAM O REQUISITO DESPACHADO (detalhe no cabeçalho
+# da v10 em ruleset.yaml):
+#   C1  `camada_em(z)` extrapola em silêncio nos dois sentidos — devolve a
+#       camada de FUNDO tanto para z muito abaixo do perfil quanto para z
+#       NEGATIVO (verificado por execução). Virou REQ-UI-CAMADA-02.
+#   C2  `gamma_solo` tem DOIS papéis no núcleo (peso do solo sobre a sapata
+#       COM perfil; sobrecarga efetiva SEM perfil) e troca de papel sozinho
+#       quando a última camada é removida: 30,0 kPa contra 23,66 kPa corretos
+#       no caso medido, +27 %, do lado INSEGURO. Virou REQ-UI-CAMADA-05 + V8.
+#   C3  "Importar do Excel..." NÃO é carregamento de arquivo para estes três
+#       campos: `app.py:513` casa um perfil novo com valores lidos da TELA
+#       (`app.py:442`). Virou REQ-UI-CAMADA-06.
+#
+# FILA HUMANA: uma pendência nova, V8 em kb/pendencias.md (filha de V7,
+# PRIORIDADE ALTA, lado inseguro) — qual peso específico o núcleo deve usar no
+# solo apoiado sobre a sapata abaixo do N.A. Não bloqueante: enquanto não for
+# respondida, os avisos das Exigências 1 e 2 de REQ-UI-CAMADA-05 são
+# obrigatórios e o a6 os trata como veto se ausentes.
+#
+# CHECAGEM DIMENSIONAL: `python tools/checar_dimensoes.py` rodado nesta rodada
+# — 0 FALHA. A v10 não introduz fórmula alguma, então a etapa 2 da cascata não
+# tem caso novo a acrescentar; o que se verificou foi que nada regrediu.
+# ===========================================================================
+#
+# Situação na versão 9:
+#   regras (normativas) ............ 19 APROVADA, 7 PENDENTE_HUMANO   (era 14/7)
+#   praticas_consagradas ...........  2 APROVADA,
+#                                     4 APROVADA_COM_USO_RESTRITO,
+#                                     4 PENDENTE_HUMANO,
+#                                     2 REJEITADA                     (era 1/1/0/0)
+#   escopo_amplo_em_conferencia ....  8 PENDENTE_HUMANO               (inalterado)
+#
+# ===========================================================================
+# A VERSÃO 9 NÃO É EDITORIAL. Ao contrário da v8, ela MUDA conteúdo normativo:
+# acrescenta 5 regras (4 APROVADA, 1 PENDENTE_HUMANO), muda 1 status de
+# PENDENTE_HUMANO para APROVADA, acrescenta 10 formulações bibliográficas e
+# 19 requisitos de implementação, e AMPLIA O ESCOPO DO SOFTWARE — sigma_adm
+# deixa de ser exclusivamente dado de entrada e passa a poder ser deduzido.
+#
+# CLAUDE.md REGRA 5 VALE AQUI SEM NENHUMA ATENUAÇÃO. As aprovações de A6
+# (GATE 2) e A7 (GATE 3) registradas em relatorios/ ficam INVALIDADAS para
+# tudo que toque sigma_adm. Nova rodada completa de A6 e A7 é OBRIGATÓRIA
+# antes de qualquer release que exponha os caminhos aprovados nesta versão.
+# Não há aqui, como houve na v8, despacho do a6 dizendo que o ajuste não
+# reinicia o ciclo — porque isto não é ajuste de texto.
+#
+# O QUE NÃO É AFETADO, e é a maior parte do que já estava validado: as regras
+# de NBR 6118 (materiais §8, ancoragem §9.3-9.4, cisalhamento §19.4, punção
+# §19.5, rigidez e flexão §22.6) e as de geometria da NBR 6122 (§7.6.1, §5.6,
+# §7.7.1) não foram tocadas por esta versão. As duas entradas antigas de
+# praticas_consagradas (PC-BOUSSINESQ-NEWMARK, PC-ESPRAIAMENTO-2V1H) e seus
+# requisitos REQ-PROP-* / REQ-UI-* também não.
+# ===========================================================================
+#
+# MUDANÇA DE STATUS NESTA VERSÃO — uma só, e com o bloqueio discharged:
+#   NBR6122-6.2.1.1.1-fatores-seguranca-tabela1: PENDENTE_HUMANO -> APROVADA.
+#   A v8 condicionava a aprovação a "exigir conferência visual antes de
+#   aprovar", porque o extrator lineariza a Tabela 1 (células mescladas). A
+#   conferência foi feita três vezes de forma independente: duas pelo a1 (300 e
+#   500 dpi) e uma pelo a2 nesta rodada (350 e 400 dpi, associação
+#   linha-coluna lida célula a célula, mais a camada de texto do PDF). Nenhum
+#   valor mudou. A outra causa da pendência ("necessária apenas se o software
+#   vier a deduzir sigma_adm de SPT/CPT — fora do escopo atual") caiu por si:
+#   passou a ser exatamente o escopo.
+#
+# REGRAS NOVAS (normativas, NBR 6122:2022):
+#   NBR6122-7.3.3-metodos-semiempiricos ................ APROVADA
+#   NBR6122-7.3.2-metodos-teoricos-condicao-2022 ....... APROVADA
+#   NBR6122-7.3-7.4-conjuncao-ELU-ELS .................. APROVADA
+#   NBR6122-6.3.2-majoracao-vento-valores-admissiveis .. APROVADA
+#   NBR6122-6.3.3-majoracao-vento-valores-calculo ...... PENDENTE_HUMANO
+#
+# FORMULAÇÕES BIBLIOGRÁFICAS NOVAS (Cintra/Aoki/Albiero 2011, NÃO normativas —
+# citam-se com [pratica: <id>], JAMAIS com [rule: <id>]):
+#   FB-CINTRA-TERZAGHI-VESIC-capacidade-de-carga ....... APROVADA_COM_USO_RESTRITO
+#   FB-CINTRA-4.1.1-sigma-adm-teorico-FS3 .............. APROVADA
+#   FB-REGRA-BRASILEIRA-Nspt-50-argila ................. APROVADA_COM_USO_RESTRITO
+#   FB-TEIXEIRA-1996-areia ............................. APROVADA_COM_USO_RESTRITO
+#   FB-MELLO-1975-sigma-adm-SPT ........................ PENDENTE_HUMANO
+#   FB-CINTRA-2.9.2-phi-por-Nspt ....................... PENDENTE_HUMANO
+#   FB-CINTRA-2.4-ruptura-local-media .................. PENDENTE_HUMANO
+#   FB-CINTRA-4.1.2b-CPT-e-4.1.3-boston ................ PENDENTE_HUMANO
+#   FB-CINTRA-2.9.4-diagrama-modo-de-ruptura ........... REJEITADA
+#   FB-CINTRA-2.9.3-pesos-especificos .................. REJEITADA
+#
+# REJEITADA é status criado na versão 9: extraído, auditado e RECUSADO — não é
+# pendência à espera de humano, é decisão tomada de não implementar. Para o
+# GATE 1 conta como resolvido. Para o a6, encontrar em código qualquer coisa
+# que implemente um id REJEITADA é veto.
+#
+# ACEITAÇÃO DE FONTE SECUNDÁRIA: o a2 aceitou formalmente CINTRA, AOKI e
+# ALBIERO, "Fundações Diretas: Projeto Geotécnico" (Oficina de Textos, 2011)
+# como fonte SECUNDARIA_NAO_NORMATIVA, mesmo estatuto dado à apostila do Bastos
+# na v5 — evidência de FORMULAÇÃO, nunca fonte de obrigatoriedade. Fecha a
+# lacuna do registro ACERVO-BUSCA-NEG-teixeira-1996. As referências primárias
+# (Teixeira 1996/SEFE III, Vesic 1975, Terzaghi 1943, Skempton 1951, De Beer
+# 1967, ABNT NBR 6484, ABNT NBR 6502) CONTINUAM AUSENTES do acervo.
+#
+# FILA HUMANA: sete pendências novas, V1 a V7, em kb/pendencias.md. Nenhuma é
+# bloqueante para o que a v9 aprovou — todas foram desenhadas para que o
+# software funcione sem elas, no lado conservador. O que destravam é ALCANCE.
+# Prioridade ALTA: V2 (rota de valores de cálculo), V5 (domínio das correlações
+# N_SPT -> c e phi) e V7 (peso específico saturado x submerso, lado inseguro).
+#
+# FERRAMENTA CRIADA NESTA RODADA: tools/checar_dimensoes.py, que a2-verificador
+# .md pressupunha e que não existia no repositório. 18 casos com pint, três
+# mutantes plantados e rejeitados, cinco correlações declaradas não homogêneas
+# com o motivo caso a caso.
+#
+# APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
+# campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
+# conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
+f1b9b5fb72e6d64be37960f3797a826252184d853eb1292d3a3a85ce6ac2675a  ruleset.yaml
