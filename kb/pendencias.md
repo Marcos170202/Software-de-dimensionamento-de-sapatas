@@ -2004,3 +2004,78 @@ GATE 1.
    implausível. Corrigido para 2 φ 5,0 c/12,5 cm (0,03142 cm²/cm, o menor
    arranjo que satisfaz rho_sw,mín), com V_sw = 31,59 kN. Foi o **sanity check
    numérico** (cascata §4) que pegou o que a análise dimensional não pegaria.
+
+---
+
+# RODADA 2026-09-08 (ruleset versão 14) — a TELA do pilarete (backlog #13, rodada 5)
+
+Doze requisitos de interface novos (`requisitos_para_a3`, REQ-UI-PILARETE-01 a
+-12). Nenhuma regra, derivação ou prática foi tocada. Mas a leitura adversarial
+de `DadosDoPilarete`, feita para escrever esses requisitos, encontrou uma lacuna
+do NÚCLEO — e ela é do lado inseguro, em código 100 % aprovado (GATE 1/2/3).
+
+## V25 — Três declarações redundantes do pilarete não são cruzadas — PRIORIDADE ALTA (lado INSEGURO, código aprovado)
+
+**Pergunta objetiva.** REQ-PILARETE-09 mandou cruzar o cobrimento declarado com
+as posições das barras, e o núcleo o faz. Restam três pares com a mesma
+estrutura e nenhum cruzamento: (1) `BarraLongitudinal.area` × `phi_longitudinal_mm`;
+(2) `numero_de_barras` × `len(barras)`; (3) `espacamento_entre_eixos_mm` × as
+posições declaradas. O cruzamento de (1) e (2) deve entrar como está proposto em
+REQ-PILARETE-20 — recusa assimétrica em (1), igualdade em (2) —, sabendo que
+implementá-lo **invalida as aprovações de A6 e A7 do backlog #13**? E qual é o
+desenho de (3), cujo número serve a dois limites de sinal contrário?
+
+**Trecho literal da fonte (o princípio já aprovado), `geometria.py`,
+`exigir_cobrimento_consistente_com_as_barras`:**
+
+> "DUAS FONTES DE VERDADE PARA A MESMA GRANDEZA FÍSICA, e é por isso que esta
+> guarda existe. […] Sem cruzamento, os dois canais NUNCA SE ENCONTRAM […] Este
+> é o mesmo padrão de guarda de `verificar_estribos` para (d_util, V_Sd,
+> V_Rd2): dados que descrevem a mesma coisa chegam coerentes ou não chegam."
+
+**Leitura proposta pelo a2.** O princípio citado já vale para os três pares
+restantes — a implementação é que ficou incompleta. Guarda de (1) assimétrica,
+recusando só quando `barra.area` excede π·φ²/4 (o lado que infla A_s e M_Rd),
+o que aceita de graça o arredondamento comercial conservador (2,00 cm² para
+φ 16 mm, cuja área exata é 2,0106 cm²). Guarda de (2) por igualdade. Guarda de
+(3) a desenhar pelo a5 e reconferir pelo a2.
+
+**Impacto se a leitura estiver errada / medido por execução.** Geometria A dos
+próprios testes (30×30, C25, CA-50, N_d = 1000 kN, 4 barras, d' = 5,8 cm,
+φ **declarado** 16 mm), declarando nas barras a área de φ 25 mm:
+
+| M_Sd,x = M_Sd,y | I_A honesto | I_A com área inflada | veredito |
+|---|---|---|---|
+| 36 kN·m | 1,1257 | 0,6978 | **NÃO ATENDIDO → ATENDIDO** |
+| 60 kN·m | 1,8762 | 1,1630 | NÃO ATENDIDO nos dois |
+
+Todo o detalhamento continua "atende" nos dois casos, porque lê o φ declarado
+(A_s = 19,64 cm² é 2,18 % de A_c, longe dos 8 % de 17.3.5.3.2). **Nenhuma
+checagem dimensional pega**: área é m² nas duas leituras. É o mesmo modo de
+falha do cruzamento de cobrimento, que foi defeito ALTA da rodada 2 do GATE 2
+desta mesma feature.
+
+**Contenção já feita, e o que ela não cobre.** REQ-UI-PILARETE-06 torna (1) e
+(2) inalcançáveis a partir da tela: uma bitola só, área vinda de `area_barra()`
+do núcleo, contagem vinda de `len(barras)`, sem campo de área nem de número de
+barras. Isso fecha o caminho que passa pela interface e **não fecha a lacuna**:
+qualquer outro chamador — teste, script, integração futura — continua exposto.
+(3) não é contível pela tela, porque cruzá-lo exige aritmética sobre as posições
+que a UI não pode fazer (CLAUDE.md regra 4); fica com aviso obrigatório ao lado
+do campo, tratado como veto pelo a6 se ausente.
+
+**Não bloqueia a v14**, que só especifica tela. Bloqueia declarar o backlog #13
+concluído no núcleo.
+
+## Registro de decisão do a2 nesta rodada (não é pendência humana)
+
+Duas assimetrias de ramo condicional foram encontradas no núcleo e resolvidas
+**do lado da tela**, sem pedir mudança de código: com
+`ENGASTADO_BASE_LIVRE_TOPO`, `ell_e_declarado`/`ell_0` são silenciosamente
+ignorados (`comprimento_equivalente` devolve 2·ell antes de olhá-los); na FAIXA
+B, os seis campos de cortante são silenciosamente ignorados
+(`verificar_pilarete` nem chama `cortante.verificar`). O núcleo só protege a
+terceira transição (Modelo I com θ preenchido → recusa). Não é defeito do
+núcleo: ignorar entrada de um ramo não tomado é legítimo. É defeito **de tela**
+exibir um valor que não teve efeito, e por isso REQ-UI-PILARETE-04 obriga a
+esvaziar o ramo abandonado e enviar `None`.

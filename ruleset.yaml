@@ -10,10 +10,101 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 13
-escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua); a partir da v13, COM ELU de FORÇA CORTANTE (17.4, Modelos I e II) quando o pilarete satisfaz a definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)), e com RECUSA explícita do cortante quando não satisfaz"
-data_congelamento: "2026-08-28"   # da v8; v9 a v13 NÃO congelam — ver ruleset.lock
+versao: 14
+escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua); a partir da v13, COM ELU de FORÇA CORTANTE (17.4, Modelos I e II) quando o pilarete satisfaz a definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)), e com RECUSA explícita do cortante quando não satisfaz; a partir da v14, COM a TELA do pilarete (janela própria, verificação STANDALONE que NÃO se propaga ao cálculo da sapata)"
+data_congelamento: "2026-08-28"   # da v8; v9 a v14 NÃO congelam — ver ruleset.lock
 
+# =============================================================================
+# VERSÃO 14 — a TELA do pilarete. Backlog do usuário, item #13, rodada 5.
+#
+# O QUE ESTA VERSÃO É: doze requisitos de interface (`requisitos_para_a3`,
+# REQ-UI-PILARETE-01 a -12) que ligam à tela o motor
+# `calc_core/estrutural/pilarete/`, 100 % aprovado na v13 (GATE 1/2/3,
+# REQ-PILARETE-01 a -19). NENHUMA regra, derivação, prática consagrada ou
+# formulação foi criada, alterada ou teve status mudado; NENHUM requisito
+# anterior foi alterado. Conferido por comparação estrutural das duas árvores
+# YAML, chave a chave: `regras`, `derivacoes`, `praticas_consagradas`,
+# `requisitos_para_a4` e `escopo_amplo_em_conferencia` saem IDÊNTICAS às da
+# v13, e `requisitos_para_a3` e `requisitos_para_a5` mudam SÓ POR ACRÉSCIMO.
+#
+# CONTAGEM:
+#   regras (normativas) ............ 41 APROVADA
+#                                    13 APROVADA_COM_USO_RESTRITO
+#                                     7 PENDENTE_HUMANO
+#                                     4 REJEITADA                (inalterado)
+#   derivacoes .....................  4 APROVADA
+#                                    10 APROVADA_COM_USO_RESTRITO (inalterado)
+#   praticas_consagradas ........... inalterada
+#   escopo_amplo_em_conferencia .... inalterada
+#   requisitos_para_a5 ............. 21                  (eram 20)
+#   requisitos_para_a3 ............. 27                  (eram 15)
+#
+# CLAUDE.md REGRA 5, com o alcance dito por extenso. As aprovações de A6
+# (GATE 2) e A7 (GATE 3) NÃO ficam invalidadas por esta versão: ela não altera
+# nenhuma regra nem nenhum requisito já implementado, e a superfície que ela
+# especifica — `ui/completo/janela_pilarete.py` — AINDA NÃO EXISTE. Ficarão
+# invalidadas, para `calc_core/estrutural/pilarete/`, no momento em que
+# REQ-PILARETE-20 for implementado (ver abaixo).
+#
+# ACHADO DO a2 NESTA RODADA, e é o motivo pelo qual esta versão não é
+# exclusivamente de interface: lendo `DadosDoPilarete` adversarialmente,
+# apareceram TRÊS pares de declarações redundantes SEM cruzamento nenhum, do
+# mesmo tipo do par (cobrimento declarado × posições das barras) que
+# REQ-PILARETE-09 mandou cruzar e que foi defeito ALTA da rodada 2 do GATE 2:
+#   (1) `BarraLongitudinal.area` × `phi_longitudinal_mm`;
+#   (2) `numero_de_barras` × `len(barras)`;
+#   (3) `espacamento_entre_eixos_mm` × as posições declaradas.
+# MEDIDO POR EXECUÇÃO na geometria A dos próprios testes (30×30, C25, CA-50,
+# N_d = 1000 kN, 4 barras, d' = 5,8 cm, phi DECLARADO 16 mm): declarando nas
+# barras a área de phi 25 mm, o índice I_A de 17.2.5 cai de 1,1257 para 0,6978
+# com M_Sd,x = M_Sd,y = 36 kN·m e o VEREDITO VIRA de NÃO ATENDIDO para
+# ATENDIDO, com TODO o detalhamento continuando "atende" (ele lê o phi
+# declarado). Nenhuma checagem dimensional pega — área é m² nas duas leituras.
+# Lado INSEGURO, em código 100 % aprovado. Virou REQ-PILARETE-20
+# (`requisitos_para_a5`, PRIORIDADE ALTA) e kb/pendencias.md > V25.
+# CONTENÇÃO IMEDIATA, sem tocar o núcleo: REQ-UI-PILARETE-06 torna (1) e (2)
+# inalcançáveis pela tela (uma bitola só; área vinda de `area_barra`; contagem
+# vinda de `len(barras)`); (3) NÃO é contível pela tela, porque cruzá-lo exige
+# aritmética que a UI não pode fazer, e fica com aviso obrigatório na tela.
+#
+# AS DUAS ASSIMETRIAS DE RAMO QUE MUDARAM O REQUISITO DE TELA (achado do a2,
+# por leitura do núcleo, não do despacho): das três transições de ramo
+# condicional, o núcleo só protege UMA.
+#   • MODELO_I com theta_biela preenchido -> RECUSA (protegido);
+#   • ENGASTADO_BASE_LIVRE_TOPO com ell_e_declarado/ell_0 preenchidos -> os
+#     dois são SILENCIOSAMENTE IGNORADOS (`comprimento_equivalente` devolve
+#     2·ell antes de olhá-los);
+#   • FAIXA B com os seis campos de cortante preenchidos -> SILENCIOSAMENTE
+#     IGNORADOS (`verificar_pilarete` nem chama `cortante.verificar`).
+# Daí a obrigação de REQ-UI-PILARETE-04: ao trocar de ramo, a tela ESVAZIA os
+# campos do ramo abandonado e envia `None`. O que ela exibe é o que ela enviou.
+#
+# O TRI-ESTADO QUE UM CHECKBOX PERDE (REQ-UI-PILARETE-03): seis campos são
+# `bool | None` no núcleo e `None` é RECUSA. Um `ttk.Checkbutton` nasce
+# desmarcado, e desmarcado é `False` — uma DECLARAÇÃO que o usuário não fez.
+# Em `armadura_tracionada_em_alguma_combinacao`, `False` é justamente o que
+# AUTORIZA emendar 100 % das barras na mesma seção (9.5.2.1). Checkbutton de
+# dois estados fica PROIBIDO para esses seis.
+#
+# DECISÃO DE ARQUITETURA, proposta pelo despacho e CONFIRMADA com um ajuste:
+# tela PRÓPRIA e verificação STANDALONE, sim; mas JANELA NÃO MODAL, não
+# diálogo modal e não aba. Modal é o desenho certo para `DialogoSigmaAdm`,
+# que DEVOLVE um valor ao campo que o chamou; o pilarete não devolve nada, e
+# um modal que não devolve nada promete um "responda e volte" que não se
+# cumpre. Aba também não: o único Notebook da tela principal é a área de
+# DESENHO da sapata, e criar outro reestruturaria superfície já aprovada.
+# A não propagação pilarete -> sapata tem motivo NORMATIVO registrado, não de
+# esforço: o N da sapata é característico com FS global (NBR 6122,
+# `admissivel`) e o N_d do pilarete é de cálculo (NBR 6118, `calculo`).
+#
+# CHECAGEM DIMENSIONAL: `python tools/checar_dimensoes.py` rodado nesta rodada
+# — 0 FALHA. A v14 não introduz fórmula nenhuma, então a etapa 2 da cascata não
+# tem caso novo a acrescentar; o que se verificou foi que nada regrediu.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e não é por causa desta versão: seguem
+# abertas a dívida de hash das 25 regras anteriores à v9 e as 7 pendências
+# humanas de escopo amplo.
+#
 # =============================================================================
 # VERSÃO 13 — fecha o ELU de FORÇA CORTANTE do pilarete (§17.4) e, com ele, a
 #             última lacuna que a v12 tinha deixado aberta no ELU. Backlog do
@@ -7504,6 +7595,89 @@ requisitos_para_a5:
       passa a 8,1 kN e o ramo é o mesmo, mas o caso é frágil por construção e
       NÃO deve ser usado como teste de fronteira.
 
+  - id: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes
+    criado_na_v14: true
+    prioridade: ALTA
+    lado: INSEGURO
+    texto: >-
+      ACHADO DO a2 NESTA RODADA, por leitura adversarial de `DadosDoPilarete` ao
+      escrever os requisitos de tela. NÃO é requisito de interface: é lacuna do
+      NÚCLEO, e por isso está aqui e não em `requisitos_para_a3`.
+      REQ-PILARETE-09 fixou o princípio — "dados que descrevem a mesma coisa
+      chegam coerentes ou não chegam" — e o núcleo o implementou para UM par
+      (cobrimento declarado × posições das barras,
+      `exigir_cobrimento_consistente_com_as_barras`). Restam TRÊS pares com a
+      MESMA estrutura e sem cruzamento nenhum:
+        (1) `BarraLongitudinal.area` × `phi_longitudinal_mm`. A área entra em
+            A_s (17.3.5.3), na varredura de M_Rd (17.2.2) e em N_Rd0; o phi
+            entra em 18.4.2.1 (phi >= 10 mm, phi <= b_mín/8), no espaçamento
+            livre, no cobrimento implícito e em ell_b (9.3.2.1 / 9.5.2.3). São a
+            MESMA barra e nada os cruza.
+        (2) `numero_de_barras` × `len(barras)`. `atende_numero_de_barras =
+            numero_de_barras >= 4` (18.4.2.2, uma barra por vértice) lê o
+            INTEIRO declarado, enquanto A_s e toda a geometria leem a TUPLA.
+        (3) `espacamento_entre_eixos_mm` × as posições declaradas. O mesmo
+            número serve a DOIS limites de sinal contrário (espaçamento livre
+            >= max(20 mm; phi; 1,2·d_agr) e espaçamento entre eixos <=
+            min(2·b_mín; 400 mm)) e nenhum dos dois olha para `barras`.
+      MEDIDO POR EXECUÇÃO PELO a2, na geometria A dos próprios testes (30×30,
+      C25, CA-50, N_d = 1000 kN, 4 barras, d' = 5,8 cm, phi DECLARADO 16 mm),
+      declarando nas barras a área de phi 25 mm (4,909 cm² por barra em vez de
+      2,011):
+        M_Sd,x = M_Sd,y = 36 kN·m -> I_A cai de 1,1257 para 0,6978 e o veredito
+        VIRA de "NÃO ATENDIDO" para "ATENDIDO";
+        M_Sd,x = M_Sd,y = 60 kN·m -> I_A cai de 1,8762 para 1,1630 (−38 %).
+      Todas as verificações de detalhamento continuam ATENDIDAS nos dois casos,
+      porque leem o phi declarado, e A_s = 19,64 cm² é 2,18 % de A_c, longe dos
+      8 % de 17.3.5.3.2. NENHUMA checagem dimensional pega: área é m² nas duas
+      leituras. É o mesmo modo de falha do cruzamento de cobrimento — duas
+      declarações da mesma peça física que nunca se encontram —, e do mesmo lado
+      INSEGURO.
+      O QUE FAZER, com a assimetria escolhida caso a caso, no mesmo desenho de
+      `exigir_cobrimento_consistente_com_as_barras` (que RECUSA de um lado só):
+        (a) ÁREA × phi: RECUSAR quando `barra.area` exceder pi·phi²/4 além da
+            tolerância de ponto flutuante; SEGUIR quando for menor ou igual. A
+            assimetria resolve de graça o arredondamento comercial legítimo
+            (2,00 cm² declarados para phi 16 mm, cuja área exata é 2,0106 cm²),
+            que é conservador em M_Rd. `area_barra(phi_mm)` já existe em
+            `calc_core/sapata_isolada/materiais.py` e é o que a própria fixture
+            dos testes usa.
+        (b) NÚMERO: RECUSAR quando `numero_de_barras != len(barras)`. Aqui não há
+            lado conservador — são a contagem da MESMA coisa — e a guarda é a
+            igualdade.
+        (c) ESPAÇAMENTO: cruzar contra as posições declaradas. Como o número
+            serve a dois limites de sinal contrário, guarda de um lado só NÃO
+            basta e o desenho tem de ser feito por extenso pelo a5 e
+            RECONFERIDO pelo a2 antes de aprovar (é a única das três que não é
+            imediata). Enquanto ela não existir, o memorial imprime lado a lado
+            o espaçamento declarado e as posições das barras, para que o
+            cruzamento seja ao menos AUDITÁVEL por leitura humana.
+      POSIÇÃO NA CASCATA: no passo (6-bis) de `verificar_pilarete`, junto com o
+      cruzamento de cobrimento e ANTES de §17.2 e de §17.4, pela razão já
+      escrita ali — nenhum número pode sair de uma geometria de armadura
+      incoerente com o que foi declarado.
+      BITOLAS MISTAS: o núcleo aceita `barras` com áreas diferentes entre si
+      (desde que o arranjo continue simétrico, que é o que 17.2.5 exige) e
+      verifica TODO o detalhamento contra um phi ÚNICO. Ou o cruzamento (a)
+      passa a admitir um phi por barra, ou seção com bitolas mistas é RECUSADA.
+      Decidir isso é do a5, com reconferência do a2; o que está PROIBIDO é
+      continuar aceitando em silêncio.
+      CONSEQUÊNCIA DE PROCESSO, dita sem atenuação (CLAUDE.md regra 5):
+      implementar este requisito TOCA `calc_core/estrutural/pilarete/` e portanto
+      INVALIDA as aprovações de A6 (GATE 2) e A7 (GATE 3) do backlog #13. Elas
+      NÃO ficam invalidadas pela v14 em si — a v14 não altera nenhuma regra,
+      derivação ou requisito já implementado —, ficam no momento em que este
+      requisito for implementado. Registrar isto aqui é o oposto de escondê-lo:
+      o pilarete NÃO está fechado enquanto os três pares não forem cruzados.
+      CONTENÇÃO PARCIAL E IMEDIATA, do lado da tela e sem tocar o núcleo:
+      REQ-UI-PILARETE-06 torna (1) e (2) INALCANÇÁVEIS a partir da interface
+      (uma bitola só, área vinda de `area_barra`, contagem vinda de
+      `len(barras)`). A contenção NÃO substitui a guarda: qualquer outro
+      chamador do núcleo — teste, script, integração futura — continua exposto,
+      e (3) não é contível pela tela porque a tela não pode fazer a aritmética
+      que o cruzamento exige (CLAUDE.md regra 4).
+      kb/pendencias.md > V25.
+
   - id: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro
     prioridade: ALTA
     lado: INSEGURO
@@ -8153,6 +8327,808 @@ requisitos_para_a3:
       apresentada como largura calculada (`or dim` de `visual2d.py:693`).
       (f) O rótulo do método vem de `prop.rotulo_metodo`, não do estado da UI
       (REQ-PROP-04; a6, visual2d.py:669).
+
+  # ===========================================================================
+  # REQ-UI-PILARETE-01 a 12 — VERSÃO 14. A TELA do pilarete de concreto
+  # (backlog #13, rodada 5). O núcleo `calc_core/estrutural/pilarete/` está
+  # 100 % aprovado (GATE 1/2/3 na v13, REQ-PILARETE-01 a -19); o que falta é
+  # a interface.
+  #
+  # POR QUE ESTE BLOCO É MAIS LONGO QUE REQ-UI-SIGMA-* E REQ-UI-CAMADA-*: a
+  # superfície é outra. σ_adm tem 6-10 entradas por caminho e devolve UM
+  # número; a camada única não tem entrada nova nenhuma. `DadosDoPilarete` tem
+  # ~35 campos, dos quais 12 só existem sob um ramo declarado, 6 são `bool |
+  # None` (tri-estado, onde `None` é RECUSA), 4 são enumerações fechadas e 4
+  # pares descrevem a MESMA grandeza física por dois canais. E o retorno não é
+  # um número: é um veredito cujo NOME muda com a faixa de 14.4.1.
+  #
+  # A DOUTRINA HERDADA, sem atenuação: a tela COLETA e FORMATA; o núcleo
+  # decide. A RECUSA do núcleo é a única fonte de verdade sobre o que é uma
+  # entrada válida — a tela nunca corrige, nunca completa e nunca contorna
+  # (CLAUDE.md regra 4 e princípio mestre).
+  #
+  # NOMES FIXADOS PELO a2, normativos para esta rodada, para que o teste
+  # automatizado e o a6 tenham alvo determinístico (foi a falta disso que
+  # custou rodadas no GATE 2 de σ_adm):
+  #   `ui/completo/janela_pilarete.py`                     (módulo NOVO)
+  #   `JanelaPilarete(tk.Toplevel)`                        (classe)
+  #   `AppSapataCompleto.janela_pilarete: JanelaPilarete | None`
+  #                                        (atributo de CLASSE, default None)
+  #   `AppSapataCompleto._abrir_janela_pilarete()`         (abre/foca)
+  #   `JanelaPilarete.ultimo_resultado: ResultadoPilarete | None`
+  #                                        (atributo de CLASSE, default None)
+  #   `JanelaPilarete.frame_resultado: ttk.Frame`          (única área de saída)
+  #   `JanelaPilarete._verificar()`                        (único ponto de
+  #                                        chamada de `verificar_pilarete`)
+  #   `JanelaPilarete._invalidar_resultado(*args)`         (trace de invalidação)
+  #   `JanelaPilarete._faixa_previa() -> str | None`       (prévia de 14.4.1)
+  #   `_texto_recusa_estrutural(erro: RecusaForaDeDominio) -> str`
+  #                                        (função de MÓDULO, não método)
+  #   `_ROTULOS_DE_FORCA_ESTRUTURAL: dict[str, str]`       (as QUATRO forças)
+  #   `AVISO_METODO_DE_CALCULO: str`                       (faixa permanente)
+  # ===========================================================================
+
+  - id: REQ-UI-PILARETE-01-janela-propria-standalone-e-o-que-nao-se-propaga
+    criado_na_v14: true
+    texto: >-
+      DECISÃO DE ARQUITETURA, proposta no despacho e CONFIRMADA aqui com um
+      ajuste técnico e o motivo escrito.
+      CONFIRMADO: (i) o pilarete tem TELA PRÓPRIA, separada da tela principal da
+      sapata, no espírito de `DialogoSigmaAdm` ser calculadora auxiliar e não
+      seção obrigatória do fluxo; (ii) a verificação é STANDALONE — NADA do
+      pilarete se propaga para o cálculo da sapata.
+      AJUSTADO: a tela é uma JANELA DE TOPO NÃO MODAL (`tk.Toplevel` SEM
+      `grab_set()`), e não um diálogo modal nem uma aba do `ttk.Notebook`
+      existente. Dois motivos, e nenhum é estético:
+        • NÃO MODAL. `DialogoSigmaAdm` é modal por uma razão que aqui não
+          existe: ele DEVOLVE um valor ao campo que o chamou (`resultado_kPa`),
+          e o modal é o que garante que o formulário não mude debaixo do valor
+          entre o cálculo e o clique em "Usar este valor →". O pilarete não
+          devolve nada a lugar nenhum (item (ii)). Um modal que não devolve
+          nada promete um "responda e volte" que não se cumpre, e ainda impede
+          o engenheiro de consultar a tela da sapata enquanto preenche 35
+          campos.
+        • NÃO ABA. O único `ttk.Notebook` da tela principal é
+          `self.visualizacao` (`app.py:232` — Modelo 3D / Momentos / Reação do
+          solo / Perfil geológico): é a área de DESENHO da sapata, sem lugar
+          para entrada. Criar um Notebook de nível superior reestruturaria o
+          `PanedWindow` de `_montar_corpo`, que é superfície APROVADA por
+          A6/A7, sem necessidade nenhuma.
+      INSTÂNCIA ÚNICA. Reabrir pelo menu com a janela já aberta traz a
+      existente para a frente (`deiconify`/`lift`/`focus_force`) e NÃO constrói
+      uma segunda. Duas janelas de pilarete com estados diferentes é a mesma
+      classe de defeito do cache de σ_adm: o engenheiro lê o veredito de uma e
+      as entradas da outra.
+      O QUE NÃO SE PROPAGA, com todas as letras: nenhum resultado do pilarete
+      (N_d majorado por gamma_n, esforços, peso próprio) entra no cálculo da
+      sapata, e nenhum valor da tela da sapata entra no pilarete. Se o
+      engenheiro quiser o peso próprio do pilarete na carga da sapata, ele SOMA
+      À MÃO — mesma doutrina de σ_adm ("PREENCHE, nunca trava/vincula
+      automaticamente"), e aqui nem preenche.
+      O MOTIVO É NORMATIVO, NÃO DE ESFORÇO, e é o que impede tratar isto como
+      lacuna: o N que a sapata usa na verificação geotécnica é CARACTERÍSTICO
+      com FS global (NBR 6122, método `admissivel`) e o N_d do pilarete é DE
+      CÁLCULO (NBR 6118, método `calculo`). Somar um ao outro sem passar pela
+      combinação de ações é exatamente a mistura de métodos de segurança que
+      REQ-PILARETE-14 e `exigir_valores_de_calculo` recusam.
+      DECISÃO DE ESCOPO REGISTRADA, não esquecimento: integração automática
+      pilarete -> sapata é TRABALHO FUTURO, com requisito próprio e rodada
+      própria de a6/a7. Este parágrafo existe para que a ausência não seja lida
+      como lacuna, exatamente como a nota de escopo de REQ-UI-CAMADA-07 e de
+      REQ-UI-01.
+      CAMPOS PRÓPRIOS, NUNCA REAPROVEITADOS da tela da sapata, e a lista é
+      fechada: cobrimento (REQ-PILARETE-09 diz por que o do pilarete NÃO é o da
+      `Sapata`), f_ck, categorias e f_yk dos dois aços, gamma_c, gamma_s, classe
+      de agressividade e dimensão máxima do agregado. É PROIBIDO ligar qualquer
+      um deles por `textvariable` compartilhada, `trace`, botão "copiar da
+      sapata" ou default lido do outro formulário — o pilarete pode ser de outro
+      concreto, e o cobrimento dele tem piso próprio (45 mm, nota (d) da Tabela
+      7.2).
+    criterio_de_aceite:
+      - >-
+        Busca textual em `ui/completo/janela_pilarete.py` não encontra
+        `grab_set`, e o diff da rodada não toca `_montar_corpo` nem
+        `self.visualizacao`.
+      - >-
+        Acionar o item de menu duas vezes deixa UMA instância:
+        `app.janela_pilarete` é a mesma antes e depois da segunda chamada.
+      - >-
+        Busca textual em `janela_pilarete.py` não encontra `formulario`,
+        `ler_solo`, `ler_pilar`, `ler_casos`, `Sapata`, `ResultadoSapata` nem
+        qualquer `StringVar` do `PainelEntrada`.
+      - >-
+        Abrir a janela do pilarete, verificar um pilarete e fechá-la produz, ao
+        calcular a sapata (F5), exatamente o mesmo `ResultadoSapata` de antes —
+        comparação do objeto inteiro, não só do veredito.
+      - >-
+        O arquivo `.s7proj` salvo antes e depois de usar a janela do pilarete é
+        idêntico (REQ-UI-PILARETE-12).
+
+  - id: REQ-UI-PILARETE-02-metodo-de-seguranca-e-a-rotulagem-dos-esforcos
+    criado_na_v14: true
+    texto: >-
+      Espelho de REQ-PILARETE-14 e de `METODO_DE_SEGURANCA_DO_PILARETE` na
+      interface. É a COLISÃO DE MÉTODO DE SEGURANÇA, e esta é a primeira tela do
+      software em que os dois mundos ficam a um clique de distância: a janela do
+      solo trabalha com valores CARACTERÍSTICOS + FS global (NBR 6122, Tabela 1)
+      e esta trabalha inteiramente com valores DE CÁLCULO (gamma_f / gamma_m da
+      NBR 6118).
+      (a) FAIXA PERMANENTE no topo da janela, sempre visível, texto de
+          `AVISO_METODO_DE_CALCULO`: "Verificação por VALORES DE CÁLCULO (NBR
+          6118: ações majoradas por gamma_f, resistências divididas por
+          gamma_m). Todos os esforços pedidos aqui são DE CÁLCULO. É PROIBIDO
+          informar o N característico usado na verificação geotécnica de ELS
+          (método de valores admissíveis da NBR 6122, Tabela 1): este software
+          NÃO multiplica por 1,4 sozinho, e combinar as ações é responsabilidade
+          do engenheiro, fora desta tela."
+      (b) TODO campo de esforço carrega "de cálculo" no PRÓPRIO rótulo, não em
+          nota de rodapé: "N_d [kN] (de cálculo)", "M_Sd,x [kN·m] (de cálculo)",
+          "M_Sd,y [kN·m] (de cálculo)", "H_x [kN] (de cálculo)", "H_y [kN] (de
+          cálculo)".
+      (c) `metodo_de_seguranca` NÃO É SELETOR DE TELA. A janela sempre constrói
+          `DadosDoPilarete` com o default `METODO_DE_SEGURANCA_DO_PILARETE`.
+          Oferecer ao usuário escolher entre "admissível" e "cálculo" seria
+          oferecer na interface exatamente a mistura que o núcleo recusa. A
+          recusa de `exigir_valores_de_calculo` continua valendo para qualquer
+          outro chamador — ela não é substituída por esta decisão de tela.
+      (d) NENHUM CONTROLE DE VENTO NESTA TELA. A majoração de 15 %/30 % (NBR
+          6122 §6.3.2) e a de 10 % (§6.3.3) são EXCLUSIVAS da tensão do SOLO; no
+          pilarete o vento entra pelos coeficientes de combinação das ações (NBR
+          8681 / NBR 6118 §11), fora deste software. Um controle de vento aqui é
+          veto do a6, do mesmo modo que uma referência a 6.3.2/6.3.3 dentro de
+          `calc_core/estrutural/` é.
+      (e) É PROIBIDO exibir, em qualquer ponto desta janela, a tensão admissível
+          do solo, o FS global, sigma_adm ou qualquer saída do motor geotécnico
+          — inclusive "para comparação" e inclusive na barra de status.
+    criterio_de_aceite:
+      - >-
+        `AVISO_METODO_DE_CALCULO` está visível sem rolagem e não depende de
+        aba/seção selecionada.
+      - >-
+        Os cinco rótulos de esforço contêm a expressão "de cálculo".
+      - >-
+        Busca textual em `janela_pilarete.py` não encontra "admissiv",
+        "sigma_adm", "6.3.2", "6.3.3", "vento" nem "FS".
+
+  - id: REQ-UI-PILARETE-03-nenhum-default-silencioso-e-o-tri-estado-que-um-checkbox-perde
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      CONTRASTE DELIBERADO COM σ_adm, e ele muda a regra da tela: lá o "250" do
+      campo principal é placeholder de um valor que o núcleo aceita como
+      entrada; aqui NENHUM dos ~35 campos tem um valor razoável que o software
+      possa inventar. Campo vazio ou inválido RECUSA, com a mensagem exata que o
+      núcleo devolve.
+      (1) TODO CAMPO NUMÉRICO passa por um leitor que trata VAZIO como ERRO, com
+          a semântica exata de `_float_requerido`/`_int_requerido` de
+          `dialogo_sigma_adm.py` (MÉDIA #3 do GATE 2, rodada 3): mensagem que
+          NOMEIA o campo e diz que a tela não completa campo em branco por conta
+          própria. Vírgula decimal normalizada como já se faz lá; `float()` cru
+          é PROIBIDO.
+      (2) ENUMERAÇÕES COMEÇAM VAZIAS. `vinculacao`, `tipo_de_junta`,
+          `classe_de_agressividade` e `modelo_de_calculo` são `ttk.Combobox` com
+          `state="readonly"`, cujos valores são as tuplas `VINCULACOES`,
+          `TIPOS_DE_JUNTA`, `CLASSES_DE_AGRESSIVIDADE` e `MODELOS_DE_CALCULO`
+          IMPORTADAS do núcleo — nunca strings redigitadas na tela, que
+          divergiriam em silêncio numa renomeação — e SEM item pré-selecionado.
+          Pré-selecionar o primeiro item é escolher pelo projetista exatamente o
+          que `exigir_um_de` existe para não deixar ninguém escolher.
+      (3) OS SEIS TRI-ESTADOS, e este é o ponto que um formulário Tk erra por
+          construção. `secao_constante`, `armadura_constante`,
+          `condicoes_desfavoraveis_de_execucao`,
+          `idade_maior_ou_igual_28_dias`, `boa_aderencia` e
+          `armadura_tracionada_em_alguma_combinacao` são `bool | None` no
+          núcleo, e `None` é RECUSA com mensagem própria (`exigir_declarado` /
+          `verificar_campo_de_aplicacao_15_8`). Um `ttk.Checkbutton` de dois
+          estados NÃO REPRESENTA `None`: nasce desmarcado, desmarcado é `False`,
+          e `False` é uma DECLARAÇÃO que o usuário não fez. Está PROIBIDO usar
+          `Checkbutton` de dois estados para estes seis. Use `ttk.Combobox`
+          readonly de três valores ("", "Sim", "Não") começando VAZIO, ou par de
+          `ttk.Radiobutton` com `tk.StringVar(value="")` — e o vazio produz
+          `None`, que o núcleo recusa nomeando o campo e o item normativo.
+          POR QUE ISSO É DE SEGURANÇA E NÃO DE ERGONOMIA, campo a campo:
+          `False` em `condicoes_desfavoraveis_de_execucao` DISPENSA a correção
+          ×1,1 de 12.4.1 sobre gamma_c; `False` em
+          `armadura_tracionada_em_alguma_combinacao` é o que AUTORIZA emendar
+          100 % das barras na mesma seção por 9.5.2.1; `False` em
+          `secao_constante`/`armadura_constante` recusa (o núcleo exige `True`
+          explícito), mas por uma mensagem que o usuário nunca provocou. Um
+          checkbox desmarcado por inércia declara, em nome de quem não foi
+          perguntado, que a armadura nunca traciona.
+      (4) O ÚNICO BOOLEANO DE DOIS ESTADOS LEGÍTIMO é
+          `normal_de_compressao_em_todas_as_combinacoes`: é `bool` puro no
+          núcleo, com default `False`, e `False` é o LADO CONSERVADOR (nega a
+          dispensa de armadura transversal mínima de 17.4.1.1.2-c).
+          `ttk.Checkbutton` DESMARCADO por default, com o texto ao lado: "Marque
+          apenas se a força normal for de COMPRESSÃO em TODAS as combinações
+          (NBR 6118, 17.4.1.1.2-c). Desmarcado, a dispensa de armadura
+          transversal mínima NÃO é considerada — lado conservador." É PROIBIDO
+          marcá-lo por default e é PROIBIDO marcá-lo automaticamente porque
+          "N_d > 0".
+      (5) OS DOIS ÚNICOS CAMPOS COM VALOR PRÉ-PREENCHIDO, autorizados por
+          REQ-PILARETE-02(h): gamma_c = 1,4 e gamma_s = 1,15, escritos como
+          TEXTO VISÍVEL no widget e editáveis. Não são fallback: apagados, o
+          campo fica vazio e a verificação RECUSA como qualquer outro. A
+          diferença entre "texto visível que o usuário pode apagar" e "default
+          aplicado quando o campo está vazio" é a diferença entre placeholder e
+          invenção, e é ela que a MÉDIA #3 do GATE 2 de σ_adm cobrou.
+      (6) UNIDADE NO RÓTULO, obrigatória, e o motivo está escrito em
+          REQ-PILARETE-02: a ANÁLISE DIMENSIONAL NÃO PEGA ESTES ERROS, porque
+          h em cm e h em m passam igualmente por `pint`. `h_secao`, `b_secao`,
+          `ell`, `ell_0` e `ell_e` em METROS; `phi_longitudinal`, `phi_t`,
+          `s_estribo`, `espacamento_entre_eixos`, `cobrimento_declarado` e
+          `d_agregado` em MILÍMETROS; `N_d`, `H_x`, `H_y` e `N_gamma_f_1` em kN;
+          `M_Sd_x`, `M_Sd_y` em kN·m; `A_s_calculada` em m²; `theta_biela` e
+          `alpha_estribo` em GRAUS.
+      (7) O CAMPO DE MAIOR RISCO DA TELA É `A_sw/s`, e ele leva rótulo e exemplo
+          próprios: "A_sw/s [m²/m] (área de armadura transversal por
+          comprimento; 2 ramos phi 5,0 mm a cada 12,5 cm = 3,1416e-4 m²/m)". A
+          tela NÃO converte de cm²/cm nem de nenhuma outra unidade — converter
+          seria calcular (CLAUDE.md regra 4) — e o exemplo é TEXTO ESTÁTICO, não
+          conta. Motivo do destaque: foi exatamente aqui que o próprio a2 errou
+          por um fator 10 na v13 (fixture "0,20 cm²/cm" com comentário
+          "2 phi 5,0 c/20 cm", que dava V_sw = 201 kN num pilarete 30×30), e
+          quem pegou foi o SANITY CHECK NUMÉRICO, não a análise dimensional.
+    criterio_de_aceite:
+      - >-
+        Verificar com QUALQUER campo numérico vazio produz mensagem que contém o
+        rótulo daquele campo; nenhum resultado é desenhado.
+      - >-
+        Recém-aberta, a janela tem os quatro Combobox de enumeração com
+        `get() == ""` e os seis tri-estados com `get() == ""`.
+      - >-
+        Busca textual não encontra `ttk.Checkbutton` associado a nenhuma das
+        seis variáveis tri-estado; encontra exatamente UM `Checkbutton`, o de
+        `normal_de_compressao_em_todas_as_combinacoes`, e ele nasce desmarcado.
+      - >-
+        Deixar `secao_constante` vazio e verificar devolve a recusa do núcleo
+        nomeando `secao_constante` e citando 15.8.1 — não um `TypeError` nem uma
+        mensagem escrita pela tela.
+      - >-
+        Apagar o "1.4" de gamma_c e verificar RECUSA por campo vazio; não usa
+        1,4.
+      - >-
+        As listas dos Combobox são `is`-idênticas às tuplas importadas do núcleo
+        (nenhuma string reescrita na tela).
+
+  - id: REQ-UI-PILARETE-04-campos-condicionais-por-ramo-e-a-assimetria-das-guardas
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      Quatro grupos de campos existem SÓ sob um ramo declarado, e a interface
+      reflete essa estrutura (campos que aparecem/somem ou ficam `disabled`
+      conforme as escolhas anteriores). Mas a RECUSA DO NÚCLEO continua sendo a
+      única fonte de verdade sobre o que é válido: a tela mostra e esconde, e
+      NUNCA completa, corrige ou substitui uma combinação inválida.
+      A REGRA QUE SEPARA AS DUAS COISAS, e ela é o eixo deste requisito:
+      esconder e ESVAZIAR o campo de um ramo NÃO TOMADO é legítimo (o usuário
+      não está declarando aquilo); inventar valor para um campo que o ramo
+      TOMADO exige é PROIBIDO. A tela decide QUAIS campos o usuário está
+      declarando; nunca QUE VALOR ele declarou.
+      GRUPO 1 — VINCULAÇÃO. `ell_e_declarado` e `ell_0` só existem com
+      `VINCULADO_DOIS_EXTREMOS`. Com `ENGASTADO_BASE_LIVRE_TOPO` a própria Norma
+      escreve ell_e = 2·ell (15.8.2) e o número é do NÚCLEO, nunca da tela.
+      GRUPO 2 — MODELO DE CÁLCULO. `theta_biela_graus` só com `MODELO_II`, em
+      [30°, 45°]. Com `MODELO_I` as diagonais são fixas a 45° e não há theta.
+      GRUPO 3 — JUNTA E EMENDA. `tipo_de_junta`, `boa_aderencia`,
+      `armadura_tracionada_em_alguma_combinacao` e `A_s_calculada` formam um
+      bloco visual único, porque só fazem sentido juntos: descrevem a ligação
+      com a sapata e a emenda por traspasse. `A_s_calculada` é o ÚNICO campo
+      opcional legítimo de toda a tela — em branco, o núcleo usa a A_s efetiva e
+      não reduz ell_b,nec, que é o lado conservador —, e o rótulo tem de dizer
+      isso: "A_s calculada [m²] (opcional; em branco, sem redução de ell_b,nec —
+      A_s,calc = A_s,ef, lado conservador)".
+      GRUPO 4 — CORTANTE, só na FAIXA A: `modelo_de_calculo`,
+      `theta_biela_graus`, `alpha_estribo_graus`, `A_sw_por_s`, `N_gamma_f_1` e
+      `normal_de_compressao_em_todas_as_combinacoes`.
+      A ASSIMETRIA QUE A TELA TEM DE COBRIR, e é o achado que torna este
+      requisito necessário: das três transições de ramo, o núcleo só protege
+      UMA.
+        • `MODELO_I` com `theta_biela_graus` preenchido -> o núcleo RECUSA
+          (`cortante.py`, ramo `elif theta_biela_graus is not None`).
+          PROTEGIDO.
+        • `ENGASTADO_BASE_LIVRE_TOPO` com `ell_e_declarado`/`ell_0` preenchidos
+          -> `comprimento_equivalente` devolve `2·ell` ANTES de olhar para eles:
+          os dois são SILENCIOSAMENTE IGNORADOS. NÃO protegido.
+        • FAIXA B com os seis campos de cortante preenchidos ->
+          `verificar_pilarete` nem chama `cortante.verificar`: os seis são
+          SILENCIOSAMENTE IGNORADOS. NÃO protegido.
+      Nos dois casos não protegidos, um valor que ficou na tela e não teve
+      efeito nenhum é, para quem lê, indistinguível de um valor que entrou na
+      conta. Daí a obrigação: ao trocar de ramo, os campos do ramo abandonado
+      somem (ou ficam `disabled`) E SÃO ESVAZIADOS, e o que vai ao
+      `DadosDoPilarete` é `None`. O que a tela EXIBE é o que a tela ENVIOU.
+      A FAIXA VEM DO NÚCLEO, NUNCA DE CONTA NA TELA. Para decidir se mostra o
+      grupo 4, `_faixa_previa()` chama
+      `classificacao.classificar_faixa(ell=..., h_secao=..., b_secao=...)` e lê
+      `.faixa` — exatamente como REQ-UI-CAMADA-01 lê `camada_em(z)`: a tela LÊ o
+      núcleo, não reimplementa. É PROIBIDO a tela calcular `ell / max(b, h)` ou
+      comparar com 3,0 por conta própria (CLAUDE.md regra 4).
+      A faixa exibida antes de verificar é PRÉVIA e vem assim rotulada; a
+      AUTORITATIVA é `ResultadoPilarete.faixa`. Quando `ell`, `h_secao` ou
+      `b_secao` ainda não formam números válidos, NÃO há prévia: o grupo 4
+      aparece fechado, com o texto de que a faixa de 14.4.1 ainda não pôde ser
+      determinada — nunca aberto "por via das dúvidas" e nunca fechado sem
+      dizer por quê.
+      H_x E H_y SÃO DOIS CAMPOS E O ZERO É EXATO. Os dois são obrigatórios (não
+      têm default) e a comparação com zero EXATO, sem tolerância nenhuma, é o
+      gatilho de DUAS recusas diferentes: (i) `H_x != 0` e `H_y != 0`
+      simultâneos -> recusa de cortante BIAXIAL (17.4.2.1; a Norma dá interação
+      para momento oblíquo e não dá para cortante); (ii) junta declarada
+      aderente com qualquer H != 0 -> recusa de 21.6. A tela avisa, junto aos
+      dois campos, que "0" e "0,001" são casos DIFERENTES e que não existe faixa
+      de "H desprezível". É PROIBIDO a tela zerar a componente menor, compor uma
+      resultante, oferecer "usar só a maior" ou sugerir qualquer das três.
+    criterio_de_aceite:
+      - >-
+        Selecionar `VINCULADO_DOIS_EXTREMOS`, digitar ell_0 e ell_e, e depois
+        voltar para `ENGASTADO_BASE_LIVRE_TOPO`: o `DadosDoPilarete` construído
+        tem `ell_e_declarado is None` e `ell_0 is None`, e os campos estão
+        vazios na tela.
+      - >-
+        Mesmo teste com `MODELO_II` -> theta = 40 -> `MODELO_I`:
+        `theta_biela_graus is None` no dado construído (e, portanto, a recusa do
+        núcleo para theta em Modelo I NUNCA é provocada pela própria tela).
+      - >-
+        Com `ell = 0,80 m` e seção 30×30 (razão 2,667 -> FAIXA B), o grupo 4 não
+        é exibido e os seis campos de cortante chegam `None`/`False` ao
+        `DadosDoPilarete`; mudar `ell` para 1,00 m faz o grupo aparecer.
+      - >-
+        Busca textual em `ui/` não encontra `max(h`, `/ max(`, `3.0` nem `3,0`
+        em contexto de razão de 14.4.1; a prévia sai de `classificar_faixa`.
+      - >-
+        Com `ell` vazio, o grupo 4 aparece FECHADO com o texto de faixa
+        indeterminada, e não há exceção nem `messagebox` a cada tecla digitada.
+      - >-
+        H_x = 10 e H_y = 0,001 chega ao núcleo como (10,0; 0,001) e a tela
+        exibe a recusa de cortante biaxial; a tela não zera nem compõe nada.
+
+  - id: REQ-UI-PILARETE-05-cruzamento-cobrimento-x-barras-e-por-que-sao-dois-lugares
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      A tela coleta a MESMA distância física por DOIS canais, de propósito:
+      `cobrimento_declarado_mm` (um campo) e as POSIÇÕES REAIS das barras
+      (`barras`, com `pos_h` e `pos_b` por barra). Não é redundância de
+      formulário: é a guarda de REQ-PILARETE-09, e ela nasceu de um defeito ALTA
+      da rodada 2 do GATE 2 desta mesma feature.
+      A TELA TEM DE DIZER POR QUE SÃO DOIS, em texto fixo junto ao bloco de
+      armadura, com esta substância: "O cobrimento declarado é o que se compara
+      com o mínimo da Tabela 7.2 (durabilidade). As posições das barras são de
+      onde saem o d' de §17.4 (e portanto V_Rd2 e V_c0) e os braços de alavanca
+      de §17.2. Os dois descrevem a mesma distância e o software os CRUZA: se as
+      barras implicarem cobrimento MENOR que o declarado, a verificação é
+      RECUSADA — declarar 45 mm e posicionar as barras como se fossem 30 mm dá
+      d maior, V_Rd2 maior e M_Rd maior, do lado INSEGURO."
+      PROIBIÇÃO CENTRAL, e sem ela todo o resto vira decoração: é PROIBIDO a
+      tela GERAR as posições das barras a partir do cobrimento declarado — botão
+      "posicionar automaticamente", cálculo de `c + phi_t + phi/2`, preenchimento
+      inicial das quatro barras a partir de `c`, ou qualquer variante. Se as
+      posições vierem do cobrimento, o cruzamento passa SEMPRE, por construção,
+      e a guarda que custou uma rodada de GATE 2 deixa de existir sem que
+      ninguém perceba. Além de ser cálculo na UI (CLAUDE.md regra 4), seria
+      apagar deliberadamente a segunda testemunha.
+      TABELA DE BARRAS, e ela é a única fonte das posições: uma linha por barra,
+      com `pos_h [m]` e `pos_b [m]` medidos a partir das bordas de referência,
+      exatamente na convenção de `BarraLongitudinal`. Mínimo de uma barra por
+      vértice (4 na seção retangular, 18.4.2.2) — mas quem REPROVA por isso é o
+      núcleo, não a tela: a tela permite montar 3 barras e deixa o núcleo dizer
+      que não atende. Arranjo assimétrico idem: quem recusa é
+      `verificar_elu_solicitacoes_normais` (17.2.5), com a mensagem dele.
+      NA RECUSA, o texto do núcleo vai LITERAL, incluindo a frase final que diz
+      a que distância as barras teriam de estar ("Para o c declarado, as barras
+      teriam de estar a d' >= X mm da borda"). A tela EXIBE essa frase e NÃO A
+      APLICA: reposicionar as barras sozinha seria escolher qual das duas
+      declarações do engenheiro é a verdadeira, que é precisamente o que o
+      núcleo se recusa a fazer ("o software não escolhe entre as duas
+      declarações").
+      NO SUCESSO, a linha `consistencia_de_cobrimento.linha_de_memorial` — com
+      os três números — aparece na tela E no memorial, SEMPRE, e não só quando
+      algo falha. Um cruzamento que não aparece no memorial é indistinguível de
+      um cruzamento que não existe (é a razão pela qual o campo existe no
+      `ResultadoPilarete`).
+      A GUARDA É DE UM LADO SÓ E A TELA NÃO PODE SUGERIR O CONTRÁRIO: cobrimento
+      implícito MAIOR que o declarado SEGUE (conservador nos dois lados), e o
+      caso "declarei 30 mm, mas as barras estão a 45 mm" continua sendo
+      REPROVAÇÃO por durabilidade (`atende_cobrimento`), não recusa. Reprovação
+      e recusa têm tratamentos visuais distintos por REQ-UI-PILARETE-08.
+    criterio_de_aceite:
+      - >-
+        Busca textual em `janela_pilarete.py` não encontra `phi_t` somado a
+        `cobrimento`, nem `/ 2` sobre `phi_longitudinal`, nem botão cujo comando
+        escreva em `pos_h`/`pos_b`.
+      - >-
+        Declarar c = 45 mm com as quatro barras a d' = 0,043 m produz na tela o
+        texto de recusa contendo `parametro`, os dois valores, a fonte
+        (7.4.7.5 / Tabela 7.2 nota (d)) e a frase do d' necessário — e as
+        posições digitadas permanecem intactas.
+      - >-
+        Verificação bem-sucedida exibe na tela a string exata de
+        `resultado.consistencia_de_cobrimento.linha_de_memorial`.
+      - >-
+        O texto explicativo dos dois canais está visível junto ao bloco de
+        armadura sem exigir clique em "detalhes".
+
+  - id: REQ-UI-PILARETE-06-uma-bitola-so-area-vinda-do-nucleo-e-a-contagem-de-barras
+    criado_na_v14: true
+    prioridade: ALTA
+    lado: INSEGURO
+    texto: >-
+      CONTENÇÃO, DO LADO DA TELA, DE DUAS DAS TRÊS LACUNAS DE REQ-PILARETE-20.
+      O núcleo aceita hoje, sem cruzar, `BarraLongitudinal.area` contra
+      `phi_longitudinal_mm` e `numero_de_barras` contra `len(barras)`. Medido
+      pelo a2 por execução: declarando phi = 16 mm e áreas de phi 25 mm numa
+      seção 30×30 C25 com N_d = 1000 kN e M_Sd,x = M_Sd,y = 36 kN·m, o índice
+      I_A de 17.2.5 cai de 1,1257 para 0,6978 e o VEREDITO VIRA de NÃO ATENDIDO
+      para ATENDIDO, com todo o detalhamento continuando "atende". A tela é
+      obrigada a tornar isso INALCANÇÁVEL:
+      (1) UMA BITOLA SÓ. `phi_longitudinal_mm` é declarado UMA vez e vale para
+          todas as barras. A tela NÃO oferece campo de área por barra e NÃO
+          oferece bitola por barra. Seção com bitolas mistas está FORA do escopo
+          desta tela, e o texto tem de dizer por quê: o núcleo verifica TODO o
+          detalhamento (18.4.2.1, espaçamento livre, cobrimento implícito, ell_b)
+          contra um phi ÚNICO, de modo que uma seção de bitolas mistas seria
+          verificada contra uma bitola que só algumas barras têm.
+      (2) A ÁREA VEM DO NÚCLEO. Cada `BarraLongitudinal` é construída com
+          `area=area_barra(phi_longitudinal_mm)`, importada de
+          `calc_core.sapata_isolada.materiais` — a mesma função que as fixtures
+          do próprio pilarete usam. Isso NÃO é calcular na UI: é chamar o núcleo,
+          como `classificar_faixa` e `camada_em`. Escrever `math.pi * phi**2 / 4`
+          na tela é veto do a6.
+      (3) A CONTAGEM VEM DA TABELA. `numero_de_barras = len(barras)`. Não existe
+          campo "número de barras" na tela. Contar as linhas que o usuário
+          declarou não é aritmética de engenharia: é a cardinalidade do que ele
+          declarou, e mantê-la como segundo campo editável só criaria a
+          divergência que REQ-PILARETE-20(2) descreve (declarar 4 e montar 2
+          aprova o "uma barra por vértice" de uma seção que não os tem).
+      (4) O QUE A TELA NÃO CONSEGUE CONTER, e por isso fica escrito aqui em vez
+          de sumir: `espacamento_entre_eixos_mm` continua sendo declaração
+          independente das posições, porque cruzar os dois exige aritmética sobre
+          as posições, que a tela não pode fazer (CLAUDE.md regra 4). Enquanto
+          REQ-PILARETE-20(c) não for implementado, o campo fica IMEDIATAMENTE ao
+          lado da tabela de barras, com aviso explícito: "Este valor NÃO é
+          conferido contra as posições declaradas acima — confira-o à mão. Ele
+          governa dois limites de 18.4.2.2 (espaçamento livre mínimo e
+          espaçamento entre eixos máximo)." O aviso é OBRIGATÓRIO e o a6 o trata
+          como veto se ausente, exatamente como os avisos das Exigências 1 e 2
+          de REQ-UI-CAMADA-05.
+      ESTE REQUISITO NÃO FECHA A LACUNA DO NÚCLEO. Ele fecha o caminho que passa
+      por esta tela. Qualquer outro chamador — teste, script, integração futura —
+      continua exposto até REQ-PILARETE-20 ser implementado, e é por isso que a
+      lacuna está registrada lá, com a consequência de processo, e não só aqui.
+    criterio_de_aceite:
+      - >-
+        Busca textual em `janela_pilarete.py` não encontra `math.pi`,
+        `3.1416`, `** 2` nem `numero_de_barras` como campo de entrada.
+      - >-
+        Trocar `phi_longitudinal_mm` de 16 para 20 muda a área de TODAS as
+        barras do `DadosDoPilarete` construído, e cada uma é exatamente
+        `area_barra(20.0)`.
+      - >-
+        Montar 5 barras na tabela produz `numero_de_barras == 5` no dado
+        construído; montar 3 produz 3, e o veredito sai NÃO ATENDIDO por
+        `atende_numero_de_barras` — recusa nenhuma é levantada pela tela.
+      - >-
+        O aviso do item (4) está visível junto ao campo de espaçamento.
+
+  - id: REQ-UI-PILARETE-07-faixa-A-e-faixa-B-na-tela-e-a-proibicao-do-visto-verde
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      Espelho visual de REQ-PILARETE-16. Na FAIXA B o cisalhamento NÃO foi
+      aprovado nem reprovado: foi RECUSADO por não se aplicar (14.4.1 com
+      17.4.1). A tela precisa da mesma disciplina que o memorial.
+      (a) O TÍTULO DO RESULTADO É `resultado.nome_do_veredito`, LITERAL, sem
+          reescrita, sem abreviação e sem sinônimo. É PROIBIDO exibir
+          "APROVADO", "OK", "Pilarete verificado", "ELU: ATENDIDO" (sem o
+          qualificador) ou qualquer formulação que um leitor apressado leia como
+          aprovação do ELEMENTO.
+      (b) NUNCA UM VISTO VERDE SILENCIOSO ONDE A VERIFICAÇÃO NÃO RODOU. Quando
+          `resultado.elu_cortante is None`, o bloco de cortante existe na tela e
+          traz, com destaque de ADVERTÊNCIA (nunca verde, nunca cinza discreto),
+          as DUAS frases literais de `frases_obrigatorias_da_faixa_B` — a mesma
+          fonte que o memorial usa, não um texto redigido pela tela. Está
+          PROIBIDO omitir o bloco, colapsá-lo em "não aplicável", "n/a", "—" ou
+          um traço.
+      (c) AS PARCELAS APARECEM UMA A UMA, com nome, porque `atendido` é uma
+          conjunção e um "NÃO ATENDIDO" sem discriminação não diz o que
+          consertar: ELU de solicitações normais (`elu_normal.atendido`),
+          armadura longitudinal (`armadura_longitudinal.atendido`), estribos
+          (`estribos.atendido`), cobrimento (`atende_cobrimento`) e — SÓ na
+          FAIXA A — ELU de força cortante (`elu_cortante.atendido`). Na FAIXA B a
+          quinta linha NÃO aparece como atendida nem como não atendida: aparece
+          como RECUSADA, com o motivo.
+      (d) A RAZÃO DE 14.4.1 APARECE NAS DUAS FAIXAS, com o número, o limite 3,0
+          e o comprimento que faltaria (`ell_necessario_para_faixa_A`), ao lado
+          da advertência de que essa verificação é INDEPENDENTE de lambda <
+          lambda_1 — que é a confusão mais provável nesta tela, e está registrada
+          como tal no próprio módulo de classificação.
+      (e) A LISTA DO QUE NÃO FOI VERIFICADO (ELS, fadiga, torção §17.5, ligação
+          com a sapata além da emenda por traspasse) aparece na TELA, não só no
+          memorial exportado, e no mesmo bloco do veredito. Ela encolheu na v13;
+          não desapareceu.
+      (f) É PROIBIDA cor verde de peça inteira, ícone de "aprovado" no cabeçalho
+          da janela, e é PROIBIDO qualquer resumo de uma linha que junte as
+          parcelas num rótulo único que não seja `nome_do_veredito`.
+    criterio_de_aceite:
+      - >-
+        Com `ell = 0,80 m` (FAIXA B), o texto da tela contém as duas frases de
+        `frases_obrigatorias_da_faixa_B` na íntegra, e NÃO contém "FORÇA
+        CORTANTE: ATENDIDO" nem nenhum visto verde na linha de cortante.
+      - >-
+        O título exibido é `==` a `resultado.nome_do_veredito`.
+      - >-
+        Busca textual na tela renderizada não encontra "APROVADO", "OK",
+        "pilarete verificado" nem "n/a".
+      - >-
+        Um caso com `atendido is False` mostra QUAL parcela falhou.
+      - >-
+        A razão de 14.4.1 e o limite 3,0 aparecem nas duas faixas.
+
+  - id: REQ-UI-PILARETE-08-recusa-nao-e-reprovacao-e-a-forca-da-guarda
+    criado_na_v14: true
+    texto: >-
+      DUAS SAÍDAS DIFERENTES, E CONFUNDI-LAS É DEFEITO. A recusa diz "não sei
+      calcular este caso"; a reprovação diz "calculei e não passa". A distinção
+      está escrita no próprio núcleo (comentário do ramo de V_c1 em
+      `cortante.py`) e a tela tem de mantê-la: tratamentos visuais distintos,
+      textos distintos, e em NENHUM dos dois casos um traceback cru.
+      (a) `RecusaForaDeDominio` é uma classe DIFERENTE de
+          `ForaDoDominioError` do motor geotécnico — não é `import`, é
+          duplicação deliberada (REQ-PILARETE-01 proíbe `estrutural/` importar
+          `geotecnico/`). A tela tem tradutor PRÓPRIO,
+          `_texto_recusa_estrutural`, no mesmo desenho de `_texto_recusa`: só
+          formata o que a exceção já carrega (`parametro`, `valor`, `intervalo`,
+          `fonte`, `forca`, `apoio_no_ruleset`, `sugestao`) e não emite juízo
+          nenhum sobre o domínio. Capturar `RecusaForaDeDominio` como "erro de
+          cálculo" genérico é veto do a6.
+      (b) AS QUATRO FORÇAS DE GUARDA TÊM PESOS DIFERENTES e cada uma tem frase
+          própria em `_ROTULOS_DE_FORCA_ESTRUTURAL` — mesma exigência que
+          REQ-UI-SIGMA-03 faz para o motor geotécnico, e aqui são quatro, não
+          três:
+            `declarado_em_texto_na_fonte` — limite escrito com todas as letras
+              na NBR 6118; só muda se a Norma mudar.
+            `declaracao_obrigatoria_do_usuario` — declaração que a Norma exige e
+              que o software não pode inferir; a ausência é recusa, não default.
+            `escopo_desta_versao_nao_limite_da_norma` — limite do SOFTWARE, não
+              da Norma (ex.: alpha_estribo != 90°, que 17.4.1.1.5 admite entre
+              45° e 90°). A frase tem de dizer que a Norma admite e que este
+              software não implementa.
+            `ausencia_de_regra_na_fonte_normativa` — VAZIO NORMATIVO: a Norma é
+              silente e não há rota alternativa no acervo (junta sem aderência
+              assegurada, cortante biaxial, k_phi do CA-60). A frase tem de
+              dizer que não existe caminho, e não que "o software não faz".
+          Achatar as quatro numa mensagem só apaga a informação de que umas são
+          revisáveis por decisão humana e outras não.
+      (c) NÃO EXISTE "PROSSEGUIR MESMO ASSIM". Nenhuma recusa desta tela pode
+          ter botão de confirmação, caixa "entendi, continuar", opção de
+          configuração ou modo avançado que a contorne — a proibição é literal no
+          núcleo para a junta de 21.6 ("É PROIBIDO oferecer 'prosseguir mesmo
+          assim'") e vale igualmente para a FAIXA B, o pilar-parede de 18.4.1,
+          lambda >= lambda_1 de 15.8.2, alpha_estribo != 90°, o cortante biaxial
+          e o CA-60 longitudinal.
+      (d) A REPROVAÇÃO MOSTRA TODOS OS NÚMEROS. Um veredito "NÃO ATENDIDO" é
+          resultado legítimo e completo: a tela desenha o memorial inteiro,
+          igual ao caso atendido, e não substitui os valores por uma mensagem de
+          erro. Em particular, no ramo em que V_Sd > V_Rd2 no Modelo II, a tela
+          diz que V_c1 NÃO FOI DEFINIDO — com a frase do núcleo — em vez de
+          imprimir um número inventado ou um zero mudo.
+      (e) A REDE DE SEGURANÇA DE `report_callback_exception` (app.py) continua
+          valendo, mas ela é para o que ESCAPA: uma `RecusaForaDeDominio` que
+          chegue nela é defeito, porque significa que a chamada a
+          `verificar_pilarete` estava fora de `try/except`.
+    criterio_de_aceite:
+      - >-
+        Cada uma das quatro forças produz frase distinta na tela; nenhuma cai no
+        `.get(forca, forca)` (que exibiria o identificador interno).
+      - >-
+        Uma recusa mostra `parametro`, `valor`, `intervalo`, `fonte` e
+        `sugestao`, e o texto contém o item normativo com página.
+      - >-
+        Busca textual não encontra "prosseguir", "continuar mesmo", "ignorar" ou
+        `askyesno` associado a qualquer recusa.
+      - >-
+        Junta `JUNTA_SEM_ADERENCIA_ASSEGURADA` recusa e a tela exibe a frase de
+        que a ABNT NBR 9062 não está no acervo e de que a alternativa é executar
+        a ligação monolítica.
+      - >-
+        Modelo II com V_Sd > V_Rd2 desenha o memorial completo, com a frase de
+        V_c1 não definido, e o veredito NÃO ATENDIDO.
+
+  - id: REQ-UI-PILARETE-09-memorial-literal-e-integral
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      O MEMORIAL DA TELA É `resultado.memorial()`, NA ÍNTEGRA E NA ORDEM, sem
+      uma linha a menos. A tela NÃO monta memorial próprio a partir dos campos
+      do `ResultadoPilarete`, NÃO reordena, NÃO reescreve, NÃO resume, NÃO
+      trunca e NÃO esconde parte atrás de "ver detalhes" ou de uma aba que
+      começa fechada. `memorial()` já foi escrito para cumprir alínea por alínea
+      REQ-PILARETE-12, com item normativo e página em cada linha — reformatá-lo
+      na tela é reabrir, do lado da interface, a rastreabilidade que o núcleo
+      fechou.
+      `hipoteses_declaradas` e `exigencias_da_emenda` são tuplas de string
+      PRONTAS, produzidas pelo núcleo especificamente para rastreabilidade, e
+      vão LITERALMENTE — mesmo princípio de `regras`/`avisos` no memorial de
+      σ_adm. Elas já saem dentro de `memorial()`; a obrigação aqui é NÃO
+      filtrá-las, NÃO encurtá-las e NÃO trocar "HIPÓTESE DECLARADA:" por um
+      ícone. São exatamente as linhas que um revisor externo procura para saber
+      o que o software assumiu no lugar do engenheiro.
+      A ÚLTIMA LINHA — a que diz o que NÃO foi verificado e que este software
+      não emite "APROVADO" — é obrigatória e não pode ficar fora da área
+      visível por decisão de layout (rolagem é aceitável; corte não é).
+      O QUE A TELA PODE FAZER: exibir `memorial()` num widget de texto rolável e
+      com fonte monoespaçada; oferecer "copiar" e "salvar como .txt". O que ela
+      NÃO pode: reordenar por relevância, colorir seletivamente linhas de modo
+      que umas pareçam menos importantes, ou omitir as linhas informativas
+      (N_Rd0, nu, alpha = 1,2) por serem "informativas" — elas são rotuladas
+      como tal PELO NÚCLEO e é essa rotulagem que as torna seguras de exibir.
+    criterio_de_aceite:
+      - >-
+        O conteúdo do widget de memorial, quebrado por linha, é EXATAMENTE
+        `list(resultado.memorial())` — igualdade de sequência, não "contém".
+      - >-
+        Na FAIXA A o memorial tem as linhas de cortante; na FAIXA B tem as duas
+        frases obrigatórias e NÃO tem nenhuma linha de V_Rd2/V_c/V_sw.
+      - >-
+        Toda string de `hipoteses_declaradas` e de `exigencias_da_emenda` está
+        presente, sem alteração de um caractere.
+      - >-
+        Busca textual em `janela_pilarete.py` não encontra concatenação de
+        texto de memorial a partir de campos do resultado (ex.: `f"M_Rd`,
+        `f"V_Rd`, `f"gamma_c`).
+
+  - id: REQ-UI-PILARETE-10-gamma-n-e-o-N-a-gamma-f-igual-a-1
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      DOIS VALORES QUE PRECISAM APARECER ROTULADOS, e não escondidos atrás do
+      veredito.
+      (a) gamma_n (13.2.3, Tabela 13.1). Quando `gamma_n_aplicado` é verdadeiro,
+          a tela exibe, LADO A LADO, o esforço DIGITADO e o MAJORADO, para os
+          três: N_d -> `N_d_majorado`, M_Sd,x -> `M_Sd_x_majorado`, M_Sd,y ->
+          `M_Sd_y_majorado`, com o valor de `gamma_n` e a fórmula
+          1,95 − 0,05·b nomeada. Sem isso, o engenheiro que digitou 400 kN vê um
+          veredito calculado com 460 kN e não tem como saber. Quando não se
+          aplica, a tela diz gamma_n = 1,00 com o motivo (b_mín >= 19 cm e
+          A_c >= 360 cm²) — não some.
+      (b) `N_gamma_f_1` É CAMPO PRÓPRIO, COM RÓTULO QUE O DISTINGUE DO N_d, e
+          esta é a decisão V20(2) do a2 posta na tela: "N na combinação com
+          gamma_f = 1,0 [kN] — NÃO é o N_d acima. É a mesma combinação, no nível
+          de carregamento sem majoração das ações, e serve só ao numerador de
+          M_0 (NBR 6118, 17.4.2.2-b)."
+          É PROIBIDO à tela pré-preencher este campo com `N_d / 1,4`, com
+          `N_d / gamma_f` qualquer, com o próprio `N_d`, ou vinculá-lo ao campo
+          de N_d por `trace`. A proibição é literal no núcleo ("É PROIBIDO
+          obtê-lo dividindo N_d por um gamma_f suposto") e existe porque o
+          software não conhece a composição da combinação: o gamma_f efetivo
+          depende de quais ações compõem o caso, e supor 1,4 inventaria essa
+          composição.
+      (c) EM BRANCO É LEGÍTIMO E TEM CONSEQUÊNCIA DECLARADA. `N_gamma_f_1 = None`
+          não é recusa: o núcleo simplesmente NÃO majora V_c pela compressão, o
+          que é o lado conservador, e o memorial imprime a frase correspondente.
+          A tela repete essa consequência JUNTO AO CAMPO, antes de verificar:
+          "Em branco: a majoração de V_c pela compressão NÃO será aplicada
+          (lado conservador)." É a única forma de o campo vazio não parecer
+          esquecimento.
+      (d) OS DOIS NÚMEROS APARECEM LADO A LADO NO RESULTADO, como o memorial já
+          faz: N_(gamma_f=1,0) e N_d majorado, com a frase de que a Norma manda
+          calcular a tensão que M_0 anula com gamma_f = 1,0 enquanto M_Sd,máx é
+          de CÁLCULO — a fração mistura dois níveis de ponderação DE PROPÓSITO.
+          Exibir só um dos dois é o modo de fazer o leitor achar que houve erro.
+      (e) A HIPÓTESE DE QUE gamma_n NÃO MAJORA N_(gamma_f=1,0)
+          (`HIPOTESE_GAMMA_N_NAO_MAJORA_N_GAMMA_F_1`) já sai em
+          `hipoteses_declaradas` quando gamma_n é aplicado, e por
+          REQ-UI-PILARETE-09 vai literal — este item existe para que ninguém a
+          "simplifique" achando que é redundante com (a).
+    criterio_de_aceite:
+      - >-
+        Seção 24×16 cm (gamma_n = 1,15): a tela mostra N_d digitado = 400 kN e
+        N_d majorado = 460 kN, os dois rotulados, mais gamma_n = 1,15.
+      - >-
+        Seção 30×30: a tela mostra gamma_n = 1,00 com o motivo, e não omite a
+        linha.
+      - >-
+        Busca textual não encontra `1.4`, `/ 1,4`, `/ gamma_f` nem `trace`
+        ligando o campo de `N_gamma_f_1` ao de `N_d`.
+      - >-
+        Deixar `N_gamma_f_1` em branco na FAIXA A verifica normalmente e o
+        memorial exibido contém a frase de que a majoração NÃO foi aplicada.
+      - >-
+        O aviso do item (c) está visível junto ao campo, antes de qualquer
+        verificação.
+
+  - id: REQ-UI-PILARETE-11-o-veredito-morre-a-cada-tecla
+    criado_na_v14: true
+    prioridade: ALTA
+    texto: >-
+      MESMA CAUSA-RAIZ QUE REPROVOU `DialogoSigmaAdm` TRÊS RODADAS SEGUIDAS NO
+      GATE 2, e aqui a superfície é cinco vezes maior. Um veredito desenhado na
+      tela só pode existir enquanto representar fielmente a última chamada a
+      `verificar_pilarete`. Não existe cache, não existe "resultado ativo", não
+      existe valor que sobreviva a uma edição.
+      (a) TODO conteúdo de `frame_resultado` é DESTRUÍDO no primeiro passo de
+          `_verificar()` e a cada disparo de `_invalidar_resultado`. O que
+          restar na tela depois de uma edição é ilegal.
+      (b) A VIGILÂNCIA É POR DIFERENÇA DE `vars(self)`, não por lista manual de
+          campos — é a técnica que `_construir_e_capturar_variaveis` /
+          `_vigiar_entradas` já usam em `dialogo_sigma_adm.py`, e a razão está
+          escrita lá: com ~35 campos, qualquer lista manual esquece um, e o
+          defeito reaparece com outro gatilho. Toda `tk.Variable` atribuída a
+          `self` durante a montagem entra na vigilância, inclusive as da tabela
+          de barras.
+      (c) A TABELA DE BARRAS TAMBÉM INVALIDA. Adicionar, editar ou remover uma
+          barra invalida o resultado — ela não é uma `tk.Variable` e por isso
+          NÃO é coberta por (b): os três pontos de edição chamam
+          `_invalidar_resultado` explicitamente. É o mesmo cuidado (e o mesmo
+          risco) da lista de camadas em REQ-UI-CAMADA-01.
+      (d) `ultimo_resultado` só é gravado DEPOIS de o desenho ter sido feito, e
+          é zerado por `_invalidar_resultado`. Nenhum exportador, nenhuma cópia
+          e nenhum "salvar memorial" pode ler um `ultimo_resultado` sem checar
+          que ele não é `None`.
+      (e) É ESTRUTURALMENTE IMPOSSÍVEL "ver um veredito e copiar outro": o botão
+          de copiar/salvar memorial pertence ao card desenhado e captura o
+          `ResultadoPilarete` por FECHAMENTO, não por atributo de instância —
+          exatamente o redesenho que fechou a classe de defeito em σ_adm.
+    criterio_de_aceite:
+      - >-
+        Verificar, depois alterar QUALQUER campo (teste parametrizado sobre
+        todas as `tk.Variable` da janela, uma por vez): `frame_resultado` fica
+        sem filhos e `ultimo_resultado is None`.
+      - >-
+        Verificar, depois adicionar/remover/editar uma barra: idem.
+      - >-
+        O teste que enumera as variáveis é escrito por diferença de `vars`, não
+        por lista literal — se um campo novo for acrescentado sem trace, ele
+        quebra.
+      - >-
+        Não existe atributo de instância guardando o resultado entre o desenho
+        do card e o clique de copiar.
+
+  - id: REQ-UI-PILARETE-12-fronteira-com-o-nucleo-persistencia-e-exportacao
+    criado_na_v14: true
+    texto: >-
+      A TELA NÃO CALCULA (CLAUDE.md regra 4), e nesta janela a lista de chamadas
+      ao núcleo é FECHADA: `verificar_pilarete`, `classificar_faixa` (prévia da
+      faixa, REQ-UI-PILARETE-04), `area_barra` (área da barra,
+      REQ-UI-PILARETE-06) e as tuplas de enumeração (`VINCULACOES`,
+      `TIPOS_DE_JUNTA`, `MODELOS_DE_CALCULO`, `CLASSES_DE_AGRESSIVIDADE`) e
+      constantes de texto. Qualquer outra aritmética sobre os ~35 campos —
+      conversão de unidade, área de barra, razão de 14.4.1, ell_e, gamma_n,
+      M_1d,mín, espaçamento livre — é veto do a6.
+      PERSISTÊNCIA: NADA do pilarete entra no `.s7proj` NESTA RODADA, e isto é
+      DECISÃO DE ESCOPO REGISTRADA, não esquecimento. Motivo: o schema do
+      projeto é superfície aprovada por A6/A7 e tem migração/validação próprias
+      (`ui/completo/projeto.py`); acrescentar ~35 campos a ele é trabalho com
+      requisito próprio, incluindo o que fazer ao abrir um arquivo antigo. A
+      janela abre vazia a cada sessão, e o texto da tela diz isso ("as entradas
+      do pilarete não são salvas no projeto nesta versão") para que o engenheiro
+      não descubra sozinho depois de preencher 35 campos.
+      EXPORTAÇÃO: o memorial do pilarete NÃO entra no PDF nem no Excel da
+      sapata, pela mesma razão de REQ-UI-PILARETE-01 — é verificação de outro
+      elemento, por outro método de segurança, e misturá-los num único documento
+      sugeriria uma integração que não existe. O que a tela oferece é "salvar
+      memorial do pilarete como .txt" / "copiar", com o conteúdo EXATO de
+      `memorial()` (REQ-UI-PILARETE-09).
+      O CAMINHO INVERSO TAMBÉM ESTÁ FECHADO: nenhum resultado do pilarete
+      alimenta `Sapata`, `ResultadoSapata`, `construir_modelo_visual`,
+      `relatorio.py`, `pranchas.py` ou o exportador Excel.
+      SE UMA RODADA FUTURA quiser persistir ou integrar, é requisito NOVO com
+      rodada própria de a6/a7 — e este parágrafo existe para que a ausência não
+      seja lida como lacuna, do mesmo modo que a nota de escopo de
+      REQ-UI-CAMADA-07.
+    criterio_de_aceite:
+      - >-
+        O diff da rodada não toca `calc_core/`, `projeto.py`, `relatorio.py`,
+        `pranchas.py`, `excel_export.py` nem `excel_import.py`.
+      - >-
+        Salvar e reabrir um `.s7proj` produz arquivo byte a byte idêntico ao de
+        antes desta rodada, para a mesma entrada de sapata.
+      - >-
+        O PDF e o Excel exportados não contêm nenhuma linha do pilarete.
+      - >-
+        O aviso de que as entradas do pilarete não são salvas está visível na
+        janela.
 
 # =============================================================================
 # escopo_amplo_em_conferencia — módulos portados de calc_core/sapata_isolada/

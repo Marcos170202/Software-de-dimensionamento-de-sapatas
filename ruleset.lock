@@ -5,6 +5,64 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 14 (2026-09-08) — a TELA do pilarete. Backlog #13, rodada 5.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave, com `yaml.safe_load` da v13 em `git show HEAD:ruleset.yaml` contra o
+# arquivo novo): `regras`, `derivacoes`, `praticas_consagradas`,
+# `requisitos_para_a4` e `escopo_amplo_em_conferencia` saem IDÊNTICAS às da
+# v13; `requisitos_para_a3` e `requisitos_para_a5` mudam SÓ POR ACRÉSCIMO —
+# nenhum requisito anterior foi alterado, e os antigos saem na mesma ordem:
+#   regras (normativas) ............ 41 APROVADA
+#                                    13 APROVADA_COM_USO_RESTRITO
+#                                     7 PENDENTE_HUMANO
+#                                     4 REJEITADA               (inalterado)
+#   derivacoes .....................  4 APROVADA
+#                                    10 APROVADA_COM_USO_RESTRITO (inalterado)
+#   requisitos_para_a5 ............. 21                          (eram 20)
+#   requisitos_para_a3 ............. 27                          (eram 15)
+#
+# REQUISITOS DE TELA NOVOS (`requisitos_para_a3`):
+#   REQ-UI-PILARETE-01-janela-propria-standalone-e-o-que-nao-se-propaga
+#   REQ-UI-PILARETE-02-metodo-de-seguranca-e-a-rotulagem-dos-esforcos
+#   REQ-UI-PILARETE-03-nenhum-default-silencioso-e-o-tri-estado-que-um-
+#                      checkbox-perde
+#   REQ-UI-PILARETE-04-campos-condicionais-por-ramo-e-a-assimetria-das-guardas
+#   REQ-UI-PILARETE-05-cruzamento-cobrimento-x-barras-e-por-que-sao-dois-lugares
+#   REQ-UI-PILARETE-06-uma-bitola-so-area-vinda-do-nucleo-e-a-contagem-de-barras
+#   REQ-UI-PILARETE-07-faixa-A-e-faixa-B-na-tela-e-a-proibicao-do-visto-verde
+#   REQ-UI-PILARETE-08-recusa-nao-e-reprovacao-e-a-forca-da-guarda
+#   REQ-UI-PILARETE-09-memorial-literal-e-integral
+#   REQ-UI-PILARETE-10-gamma-n-e-o-N-a-gamma-f-igual-a-1
+#   REQ-UI-PILARETE-11-o-veredito-morre-a-cada-tecla
+#   REQ-UI-PILARETE-12-fronteira-com-o-nucleo-persistencia-e-exportacao
+#
+# REQUISITO DE NÚCLEO NOVO (`requisitos_para_a5`), e é o achado desta rodada:
+#   REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes
+#       PRIORIDADE ALTA, lado INSEGURO. `BarraLongitudinal.area` NÃO é cruzada
+#       com `phi_longitudinal_mm`, `numero_de_barras` NÃO é cruzado com
+#       `len(barras)` e `espacamento_entre_eixos_mm` NÃO é cruzado com as
+#       posições. Medido por execução (30×30, C25, CA-50, N_d = 1000 kN,
+#       phi DECLARADO 16 mm, áreas de phi 25 mm, M_Sd,x = M_Sd,y = 36 kN·m):
+#       I_A cai de 1,1257 para 0,6978 e o VEREDITO VIRA de NÃO ATENDIDO para
+#       ATENDIDO, com todo o detalhamento continuando "atende". Nenhuma
+#       checagem dimensional pega. kb/pendencias.md > V25.
+#       IMPLEMENTÁ-LO INVALIDA A6/A7 DO BACKLOG #13 — a v14 em si não invalida
+#       nada, porque não altera regra nem requisito já implementado e a
+#       superfície que especifica (`ui/completo/janela_pilarete.py`) não existe.
+#
+# DECISÃO DE ARQUITETURA CONFIRMADA COM AJUSTE: tela própria e verificação
+# STANDALONE (nada do pilarete entra no cálculo da sapata), mas JANELA NÃO
+# MODAL — não diálogo modal (que é o desenho certo para `DialogoSigmaAdm`,
+# porque ele DEVOLVE um valor; o pilarete não devolve nada) e não aba (o único
+# Notebook da tela principal é a área de desenho da sapata).
+#
+# CHECAGEM DIMENSIONAL: 0 FALHA. A v14 não introduz fórmula nenhuma.
+#
+# GATE 1 CONTINUA NÃO CONGELADO: dívida de hash das 25 regras anteriores à v9
+# e 7 pendências humanas de escopo amplo.
+#
+# ===========================================================================
 # VERSÃO 13 (2026-09-04) — fecha o ELU de FORÇA CORTANTE do pilarete (§17.4) e,
 # com ele, a última lacuna que a v12 tinha deixado no ELU. Backlog #13,
 # rodada 4.
@@ -394,4 +452,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-f1b9b5fb72e6d64be37960f3797a826252184d853eb1292d3a3a85ce6ac2675a  ruleset.yaml
+6aced5ed1b15dcc2c1c4789986c4a57fededb0fa464775a37f740df1a521cb45  ruleset.yaml
