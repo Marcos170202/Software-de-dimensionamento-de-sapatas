@@ -358,6 +358,21 @@ class ResultadoArmaduraLongitudinal:
     espacamento_entre_eixos_maximo_mm: float
     """min(2·b_mín ; 400 mm) (18.4.2.2)."""
     espacamento_entre_eixos_adotado_mm: float
+    """Espaçamento entre eixos DECLARADO — o que alimenta o PISO [mm]."""
+    espacamento_entre_eixos_verificado_no_teto_mm: float
+    """Espaçamento efetivamente comparado com o TETO de 18.4.2.2 [mm].
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    É o MAIOR espaçamento real das posições das barras quando ele é informado
+    (``espacamento_entre_eixos_maximo_real_mm``), e o declarado quando não é.
+    Campo PRÓPRIO, e separado do declarado, porque os dois limites de 18.4.2.2
+    têm sinais contrários e nenhum número único é conservador nos dois: sem
+    exibir qual valor foi comparado com o teto, o memorial não permitiria
+    auditar a diferença.
+    """
     atende_A_s_minima: bool
     atende_A_s_maxima_secao_corrente: bool
     atende_A_s_maxima_na_emenda: bool
@@ -420,6 +435,7 @@ def verificar_armadura_longitudinal(
     b_secao: float,
     d_agregado_mm: float,
     espacamento_entre_eixos_mm: float,
+    espacamento_entre_eixos_maximo_real_mm: float | None = None,
     fracao_emendada_na_mesma_secao: float = 1.0,
 ) -> ResultadoArmaduraLongitudinal:
     """As verificações de 17.3.5.3 e 18.4.2, incluindo a REGIÃO DE EMENDA.
@@ -443,6 +459,19 @@ def verificar_armadura_longitudinal(
     * espaçamento livre ``>= max(20 mm ; phi ; 1,2·d_agregado)``, TAMBÉM na
       região de emenda com as barras duplicadas (18.4.2.2);
     * espaçamento entre eixos ``<= min(2·b_mín ; 400 mm)`` (18.4.2.2).
+
+    OS DOIS LIMITES DE ESPAÇAMENTO TÊM SINAIS CONTRÁRIOS, e por isso não leem
+    o mesmo número (REQ-PILARETE-20(c)). O PISO (espaçamento livre) é
+    verificado com ``espacamento_entre_eixos_mm``, o valor DECLARADO, que
+    :func:`~calc_core.estrutural.pilarete.geometria.exigir_armadura_consistente_com_as_barras`
+    obriga a ser ``<=`` o menor espaçamento real das posições das barras. O
+    TETO é verificado com ``espacamento_entre_eixos_maximo_real_mm``, o MAIOR
+    espaçamento real, quando ele é informado — e com o declarado quando não é,
+    que é o comportamento anterior, preservado para o chamador que só tem o
+    número declarado. Quando os dois vêm, adota-se o MAIOR dos dois no teto:
+    nunca menos conservador que qualquer um deles isolado. Sem esta separação,
+    uma seção 90×20 com 4 barras declararia os 84 mm da direção curta e
+    esconderia os 784 mm da longa, que 18.4.2.2 REPROVA.
 
     ESTE MÓDULO NÃO REPROVA POR EXCEÇÃO: devolve o resultado com cada
     ``atende_*`` separado, porque o memorial precisa dizer QUAL limite não foi
@@ -478,6 +507,16 @@ def verificar_armadura_longitudinal(
                        - phi_longitudinal_mm
                        - fracao_emendada_na_mesma_secao * phi_longitudinal_mm)
     entre_eixos_max = min(2.0 * b_min_mm, 400.0)
+    if espacamento_entre_eixos_maximo_real_mm is None:
+        entre_eixos_no_teto = espacamento_entre_eixos_mm
+    else:
+        exigir_positivo("espacamento_entre_eixos_maximo_real_mm",
+                        espacamento_entre_eixos_maximo_real_mm,
+                        fonte="ABNT NBR 6118:2023, 18.4.2.2, p. 153",
+                        apoio_no_ruleset="NBR6118-18.4.2-armaduras-"
+                                         "longitudinais-pilarete")
+        entre_eixos_no_teto = max(espacamento_entre_eixos_mm,
+                                  espacamento_entre_eixos_maximo_real_mm)
 
     return ResultadoArmaduraLongitudinal(
         A_s_adotada=A_s_adotada,
@@ -492,6 +531,7 @@ def verificar_armadura_longitudinal(
         espacamento_livre_na_emenda_mm=livre_na_emenda,
         espacamento_entre_eixos_maximo_mm=entre_eixos_max,
         espacamento_entre_eixos_adotado_mm=espacamento_entre_eixos_mm,
+        espacamento_entre_eixos_verificado_no_teto_mm=entre_eixos_no_teto,
         atende_A_s_minima=A_s_adotada >= A_s_min,
         atende_A_s_maxima_secao_corrente=A_s_adotada <= A_s_max,
         atende_A_s_maxima_na_emenda=A_s_emenda <= A_s_max,
@@ -501,7 +541,7 @@ def verificar_armadura_longitudinal(
         atende_espacamento_livre_secao_corrente=livre_corrente >= livre_exigido,
         atende_espacamento_livre_na_emenda=livre_na_emenda >= livre_exigido,
         atende_espacamento_entre_eixos=(
-            espacamento_entre_eixos_mm <= entre_eixos_max),
+            entre_eixos_no_teto <= entre_eixos_max),
         declaracoes=(DECLARACAO_N_D_DE_A_S_MIN,
                      DECLARACAO_ESPACAMENTO_NA_EMENDA),
     )

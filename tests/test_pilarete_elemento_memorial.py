@@ -542,6 +542,252 @@ def test_d_linha_do_cortante_e_o_MESMO_que_passou_pelo_cruzamento():
     assert d_util == pytest.approx(0.30 - d_linha_esperado)
 
 
+# --- REQ-PILARETE-20: os OUTROS TRÊS pares de declaração redundante ---------
+#
+# O DEFEITO QUE ESTES TESTES MATAM (achado do a2 na v14 do ruleset, por leitura
+# adversarial de `DadosDoPilarete`): REQ-PILARETE-09 cruzou UM par (cobrimento
+# × posições) e os outros TRÊS ficaram sem cruzamento nenhum — a bitola
+# declarada contra a ÁREA de cada barra, `numero_de_barras` contra
+# `len(barras)` e o espaçamento declarado contra as posições. É a MESMA classe
+# de defeito da seção acima, do MESMO lado INSEGURO, e nenhuma checagem
+# dimensional pega: área é m² nas duas leituras, contagem é adimensional nas
+# duas.
+
+def test_area_de_phi_25_com_phi_16_DECLARADO_RECUSA():
+    """O CENÁRIO EXATO MEDIDO PELO a2, e ele vira o veredito.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.1 (p. 153) e 17.2.2 (p. 120)
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (a)
+
+    Geometria A (30×30, C25, CA-50, N_d = 1000 kN, 4 barras, d' = 5,8 cm) com
+    phi DECLARADO 16 mm e as `BarraLongitudinal` da tupla trazendo a área de
+    phi 25 mm (4,9087 cm² por barra em vez de 2,0106). Com
+    M_Sd,x = M_Sd,y = 36 kN·m o índice do par solicitante cai de 1,1257 para
+    0,6978 e o veredito de §17.2 VIRA de NÃO ATENDIDO para ATENDIDO, com todo
+    o detalhamento continuando "atendido" porque lê o phi declarado (A_s =
+    19,64 cm² é 2,18 % de A_c, longe dos 8 % de 17.3.5.3.2). Agora RECUSA.
+    """
+    barras_infladas = barras(phi_mm=25.0)   # posições de phi 16, áreas de 25
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(phi_longitudinal_mm=16.0,
+                                 barras=barras_infladas,
+                                 M_Sd_x=36.0, M_Sd_y=36.0))
+
+    mensagem = str(erro.value)
+    assert "18.4.2.1" in mensagem
+    assert "16.00" in mensagem            # phi declarado
+    assert "2.0106" in mensagem           # área da bitola declarada [cm²]
+    assert "4.9087" in mensagem           # área declarada na barra [cm²]
+    assert "25.00" in mensagem            # bitola implícita pela área
+    assert "INSEGURO" in mensagem
+
+
+def test_a_inversao_do_veredito_medida_pelo_a2_e_reproduzida_por_execucao():
+    """1,1257 -> 0,6978, NÃO ATENDIDO -> ATENDIDO. É a medida, não a narrativa.
+
+    Ref.: ABNT NBR 6118:2023, 17.2.1, 17.2.2 e 17.2.5, p. 120-125
+    [rule: NBR6118-17.2.1-envoltoria-criterio-de-seguranca]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+
+    Chama §17.2 DIRETAMENTE, com as duas seções, porque é exatamente o módulo
+    que a guarda de (6-bis) protege: se um dia a guarda for removida ou movida
+    para dentro de um ramo, este teste continua documentando o tamanho do erro
+    que ela impede. O caminho do ELEMENTO (com a guarda) RECUSA os dois.
+    """
+    from calc_core.estrutural.pilarete.secao import (
+        SecaoRetangular,
+        verificar_elu_solicitacoes_normais,
+    )
+    from calc_core.sapata_isolada.materiais import Aco, Concreto
+
+    def _secao(phi_mm):
+        return SecaoRetangular(
+            h_secao=0.30, b_secao=0.30, barras=barras(phi_mm=phi_mm),
+            concreto=Concreto(fck=25.0, gamma_c=1.4),
+            aco=Aco(fyk=500.0, gamma_s=1.15))
+
+    def _indice(phi_mm):
+        return verificar_elu_solicitacoes_normais(
+            _secao(phi_mm), N_Sd=1000.0, M_Sd_x=36.0, M_Sd_y=36.0,
+            M_1d_min_xx=24.0, M_1d_min_yy=24.0)
+
+    honesto = _indice(16.0)
+    inflado = _indice(25.0)
+    assert honesto.indice_A_par_solicitante == pytest.approx(1.1257, abs=1e-4)
+    assert inflado.indice_A_par_solicitante == pytest.approx(0.6978, abs=1e-4)
+    assert honesto.atendido is False and inflado.atendido is True
+
+    # E o pilarete que DECLARA phi 16 com as áreas de phi 25 não chega lá.
+    with pytest.raises(RecusaForaDeDominio):
+        verificar_pilarete(dados(phi_longitudinal_mm=16.0,
+                                 barras=barras(phi_mm=25.0),
+                                 M_Sd_x=36.0, M_Sd_y=36.0))
+
+
+def test_area_MENOR_que_a_da_bitola_declarada_SEGUE():
+    """A guarda de (a) é de UM LADO SÓ: arredondamento comercial é conservador.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.1, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (a)
+
+    2,00 cm² por barra declarados para phi 16 mm, cuja área exata é 2,0106 cm²:
+    A_s sai MENOR, M_Rd sai MENOR e N_Rd0 sai MENOR — conservador nos três. É o
+    arredondamento de tabela comercial, e recusá-lo seria recusar projeto
+    legítimo.
+    """
+    area_arredondada = 2.00e-4     # 2,00 cm² em m²
+    resultado = verificar_pilarete(dados(
+        phi_longitudinal_mm=16.0,
+        barras=tuple(BarraLongitudinal(pos_h=b.pos_h, pos_b=b.pos_b,
+                                       area=area_arredondada)
+                     for b in barras())))
+    consistencia = resultado.consistencia_da_armadura
+    assert consistencia.areas_declaradas_nas_barras == (area_arredondada,) * 4
+    assert consistencia.area_da_bitola_declarada == pytest.approx(
+        area_barra(16.0))
+    assert (max(consistencia.areas_declaradas_nas_barras)
+            < consistencia.area_da_bitola_declarada)
+
+
+def test_bitolas_MISTAS_sao_RECUSADAS_e_nao_aceitas_em_silencio():
+    """Todo o detalhamento é verificado contra um phi ÚNICO. Decisão do a5.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.1 e 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+
+    O requisito manda ESCOLHER entre admitir um phi por barra e recusar a seção
+    com bitolas mistas — "o que está PROIBIDO é continuar aceitando em
+    silêncio". Recusa-se porque não existe leitura conservadora de um phi só
+    para bitolas diferentes: a maior é conservadora no espaçamento livre e no
+    ell_b de 9.5.2.3, a menor no piso de phi >= 10 mm de 18.4.2.1.
+    """
+    mistas = tuple(
+        BarraLongitudinal(pos_h=b.pos_h, pos_b=b.pos_b,
+                          area=area_barra(16.0 if i % 2 else 12.5))
+        for i, b in enumerate(barras()))
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(phi_longitudinal_mm=16.0, barras=mistas))
+    mensagem = str(erro.value)
+    assert "bitolas mistas" in mensagem
+    assert "12.50" in mensagem and "16.00" in mensagem
+
+
+@pytest.mark.parametrize("numero", [3, 5])
+def test_numero_de_barras_declarado_tem_de_bater_com_len_barras(numero):
+    """(b) é IGUALDADE: não há lado conservador numa contagem.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (b)
+
+    Declarar 5 e montar 4 satisfaz "uma barra por vértice" com armadura que não
+    existe; declarar 3 e montar 4 reprova por 18.4.2.2 uma seção que a tem. Os
+    dois são erro de declaração e os dois RECUSAM.
+    """
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(numero_de_barras=numero))
+    mensagem = str(erro.value)
+    assert "numero_de_barras" in mensagem and "len(barras)" in mensagem
+    assert f"({numero}, 4)" in mensagem
+
+
+def test_espacamento_declarado_MAIOR_que_o_real_RECUSA():
+    """(c), lado INSEGURO: piso verificado sobre um vão livre que não existe.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    Barras nos vértices de 30×30 com d' = 5,8 cm dão 184 mm entre eixos nas
+    duas direções. Declarar 300 mm faz o espaçamento livre da seção corrente
+    sair 284 mm e o da emenda 268 mm, quando os reais são 168 e 152 mm — e o
+    piso de max(20 mm; phi; 1,2·d_agr) passa a ser verificado sobre um vão que
+    a peça não tem.
+    """
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(espacamento_entre_eixos_mm=300.0))
+    mensagem = str(erro.value)
+    assert "18.4.2.2" in mensagem
+    assert "300.00" in mensagem and "184.00" in mensagem
+    assert "INSEGURO" in mensagem
+
+
+def test_espacamento_declarado_MENOR_que_o_real_SEGUE():
+    """(c) é assimétrica no piso: declarar menos do que existe é conservador.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+    """
+    resultado = verificar_pilarete(dados(espacamento_entre_eixos_mm=100.0))
+    consistencia = resultado.consistencia_da_armadura
+    assert consistencia.espacamento_real_minimo_mm == pytest.approx(184.0)
+    assert consistencia.espacamento_entre_eixos_declarado_mm == 100.0
+    assert resultado.armadura_longitudinal.atende_espacamento_entre_eixos
+
+
+def test_o_TETO_de_18_4_2_2_le_o_MAIOR_espacamento_REAL_e_nao_o_declarado():
+    """(c), o outro sinal: 90×20 com 4 barras esconde 784 mm atrás de 84 mm.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    O MESMO número declarado serve a dois limites de sinal contrário, e nenhum
+    valor é conservador nos dois quando as duas direções têm espaçamentos
+    diferentes. Aqui as barras dos vértices distam 784 mm ao longo de h e
+    84 mm ao longo de b; o teto de 18.4.2.2 é min(2·200; 400) = 400 mm. Com o
+    declarado (84 mm, que é o que a guarda do piso exige) o teto "atenderia";
+    lido do MAIOR espaçamento real, REPROVA — e reprovar é o que tem de
+    acontecer, porque excesso de espaçamento é defeito de PROJETO (faltam
+    barras intermediárias), não entrada fora de domínio.
+    """
+    resultado = verificar_pilarete(dados(
+        h_secao=0.90, b_secao=0.20, ell=0.80, N_d=800.0, M_Sd_x=0.0,
+        M_Sd_y=0.0, H_x=0.0, barras=barras(h=0.90, b=0.20),
+        espacamento_entre_eixos_mm=84.0, N_gamma_f_1=571.0))
+    longitudinal = resultado.armadura_longitudinal
+    assert longitudinal.espacamento_entre_eixos_adotado_mm == pytest.approx(84.0)
+    assert longitudinal.espacamento_entre_eixos_verificado_no_teto_mm == (
+        pytest.approx(784.0))
+    assert longitudinal.espacamento_entre_eixos_maximo_mm == pytest.approx(400.0)
+    assert longitudinal.atende_espacamento_entre_eixos is False
+    assert resultado.atendido is False
+
+
+def test_o_memorial_registra_os_TRES_cruzamentos_com_os_dois_numeros_de_cada():
+    """Cruzamento que não aparece no memorial é indistinguível de inexistente.
+
+    Ref.: ABNT NBR 6118:2023, 18.4.2.1 e 18.4.2.2, p. 153
+    [req: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+    """
+    memorial = " ".join(verificar_pilarete(dados()).memorial())
+    assert "CRUZAMENTO bitola × áreas das barras" in memorial
+    assert "phi declarado = 16.00 mm" in memorial
+    assert "2.0106 cm²" in memorial
+    assert "CRUZAMENTO contagem" in memorial
+    assert "numero_de_barras declarado = 4 contra len(barras) = 4" in memorial
+    assert "CRUZAMENTO espaçamento × posições das barras" in memorial
+    assert "declarado = 184.00 mm" in memorial
+    assert "mínimo 184.00 mm e máximo 184.00 mm" in memorial
+
+
+def test_a_recusa_dos_tres_pares_vale_TAMBEM_na_faixa_B():
+    """FAIXA B não chama §17.4, mas chama §17.2 — que usa as MESMAS barras.
+
+    Ref.: ABNT NBR 6118:2023, 14.4.1 e 17.2.2, p. 83 e 120-122
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+
+    Mesma disciplina de posição da guarda irmã de cobrimento: se ela estivesse
+    dentro do ramo do cortante, a FAIXA B seria porta aberta — a área inflada
+    entra em A_s e na varredura de M_Rd nas DUAS faixas.
+    """
+    for sobrescritas in ({"barras": barras(phi_mm=25.0)},
+                         {"numero_de_barras": 8},
+                         {"espacamento_entre_eixos_mm": 300.0}):
+        with pytest.raises(RecusaForaDeDominio):
+            verificar_pilarete(dados(ell=0.80, **sobrescritas))
+
+
 # --- Veredito como CONJUNÇÃO -----------------------------------------------
 
 def test_veredito_reprova_quando_o_cortante_reprova():

@@ -21,6 +21,7 @@ Ref.: ABNT NBR 6118:2023, item 16.3, p. 116 (proibição de carga centrada)
 [req: REQ-PILARETE-15-veredito-de-ELU-de-solicitacoes-normais]
 [req: REQ-PILARETE-16-escopo-do-veredito-e-o-cortante-nao-verificado]
 [req: REQ-PILARETE-17-guarda-de-elemento-linear-14.4.1]
+[req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
 
 ORDEM DAS GUARDAS, E ELA NÃO É NEGOCIÁVEL (REQ-PILARETE-15(1) e -17(5)):
 
@@ -64,9 +65,11 @@ from calc_core.estrutural.pilarete.esbeltez import (
     verificar_pilar_curto,
 )
 from calc_core.estrutural.pilarete.geometria import (
+    ConsistenciaDaArmaduraDeclarada,
     ConsistenciaDeCobrimento,
     ResultadoDimensoesLimites,
     cobrimento_nominal_minimo,
+    exigir_armadura_consistente_com_as_barras,
     exigir_cobrimento_consistente_com_as_barras,
     verificar_dimensoes_limites,
 )
@@ -160,6 +163,16 @@ class DadosDoPilarete:
     pega estes erros: ``_m`` para metros, ``_mm`` para milímetros, ``_MPa``
     para megapascal. ``h_secao``/``b_secao``/``ell`` em METROS; diâmetros e
     espaçamentos em MILÍMETROS; forças em kN e momentos em kN·m.
+
+    QUATRO GRANDEZAS FÍSICAS SÃO DECLARADAS DUAS VEZES AQUI, e as quatro são
+    CRUZADAS no passo (6-bis) de :func:`verificar_pilarete`
+    (REQ-PILARETE-09 e -20): ``cobrimento_declarado_mm`` × as posições das
+    barras, ``phi_longitudinal_mm`` × ``BarraLongitudinal.area``,
+    ``numero_de_barras`` × ``len(barras)`` e ``espacamento_entre_eixos_mm`` ×
+    as posições. Divergência entre dois canais da MESMA grandeza é RECUSA
+    citando os dois valores — nenhuma checagem dimensional a pegaria (área é
+    m² nas duas leituras, contagem é adimensional nas duas), e cada uma delas
+    já foi medida virando um veredito para ATENDIDO do lado INSEGURO.
     """
 
     # --- geometria e vinculação (13.2.3, 15.6, 15.8.2) --------------------
@@ -259,6 +272,20 @@ class ResultadoPilarete:
     até aqui. Guardá-lo no resultado é o que põe os três números no memorial:
     um cruzamento que não aparece no memorial é indistinguível de um
     cruzamento que não existe.
+    """
+    consistencia_da_armadura: ConsistenciaDaArmaduraDeclarada
+    """Cruzamento dos OUTROS TRÊS pares redundantes da armadura declarada.
+
+    Ref.: ABNT NBR 6118:2023, itens 18.4.2.1 e 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+
+    ``phi_longitudinal_mm`` × as áreas das barras, ``numero_de_barras`` ×
+    ``len(barras)`` e ``espacamento_entre_eixos_mm`` × as posições. Como no
+    campo acima: se este campo existe, os três cruzamentos PASSARAM — quem
+    RECUSA é
+    :func:`~calc_core.estrutural.pilarete.geometria.exigir_armadura_consistente_com_as_barras`,
+    no mesmo passo (6-bis), ANTES de §17.2 e de §17.4.
     """
     gamma_c_usado: float
     gamma_s_usado: float
@@ -489,6 +516,9 @@ class ResultadoPilarete:
             "medido à face externa do ESTRIBO (7.4.7.5).")
         linhas.append(self.consistencia_de_cobrimento.linha_de_memorial)
 
+        # Os OUTROS três cruzamentos da armadura declarada (REQ-PILARETE-20).
+        linhas.extend(self.consistencia_da_armadura.linhas_de_memorial)
+
         # (n) a (q) na FAIXA A; (s) na FAIXA B.
         if self.elu_cortante is not None:
             linhas.extend(self._linhas_do_cortante())
@@ -683,6 +713,7 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
     [rule: NBR6118-14.4.1-elemento-linear-classificacao]
     [rule: NBR6118-17.2.1-envoltoria-criterio-de-seguranca]
     [rule: NBR6118-21.6-junta-de-concretagem-pilarete-sapata]
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
     [req: REQ-PILARETE-15-veredito-de-ELU-de-solicitacoes-normais]
     [req: REQ-PILARETE-16-escopo-do-veredito-e-o-cortante-nao-verificado]
     [req: REQ-PILARETE-17-guarda-de-elemento-linear-14.4.1]
@@ -698,11 +729,14 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
        majorado; não existe caminho de compressão centrada (16.3);
     5. 15.8.1/15.8.2 — pilar curto, com lambda < lambda_1 ESTRITO;
     6. 14.4.1 — a FAIXA, que decide se §17.4 existe para este elemento;
-    6-bis. 7.4.7.5 — o CRUZAMENTO entre o cobrimento declarado e o implícito
-       nas posições das barras (REQ-PILARETE-09). Vem antes de 7 e de 8 porque
-       é dali que saem os braços de alavanca de §17.2 e o d' de §17.4: nenhum
-       número pode sair de uma geometria de armadura incoerente com o
-       cobrimento declarado;
+    6-bis. 7.4.7.5, 18.4.2.1 e 18.4.2.2 — os CRUZAMENTOS das declarações
+       redundantes: cobrimento declarado × posições das barras
+       (REQ-PILARETE-09) e, na sequência, bitola × áreas das barras, número
+       declarado × ``len(barras)`` e espaçamento declarado × posições
+       (REQ-PILARETE-20). Vêm antes de 7 e de 8 porque é dali que saem os
+       braços de alavanca e as áreas de §17.2, o d' de §17.4 e A_s de
+       17.3.5.3: nenhum número pode sair de uma geometria de armadura
+       incoerente com o que foi declarado;
     7. 17.2 — o veredito de solicitações normais, SEMPRE, nas duas faixas;
     8. 17.4 — só na FAIXA A; na FAIXA B a chamada nem é feita, e o memorial
        traz as duas frases obrigatórias em vez de um "não aplicável";
@@ -802,6 +836,23 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
         cobrimento_declarado_mm=dados.cobrimento_declarado_mm,
         cobrimento_minimo_mm=cobrimento_minimo)
 
+    # (6-bis, continuação) 18.4.2.1 e 18.4.2.2 — os OUTROS TRÊS pares de
+    # declaração redundante da MESMA armadura (REQ-PILARETE-20): a bitola
+    # declarada contra a área de cada barra, o número declarado contra o
+    # tamanho da tupla e o espaçamento declarado contra as posições. Fica AQUI,
+    # colado no cruzamento de cobrimento e antes de (7) e (8), pela MESMA razão
+    # e com a mesma força: A_s, a varredura de M_Rd de §17.2 e o N_Rd0 saem das
+    # ÁREAS declaradas nas barras, enquanto todo o detalhamento sai do phi
+    # declarado — e os dois canais nunca se encontravam. Medido pelo a2: phi 16
+    # declarado com barras de área de phi 25 derruba o índice de inclusão da
+    # envoltória de 1,1257 para 0,6978 e VIRA o veredito para ATENDIDO, com o
+    # detalhamento inteiro "atendendo". Nenhuma checagem dimensional pega.
+    consistencia_da_armadura = exigir_armadura_consistente_com_as_barras(
+        barras=dados.barras,
+        phi_longitudinal_mm=dados.phi_longitudinal_mm,
+        numero_de_barras=dados.numero_de_barras,
+        espacamento_entre_eixos_mm=dados.espacamento_entre_eixos_mm)
+
     # (7) 17.2 — o veredito de solicitações normais, nas duas faixas.
     secao = SecaoRetangular(h_secao=dados.h_secao, b_secao=dados.b_secao,
                             barras=dados.barras, concreto=concreto,
@@ -848,7 +899,13 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
         phi_longitudinal_mm=dados.phi_longitudinal_mm, N_d=N_d,
         f_yd_MPa=aco_longitudinal.fyd, h_secao=dados.h_secao,
         b_secao=dados.b_secao, d_agregado_mm=dados.d_agregado_mm,
-        espacamento_entre_eixos_mm=dados.espacamento_entre_eixos_mm)
+        espacamento_entre_eixos_mm=dados.espacamento_entre_eixos_mm,
+        # O TETO de 18.4.2.2 lê o MAIOR espaçamento REAL das posições, não o
+        # declarado (REQ-PILARETE-20(c)): o mesmo número servia a dois limites
+        # de sinal contrário e o cruzamento de (6-bis) só pode torná-lo
+        # conservador em UM deles — o piso.
+        espacamento_entre_eixos_maximo_real_mm=(
+            consistencia_da_armadura.espacamento_real_maximo_mm))
     estribos = detalhamento_18.verificar_estribos(
         concreto=concreto, aco_longitudinal=aco_longitudinal,
         phi_longitudinal_mm=dados.phi_longitudinal_mm,
@@ -894,6 +951,7 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
         cobrimento_declarado_mm=dados.cobrimento_declarado_mm,
         atende_cobrimento=dados.cobrimento_declarado_mm >= cobrimento_minimo,
         consistencia_de_cobrimento=consistencia_de_cobrimento,
+        consistencia_da_armadura=consistencia_da_armadura,
         gamma_c_usado=gamma_c,
         gamma_s_usado=dados.gamma_s,
         correcao_12_4_1_aplicada=bool(dados.condicoes_desfavoraveis_de_execucao),

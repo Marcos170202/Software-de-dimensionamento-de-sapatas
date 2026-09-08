@@ -543,3 +543,126 @@ def test_ell_b_cresce_com_phi_e_decresce_com_fck():
 
     assert _ell_b(20.0, 25.0) > _ell_b(16.0, 25.0)
     assert _ell_b(16.0, 40.0) < _ell_b(16.0, 25.0)
+
+
+# --- REQ-PILARETE-20: as conversões que sustentam os três cruzamentos -------
+
+def test_bitola_implicita_e_a_inversa_exata_de_area_barra():
+    """phi -> A -> phi volta ao mesmo número, em todas as bitolas comerciais.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (a)
+
+    É a conversão que põe os DOIS canais da mesma barra na mesma unidade, e é
+    ela que permite a recusa citar "4,9087 cm² = bitola de 25,00 mm" em vez de
+    dois números que o leitor teria de comparar de cabeça.
+    """
+    from calc_core.estrutural.pilarete.geometria import bitola_implicita_pela_area
+    from calc_core.sapata_isolada.materiais import BITOLAS_COMERCIAIS, area_barra
+
+    for phi in BITOLAS_COMERCIAIS:
+        assert bitola_implicita_pela_area(area_barra(phi)) == pytest.approx(phi)
+
+
+def test_espacamentos_reais_de_um_anel_de_8_barras_sao_as_quatro_metades():
+    """Vértices + meio de face em 30×30 com d' = 5,8 cm dão 92 mm, quatro vezes.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    Duas camadas por direção nos vértices (5,8 e 24,2 cm) mais a camada do meio
+    (15,0 cm): as diferenças entre camadas CONSECUTIVAS são os espaçamentos
+    entre eixos de barras vizinhas ao longo de cada face.
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        espacamentos_entre_eixos_pelas_barras,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    d, meio, oposta = 0.058, 0.150, 0.242
+    anel = tuple(BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+                 for ph, pb in ((d, d), (d, meio), (d, oposta),
+                                (meio, d), (meio, oposta),
+                                (oposta, d), (oposta, meio), (oposta, oposta)))
+    espacamentos = espacamentos_entre_eixos_pelas_barras(anel)
+    assert espacamentos == pytest.approx((92.0, 92.0, 92.0, 92.0))
+
+
+def test_camadas_que_diferem_por_ruido_de_ponto_flutuante_sao_A_MESMA():
+    """`h - d'` calculado de duas formas não pode virar uma camada extra.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    Sem o agrupamento de TOLERANCIA_DE_POSICAO_M, duas barras a 1e-16 m uma da
+    outra produziriam um espaçamento real ~0 e a guarda recusaria TODA seção
+    legítima — a recusa mais barulhenta e mais inútil possível.
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        espacamentos_entre_eixos_pelas_barras,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    quase_igual = 0.242 + 1.0e-16
+    barras = (BarraLongitudinal(pos_h=0.058, pos_b=0.058, area=area),
+              BarraLongitudinal(pos_h=0.058, pos_b=0.242, area=area),
+              BarraLongitudinal(pos_h=0.242, pos_b=0.058, area=area),
+              BarraLongitudinal(pos_h=quase_igual, pos_b=quase_igual, area=area))
+    assert espacamentos_entre_eixos_pelas_barras(barras) == pytest.approx(
+        (184.0, 184.0))
+
+
+def test_a_guarda_dos_tres_pares_recusa_barras_todas_na_mesma_posicao():
+    """Sem duas camadas não há espaçamento real com que cruzar o declarado.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        exigir_armadura_consistente_com_as_barras,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    empilhadas = tuple(BarraLongitudinal(pos_h=0.058, pos_b=0.058, area=area)
+                       for _ in range(4))
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        exigir_armadura_consistente_com_as_barras(
+            barras=empilhadas, phi_longitudinal_mm=16.0, numero_de_barras=4,
+            espacamento_entre_eixos_mm=184.0)
+    assert "18.4.2.2" in str(erro.value)
+
+
+def test_a_guarda_dos_tres_pares_devolve_os_seis_numeros_do_memorial():
+    """Se a instância existe, os TRÊS cruzamentos passaram — e ela os relata.
+
+    Ref.: ABNT NBR 6118:2023, itens 18.4.2.1 e 18.4.2.2, p. 153
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        exigir_armadura_consistente_com_as_barras,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    quatro = tuple(BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+                   for ph in (0.058, 0.342) for pb in (0.058, 0.192))
+    consistencia = exigir_armadura_consistente_com_as_barras(
+        barras=quatro, phi_longitudinal_mm=16.0, numero_de_barras=4,
+        espacamento_entre_eixos_mm=134.0)
+    assert consistencia.numero_de_barras_declarado == 4
+    assert consistencia.numero_de_barras_nas_posicoes == 4
+    assert consistencia.area_da_bitola_declarada == pytest.approx(area)
+    assert consistencia.bitola_implicita_maxima_mm == pytest.approx(16.0)
+    # 40×25 com d' = 5,8 cm: 284 mm ao longo de h e 134 mm ao longo de b.
+    assert consistencia.espacamento_real_minimo_mm == pytest.approx(134.0)
+    assert consistencia.espacamento_real_maximo_mm == pytest.approx(284.0)
+    assert len(consistencia.linhas_de_memorial) == 3
