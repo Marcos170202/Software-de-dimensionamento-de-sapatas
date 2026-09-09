@@ -352,6 +352,20 @@ class ResultadoArmaduraLongitudinal:
     phi_longitudinal_mm: float
     phi_maximo_mm: float
     """b_mín/8 (18.4.2.1)."""
+    phi_verificado_no_piso_mm: float
+    """Bitola efetivamente comparada com o PISO de 18.4.2.1 (10 mm) [mm].
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+    É ``min(phi declarado ; bitola implícita pela MENOR área das barras)``
+    quando a bitola implícita é informada, e o declarado quando não é. Campo
+    PRÓPRIO, separado de ``phi_longitudinal_mm``, pela mesma razão de
+    ``espacamento_entre_eixos_verificado_no_teto_mm``: os dois limites de phi
+    têm sinais contrários e sem exibir QUAL número foi ao piso o memorial não
+    permitiria auditar a diferença.
+    """
     espacamento_livre_minimo_exigido_mm: float
     espacamento_livre_na_secao_corrente_mm: float
     espacamento_livre_na_emenda_mm: float
@@ -436,6 +450,7 @@ def verificar_armadura_longitudinal(
     d_agregado_mm: float,
     espacamento_entre_eixos_mm: float,
     espacamento_entre_eixos_maximo_real_mm: float | None = None,
+    bitola_implicita_minima_mm: float | None = None,
     fracao_emendada_na_mesma_secao: float = 1.0,
 ) -> ResultadoArmaduraLongitudinal:
     """As verificações de 17.3.5.3 e 18.4.2, incluindo a REGIÃO DE EMENDA.
@@ -472,6 +487,21 @@ def verificar_armadura_longitudinal(
     nunca menos conservador que qualquer um deles isolado. Sem esta separação,
     uma seção 90×20 com 4 barras declararia os 84 mm da direção curta e
     esconderia os 784 mm da longa, que 18.4.2.2 REPROVA.
+
+    OS DOIS LIMITES DE phi DE 18.4.2.1 TAMBÉM TÊM SINAIS CONTRÁRIOS, e desde
+    REQ-PILARETE-21(b) tampouco leem o mesmo número. O PISO (``phi >= 10 mm``)
+    é verificado com ``min(phi_longitudinal_mm ; bitola_implicita_minima_mm)``,
+    a bitola que a MENOR área declarada nas barras implica, quando ela vem — e
+    com o declarado quando não vem, que é o comportamento anterior, preservado
+    para o chamador que só tem o número declarado. O TETO
+    (``phi <= b_mín/8``) continua lendo o DECLARADO, que
+    :func:`~calc_core.estrutural.pilarete.geometria.exigir_armadura_consistente_com_as_barras`
+    obriga a ser o MAIOR dos dois canais. É o MESMO princípio do espaçamento —
+    cada limite lê o canal mais conservador — e o que ele fecha foi medido pelo
+    a2: phi 16 DECLARADO com todas as barras de área de phi 8 passava com
+    ``atende_phi_minimo = True``, isto é, barras reais de 8 mm aprovadas contra
+    um piso normativo de 10 mm. O arredondamento comercial legítimo não é
+    afetado (2,00 cm² para phi 16 dão 15,96 mm implícitos).
 
     ESTE MÓDULO NÃO REPROVA POR EXCEÇÃO: devolve o resultado com cada
     ``atende_*`` separado, porque o memorial precisa dizer QUAL limite não foi
@@ -518,6 +548,18 @@ def verificar_armadura_longitudinal(
         entre_eixos_no_teto = max(espacamento_entre_eixos_mm,
                                   espacamento_entre_eixos_maximo_real_mm)
 
+    # 18.4.2.1: o PISO lê o canal MAIS CONSERVADOR (REQ-PILARETE-21(b)); o TETO
+    # segue lendo o declarado, que a guarda de área obriga a ser o maior.
+    if bitola_implicita_minima_mm is None:
+        phi_no_piso = phi_longitudinal_mm
+    else:
+        exigir_positivo("bitola_implicita_minima_mm",
+                        bitola_implicita_minima_mm,
+                        fonte="ABNT NBR 6118:2023, 18.4.2.1, p. 153",
+                        apoio_no_ruleset="NBR6118-18.4.2-armaduras-"
+                                         "longitudinais-pilarete")
+        phi_no_piso = min(phi_longitudinal_mm, bitola_implicita_minima_mm)
+
     return ResultadoArmaduraLongitudinal(
         A_s_adotada=A_s_adotada,
         A_s_minima_valor=A_s_min,
@@ -526,6 +568,7 @@ def verificar_armadura_longitudinal(
         numero_de_barras=numero_de_barras,
         phi_longitudinal_mm=phi_longitudinal_mm,
         phi_maximo_mm=b_min_mm / 8.0,
+        phi_verificado_no_piso_mm=phi_no_piso,
         espacamento_livre_minimo_exigido_mm=livre_exigido,
         espacamento_livre_na_secao_corrente_mm=livre_corrente,
         espacamento_livre_na_emenda_mm=livre_na_emenda,
@@ -535,7 +578,7 @@ def verificar_armadura_longitudinal(
         atende_A_s_minima=A_s_adotada >= A_s_min,
         atende_A_s_maxima_secao_corrente=A_s_adotada <= A_s_max,
         atende_A_s_maxima_na_emenda=A_s_emenda <= A_s_max,
-        atende_phi_minimo=phi_longitudinal_mm >= PHI_LONGITUDINAL_MINIMO_MM,
+        atende_phi_minimo=phi_no_piso >= PHI_LONGITUDINAL_MINIMO_MM,
         atende_phi_maximo=phi_longitudinal_mm <= b_min_mm / 8.0,
         atende_numero_de_barras=numero_de_barras >= 4,
         atende_espacamento_livre_secao_corrente=livre_corrente >= livre_exigido,

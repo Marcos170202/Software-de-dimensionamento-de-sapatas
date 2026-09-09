@@ -15,6 +15,7 @@ Ref.: ABNT NBR 6118:2023, itens 18.4.2.1 e 18.4.2.2, p. 153
 [req: REQ-PILARETE-03-geometria-limite-e-recusas-duras]
 [req: REQ-PILARETE-09-cobrimento-proprio-e-a-incompatibilidade-com-Sapata]
 [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+[req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]
 
 AS GUARDAS DE COERÊNCIA DAS DECLARAÇÕES REDUNDANTES MORAM AQUI, todas, e é
 deliberado: ``DadosDoPilarete`` declara QUATRO grandezas físicas por DOIS
@@ -66,6 +67,8 @@ __all__ = [
     "cobrimento_implicito_pelas_barras",
     "exigir_cobrimento_consistente_com_as_barras",
     "bitola_implicita_pela_area",
+    "indices_das_barras_interiores",
+    "exigir_arranjo_em_anel",
     "espacamentos_entre_eixos_pelas_barras",
     "exigir_armadura_consistente_com_as_barras",
 ]
@@ -616,6 +619,112 @@ def bitola_implicita_pela_area(area: float) -> float:
     return 1000.0 * math.sqrt(4.0 * area / math.pi)
 
 
+def indices_das_barras_interiores(
+    barras: Sequence["BarraLongitudinal"],
+) -> tuple[int, ...]:
+    """Índices das barras ESTRITAMENTE interiores ao arranjo declarado.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    Uma barra é INTERIOR quando ``pos_h`` não é nem o mínimo nem o máximo dos
+    ``pos_h`` declarados E ``pos_b`` não é nem o mínimo nem o máximo dos
+    ``pos_b`` — isto é, quando ela não pertence a nenhuma das quatro faces do
+    anel de armadura. As coordenadas são agrupadas em camadas pela mesma
+    tolerância :data:`TOLERANCIA_DE_POSICAO_M` que
+    :func:`espacamentos_entre_eixos_pelas_barras` usa, para que uma barra de
+    face não vire "interior" por ruído de ponto flutuante.
+
+    NÃO É VERIFICAÇÃO NORMATIVA — 18.4.2.2 rege qualquer seção poligonal,
+    INCLUSIVE com barra interna ("em seções poligonais deve existir pelo menos
+    uma barra em cada vértice" é PISO, não arranjo exclusivo). É a
+    caracterização do DOMÍNIO em que o helper de medição deste módulo é exato.
+    Quem recusa é :func:`exigir_arranjo_em_anel`.
+    """
+    casas = max(0, -int(round(math.log10(TOLERANCIA_DE_POSICAO_M))))
+    posicoes_h = [round(barra.pos_h, casas) for barra in barras]
+    posicoes_b = [round(barra.pos_b, casas) for barra in barras]
+    if not posicoes_h:
+        return ()
+    h_min, h_max = min(posicoes_h), max(posicoes_h)
+    b_min, b_max = min(posicoes_b), max(posicoes_b)
+    return tuple(
+        indice
+        for indice, (pos_h, pos_b) in enumerate(zip(posicoes_h, posicoes_b))
+        if h_min < pos_h < h_max and b_min < pos_b < b_max
+    )
+
+
+def exigir_arranjo_em_anel(barras: Sequence["BarraLongitudinal"]) -> None:
+    """RECUSA arranjo com barra INTERIOR — o software não sabe medi-lo.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    É LIMITE DE ESCOPO DESTA VERSÃO DO SOFTWARE, NÃO DA NORMA, e a distinção é
+    a mesma da recusa de bitolas mistas: 18.4.2.2 governa qualquer seção
+    poligonal, inclusive com barra no interior; o que não sabe medir o
+    espaçamento entre eixos de barra interna é
+    :func:`espacamentos_entre_eixos_pelas_barras`, que projeta as barras em
+    CAMADAS por eixo.
+
+    O QUE ESTA GUARDA FECHA, medido por execução pelo a2 numa seção 90×40 cm
+    com phi 16, d' = 5,8 cm e teto de 18.4.2.2 igual a min(2·400; 400) =
+    400 mm:
+
+    * 4 barras nos vértices -> maior espaçamento real 784,0 mm -> NÃO ATENDE,
+      que é o veredito CERTO;
+    * as MESMAS 4 mais UMA barra no centroide -> a camada intermediária que ela
+      cria faz o maior espaçamento calculado cair para 392,0 mm -> "ATENDE",
+      **enquanto o vão real entre as barras de canto de cada face longa
+      continua sendo 784 mm**. A barra do centroide não está em face nenhuma e
+      não pode encurtar o vão de nenhuma delas.
+
+    O arranjo de 5 barras é simétrico nos dois eixos e por isso passa
+    :meth:`~calc_core.estrutural.pilarete.secao.SecaoRetangular.arranjo_simetrico`
+    (17.2.5): a simetria NÃO é guarda suficiente, e é por isso que esta
+    checagem geométrica é própria. Declarar o resíduo no docstring, como a v15
+    fazia, não substitui recusá-lo (REQ-PILARETE-09).
+
+    A ALTERNATIVA seria medir o espaçamento face a face e manter o arranjo
+    aceito; ela é admissível e fica para quando houver requisito que a peça —
+    recusar é a doutrina do projeto enquanto a medição não existir.
+    """
+    interiores = indices_das_barras_interiores(barras)
+    if not interiores:
+        return
+    posicoes = tuple((round(barras[i].pos_h, 6), round(barras[i].pos_b, 6))
+                     for i in interiores)
+    raise RecusaForaDeDominio(
+        parametro="posições das barras (barra INTERIOR à seção)",
+        valor=posicoes,
+        intervalo=("toda barra em alguma face do anel: pos_h igual ao mínimo "
+                   "ou ao máximo dos pos_h, ou pos_b igual ao mínimo ou ao "
+                   "máximo dos pos_b"),
+        fonte="ABNT NBR 6118:2023, 18.4.2.2, p. 153 — a Norma fixa o "
+              "espaçamento MÁXIMO entre EIXOS DAS BARRAS e vale para qualquer "
+              "seção poligonal, INCLUSIVE com barra interna (a barra em cada "
+              "vértice é PISO, não arranjo exclusivo); é ESTE SOFTWARE que só "
+              "sabe medir o espaçamento real projetando as barras em camadas "
+              "por eixo, o que só é exato no arranjo em ANEL",
+        forca=ESCOPO_DESTA_VERSAO,
+        apoio_no_ruleset="NBR6118-18.4.2-armaduras-longitudinais-pilarete",
+        sugestao=(
+            f"{len(interiores)} barra(s) declarada(s) em {posicoes} (m) não "
+            "pertence(m) a nenhuma face: o pos_h não é o mínimo nem o máximo "
+            "dos pos_h e o pos_b não é o mínimo nem o máximo dos pos_b. Uma "
+            "barra interior cria uma camada intermediária que REDUZ o "
+            "espaçamento que este software calcula sem reduzir o vão real ao "
+            "longo de face nenhuma — o teto de 18.4.2.2 passaria a ser "
+            "verificado contra um número que a peça não tem, do lado "
+            "INSEGURO. Declare a armadura em anel (barras nos vértices e, "
+            "quando houver, intermediárias nas faces). É limite desta versão "
+            "do software, não da Norma."),
+    )
+
+
 def espacamentos_entre_eixos_pelas_barras(
     barras: Sequence["BarraLongitudinal"],
 ) -> tuple[float, ...]:
@@ -624,29 +733,31 @@ def espacamentos_entre_eixos_pelas_barras(
     Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
     [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
     [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
 
     Em cada direção (``pos_h`` e ``pos_b``), as barras são agrupadas nas
     CAMADAS distintas que ocupam (tolerância :data:`TOLERANCIA_DE_POSICAO_M`) e
     devolvem-se as diferenças entre camadas CONSECUTIVAS. Numa seção retangular
-    com armadura em anel — barras nos vértices e, quando houver, barras
-    intermediárias nas faces, que é o arranjo que 18.4.2.2 governa — essas
-    diferenças SÃO os espaçamentos entre eixos de barras vizinhas ao longo de
-    cada face: 4 barras em 30×30 com d' = 5,8 cm dão (184 mm, 184 mm); 8 barras
-    (vértices + meio de face) dão (92, 92, 92, 92) mm.
+    com armadura em ANEL — barras nos vértices e, quando houver, barras
+    intermediárias nas faces — essas diferenças SÃO os espaçamentos entre eixos
+    de barras vizinhas ao longo de cada face: 4 barras em 30×30 com d' = 5,8 cm
+    dão (184 mm, 184 mm); 8 barras (vértices + meio de face) dão
+    (92, 92, 92, 92) mm.
 
-    HIPÓTESE GEOMÉTRICA DECLARADA, e ela é do software, não da Norma: o
-    espaçamento entre eixos é medido POR DIREÇÃO, ao longo das faces. Um
-    arranjo que não seja em anel (barras no interior da seção) produziria aqui
-    diferenças entre camadas que não são distâncias entre barras vizinhas —
-    para esse arranjo o número declarado teria de ser reconferido pelo
-    projetista. O pacote não gera esse arranjo e não o recusa: ele está fora do
-    que 18.4.2.2 descreve.
+    O DOMÍNIO DE VALIDADE É O ANEL, E ELE É RECUSADO NA ENTRADA, não declarado
+    em prosa: :func:`exigir_arranjo_em_anel` é chamada aqui, antes de qualquer
+    conta. Uma barra no INTERIOR da seção criaria uma camada intermediária que
+    não é distância entre barras vizinhas de nenhuma face e que REDUZIRIA o
+    máximo calculado sem reduzir o vão real — lado INSEGURO no teto de
+    18.4.2.2. Quem está fora do domínio é ESTE HELPER, não o arranjo: 18.4.2.2
+    rege qualquer seção poligonal, inclusive com barra interna.
 
     NÃO É VERIFICAÇÃO NORMATIVA. Quem verifica é
     :func:`exigir_armadura_consistente_com_as_barras` (o cruzamento) e
     :func:`~calc_core.estrutural.pilarete.detalhamento.verificar_armadura_longitudinal`
     (os limites de 18.4.2.2).
     """
+    exigir_arranjo_em_anel(barras)
     casas = max(0, -int(round(math.log10(TOLERANCIA_DE_POSICAO_M))))
     espacamentos: list[float] = []
     for coordenada in ("pos_h", "pos_b"):
@@ -709,6 +820,24 @@ class ConsistenciaDaArmaduraDeclarada:
         return bitola_implicita_pela_area(max(self.areas_declaradas_nas_barras))
 
     @property
+    def bitola_implicita_minima_mm(self) -> float:
+        """Bitola implicada pela MENOR área declarada nas barras [mm].
+
+        Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+        [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+        [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+        É a MENOR porque é ela que alimenta o PISO de 18.4.2.1
+        (``phi >= 10 mm``), verificado com o canal MAIS CONSERVADOR dos dois —
+        ``min(phi declarado; esta bitola)`` — em
+        :func:`~calc_core.estrutural.pilarete.detalhamento.verificar_armadura_longitudinal`.
+        O TETO (``phi <= b_mín/8``) continua lendo o DECLARADO, que a guarda (a)
+        obriga a ser o maior dos dois. Simétrico de
+        :attr:`bitola_implicita_maxima_mm`, que alimenta a recusa de (a).
+        """
+        return bitola_implicita_pela_area(min(self.areas_declaradas_nas_barras))
+
+    @property
     def espacamento_real_minimo_mm(self) -> float:
         """Menor espaçamento entre eixos que as posições implicam [mm].
 
@@ -744,6 +873,13 @@ class ConsistenciaDaArmaduraDeclarada:
         [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
         [req: REQ-PILARETE-12-memorial-e-o-que-ele-e-obrigado-a-dizer]
         [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]
+        [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+        São QUATRO: uma por par cruzado (bitola, contagem, espaçamento) mais a
+        que diz QUAL canal de phi alimenta cada um dos dois limites de 18.4.2.1
+        — sem ela o memorial não permitiria auditar que o piso de phi >= 10 mm
+        não foi verificado contra a bitola declarada quando as áreas implicam
+        uma menor.
         """
         espacamentos = ", ".join(
             f"{s:.2f}"
@@ -759,6 +895,16 @@ class ConsistenciaDaArmaduraDeclarada:
             "software RECUSA área de barra MAIOR que a da bitola declarada: "
             "ela infla A_s, M_Rd e N_Rd0 sem tocar em nenhuma verificação de "
             "detalhamento, que lê o phi declarado.",
+            "NBR 6118:2023, 18.4.2.1 (p. 153): CANAL DE CADA LIMITE DE phi — o "
+            "PISO (phi >= 10 mm) é verificado com o MENOR dos dois canais, "
+            f"min(declarado {self.phi_longitudinal_declarado_mm:.2f} mm ; "
+            f"bitola implícita pela MENOR área declarada "
+            f"{self.bitola_implicita_minima_mm:.2f} mm) = "
+            f"{min(self.phi_longitudinal_declarado_mm, self.bitola_implicita_minima_mm):.2f}"
+            " mm, e o TETO (phi <= b_mín/8) com o DECLARADO, que a guarda de "
+            "área obriga a ser o maior dos dois. Sem isso, uma sub-declaração "
+            "uniforme (phi 16 declarado com todas as barras de área de phi 8) "
+            "aprovaria barras reais de 8 mm contra um piso normativo de 10 mm.",
             "NBR 6118:2023, 18.4.2.2 (p. 153): CRUZAMENTO contagem — "
             f"numero_de_barras declarado = {self.numero_de_barras_declarado} "
             f"contra len(barras) = {self.numero_de_barras_nas_posicoes}. São a "
@@ -815,14 +961,22 @@ def exigir_armadura_consistente_com_as_barras(
           exata é 2,0106 cm²), que é CONSERVADOR em M_Rd, e mantém a mesma
           assimetria da guarda irmã de cobrimento.
 
-        RESÍDUO DECLARADO desta assimetria, dito para que o a2 possa
-        reconferi-lo: uma sub-declaração UNIFORME e grande (phi 16 declarado
-        com todas as barras de phi 8) é conservadora em A_s, M_Rd, ell_b,
-        cobrimento e espaçamento livre, mas passaria pelo piso de phi >= 10 mm
-        de 18.4.2.1, que lê o phi declarado. O memorial imprime a bitola
-        implícita pelas áreas ao lado da declarada, de modo que o caso é
-        AUDITÁVEL por leitura; fechá-lo exigiria um phi POR BARRA, que é
-        mudança de API e de escopo.
+        O RESÍDUO DESTA ASSIMETRIA ESTÁ FECHADO (REQ-PILARETE-21(b)), e não
+        mais só declarado: uma sub-declaração UNIFORME e grande (phi 16
+        declarado com todas as barras de área de phi 8) é conservadora em A_s,
+        M_Rd, ell_b, cobrimento e espaçamento livre, mas era do lado INSEGURO
+        exatamente no piso de phi >= 10 mm de 18.4.2.1, que lia o phi
+        DECLARADO — barras reais de 8 mm aprovadas contra um piso de 10 mm,
+        medido por execução pelo a2. Sob o MESMO princípio de (c) — cada limite
+        lê o canal MAIS CONSERVADOR —, o piso passa a ler
+        ``min(phi declarado ; bitola implícita pela MENOR área)``
+        (:attr:`ConsistenciaDaArmaduraDeclarada.bitola_implicita_minima_mm`,
+        consumida por
+        :func:`~calc_core.estrutural.pilarete.detalhamento.verificar_armadura_longitudinal`)
+        e o teto ``phi <= b_mín/8`` continua lendo o declarado, que a guarda
+        acima obriga a ser o MAIOR dos dois. O arredondamento comercial
+        legítimo continua passando: 2,00 cm² declarados para phi 16 dão bitola
+        implícita 15,96 mm, folgadíssimo sobre 10 mm.
 
     (a-bis) BITOLAS MISTAS — RECUSA, e a decisão é do a5 (o requisito manda
         escolher entre admitir um phi por barra ou recusar). Recusa-se porque
@@ -865,9 +1019,21 @@ def exigir_armadura_consistente_com_as_barras(
         teto verificado com o real. É o análogo da cadeia fechada da guarda de
         cobrimento.
 
-    PENDENTE DE RECONFERÊNCIA PELO a2, e está escrito porque o requisito o
-    exige com todas as letras: a alínea (c) e a decisão de (a-bis) são desenho
-    do a5 e não transcrição de norma; o a2 as reconfere antes de aprovar.
+        3. o "real", porém, só é REAL no arranjo em ANEL, e por isso a medição
+           é precedida de :func:`exigir_arranjo_em_anel`
+           (REQ-PILARETE-21(a)): uma barra no INTERIOR da seção cria uma camada
+           intermediária que derruba o máximo calculado — 784,0 mm para
+           392,0 mm numa seção 90×40 com 4 vértices mais o centroide, medido
+           pelo a2 — sem encurtar o vão real de face nenhuma, virando o
+           veredito do teto para ATENDIDO. Arranjo simétrico NÃO é guarda
+           suficiente: o arranjo de 5 barras passa em ``arranjo_simetrico()``
+           de 17.2.5.
+
+    O QUE FOI RECONFERIDO PELO a2 (v15) e o que mudou depois: a alínea (c) e a
+    decisão de (a-bis) foram RATIFICADAS sobre o commit 1861586; a
+    reconferência encontrou, na própria MEDIÇÃO do espaçamento real, o defeito
+    de REQ-PILARETE-21(a), fechado aqui pela guarda de anel, e o resíduo do
+    piso de phi de REQ-PILARETE-21(b), fechado no canal do piso.
     """
     exigir_positivo("phi_longitudinal_mm", phi_longitudinal_mm,
                     fonte="ABNT NBR 6118:2023, 18.4.2.1, p. 153",
@@ -926,9 +1092,14 @@ def exigir_armadura_consistente_com_as_barras(
             parametro="áreas das barras (bitolas mistas)",
             valor=(round(area_minima, 12), round(area_maxima, 12)),
             intervalo="todas as barras com a MESMA área",
-            fonte="ABNT NBR 6118:2023, 18.4.2.1 e 18.4.2.2, p. 153 — o piso de "
-                  "phi >= 10 mm, o teto de phi <= b_mín/8, o espaçamento livre "
-                  "e o ell_b de 9.5.2.3 são verificados contra um phi ÚNICO",
+            fonte="ABNT NBR 6118:2023, 18.4.2.1 e 18.4.2.2, p. 153 — a Norma "
+                  "escreve os limites POR BARRA ('o diâmetro DA BARRA' no piso "
+                  "de phi >= 10 mm, no teto de phi <= b_mín/8 e no espaçamento "
+                  "livre; idem o ell_b de 9.5.2.3), e o único diâmetro "
+                  "equivalente que ela define nesta matéria é o de FEIXES de "
+                  "barras IGUAIS (phi_n = phi·raiz(n)). A Norma NÃO proíbe "
+                  "bitola mista: quem reduz o conjunto a um phi ÚNICO, e por "
+                  "isso não sabe verificá-la, é ESTE SOFTWARE",
             forca=ESCOPO_DESTA_VERSAO,
             apoio_no_ruleset="NBR6118-18.4.2-armaduras-longitudinais-pilarete",
             sugestao=(
@@ -975,7 +1146,9 @@ def exigir_armadura_consistente_com_as_barras(
         )
 
     # (c) ESPAÇAMENTO × POSIÇÕES — assimétrica no piso; o teto passa a ler o
-    # máximo real (ver a alínea (c) do docstring).
+    # máximo real (ver a alínea (c) do docstring). A medição começa RECUSANDO
+    # arranjo com barra interior (REQ-PILARETE-21(a)), dentro do próprio
+    # helper: sem isso o "máximo real" não é o vão real de nenhuma face.
     espacamentos = espacamentos_entre_eixos_pelas_barras(barras)
     if not espacamentos:
         raise RecusaForaDeDominio(

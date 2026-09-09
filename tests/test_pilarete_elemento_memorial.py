@@ -883,3 +883,197 @@ def test_a_janela_de_14_4_1_com_15_8_2_e_estreita_e_pode_ser_vazia():
         M_Sd_y=0.0, H_x=0.0, barras=barras(h=0.40, b=0.20),
         espacamento_entre_eixos_mm=84.0, N_gamma_f_1=571.0))
     assert curto.faixa == FAIXA_B_FORA_DE_14_4_1
+
+
+# --- REQ-PILARETE-21: a MEDIÇÃO do espaçamento real e o canal do piso de phi -
+
+def _barras_90x40_com_centroide():
+    """4 vértices de 90×40 (d' = 5,8 cm) MAIS uma barra no centroide.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    É o arranjo EXATO que o a2 mediu: simétrico nos dois eixos (passa em
+    `arranjo_simetrico()` de 17.2.5), com a barra do centroide criando uma
+    camada intermediária em cada direção.
+    """
+    quatro = barras(h=0.90, b=0.40)
+    centroide = BarraLongitudinal(pos_h=0.45, pos_b=0.20, area=area_barra(16.0))
+    return quatro + (centroide,)
+
+
+def test_barra_no_centroide_NAO_pode_baixar_o_espacamento_calculado_a_392mm():
+    """O caso do a2: 90×40, phi 16, 4 vértices + 1 centroide -> RECUSA.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    MEDIDO PELO a2 ANTES DA CORREÇÃO, com teto = min(2·400; 400) = 400 mm:
+    os 4 vértices davam 784,0 mm e NÃO ATENDIAM (certo); os MESMOS 4 mais a
+    barra do centroide davam 392,0 mm e "ATENDIAM", enquanto o vão real entre
+    as barras de canto de cada face longa continuava sendo 784 mm. A barra do
+    centroide não está em face nenhuma e não encurta face nenhuma.
+
+    A resposta é RECUSA (ESCOPO_DESTA_VERSAO), não reprovação: o software não
+    sabe MEDIR esse arranjo — 18.4.2.2 o admite, o helper é que não o cobre.
+    """
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(
+            h_secao=0.90, b_secao=0.40, ell=0.80, N_d=800.0, M_Sd_x=0.0,
+            M_Sd_y=0.0, H_x=0.0, barras=_barras_90x40_com_centroide(),
+            numero_de_barras=5, espacamento_entre_eixos_mm=284.0,
+            N_gamma_f_1=571.0))
+    recusa = erro.value
+    assert recusa.forca == "escopo_desta_versao_nao_limite_da_norma"
+    assert "INTERIOR" in recusa.parametro
+    assert "(0.45, 0.2)" in recusa.mensagem
+    # A frase de escopo tem de estar do lado do SOFTWARE, não da Norma.
+    assert "limite desta versão do software, não da Norma" in recusa.sugestao
+    assert "INSEGURO" in recusa.sugestao
+
+
+def test_o_arranjo_de_5_barras_do_a2_PASSA_na_simetria_de_17_2_5():
+    """`arranjo_simetrico()` NÃO é guarda suficiente — daí a checagem própria.
+
+    Ref.: ABNT NBR 6118:2023, itens 17.2.5 e 18.4.2.2, p. 125 e 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    Se a simetria bastasse, a guarda nova seria redundante. Ela não basta: o
+    arranjo que abre o buraco é simétrico nos DOIS eixos.
+    """
+    from calc_core.estrutural.pilarete.secao import SecaoRetangular
+    from calc_core.sapata_isolada.materiais import Aco, Concreto
+
+    secao = SecaoRetangular(
+        h_secao=0.90, b_secao=0.40, barras=_barras_90x40_com_centroide(),
+        concreto=Concreto(fck=25.0, gamma_c=1.4),
+        aco=Aco(fyk=500.0, gamma_s=1.15))
+    assert secao.arranjo_simetrico() is True
+
+
+def test_sem_a_barra_interior_a_MESMA_secao_90x40_REPROVA_pelos_784mm():
+    """O outro lado do caso do a2: em ANEL, a medição é exata e REPROVA.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+    [req: REQ-PILARETE-20-cruzar-as-outras-tres-declaracoes-redundantes]  (c)
+
+    A guarda nova não pode "consertar" recusando tudo: a mesma seção sem a
+    barra interior continua sendo MEDIDA, e o teto de 400 mm continua sendo
+    comparado com os 784 mm reais — REPROVAÇÃO (defeito de projeto: faltam
+    barras intermediárias nas faces longas), não recusa.
+    """
+    resultado = verificar_pilarete(dados(
+        h_secao=0.90, b_secao=0.40, ell=0.80, N_d=800.0, M_Sd_x=0.0,
+        M_Sd_y=0.0, H_x=0.0, barras=barras(h=0.90, b=0.40),
+        espacamento_entre_eixos_mm=284.0, N_gamma_f_1=571.0))
+    longitudinal = resultado.armadura_longitudinal
+    assert longitudinal.espacamento_entre_eixos_verificado_no_teto_mm == (
+        pytest.approx(784.0))
+    assert longitudinal.espacamento_entre_eixos_maximo_mm == pytest.approx(400.0)
+    assert longitudinal.atende_espacamento_entre_eixos is False
+    assert resultado.atendido is False
+
+
+def test_barra_intermediaria_NA_FACE_continua_aceita_e_medida():
+    """A guarda recusa barra INTERIOR, não barra intermediária de FACE.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    Recusar o anel com barras no meio das faces seria recusar exatamente o
+    arranjo que resolve o excesso de espaçamento — e é o arranjo em que a
+    projeção por camadas É o vão real. Aqui as duas faces longas de 90 cm
+    ganham uma barra no meio: 784 mm passam a 392 mm REAIS, e o teto atende.
+    """
+    area = area_barra(16.0)
+    d, meio, oposta_h, oposta_b = 0.058, 0.45, 0.842, 0.342
+    anel = tuple(BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+                 for ph, pb in ((d, d), (d, oposta_b),
+                                (meio, d), (meio, oposta_b),
+                                (oposta_h, d), (oposta_h, oposta_b)))
+    resultado = verificar_pilarete(dados(
+        h_secao=0.90, b_secao=0.40, ell=0.80, N_d=800.0, M_Sd_x=0.0,
+        M_Sd_y=0.0, H_x=0.0, barras=anel, numero_de_barras=6,
+        espacamento_entre_eixos_mm=284.0, N_gamma_f_1=571.0))
+    longitudinal = resultado.armadura_longitudinal
+    assert longitudinal.espacamento_entre_eixos_verificado_no_teto_mm == (
+        pytest.approx(392.0))
+    assert longitudinal.atende_espacamento_entre_eixos is True
+
+
+def test_phi_16_declarado_com_todas_as_barras_de_phi_8_REPROVA_no_piso():
+    """(b) do a2: barras reais de 8 mm não passam num piso normativo de 10 mm.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+    MEDIDO PELO a2 ANTES DA CORREÇÃO: `atende_phi_minimo = True`. A
+    sub-declaração uniforme é conservadora em A_s, M_Rd, ell_b, cobrimento e
+    espaçamento livre — e é do lado ERRADO exatamente no piso de phi, que lia
+    o DECLARADO. Passa a ler min(declarado; bitola implícita pela MENOR área).
+
+    É REPROVAÇÃO, não recusa: phi abaixo do mínimo é defeito de PROJETO
+    (18.4.2.1), não entrada fora de domínio — e a guarda de área de
+    REQ-PILARETE-20(a) admite área MENOR de propósito.
+    """
+    resultado = verificar_pilarete(dados(
+        phi_longitudinal_mm=16.0, barras=barras(phi_mm=8.0)))
+    longitudinal = resultado.armadura_longitudinal
+    assert longitudinal.phi_longitudinal_mm == pytest.approx(16.0)
+    assert longitudinal.phi_verificado_no_piso_mm == pytest.approx(8.0)
+    assert longitudinal.atende_phi_minimo is False
+    # O TETO segue lendo o DECLARADO (canal mais conservador do outro lado).
+    assert longitudinal.phi_maximo_mm == pytest.approx(37.5)
+    assert longitudinal.atende_phi_maximo is True
+    assert resultado.atendido is False
+    memorial = " ".join(resultado.memorial())
+    assert "PISO (phi >= 10 mm)" in memorial
+    assert "bitola implícita pela MENOR área declarada 8.00 mm" in memorial
+
+
+def test_o_arredondamento_comercial_continua_passando_no_piso_de_phi():
+    """2,00 cm² para phi 16 dão 15,96 mm implícitos — folgadíssimo sobre 10 mm.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+    A correção de (b) não pode transformar tabela comercial em reprovação —
+    é o caso que a assimetria de REQ-PILARETE-20(a) foi feita para admitir.
+    """
+    area_arredondada = 2.00e-4
+    resultado = verificar_pilarete(dados(
+        phi_longitudinal_mm=16.0,
+        barras=tuple(BarraLongitudinal(pos_h=b.pos_h, pos_b=b.pos_b,
+                                       area=area_arredondada)
+                     for b in barras())))
+    longitudinal = resultado.armadura_longitudinal
+    assert longitudinal.phi_verificado_no_piso_mm == pytest.approx(15.9577,
+                                                                  abs=1e-4)
+    assert longitudinal.atende_phi_minimo is True
+
+
+def test_a_recusa_de_bitolas_mistas_NAO_atribui_a_frase_a_Norma():
+    """(c): a Norma verifica POR BARRA; quem tem phi único é o SOFTWARE.
+
+    Ref.: ABNT NBR 6118:2023, itens 18.4.2.1 e 18.4.2.2, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (c)
+
+    O campo `fonte` de uma recusa é CITAÇÃO DE FONTE e vai ao memorial: não
+    pode conter frase que a Norma não escreve. A decisão de escopo (um phi só)
+    fica onde pertence — na descrição do limite do software.
+    """
+    mistas = tuple(
+        BarraLongitudinal(pos_h=b.pos_h, pos_b=b.pos_b,
+                          area=area_barra(16.0 if i % 2 else 12.5))
+        for i, b in enumerate(barras()))
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        verificar_pilarete(dados(phi_longitudinal_mm=16.0, barras=mistas))
+    recusa = erro.value
+    assert "são verificados contra um phi ÚNICO" not in recusa.fonte
+    assert "POR BARRA" in recusa.fonte
+    assert "ESTE SOFTWARE" in recusa.fonte
+    assert "NÃO proíbe" in recusa.fonte
+    assert recusa.forca == "escopo_desta_versao_nao_limite_da_norma"

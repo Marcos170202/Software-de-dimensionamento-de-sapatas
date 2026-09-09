@@ -130,6 +130,37 @@ def test_phi_minimo_de_10_mm_e_numero_minimo_de_barras():
     assert resultado.atende_numero_de_barras is False
 
 
+def test_o_PISO_de_phi_le_o_canal_mais_conservador_e_o_TETO_o_declarado():
+    """18.4.2.1 com os dois canais: piso por min(declarado; implícito).
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.1, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (b)
+
+    Os dois limites de phi têm sinais contrários e por isso não leem o mesmo
+    número, exatamente como os dois limites de espaçamento de 18.4.2.2. Sem o
+    parâmetro, o comportamento anterior é preservado (lê o declarado) — é o
+    chamador que só tem o número declarado.
+    """
+    comum = dict(
+        A_s_adotada=QUATRO_PHI_16, numero_de_barras=4,
+        phi_longitudinal_mm=16.0, N_d=1000.0, f_yd_MPa=CA50.fyd,
+        h_secao=0.30, b_secao=0.30, d_agregado_mm=19.0,
+        espacamento_entre_eixos_mm=184.0)
+
+    sem_o_canal = verificar_armadura_longitudinal(**comum)
+    assert sem_o_canal.phi_verificado_no_piso_mm == pytest.approx(16.0)
+    assert sem_o_canal.atende_phi_minimo is True
+
+    com_barras_de_phi_8 = verificar_armadura_longitudinal(
+        bitola_implicita_minima_mm=8.0, **comum)
+    assert com_barras_de_phi_8.phi_verificado_no_piso_mm == pytest.approx(8.0)
+    assert com_barras_de_phi_8.atende_phi_minimo is False
+    # O TETO continua no DECLARADO: 16 mm <= 300/8 = 37,5 mm.
+    assert com_barras_de_phi_8.phi_maximo_mm == pytest.approx(37.5)
+    assert com_barras_de_phi_8.atende_phi_maximo is True
+
+
 def test_espacamento_entre_eixos_limitado_a_min_2b_400mm():
     """18.4.2.2: <= min(2·b_mín ; 400 mm). Em 30×30 governa o 400 mm."""
     resultado = verificar_armadura_longitudinal(

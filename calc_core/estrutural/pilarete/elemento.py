@@ -905,7 +905,14 @@ def verificar_pilarete(dados: DadosDoPilarete) -> ResultadoPilarete:
         # de sinal contrário e o cruzamento de (6-bis) só pode torná-lo
         # conservador em UM deles — o piso.
         espacamento_entre_eixos_maximo_real_mm=(
-            consistencia_da_armadura.espacamento_real_maximo_mm))
+            consistencia_da_armadura.espacamento_real_maximo_mm),
+        # O PISO de 18.4.2.1 (phi >= 10 mm) lê o canal MAIS CONSERVADOR
+        # (REQ-PILARETE-21(b)): min(declarado; bitola implícita pela MENOR área
+        # das barras). Sem isso, phi 16 declarado com todas as barras de área
+        # de phi 8 aprovava barras reais de 8 mm contra um piso de 10 mm —
+        # medido pelo a2. O TETO (phi <= b_mín/8) continua no declarado.
+        bitola_implicita_minima_mm=(
+            consistencia_da_armadura.bitola_implicita_minima_mm))
     estribos = detalhamento_18.verificar_estribos(
         concreto=concreto, aco_longitudinal=aco_longitudinal,
         phi_longitudinal_mm=dados.phi_longitudinal_mm,

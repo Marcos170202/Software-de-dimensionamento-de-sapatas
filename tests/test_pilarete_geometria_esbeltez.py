@@ -665,4 +665,77 @@ def test_a_guarda_dos_tres_pares_devolve_os_seis_numeros_do_memorial():
     # 40×25 com d' = 5,8 cm: 284 mm ao longo de h e 134 mm ao longo de b.
     assert consistencia.espacamento_real_minimo_mm == pytest.approx(134.0)
     assert consistencia.espacamento_real_maximo_mm == pytest.approx(284.0)
-    assert len(consistencia.linhas_de_memorial) == 3
+    assert consistencia.bitola_implicita_minima_mm == pytest.approx(16.0)
+    # Três pares cruzados + a linha que diz QUAL canal de phi vai a cada
+    # limite de 18.4.2.1 (REQ-PILARETE-21(b)).
+    assert len(consistencia.linhas_de_memorial) == 4
+    assert any("PISO (phi >= 10 mm)" in linha
+               for linha in consistencia.linhas_de_memorial)
+
+
+def test_o_helper_de_espacamento_RECUSA_o_arranjo_que_nao_sabe_medir():
+    """Quem está fora do domínio é o HELPER, não o arranjo — e ele recusa.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [rule: NBR6118-18.4.2-armaduras-longitudinais-pilarete]
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    18.4.2.2 rege qualquer seção poligonal, inclusive com barra interna ("uma
+    barra em cada vértice" é PISO, não arranjo exclusivo). O que este software
+    não sabe é MEDIR o espaçamento de barra interna projetando as barras em
+    camadas por eixo: a camada do centroide baixaria o máximo de 784,0 para
+    392,0 mm sem encurtar face nenhuma. Declarar o resíduo no docstring, como a
+    v15 fazia, não substitui recusá-lo.
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        espacamentos_entre_eixos_pelas_barras,
+        indices_das_barras_interiores,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    anel = tuple(BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+                 for ph in (0.058, 0.842) for pb in (0.058, 0.342))
+    assert indices_das_barras_interiores(anel) == ()
+    assert espacamentos_entre_eixos_pelas_barras(anel) == pytest.approx(
+        (784.0, 284.0))
+
+    com_centroide = anel + (BarraLongitudinal(pos_h=0.45, pos_b=0.20,
+                                              area=area),)
+    assert indices_das_barras_interiores(com_centroide) == (4,)
+    with pytest.raises(RecusaForaDeDominio) as erro:
+        espacamentos_entre_eixos_pelas_barras(com_centroide)
+    assert erro.value.forca == "escopo_desta_versao_nao_limite_da_norma"
+    assert "18.4.2.2" in erro.value.fonte
+
+
+def test_barra_de_FACE_nao_e_interior_nem_por_ruido_de_ponto_flutuante():
+    """Só é INTERIOR quem não é extremo em NENHUM dos dois eixos.
+
+    Ref.: ABNT NBR 6118:2023, item 18.4.2.2, p. 153
+    [req: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo]  (a)
+
+    Uma guarda que recusasse o anel de 8 barras (vértices + meio de face)
+    recusaria o arranjo que RESOLVE o excesso de espaçamento. E a comparação
+    usa as mesmas camadas de TOLERANCIA_DE_POSICAO_M: uma barra de face a
+    1e-16 m do extremo continua sendo de face.
+    """
+    from calc_core.estrutural.pilarete.geometria import (
+        indices_das_barras_interiores,
+    )
+    from calc_core.estrutural.pilarete.secao import BarraLongitudinal
+    from calc_core.sapata_isolada.materiais import area_barra
+
+    area = area_barra(16.0)
+    d, meio, oposta = 0.058, 0.150, 0.242
+    anel_de_8 = tuple(BarraLongitudinal(pos_h=ph, pos_b=pb, area=area)
+                      for ph, pb in ((d, d), (d, meio), (d, oposta),
+                                     (meio, d), (meio, oposta),
+                                     (oposta, d), (oposta, meio),
+                                     (oposta, oposta)))
+    assert indices_das_barras_interiores(anel_de_8) == ()
+
+    com_ruido = anel_de_8 + (
+        BarraLongitudinal(pos_h=meio, pos_b=oposta + 1.0e-16, area=area),)
+    assert indices_das_barras_interiores(com_ruido) == ()
