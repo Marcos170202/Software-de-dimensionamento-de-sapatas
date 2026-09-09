@@ -1795,3 +1795,66 @@ tocados continuam passando sem alteração contra o código corrigido;
 suíte completa verde em duas rodadas (824/824); os 5 defeitos BAIXA do
 a6 seguem BAIXA — `__delattr__` confirmado ainda quebrado, mas
 confirmado sem nenhum chamador de produção. Libera release.
+
+## Adendo 2026-09-09 — V25/REQ-PILARETE-20/21: cruzamento bitola×área/
+## contagem/espaçamento + guarda de barra interior (pilarete): GATE 2
+## (a6) — **APROVADO**, nota 4,5
+
+**Contexto.** Defeito ALTA descoberto pelo a2 ao especificar a tela do
+pilarete (backlog #13): `DadosDoPilarete` tinha três pares de declarações
+redundantes sem cruzamento — `phi_longitudinal_mm`×área real das barras,
+`numero_de_barras`×`len(barras)`, `espacamento_entre_eixos_mm`×posições
+reais. Reproduzido: bitola declarada 16mm com áreas reais de 25mm fazia o
+índice de inclusão da envoltória cair de 1,1257 (NÃO ATENDIDO) para 0,6978
+(ATENDIDO) — mesmo modo de falha do cruzamento cobrimento×barras já
+corrigido antes nesta mesma feature. Corrigido em `1861586` com
+`exigir_armadura_consistente_com_as_barras`.
+
+Ao reconferir o desenho da correção (exigido pelo próprio REQ-PILARETE-20),
+o a2 achou um SEGUNDO defeito: a medição de "espaçamento real" por camadas
+de barras não distinguia barra INTERIOR (não em anel) de barra de canto —
+uma barra no centroide de uma seção 90×40cm com 4 cantos fazia o teto de
+espaçamento calculado cair de 784mm (correto, reprova contra o teto de
+400mm) para 392mm (incorretamente ATENDE), com os 784mm reais continuando
+violados. Corrigido em `82a6a49` com `exigir_arranjo_em_anel`, mais dois
+pontos menores: piso de φ mínimo lido do implícito quando menor que o
+declarado, e correção de texto na recusa de bitolas mistas (não atribuir à
+Norma uma frase que ela não escreve).
+
+**Verificação independente do a6** (10 cenários reproduzidos por execução,
+não releitura): todos os números batem ao dígito com os do a2 — recusa de
+φ16×área de φ25; recusa da barra interior citando sua posição exata; a
+mesma seção sem a barra interior continua reprovando corretamente pelo
+teto; barra de FACE (não interior) não é confundida e não é recusada;
+piso de φ mínimo lido do implícito com reprovação correta; arredondamento
+comercial preservado; contagem e espaçamento nos dois sentidos. 6
+mutantes plantados e mortos (inversões de cada guarda nova). Cobertura
+99% do pacote, `checar_dimensoes.py` 0 falhas, ruff/bandit limpos.
+
+**Nota final: 4,5** (E1 4,5 · E2 5,0 · E3 4,5 · E4 5,0 · E5 5,0). Sem
+veto.
+
+**Um defeito MÉDIA, não bloqueante:** o mesmo helper de medição de
+espaçamento (`espacamentos_entre_eixos_pelas_barras`) tem uma lacuna
+irmã — não com barra interior, mas com barra de FACE em faces opostas
+com camadas diferentes: reproduzido um arranjo (90×40, 4 cantos + 1 barra
+de face só numa das faces longas) onde o helper devolve 392mm quando o
+vão real continua 784mm. **Contido fim-a-fim**: esse arranjo é sempre
+recusado por `arranjo_simetrico()` de §17.2.5 (chamado incondicionalmente
+em `verificar_pilarete`, antes de qualquer consumidor do espaçamento) —
+nenhum veredito inseguro escapa. O que sobra é (i) o docstring do helper
+afirmar exatidão mais ampla do que tem, e (ii) a função ser pública
+(`__all__`) sem essa guarda embutida — um chamador direto, fora de
+`verificar_pilarete`, receberia o número errado sem proteção. Recomendado
+para uma rodada futura, não bloqueia esta.
+
+**Segundo achado, BAIXA, pré-existente:** o pacote não é 100%
+`mypy --strict` limpo (5 erros em `detalhamento.py`/`elemento.py`,
+herdados de `d466a59` — `geometria.py`, onde as duas correções desta
+rodada vivem, está limpo).
+
+**Consequência de processo (CLAUDE.md regra 5):** o GATE 3 anterior do
+backlog #13 fica invalidado por estes dois commits — nova rodada A7
+necessária sobre `calc_core/estrutural/pilarete/`. A revisão de
+`ui/completo/janela_pilarete.py`/`tests/test_ui_pilarete.py` (tela nova,
+commit `dabd2c1`) é rodada de GATE 2 separada, ainda pendente.
