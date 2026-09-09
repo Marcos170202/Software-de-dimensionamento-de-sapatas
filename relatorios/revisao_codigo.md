@@ -1982,3 +1982,58 @@ não existe no repositório.
 rodada só, já que o GATE 3 anterior do núcleo foi invalidado pela correção
 de V25/REQ-PILARETE-20/21 (adendo acima). Rodada 3 de 3 não foi
 necessária.
+
+---
+
+## Adendo — GATE 3, pacote pilarete completo (backlog #13) — rodada combinada
+
+## (a7) — **APROVADO**
+
+**Escopo.** `calc_core/estrutural/pilarete/` (commit `82a6a49`, fecho de
+REQ-PILARETE-21) + `ui/completo/janela_pilarete.py`/`app.py`/`formulario.py`
+(commit `c8d1773`) numa rodada só, já que o GATE 3 anterior do núcleo tinha
+sido invalidado pela correção de V25/REQ-PILARETE-20/21 e a tela nunca
+tinha passado por GATE 3. Liberado pelo GATE 2 combinado do a6 (nota 4,5,
+sem veto — adendos acima).
+
+**Camada 1.** `CI=true xvfb-run -a python3.12 -m pytest tests/` → 895
+passed (rodado duas vezes). `tools/checar_dimensoes.py` → 0 falhas. ruff
+limpo em `calc_core/estrutural/pilarete/` e `janela_pilarete.py`.
+`sha256sum -c ruleset.lock` → OK.
+
+**Validação por execução própria (não releitura do a6):**
+- Cenário ponta a ponta (30×30, 4φ16, N_d=1000kN) com veredito e valores
+  coerentes.
+- Invariância por rotação de 90° (30×40 vs. 40×30, M_x↔M_y): mesmo
+  veredito, `V_Rd2`/índice de utilização/`N_Rd0` bit-idênticos.
+- Monotonicidade de armadura (φ10→φ25): índice de utilização cai
+  monotonicamente — mais aço nunca piora o veredito.
+- Cobrimento abaixo do mínimo normativo (45mm): nunca aprova, em três
+  casos testados.
+- Confirmado que a razão índice/k **não** é constante ao escalar N e M
+  pelo mesmo fator — hipótese de linearidade da envoltória verificada
+  como falsa antes de ser usada como teste (evita um falso-negativo de
+  invariância).
+- Reprodução independente dos dois defeitos fechados em REQ-PILARETE-20/21
+  (bitola×área, barra interior, teto medido pelo espaçamento real e não
+  pelo declarado).
+- Cadeia UI→núcleo→UI: `resultado.memorial()` e o conteúdo literal do
+  `tk.Text` da tela idênticos linha a linha, em cenário próprio (35×35,
+  φ25, N_d=1400kN) fora dos fixtures da suíte.
+- Não regressão do fix `FrozenInstanceError`: diff cosmético confirmado
+  (`self: object`), campos continuam frozen, `raise`/`__traceback__`
+  seguem funcionando nas duas classes (`estrutural/dominio.py` e
+  `geotecnico/dominio.py`).
+
+**Lacuna bibliográfica, não bloqueante:** nenhum exemplo de terceiro no
+acervo para pilar/pilarete sob N+M+cortante (busca negativa já registrada
+em `kb/exemplos.yaml`). Confiança apoiada nos testes de propriedade
+permanentes da suíte (equilíbrio ∫σdA=N_Sd, rotação 90° exata) — auditados
+e confirmados substantivos, não vacuosos.
+
+**Achado remanescente, BAIXA, pré-existente (não desta rodada):**
+`mypy --strict` não limpo em `elemento.py`/`detalhamento.py` (herdado de
+`d466a59`).
+
+**Veredito: 100% dos casos ALTA — GATE 3 fechado. Libera release do
+backlog #13 (tasks #17 e #18 do rastreamento interno).**
