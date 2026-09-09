@@ -1,0 +1,481 @@
+# kb/exemplos.yaml — produzido pelo a1-bibliotecario.
+#
+# Exercicios resolvidos da bibliografia, virados em casos de teste: entradas,
+# saidas esperadas e — o campo que mais importa — as HIPOTESES DO AUTOR.
+# As hipoteses do autor quase sempre divergem da norma; registra-las e o que
+# evita que o a7-validador acuse falso positivo depois.
+#
+# NENHUM caso aqui e regra APROVADA. Sao casos de conferencia numerica.
+#
+# Arquivo criado na rodada 2026-09-01 ("cunha de solo lateral"). Nasce com UM
+# caso, porque foi o unico exercicio do acervo que QUANTIFICA o peso de solo
+# sobre a sapata — e o resultado da rodada foi busca negativa para a cunha.
+# NAO tratar a cobertura deste arquivo como completa.
+
+exemplos:
+  - id: BASTOS-ex9-gtot-prisma-uniforme
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT.
+    item: "1.12.5 Exemplo 9 - Sapata Associada"
+    pagina: "PDF 101 e 102 (impressas 97 e 98)"
+    clausula_ref: BASTOS-nota20-peso-solo-nao-causa-flexao
+    titulo: >-
+      O UNICO exercicio do acervo que calcula numericamente o peso de solo sobre
+      a sapata — e ele usa PRISMA VERTICAL UNIFORME (gamma x altura), nao cunha
+    relevancia_para_a_rodada: >-
+      Este caso e a evidencia numerica que sustenta a busca negativa da rodada
+      2026-09-01: quando o acervo precisa de um numero para o solo sobre a
+      sapata, ele usa uma sobrecarga uniforme gamma_solo x h aplicada em TODA a
+      area da base, sem projecao lateral, sem angulo e sem volume excedente a
+      projecao da sapata. Ver ACERVO-BUSCA-NEG-cunha-de-solo-lateral.
+
+    enunciado_transcrito: |
+      1.12.5 Exemplo 9 - Sapata Associada
+      Projetar uma sapata associada para dois pilares (Figura 1.145), sendo: N1 = 900 kN ; N2 = 1.560 kN ; concreto C20 ; aco CA-50 ; gamma_solo = 1.925 kgf/m3 (peso especifico do solo) ; carga atuante de 500 kgf/m2 sobre o piso final acima da sapata ; phi_,pil = 12,5 mm ; c = 4,0 cm ; distancia de 2,08 m entre a base inferior da sapata e o piso final ; Padm = 191,5 kPa = 0,1915 MPa ; coeficientes de ponderacao: gamma_f = gamma_c = 1,4 , gamma_s = 1,15.
+      Resolucao
+      Neste exemplo, a carga relativa ao peso proprio da sapata sera considerada simplificadamente com o peso especifico do solo, e somada a carga atuante sobre o piso acima da sapata:
+      g_tot = (g_solo + g_sap) + g_piso = (2,08 . 1925) + 500 = 4.504 kgf/m2 = 45,04 kPa
+      a) Dimensoes da sapata
+      Para fins de calculo, a tensao admissivel do solo sera diminuida da carga total que atua sobre a sapata (g_tot), de modo que a tensao admissivel liquida do solo e:
+      P_adm,liq = P_adm - g_tot = 191,5 - 45,04 = 146,5 kPa = 146,5 kN/m2 = 0,1465 MPa
+
+    entradas:
+      N1: {valor: 900, unidade: "kN", descricao: "carga do pilar P1 (30 x 45 cm, na divisa)"}
+      N2: {valor: 1560, unidade: "kN", descricao: "carga do pilar P2 (circular, diametro 40 cm)"}
+      l_cc: {valor: 6.10, unidade: "m", descricao: "distancia entre os eixos dos pilares"}
+      l_1: {valor: 0.175, unidade: "m", descricao: "distancia do eixo de P1 a divisa (metade dos 35 cm? a fonte da 17,5 cm na Fig. 1.145)"}
+      gamma_solo: {valor: 1925, unidade: "kgf/m3", descricao: "peso especifico do solo"}
+      g_piso: {valor: 500, unidade: "kgf/m2", descricao: "carga atuante sobre o piso final acima da sapata"}
+      h_total: {valor: 2.08, unidade: "m", descricao: "distancia entre a base INFERIOR da sapata e o piso final"}
+      P_adm: {valor: 191.5, unidade: "kPa", descricao: "tensao admissivel do solo (dado de entrada, nao calculado)"}
+      gamma_f: {valor: 1.4, unidade: "adimensional"}
+      gamma_c: {valor: 1.4, unidade: "adimensional"}
+      gamma_s: {valor: 1.15, unidade: "adimensional"}
+      concreto: "C20"
+      aco: "CA-50"
+
+    saidas_esperadas:
+      g_tot: {valor: 45.04, unidade: "kPa", origem: "(2,08 x 1925) + 500 = 4.504 kgf/m2"}
+      P_adm_liq: {valor: 146.5, unidade: "kPa", origem: "191,5 - 45,04 = 146,46, arredondado pelo autor para 146,5"}
+      S_sap: {valor: 16.8, unidade: "m2", origem: "(900 + 1560)/146,5 = 16,79"}
+      x_barra: {valor: 3.87, unidade: "m", origem: "1560/(900+1560) x 6,10 = 3,868"}
+      A_calculado: {valor: 8.09, unidade: "m", origem: "2 x (0,175 + 3,87)"}
+      A_adotado: {valor: 8.10, unidade: "m"}
+      B_calculado: {valor: 2.07, unidade: "m", origem: "16,8/8,10 = 2,074"}
+      B_adotado: {valor: 2.10, unidade: "m"}
+      p: {valor: 0.01446, unidade: "kN/cm2", origem: "(900+1560)/(810 x 210)"}
+      p_B: {valor: 3.037, unidade: "kN/cm", origem: "0,01446 x 210"}
+
+    hipoteses_do_autor:
+      - id: HA-1
+        hipotese: >-
+          O PESO PROPRIO DO CONCRETO DA SAPATA E CONTADO COM O PESO ESPECIFICO
+          DO SOLO. Texto literal: "a carga relativa ao peso proprio da sapata
+          sera considerada simplificadamente com o peso especifico do solo".
+        divergencia_da_norma: >-
+          Do LADO INSEGURO em relacao ao peso real: 1.925 kgf/m3 (aprox. 18,9
+          kN/m3) contra os 25 kN/m3 do concreto armado da NBR 6120. O autor
+          subestima a parcela de concreto para simplificar a conta. NAO
+          REPRODUZIR ESSA SIMPLIFICACAO EM calc_core sem decisao explicita.
+      - id: HA-2
+        hipotese: >-
+          O SOLIDO DE SOLO CONSIDERADO E UM PRISMA VERTICAL UNIFORME de altura
+          2,08 m (base inferior da sapata ate o piso final) e area igual a area
+          da base da sapata. g_tot e uma sobrecarga uniforme em kPa aplicada em
+          toda a base.
+        divergencia_da_norma: >-
+          Nao ha divergencia com norma porque nenhuma norma do acervo prescreve
+          isso. E O PONTO CENTRAL DESTA RODADA: nao ha projecao lateral, nao ha
+          angulo com a horizontal, nao ha volume excedente a projecao da
+          sapata. A fonte NAO conhece o conceito de cunha de solo lateral.
+      - id: HA-3
+        hipotese: >-
+          A altura usada e medida ate o PISO FINAL acima da sapata, nao ate o
+          terreno natural, e a carga de 500 kgf/m2 do piso e somada a mesma
+          parcela g_tot.
+        divergencia_da_norma: >-
+          Mistura, numa unica grandeza, peso proprio de concreto (permanente),
+          peso de solo (permanente) e carga de piso (que pode ter parcela
+          variavel). A NBR 8681 exige coeficientes de ponderacao distintos por
+          natureza da acao; o exemplo trata tudo como uma sobrecarga unica em
+          valor caracteristico.
+      - id: HA-4
+        hipotese: >-
+          O metodo adotado e o da TENSAO ADMISSIVEL LIQUIDA (P_adm,liq = P_adm -
+          g_tot), e NAO o do fator majorador K_maj (Eqs. 1.6 e 1.7) usado na
+          maioria dos outros exemplos da mesma apostila.
+        divergencia_da_norma: >-
+          A propria fonte usa DOIS metodos diferentes para a mesma finalidade em
+          exemplos diferentes. Nao sao equivalentes numericamente. Um validador
+          que espere K_maj neste exemplo acusa falso positivo.
+      - id: HA-5
+        hipotese: >-
+          A conversao adotada e 1 kgf/m2 = 0,01 kPa (isto e, g = 10 m/s2):
+          4.504 kgf/m2 -> 45,04 kPa exatos.
+        divergencia_da_norma: "Arredondamento de conversao. Com g = 9,80665 dariam 44,17 kPa."
+      - id: HA-6
+        hipotese: >-
+          Arredondamentos de dimensao para cima e para multiplos de 10 cm:
+          A = 8,09 -> 8,10 m ; B = 2,07 -> 2,10 m. P_adm,liq = 146,46 -> 146,5.
+        divergencia_da_norma: "Pratica de projeto, nao regra. Tolerancia numerica do teste deve absorver isso."
+      - id: HA-7
+        hipotese: >-
+          A pressao p usada para os esforcos de flexao EXCLUI g_tot: "sem
+          considerar o peso da sapata e do solo sobre a sapata, pois essas
+          cargas transferem-se diretamente sem causar flexao na sapata".
+        divergencia_da_norma: >-
+          Coerente com a nota de rodape 20 da mesma apostila (registro
+          BASTOS-nota20-peso-solo-nao-causa-flexao), que reconhece existir a
+          pratica oposta em outras publicacoes. ATENCAO: g_tot entra no
+          dimensionamento GEOTECNICO (area da base) e sai do dimensionamento
+          ESTRUTURAL (flexao) — dois usos diferentes da mesma grandeza no mesmo
+          exercicio. Qualquer implementacao futura de cunha herda esse problema.
+
+    escopo: >-
+      SAPATA ASSOCIADA (dois pilares, um deles na divisa) — esta FORA do escopo
+      minimo auditado de calc_core/geotecnico/ (sapata isolada, carga centrada,
+      solo homogeneo) e tambem fora do escopo de calc_core/sapata_isolada/.
+      Registrado como caso de conferencia da PARCELA g_tot, nao como caso de
+      teste do dimensionamento completo.
+
+    leitura_visual:
+      passada_1: "paginas PDF 101 e 102 inteiras a 170 dpi"
+      passada_2: "recorte a 420 dpi da regiao de g_tot e P_adm,liq na PDF 102 + releitura do enunciado na camada de texto da PDF 101; todos os numeros reconferidos por recalculo (2,08 x 1925 = 4004; +500 = 4504; 191,5 - 45,04 = 146,46; 2460/146,5 = 16,79; 1560/2460 x 6,10 = 3,868; 2 x (0,175+3,87) = 8,09; 16,8/8,10 = 2,074; 2460/(810x210) = 0,014462; 0,01446 x 210 = 3,0366)"
+      divergencia: false
+
+    status: NAO_NORMATIVO_AGUARDA_A2
+    hash_de: "sha256(enunciado_transcrito, utf-8)"
+    hash: "sha256:875768b06610dd7b4fba192acaf9a801e9398244ad7f41fcf704f2c3d24aed35"
+    rodada: "2026-09-01 cunha de solo lateral"
+
+  # ===========================================================================
+  # RODADA 2026-09-02 — BACKLOG #13 (cadeia pilarete → sapata)
+  #
+  # BUSCA NEGATIVA DE EXEMPLOS: varridos os dois documentos do acervo que têm
+  # exercícios resolvidos (Sapatas.pdf, de Bastos, 119 p.; e Fundações Diretas,
+  # de Cintra/Aoki/Albiero). NENHUM dos dois dimensiona um pilarete/pedestal:
+  # em todos os exercícios o pilar é CONDIÇÃO DE CONTORNO da sapata (entra só
+  # com a_p × b_p e a bitola do arranque), nunca elemento a verificar.
+  # Não há, no acervo, um único exemplo resolvido de verificação à compressão,
+  # de armadura mínima ou de esbeltez de pilar. Isso é LACUNA REAL: o a7 não
+  # terá caso de conferência numérica de terceiros para o pilarete em si.
+  #
+  # O caso abaixo é o ÚNICO exercício do acervo que quantifica a INTERFACE
+  # pilar/sapata — e ele cobre exatamente o elo que o backlog #13 chama de
+  # "transferência de esforços do pilarete para a sapata" pelo lado da
+  # ancoragem do arranque.
+  # ===========================================================================
+
+  - id: BASTOS-ex1-ancoragem-arranque-governa-altura-da-sapata
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT.
+    item: "1.6.5.4 Exemplo 1 - Sapata Isolada Rigida Sob Carga Centrada"
+    pagina: "PDF 35 e 36 (impressas 31 e 32)"
+    clausula_ref: NBR6118-22.6.4.1.2-arranque
+    titulo: >-
+      Unico exercicio do acervo que quantifica a ancoragem do arranque do pilar
+      dentro da sapata - e nele a ANCORAGEM GOVERNA a altura adotada, nao o
+      criterio de rigidez
+    relevancia_para_a_rodada: >-
+      Backlog #13 pede a "transferencia de esforcos do pilarete para a sapata".
+      Este caso mostra o elo pelo lado da ANCORAGEM: h e escolhido em 70 cm nao
+      pelo criterio de rigidez (que so exigia 61,7 cm) mas para garantir
+      d > l_b da armadura do pilar. E o unico numero do acervo para conferir
+      esse acoplamento.
+
+    enunciado_transcrito: |
+      1.6.5.4 Exemplo 1 - Sapata Isolada Rigida Sob Carga Centrada
+      Dimensionar uma sapata de fundacao rasa para um pilar com secao transversal 20 x 80 cm, que transfere a sapata uma carga vertical centrada total de 1.250 kN (Nk = valor caracteristico), com armadura vertical no pilar composta por barras de 16 mm (phi_pil), tensao admissivel do solo (Padm) de 0,26 MPa (2,6 kgf/cm2) e:
+      - momentos fletores solicitantes externos inexistentes (Mx = My = 0);
+      - coeficientes de ponderacao: gamma_c = gamma_f = 1,4 ; gamma_s = 1,15;
+      - materiais: concreto C25, aco CA-50 (fyd = 43,48 kN/cm2);
+      - cobrimento de concreto: c = 4,0 cm.
+      [...]
+      A altura da sapata, supondo-a como rigida conforme a NBR 6118, deve atender (Eq. 1.1):
+      h >= (A - a_p)/3 = (265 - 80)/3 = 61,7 cm , e como cA = cB, nao e necessario verificar na direcao do lado B.
+      Para possibilitar a ancoragem da armadura longitudinal do pilar dentro do volume da sapata, a altura util d deve ser superior ao comprimento de ancoragem (l_b) da armadura do pilar: d > l_b (Figura 1.60). O comprimento de ancoragem, considerando regiao de boa aderencia, concreto C25, phi_pil = 16 mm e ancoragem com gancho, e l_b = 42 cm, conforme a Tabela A-7 anexa. Portanto, d > 42 cm. Adotando h = 70 cm, a sapata e classificada como rigida (> 61,7 cm), e para a altura util d pode-se considerar:
+      d = h - (c + 1) = h - (4,0 + 1,0) = h - 5 cm = 70 - 5 = 65 cm ; d = 65 cm > l_b = 42 cm  ok!
+      Nota de rodape 25: "A sapata deve ter altura suficiente para permitir a ancoragem da armadura de arranque." (NBR 6118, 22.6.4.1.2).
+      Nota de rodape 26: Porque as barras verticais dos pilares sao geralmente feitas com ganchos na extremidade, e apoiadas sobre as armaduras da base da sapata.
+
+    entradas:
+      pilar_ap_cm: 80
+      pilar_bp_cm: 20
+      N_k_kN: 1250
+      Mx: 0
+      My: 0
+      P_adm_MPa: 0.26
+      phi_arranque_mm: 16
+      concreto: "C25"
+      aco: "CA-50"
+      f_yd_kN_cm2: 43.48
+      cobrimento_cm: 4.0
+      gamma_c: 1.4
+      gamma_f: 1.4
+      gamma_s: 1.15
+      K_maj: 1.1
+      ancoragem: "regiao de BOA aderencia, com GANCHO"
+
+    saidas_esperadas:
+      S_sap_necessaria_cm2: 52885
+      B_calculado_cm: 201.9
+      B_adotado_cm: 205
+      A_adotado_cm: 265
+      S_sap_corrigida_cm2: 54325
+      cA_cm: 92.5
+      cB_cm: 92.5
+      h_minimo_por_rigidez_cm: 61.7
+      l_b_da_fonte_cm: 42
+      h_adotado_cm: 70
+      d_cm: 65
+      verificacao_ancoragem: "d = 65 cm > l_b = 42 cm"
+
+    hipoteses_do_autor:
+      - >-
+        O AUTOR CHAMA DE l_b O QUE E l_b,nec. O valor de 42 cm vem da Tabela A-7
+        da apostila JA COM o coeficiente de gancho aplicado (o proprio texto diz
+        "ancoragem com gancho"). Pela NBR 6118 9.4.2.4, l_b = (phi/4)(f_yd/f_bd)
+        e um comprimento BASICO, sem gancho; o fator alpha = 0,7 do gancho entra
+        em 9.4.2.5 (l_b,nec). CONFERENCIA ARITMETICA (derivacao deste extrator,
+        NAO da fonte, a ser refeita em Python deterministico pelo a4):
+        C25 -> f_ctk,inf = 0,7 . 0,3 . 25^(2/3) = 1,796 MPa ; f_ctd = 1,283 MPa ;
+        eta_1 = 2,25 (CA-50), eta_2 = 1,0 (boa aderencia), eta_3 = 1,0 (phi<32) ->
+        f_bd = 2,886 MPa ; f_yd = 434,8 MPa ; l_b = (16/4)(434,8/2,886) = 60,3 cm
+        (> 25 phi = 40 cm) ; com alpha = 0,7 e As,calc/As,ef = 1,0 ->
+        l_b,nec = 42,2 cm ~ 42 cm. FECHA com a fonte, o que CONFIRMA que os 42 cm
+        sao l_b,nec e nao l_b. Se o software comparar d com l_b (60,3 cm) em vez
+        de l_b,nec (42,2 cm), o resultado DIVERGE da fonte - e o a7 acusaria
+        falso positivo.
+      - >-
+        d = h - (c + 1): o autor desconta o cobrimento de 4 cm MAIS 1 cm, sem
+        declarar o que e o 1 cm (presumivelmente ~metade do diametro da armadura
+        de flexao da sapata). Arredondamento/hipotese de autor, nao regra
+        normativa.
+      - >-
+        "d > l_b" e leitura MAIS FORTE que o texto normativo. A NBR 6118
+        22.6.4.1.2 diz apenas "a sapata deve ter altura suficiente para permitir
+        a ancoragem da armadura de arranque" - nao fixa d > l_b,nec nem diz se a
+        comparacao e com h ou com d, nem se o gancho pode ser contado dentro da
+        altura util. A escolha de comparar com d (e nao com h) e do autor.
+      - >-
+        K_maj = 1,1 para peso proprio da sapata + solo (ver formula
+        BASTOS-1.6.3-eq1.6-1.7-Kmaj). Nao e valor normativo.
+      - >-
+        Cobrimento c = 4,0 cm. ATENCAO AO CONFRONTO COM A TABELA 7.2 DA NBR 6118:
+        para "elementos estruturais em contato com o solo" 40 mm corresponde a
+        classe de agressividade III; e a nota de rodape (d) exige c_nom >= 45 mm
+        no TRECHO DOS PILARES em contato com o solo junto aos elementos de
+        fundacao. A apostila nao declara classe de agressividade nem discute a
+        nota (d). Se o pilarete for verificado com este cobrimento, o software
+        deve acusar.
+      - >-
+        h = 70 cm nao vem de nenhum criterio fechado: e escolha do autor entre
+        o piso de rigidez (61,7 cm) e a folga de ancoragem. O software nao pode
+        reproduzir "70" sem uma regra de arredondamento declarada.
+
+    o_que_este_caso_NAO_cobre:
+      - "Nao dimensiona o pilar: nao ha verificacao de compressao, de A_s,min, de esbeltez nem de estribos do pilar."
+      - "Nao ha pilarete: o pilar 20x80 nasce acima da sapata, sem trecho intermediario e sem junta de concretagem."
+      - "Nao ha emenda por traspasse: o exercicio para na ancoragem do arranque, sem calcular l_0c (NBR 6118 9.5.2.3)."
+      - "Carga centrada e Mx = My = 0: nao exercita o momento minimo M_1d,min de 11.3.3.4.3."
+    status: AGUARDA_A2
+    rodada: "2026-09-02 backlog #13 pilarete"
+
+  # ===========================================================================
+  # RODADA 2026-09-03 — backlog #13, rodada 3.
+  # BUSCA NEGATIVA: o acervo NÃO tem caso de teste para a envoltória
+  # N_Rd–M_Rd. Este registro existe para que a lacuna de validação seja
+  # visível ao a7 ANTES do GATE 3, e não descoberta durante ele.
+  # ===========================================================================
+
+  - id: BUSCA-NEG-exemplo-pilar-flexao-composta-obliqua
+    tipo: BUSCA_NEGATIVA
+    fonte_procurada:
+      - "Sapatas.pdf — BASTOS, P.S., UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p. (camada de texto limpa, 189.689 caracteres)"
+      - "Fundacoes_Diretas_Projeto_Geotecnico_Jos.pdf — CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H., Oficina de Textos, 2011, 142 p. (imagem escaneada pura, 0 caracteres extraíveis)"
+    clausula_ref: BIBLIO-BUSCA-NEG-exemplo-pilar-flexao-composta-obliqua
+    pergunta: >-
+      Existe no acervo exemplo resolvido de seção de PILAR sob N + Mx + My
+      simultâneos — mesmo que não seja pilarete de fundação — que sirva de caso
+      de teste ao a7 para a envoltória N_Rd–M_Rd e para a interação de 17.2.5?
+    resposta: "NÃO."
+    o_que_foi_encontrado_e_descartado:
+      - item: "Bastos, 1.6.7.4 — Exemplo 4: Sapata Isolada Sob Flexão Oblíqua (exemplo de Edja L. Silva, dissertação de mestrado, 1988, EESC-USP), páginas 53 a 56 da apostila"
+        por_que_nao_serve: >-
+          É a única ocorrência de "oblíqua" em toda a apostila e é um problema
+          GEOTECNICO, não de seção de concreto: calcula e_x = M_x/N e
+          e_y = M_y/N, obtém σ₁ por ábaco de tensões na base (Figura 1.81 da
+          apostila), calcula as tensões nos quatro vértices da sapata, compara
+          com 1,3·P_adm e verifica tombamento. Não dimensiona nenhuma seção à
+          flexão composta oblíqua, não calcula M_Rd, não usa 17.2.5, não usa
+          domínio de deformação nem envoltória de interação. Foi lido
+          integralmente para descartar a hipótese de conter, além da parte
+          geotécnica, um dimensionamento de seção.
+    termos_buscados_sem_resultado:
+      - "pilarete (0 ocorrências)"
+      - "flexo-compressão (0)"
+      - "esbeltez (0)"
+      - "envoltória (0)"
+      - "N_Rd / NRd (0)"
+      - "dimensionamento do pilar (0)"
+      - "domínio — 5 ocorrências, TODAS 'domínio 2' em flexão SIMPLES da armadura da sapata, via tabela K_c/K_s"
+    consequencia_para_o_a7: >-
+      A envoltória numérica desta feature NÃO terá caso de teste de
+      bibliografia. Isto é uma LACUNA DE VALIDAÇÃO e precisa ser dita ao
+      usuário antes do GATE 3. Sugestões de validação por PROPRIEDADE INTERNA,
+      que não substituem um caso de bibliografia mas são verificáveis sem
+      fonte externa (proposta deste extrator, a ser aceita ou recusada pelo
+      a2/a7 — NÃO são requisito normativo):
+        1. a envoltória calculada deve passar pelo ponto (N_Rd0, M = 0), com
+           N_Rd0 vindo da derivação já aprovada da reta b (ε = ε_c2);
+        2. deve passar pelo ponto (N = 0, M_Rd de flexão simples), calculável
+           pelo mesmo integrador;
+        3. a interação de 17.2.5 com α = 1 deve ser sempre conservadora em
+           relação a α = 1,2 (a Norma declara α = 1 "a favor da segurança") —
+           se a implementação inverter isso, há erro de sinal ou de expoente;
+        4. para M_Sd,y = 0 a verificação oblíqua deve degenerar exatamente na
+           flexão composta normal em torno de x, e vice-versa;
+        5. a elipse mínima de 11.3.3.4.3 (expoente 2) e a envoltória resistente
+           de 17.2.5 (expoente α) devem ser mantidas como objetos DISTINTOS:
+           um teste que troque um expoente pelo outro deve falhar.
+      Alternativa preferível: caso de teste fornecido por engenheiro humano.
+    status: LACUNA_DE_VALIDACAO_AGUARDA_A2
+    rodada: "2026-09-03 backlog #13 pilarete — rodada 3 (flexão composta oblíqua)"
+
+  # ===========================================================================
+  # RODADA 2026-09-03 (d) — backlog #13, rodada 4 (ELU de FORCA CORTANTE, 17.4).
+  # ACHADO: o acervo NAO tem exemplo de cortante em PILAR (ver
+  # ACERVO-BUSCA-NEG-exemplo-de-cortante-em-pilar), mas tem UM exemplo
+  # resolvido de cortante em VIGA pelo Modelo de Calculo I que exercita, numero
+  # a numero, quatro dos itens extraidos nesta rodada. E a primeira contraprova
+  # de terceiros que este backlog consegue para o pilarete — todas as rodadas
+  # anteriores fecharam com ZERO casos externos.
+  # ===========================================================================
+
+  - id: BASTOS-1.13-viga-alavanca-cortante-modelo-I
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Estruturas de Concreto III, Out/2023, 119 p.)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    aviso_fonte: >-
+      FONTE BIBLIOGRAFICA SECUNDARIA - material didatico (notas de aula, Prof.
+      Dr. Paulo Sergio Bastos, UNESP Bauru/SP). NAO e texto normativo ABNT. E
+      NAO E UM PILAR: e a viga alavanca (viga de equilibrio) de uma sapata de
+      divisa. Serve como conferencia numerica das EXPRESSOES de 17.4 e 18.3.3.2,
+      nao como precedente de aplicacao de 17.4 a pilarete.
+    item: "Exemplo da sapata de divisa com viga alavanca, item 5.2 (Armadura transversal)"
+    pagina: "PDF 89, 90 e 115 (impressas 85, 86 e 111)"
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    formulas_exercitadas:
+      - NBR6118-17.4.2.2-modelo-I-VRd2
+      - NBR6118-17.4.2.2-modelo-I-Vsw
+      - NBR6118-17.4.2.2-modelo-I-Vc
+      - NBR6118-17.4.1.1.1-rho-sw-min
+      - NBR6118-18.3.3.2-espacamentos-estribos-cortante
+    titulo: >-
+      O UNICO exemplo resolvido do acervo que dimensiona armadura transversal ao
+      cortante pelo Modelo de Calculo I da NBR 6118 - e ele passa a 0,1 kN da
+      fronteira de 0,67 V_Rd2, o que o torna fixture de FRONTEIRA para o a7
+    relevancia_para_a_rodada: >-
+      Amarra numericamente, num unico caso, V_Rd2 (17.4.2.2-a), A_sw via V_sw e
+      V_c0 (17.4.2.2-b), A_sw,min (17.4.1.1.1) e os dois espacamentos maximos
+      (18.3.3.2). Nao cobre a majoracao de V_c na flexo-compressao, nao cobre o
+      Modelo II e nao cobre a excecao de 17.4.1.1.2-c) para pilares - essas tres
+      continuam sem caso externo nenhum no acervo.
+
+    enunciado_transcrito: |
+      5.2) Armadura transversal
+      No trecho da sapata de divisa (B1): Vk = V1L = 410,3 kN
+             VSd = 1,4 . 410,3 = 574,4 kN
+      Para calculo de Asw, conforme as equacoes simplificadas do Modelo de Calculo I, com concreto C20 e dv = 70 cm (ver Tabela A-4 anexa):
+      VRd2 = 0,35 bw d = 0,35 . 35 . 70 = 857,5 kN > VSd = 574,4 kN   ok!
+      VSd,min = 0,101 bw d = 0,101 . 35 . 70 = 247,5 kN < VSd = 574,4 kN   portanto, calcular Asw:
+      Asw = 2,55 VSd/d - 0,17 bw = 2,55 . 574,4/70 - 0,17 . 35 = 14,97 cm2/m
+      Asw,min = 20 fct,m / fywk . bw = 20 (0,3 . raiz cubica de 20^2) / (10 . 50) . 35 = 3,09 cm2/m
+      Com Asw = 14,97 cm2/m, fazendo estribo com quatro ramos tem-se Asw,1,ramo = 14,97/4 = 3,74 cm2/m, e na Tabela A-11 encontra-se: 8 mm c/13 cm (3,85 cm2/m).
+      Espacamento maximo: 0,67 VRd2 = 0,67 . 857,5 = 574,5 kN > VSd = 574,4 kN
+      s <= 0,6d <= 30 cm  ->  s <= 0,6 . 70 = 42 cm <= 30 cm  ->  smax = 30 cm
+      como s = 13 cm <= smax = 30 cm  ->  ok!
+      0,2 VRd2 = 171,5 kN < VSd  ->  st <= 0,6d <= 35 cm
+      st <= 0,6 . 70 <= 42 cm <= 35 cm  ->  ok!  st,max = 35 cm
+
+    entradas:
+      V_k:      {valor: 410.3, unidade: "kN", descricao: "forca cortante caracteristica no trecho da sapata de divisa (B1)"}
+      gamma_f:  {valor: 1.4, unidade: "adimensional", descricao: "coeficiente de ponderacao das acoes usado pelo autor"}
+      b_w:      {valor: 35, unidade: "cm", descricao: "largura da alma da viga alavanca"}
+      d:        {valor: 70, unidade: "cm", descricao: "altura util (h = 75 cm)"}
+      concreto: "C20 (f_ck = 20 MPa)"
+      aco_transversal: "CA-50"
+      gamma_c:  {valor: 1.4, unidade: "adimensional"}
+      gamma_s:  {valor: 1.15, unidade: "adimensional"}
+      alpha:    {valor: 90, unidade: "grau", descricao: "estribo VERTICAL (implicito nas equacoes simplificadas da Tabela A-4)"}
+      theta:    {valor: 45, unidade: "grau", descricao: "fixo pelo Modelo de Calculo I; nao e escolha neste modelo"}
+
+    saidas_esperadas:
+      V_Sd:       {valor: 574.4, unidade: "kN"}
+      V_Rd2:      {valor: 857.5, unidade: "kN", nota: "0,27 . alpha_v2 . f_cd . b_w . d, com alpha_v2 = 1 - 20/250 = 0,92 e f_cd = 20/1,4 MPa = 1,42857 kN/cm2 -> coeficiente 0,3549, que o autor arredonda para 0,35"}
+      V_Sd_min:   {valor: 247.5, unidade: "kN", nota: "NAO e V_c0. E a cortante abaixo da qual A_sw,min governa; conferida por este extrator como 0,1011 b_w d, resolvendo A_sw(V) = A_sw,min"}
+      V_c0:       {valor: 162.4, unidade: "kN", nota: "NAO aparece no texto do autor; calculado por este extrator para o a7 - V_c0 = 0,6 f_ctd b_w d = 0,0663 . 35 . 70. Fica registrado como valor DERIVADO, nao como valor da fonte"}
+      A_sw:       {valor: 14.97, unidade: "cm2/m"}
+      A_sw_min:   {valor: 3.09, unidade: "cm2/m", nota: "= 20 (f_ct,m/f_ywk) b_w, forma por metro de rho_sw >= 0,2 f_ct,m/f_ywk com sen(alpha) = 1"}
+      f_ct_m:     {valor: 2.2104, unidade: "MPa", nota: "0,3 . 20^(2/3); o autor escreve a raiz cubica de 20^2"}
+      estribo_adotado: "4 ramos de 8 mm c/13 cm (3,85 cm2/m por ramo; 15,40 cm2/m no total)"
+      s_max:      {valor: 30, unidade: "cm", nota: "V_Sd = 574,4 kN <= 0,67 V_Rd2 = 574,5 kN -> ramo s_max = min(0,6d, 300 mm) = min(42, 30) cm"}
+      s_t_max:    {valor: 35, unidade: "cm", nota: "V_Sd = 574,4 kN > 0,20 V_Rd2 = 171,5 kN -> ramo s_t,max = min(0,6d, 350 mm) = min(42, 35) cm"}
+
+    hipoteses_do_autor:
+      - >-
+        USA AS EQUACOES SIMPLIFICADAS DA TABELA A-4, nao as expressoes literais
+        da Norma. A Tabela A-4 pre-tabula 0,27 alpha_v2 f_cd por classe de
+        concreto e ja embute gamma_c = 1,4, gamma_s = 1,15, estribo VERTICAL
+        (alpha = 90 graus) e FLEXAO SIMPLES (V_c = V_c0). Um software que
+        implemente as expressoes literais reproduz esses numeros, mas nao pelo
+        mesmo caminho - o a7 tem de comparar RESULTADO, nao passo.
+      - >-
+        ARREDONDAMENTO DO AUTOR: 0,3549 -> 0,35 em V_Rd2. Isso torna o V_Rd2 da
+        fonte 1,4 % MENOR que o da expressao literal (857,5 kN contra 869,4 kN),
+        e a diferenca cai EXATAMENTE em cima da fronteira de 0,67 V_Rd2: com o
+        0,35 arredondado, 0,67 V_Rd2 = 574,5 kN > V_Sd = 574,4 kN e o autor fica
+        no ramo FOLGADO (s_max = 30 cm); com o valor literal 0,3549,
+        0,67 V_Rd2 = 582,5 kN, e o autor continua no mesmo ramo. Neste caso a
+        conclusao nao muda, mas a margem e de 0,1 kN. TOLERANCIA SUGERIDA AO a7:
+        comparar V_Rd2 com folga de 2 % e NUNCA usar este caso como teste de
+        fronteira do ramo de 0,67 sem declarar o arredondamento.
+      - >-
+        UNIDADES DA EXPRESSAO DE A_sw,min: o autor escreve
+        20 f_ct,m/f_ywk . b_w com f_ct,m em MPa dividido por 10 e f_ywk em
+        kN/cm2 (50), produzindo cm2/m. A NBR 6118 escreve a mesma coisa como
+        taxa adimensional rho_sw >= 0,2 f_ct,m/f_ywk. Sao a MESMA regra em
+        unidades diferentes; o fator 20 = 0,2 x 100 (conversao para cm2 por
+        METRO). Se o software escrever 0,2 e a fixture 20, um deles esta certo -
+        conferir a unidade antes de acusar defeito.
+      - >-
+        f_ywd = 435 MPa esta EMBUTIDO no coeficiente 2,55 da Tabela A-4
+        (100/(0,9 . 43,5) = 2,5556). O autor nao discute o teto de 435 MPa de
+        17.4.2.2 nem o que aconteceria com CA-60.
+      - >-
+        d = 70 cm com h = 75 cm, ou seja, d = h - 5 cm. O autor nao declara o
+        criterio (cobrimento + estribo + meia barra). Arredondamento de autor.
+      - >-
+        FLEXAO SIMPLES. O exemplo NAO tem forca normal, portanto NAO exercita
+        V_c = V_c0 (1 + M_0/M_Sd,max) <= 2 V_c0. A interacao N-V - que e
+        justamente o que interessa ao pilarete - fica SEM conferencia externa.
+      - >-
+        O autor cita a NBR 6118 pela apostila "Dimensionamento de vigas de
+        concreto armado a forca cortante" (Mar/2021, 79 p.), que NAO ESTA NO
+        ACERVO. As Tabelas A-4 e A-5 sao dela. Nao ha como auditar a origem dos
+        coeficientes tabelados alem da conferencia numerica feita acima.
+
+    o_que_este_caso_NAO_cobre:
+      - "Nao e pilar nem pilarete: e viga alavanca. Nao ha forca normal, nao ha esbeltez, nao ha 17.4.1.1.2-c)."
+      - "Nao exercita o Modelo de Calculo II nem a escolha de theta (a Tabela A-5 existe na apostila, mas nao e usada em nenhum exemplo resolvido)."
+      - "Nao exercita a majoracao de V_c na flexo-compressao nem o teto de 2 V_c0 - a lacuna de validacao mais grave desta rodada."
+      - "Nao exercita a excecao de armadura minima de 17.4.1.1.2-c) (f_ctk em estadio I e V_Sd <= V_c)."
+      - "Nao exercita estribo inclinado (alpha < 90 graus) nem barras dobradas."
+      - "Nao exercita 18.4.3 (detalhamento de PILAR) nem a regra do 'menor dos limites' entre 18.3 e 18.4.3."
+    status: AGUARDA_A2
+    rodada: "2026-09-03 backlog #13 pilarete - rodada 4 (ELU de forca cortante, 17.4)"

@@ -1,0 +1,20 @@
+# Dependências de desenvolvimento — testes e qualidade. Não entram no .exe.
+pytest>=8.0
+pytest-cov>=5.0
+hypothesis>=6.0
+ruff>=0.6
+mypy>=1.10
+
+# openpyxl é dependência de runtime de ui/completo/ (ver requirements.txt) —
+# listada aqui TAMBÉM porque tests/test_projeto_e_excel.py e
+# tests/test_perfil_cortes_espraiamento.py importam ui.completo (direta ou
+# indiretamente) e o README/CI instalam só este arquivo para rodar a suíte.
+# Sem esta linha, 'pytest tests/' aborta com erro de coleta em venv limpo.
+openpyxl>=3.1
+
+# tests/test_capacidade_carga_vesic.py lê kb/formulas.yaml diretamente (fixture
+# de validação da Tab. 2.2 de Vesic, REQ-SIGMA-11 do ruleset.yaml v9) — sem
+# esta linha, 'pytest tests/' aborta com erro de coleta em venv limpo (achado
+# em CI, não reproduzido localmente porque o ambiente de desenvolvimento já
+# tinha pyyaml instalado por outra dependência transitiva).
+pyyaml>=6.0

@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+htmlcov/
+.coverage
+.venv/
+venv/
+build/
+dist/
+*.spec.bak
+
+# Working file do a6-revisor/a7-validador por rodada de GATE 2/3 (relatorios/revisao_codigo.md é
+# o registro permanente, escrito só quando o gate se resolve — aprovado ou
+# escalado após o limite de ciclos). Cobre tanto o nome genérico quanto as
+# variantes por rodada/tema (ex.: revisao_codigo_pilarete_v13.json).
+relatorios/revisao_codigo.json
+relatorios/revisao_codigo_*.json

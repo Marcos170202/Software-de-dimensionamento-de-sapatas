@@ -1,0 +1,65 @@
+name: Build Sapata7.exe
+
+# Roda num runner Windows de verdade — um .exe não pode ser cross-compilado
+# de forma confiável a partir de Linux/macOS com PyInstaller.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "calc_core/**"
+      - "ui/**"
+      - "sapata7.spec"
+      - "requirements.txt"
+      - ".github/workflows/build-exe.yml"
+  workflow_dispatch: {}
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instala dependências de teste
+        run: pip install -r requirements-dev.txt
+      - name: Instala Xvfb (display virtual para os testes de Tk)
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: ruff (repositório inteiro — só erros de sintaxe)
+        run: ruff check calc_core/ ui/ --select E9
+      - name: ruff (padrão completo — só no núcleo 100% auditado)
+        run: ruff check calc_core/geotecnico/ calc_core/modelos.py ui/
+      - name: mypy --strict (só no núcleo 100% auditado)
+        run: mypy --strict calc_core/geotecnico/ calc_core/modelos.py
+      # MEDIA #5 do GATE 2, rodada 2: sem Xvfb, os testes que instanciam
+      # tk.Tk() (cobrindo boa parte de app.py/formulario.py — ALTA #1 e o
+      # bug de unidade cm/m entre outros) fazem SKIP em vez de rodar
+      # ("361 passed, 5 skipped" em vez de "366 passed"), e a suíte inteira
+      # passa mesmo com mutantes que reintroduzem esses defeitos — a
+      # proteção ficava inerte no CI. `xvfb-run -a` dá um display virtual
+      # para o job inteiro.
+      - name: pytest com cobertura (sob Xvfb)
+        env:
+          CI: "true"
+        run: xvfb-run -a pytest tests/ --cov=calc_core --cov-report=term-missing
+
+  build-windows:
+    needs: testes
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instala PyInstaller
+        run: pip install -r requirements.txt
+      - name: Gera os .exe (Sapata7.exe e Sapata7Completo.exe)
+        run: pyinstaller sapata7.spec
+      - name: Publica o artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sapata7-windows
+          path: |
+            dist/Sapata7.exe
+            dist/Sapata7Completo.exe
+          if-no-files-found: error

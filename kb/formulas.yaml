@@ -1,0 +1,2754 @@
+# kb/formulas.yaml — produzido pelo a1-bibliotecario.
+#
+# Só entram fórmulas lidas VISUALMENTE da página renderizada (as equações da
+# NBR 6118 não têm camada de texto). Cada fórmula registra as DUAS passadas de
+# leitura independentes; se divergirem, status: DIVERGENCIA e as duas ficam.
+#
+# Esta rodada (2026-08-27) foi disparada por uma consulta pontual sobre
+# classificação unidirecional/bidirecional de sapata isolada. Só uma equação
+# entrou no escopo da consulta — o arquivo nasce com ela e deve ser ampliado
+# nas próximas rodadas. NÃO tratar a cobertura deste arquivo como completa.
+
+formulas:
+  - id: NBR6118-22.6.1-rigidez
+    norma: "NBR 6118:2023"
+    item: "22.6.1"
+    pagina: 191
+    clausula_ref: NBR6118-22.6.1-rigidez   # kb/clausulas.jsonl
+    titulo: "Critério de classificação rígida x flexível de sapata"
+    latex: "h \\ge \\frac{a - a_p}{3}"
+    sympy: "Ge(h, (a - a_p)/3)"
+    variaveis:
+      h:
+        descricao: "altura da sapata"
+        unidade: "m"
+        valor: null
+      a:
+        descricao: "dimensão da sapata em uma determinada direção"
+        unidade: "m"
+        valor: null
+      a_p:
+        descricao: "dimensão do pilar na mesma direção"
+        unidade: "m"
+        valor: null
+    dominio_validade: >-
+      Sapatas de concreto armado em fundação direta. A expressão é avaliada POR
+      DIREÇÃO e a sapata só é RÍGIDA se a condição for satisfeita NAS DUAS
+      DIREÇÕES; basta falhar em uma para a sapata ser FLEXÍVEL. Se rígida,
+      pode-se admitir plana a distribuição de tensões normais no contato
+      sapata-terreno "caso não se disponha de informações mais detalhadas a
+      respeito"; para sapata flexível, ou em casos extremos de fundação em
+      rocha mesmo com sapata rígida, essa hipótese deve ser revista.
+      NÃO é um critério de direcionalidade de armadura: a classificação
+      resultante é rígida/flexível, não unidirecional/bidirecional.
+    consequencias_normativas:
+      rigida: "22.6.2.2 (flexão e cisalhamento nas duas direções; sem punção — verificar compressão diagonal por 19.5.3.1) e detalhamento 22.6.4.1."
+      flexivel: "22.6.2.3 (flexão nas duas direções sem tração uniformemente distribuída; cisalhamento por punção, 19.5) e detalhamento 22.6.4.1.3, que remete às Seções 19 e 20."
+    leitura_visual:
+      passada_1: "h ≥ (a − ap)/3   [render 200 dpi da página PDF 209]"
+      passada_2: "h ≥ (a − ap)/3   [recorte da região da equação a 450 dpi]"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver clausula NBR6118-Em1-secao22-nada
+
+  # ---------------------------------------------------------------------------
+  # RODADA 2026-08-27 (b) — FONTE SECUNDÁRIA, NÃO NORMATIVA
+  #
+  # As fórmulas abaixo NÃO vêm de norma ABNT. Vêm da apostila
+  #   BASTOS, P.S. "Sapatas de Fundação". UNESP Bauru/SP, Estruturas de
+  #   Concreto III, Out/2023, 119 p.  (arquivo Sapatas.pdf na raiz do repo)
+  # que é material didático / registro de prática de engenharia.
+  #
+  # Nenhuma delas pode virar regra APROVADA no ruleset com base apenas nesta
+  # fonte, e nenhuma pode ser citada em memorial como requisito normativo.
+  # Estão aqui para o a2-verificador avaliar, com o rótulo bem visível.
+  #
+  # A camada de texto do PDF PERDE as letras gregas dentro dos campos de
+  # equação (a eq. 1.72 sai como "5,1 M M tomb estab tomb"). Todas foram lidas
+  # VISUALMENTE, em duas passadas independentes.
+  # ---------------------------------------------------------------------------
+
+  - id: BASTOS-1.72-tombamento
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.8 a) — equações 1.70, 1.71 e 1.72"
+    pagina: "PDF 78 (impressa 74)"
+    clausula_ref: BASTOS-1.8a-tombamento-eq170-172   # kb/clausulas.jsonl
+    titulo: "Coeficiente de segurança ao tombamento"
+    latex: 'M_{tomb} = M + F_H \cdot h \;;\quad M_{estab} = (N + P)\,\frac{A}{2} \;;\quad \gamma_{tomb} = \frac{M_{estab}}{M_{tomb}} \ge 1{,}5'
+    sympy: "Ge(((N + P)*A/2) / (M + F_H*h), Rational(3,2))"
+    variaveis:
+      M_tomb: {descricao: "momento de tombamento em torno do ponto 1 (aresta da base)", unidade: "kN·m", valor: null}
+      M_estab: {descricao: "momento estabilizador em torno do ponto 1", unidade: "kN·m", valor: null}
+      M: {descricao: "momento fletor aplicado na sapata", unidade: "kN·m", valor: null}
+      F_H: {descricao: "força horizontal aplicada", unidade: "kN", valor: null}
+      h: {descricao: "altura do ponto de aplicação de F_H acima da base da sapata (Figura 1.116)", unidade: "m", valor: null}
+      N: {descricao: "força normal do pilar", unidade: "kN", valor: null}
+      P: {descricao: "peso próprio da sapata (Figura 1.116). O peso do solo sobre a sapata PODE também ser considerado — a fonte deixa facultativo", unidade: "kN", valor: null}
+      A: {descricao: "dimensão da base da sapata na direção do tombamento", unidade: "m", valor: null}
+      gamma_tomb: {descricao: "coeficiente de segurança ao tombamento", unidade: "adimensional", valor: 1.5}
+    dominio_validade: >-
+      Sapata submetida a força horizontal e/ou momento fletor — a fonte NÃO
+      manda aplicar esta verificação a sapata sob carga estritamente centrada e
+      vertical. Rotação em torno do ponto 1, aresta da base. NÃO DECLARADO NA
+      FONTE: se N, M e F_H são valores característicos ou de cálculo; qual
+      combinação de ações; tipo de solo; condição drenada/não drenada; se o
+      coeficiente muda quando o vento é a ação variável principal. A inclusão do
+      peso do solo sobre a sapata em M_estab é facultativa ("pode também ser
+      considerado").
+    citacao_normativa_no_trecho: >-
+      NENHUMA. O trecho das eqs. 1.70 a 1.72 não remete a nenhum item da NBR
+      6122, da NBR 6118, da NBR 8681 nem de qualquer outra norma, e não traz
+      nota de rodapé nem colchete de referência bibliográfica. O valor 1,5 é
+      apresentado como valor de projeto direto.
+    hipoteses_do_autor: >-
+      INTERPRETAÇÃO deste extrator, não está escrita na fonte: o braço A/2 em
+      M_estab pressupõe resultante de (N + P) aplicada no centro de gravidade da
+      base; a excentricidade da carga entra pelo termo M do numerador de M_tomb,
+      não pelo braço de M_estab.
+    leitura_visual:
+      passada_1: "γ_tomb = M_estab / M_tomb ≥ 1,5   [página PDF 78 inteira a 150 dpi]"
+      passada_2: "γ_tomb = M_estab / M_tomb ≥ 1,5   [recorte da região da equação a 400 dpi]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: BASTOS-1.75-escorregamento
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.8 b) — equações 1.73, 1.74 e 1.75"
+    pagina: "PDF 78-79 (impressas 74-75)"
+    clausula_ref: BASTOS-1.8b-escorregamento-eq173-175   # kb/clausulas.jsonl
+    titulo: "Coeficiente de segurança ao escorregamento (deslizamento), com dois modelos de F_estab"
+    latex: '\gamma_{esc} = \frac{F_{estab}}{F_H} \ge 1{,}5 \;;\quad \text{modelo 1: } (N+P)\,\tan\varphi = F_H \cdot \gamma_{esc} \;;\quad \text{modelo 2: } F_{estab} = (N+P)\,\tan\!\left(\tfrac{2}{3}\phi\right) + A\left(\tfrac{2}{3}c\right)'
+    sympy_modelo_1_atrito_puro: "Ge(((N + P)*tan(varphi)) / F_H, Rational(3,2))"
+    sympy_modelo_2_atrito_coesao: "Ge(((N + P)*tan(Rational(2,3)*phi) + A*(Rational(2,3)*c)) / F_H, Rational(3,2))"
+    variaveis:
+      gamma_esc: {descricao: "coeficiente de segurança ao escorregamento", unidade: "adimensional", valor: 1.5}
+      F_estab: {descricao: "força estabilizadora (atrito, ou atrito + coesão)", unidade: "kN", valor: null}
+      F_H: {descricao: "força horizontal aplicada", unidade: "kN", valor: null}
+      N: {descricao: "força normal do pilar", unidade: "kN", valor: null}
+      P: {descricao: "peso próprio da sapata", unidade: "kN", valor: null}
+      varphi: {descricao: "MODELO 1 (eq. 1.73): ângulo de atrito entre os DOIS MATERIAIS EM CONTATO (concreto x solo). tg varphi = mu = coeficiente de atrito. Restrição EXPLÍCITA da fonte: não maior que o ângulo de atrito interno do solo", unidade: "grau", valor: null}
+      mu: {descricao: "coeficiente de atrito, igual a tg varphi", unidade: "adimensional", valor: null}
+      phi: {descricao: "MODELO 2 (eq. 1.74): ângulo de atrito INTERNO DO SOLO — grandeza DIFERENTE de varphi acima", unidade: "grau", valor: null}
+      c: {descricao: "coesão do solo", unidade: "kPa", valor: null}
+      A: {descricao: "dimensão da base em contato com o solo (assim definido literalmente na fonte)", unidade: "m", valor: null}
+    dominio_validade: >-
+      Sapata sob força horizontal F_H. Modelo 1: atrito puro no contato
+      concreto-solo, com a única restrição de domínio declarada em toda a seção
+      1.8 — varphi (interface concreto x solo) não maior que o ângulo de atrito
+      interno do solo. Modelo 2: atrito + coesão, com redução a 2/3 tanto do
+      ângulo de atrito interno quanto da coesão; a fonte NÃO declara em que solo
+      cada modelo se aplica, nem condição drenada/não drenada, nem se são
+      valores característicos ou de cálculo. Empuxo passivo EXPLICITAMENTE
+      desprezado pela fonte ("por não se ter garantia de sua atuação
+      permanente") — mais conservador que a NBR 6122 7.6.3, que o admite
+      reduzido por coeficiente de no mínimo 2,0.
+    alerta_de_unidades: >-
+      ATENÇÃO NA IMPLEMENTAÇÃO: na eq. 1.74 a parcela de coesão é escrita
+      A·(2/3·c), com A definido pela própria fonte como "dimensão da base em
+      contato com o solo" — uma DIMENSÃO (comprimento), não uma ÁREA. Como c é
+      uma tensão, o produto A·c só é homogêneo com força se A for área, ou se a
+      expressão estiver por unidade de largura. A fonte não esclarece. NÃO
+      CORRIGIR POR CONTA PRÓPRIA: sinalizado ao a2 para decisão, com o texto
+      transcrito exatamente como está na página.
+    alerta_de_notacao: >-
+      A fonte usa dois glifos phi distintos para duas grandezas distintas
+      (interface concreto-solo na eq. 1.73; atrito interno do solo na eq. 1.74).
+      Unificá-los no código produz erro.
+    citacao_normativa_no_trecho: >-
+      NENHUMA para as eqs. 1.73, 1.74 e 1.75 e para o valor 1,5. A única citação
+      normativa de toda a seção 1.8 é a nota de rodapé 41 (NBR 6122 item 7.6.3),
+      que trata de empuxo passivo — e o empuxo passivo é justamente o termo que
+      este modelo despreza.
+    leitura_visual:
+      passada_1: "(N+P) tg φ = F_H · γ_esc (1.73); F_estab = (N+P) tg(2/3 ϕ) + A(2/3 c) (1.74); γ_esc = F_estab/F_H ≥ 1,5 (1.75)   [páginas PDF 78 e 79 a 150 dpi]"
+      passada_2: "(N+P) tg φ = F_H · γ_esc (1.73); F_estab = (N+P) tg(2/3 ϕ) + A(2/3 c) (1.74); γ_esc = F_estab/F_H ≥ 1,5 (1.75)   [recortes das regiões das equações a 400 dpi]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: BASTOS-1.48-1.49-tombamento-area-comprimida
+    norma: "Bastos, P.S. - Sapatas de Fundação (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Notas a) e b) após a eq. 1.47 — equações 1.48 e 1.49"
+    pagina: "PDF 50 (impressa 46)"
+    clausula_ref: BASTOS-1.6.4-notas-a-b-eq148-149-tombamento-area-comprimida
+    titulo: "SEGUNDO critério de tombamento da mesma apostila — por área comprimida, sem coeficiente 1,5"
+    latex: '\frac{e_{A,g}}{A} + \frac{e_{B,g}}{B} \le \frac{1}{6} \;;\quad \left(\frac{e_A}{A}\right)^2 + \left(\frac{e_B}{B}\right)^2 \le \frac{1}{9}'
+    sympy_1_48: "Le(e_Ag/A + e_Bg/B, Rational(1,6))"
+    sympy_1_49: "Le((e_A/A)**2 + (e_B/B)**2, Rational(1,9))"
+    variaveis:
+      e_Ag: {descricao: "excentricidade na direção A devida SOMENTE às cargas permanentes (G = peso próprio + solo sobre a sapata)", unidade: "m", valor: null}
+      e_Bg: {descricao: "excentricidade na direção B devida SOMENTE às cargas permanentes", unidade: "m", valor: null}
+      e_A: {descricao: "excentricidade na direção A na condição mais desfavorável", unidade: "m", valor: null}
+      e_B: {descricao: "excentricidade na direção B na condição mais desfavorável", unidade: "m", valor: null}
+      A: {descricao: "dimensão da base na direção A", unidade: "m", valor: null}
+      B: {descricao: "dimensão da base na direção B", unidade: "m", valor: null}
+    significado:
+      eq_1_48: "base INTEIRAMENTE comprimida sob cargas permanentes (núcleo central de inércia)"
+      eq_1_49: "pelo menos METADE da área da base comprimida na condição mais desfavorável — é este o critério que a fonte chama de 'segurança contra o tombamento' aqui"
+    dominio_validade: >-
+      Sapata retangular A x B com momentos fletores nas DUAS direções,
+      excentricidades e_A e e_B, solo não resistente à tração. Eq. 1.48 aplicada
+      às CARGAS PERMANENTES. Eq. 1.49 aplicada à "condição mais desfavorável",
+      que a fonte NÃO define (não diz se característica ou de cálculo). Tipo de
+      solo NÃO_DECLARADO_NA_FONTE.
+    achado_para_o_a2: >-
+      A MESMA apostila oferece DOIS critérios não equivalentes contra
+      tombamento: este (área comprimida, eq. 1.48/1.49) e o da eq. 1.72
+      (γ_tomb ≥ 1,5, seção 1.8). Este dialoga diretamente com a NBR 6122 7.6.2
+      ("a área comprimida deve ser de no mínimo 2/3 da área total, se
+      consideradas as solicitações características, ou 50 % da área total, se
+      consideradas as solicitações de cálculo"), item que a própria apostila
+      cita na nota de rodapé 33 (PDF 47). O da eq. 1.72 não cita norma alguma.
+      A apostila NÃO diz como os dois se articulam, nem se são cumulativos.
+      OBSERVE que 1/9 corresponde a 50 % de área comprimida — o patamar da NBR
+      6122 7.6.2 para SOLICITAÇÕES DE CÁLCULO, não para as características.
+      Esta última frase é INTERPRETAÇÃO deste extrator, não afirmação da fonte.
+    leitura_visual:
+      passada_1: "e_A,g/A + e_B,g/B ≤ 1/6 (1.48); (e_A/A)² + (e_B/B)² ≤ 1/9 (1.49)   [página PDF 50 a 150 dpi]"
+      passada_2: "e_A,g/A + e_B,g/B ≤ 1/6 (1.48); (e_A/A)² + (e_B/B)² ≤ 1/9 (1.49)   [recortes a 400 dpi localizados pelas coordenadas dos rótulos]"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ===========================================================================
+  # RODADA 2026-08-29 — sigma_adm a partir de SPT + majoração por vento
+  #
+  # AVISO QUE VALE PARA TODA ESTA RODADA:
+  # A NBR 6122:2022 NÃO CONTÉM NENHUMA EQUAÇÃO DE sigma_adm PARA FUNDAÇÃO RASA.
+  # Não há equação de capacidade de carga, não há correlação N_SPT -> sigma_adm,
+  # não há tabela de valores e não há autor citado. Ver os registros de busca
+  # negativa em kb/clausulas.jsonl:
+  #   NBR6122-BUSCA-NEG-sem-equacao-capacidade-carga
+  #   NBR6122-BUSCA-NEG-sem-correlacao-spt-solo
+  #   ACERVO-BUSCA-NEG-teixeira-1996
+  #   ACERVO-BUSCA-NEG-correlacoes-spt
+  #
+  # As três entradas abaixo são as ÚNICAS relações quantitativas que a Norma
+  # enuncia sobre sigma_adm de sapata — e TODAS ELAS SÃO ENUNCIADAS EM PROSA
+  # CORRIDA, não como equação exibida/numerada. O campo fonte_tipo registra
+  # isso. A conversão prosa -> LaTeX/SymPy é FORMALIZAÇÃO deste extrator e está
+  # marcada como tal; a transcrição literal fica no campo prosa_literal, que é
+  # o que manda em caso de conflito.
+  #
+  # Nenhuma equação de Terzaghi/Vésic/Meyerhof-Hansen foi escrita aqui.
+  # Nenhuma correlação de Teixeira (1996) foi escrita aqui. Não estão no
+  # acervo e NÃO foram reconstruídas de memória.
+  # ===========================================================================
+
+  - id: NBR6122-3.48-tensao-resistente-de-calculo
+    norma: "NBR 6122:2022"
+    fonte_tipo: PROSA_NORMATIVA_NAO_EQUACAO
+    item: "3.48 (definição) + Tabela 1 de 6.2.1.1.1"
+    pagina: "impressa 9 (PDF 21); Tabela 1 na impressa 17 (PDF 29)"
+    clausula_ref: NBR6122-3.48-def-tensao-resistente-calculo
+    titulo: "Tensão resistente de cálculo a partir da tensão de ruptura geotécnica"
+    prosa_literal: >-
+      "tensão resistente de cálculo — valor de tensão resultante da divisão do
+      valor característico da tensão de ruptura geotécnica pelo coeficiente de
+      ponderação (redução, no caso) da resistência última."
+    formalizacao_do_a1: >-
+      A fonte NÃO exibe esta equação. O LaTeX/SymPy abaixo é formalização deste
+      extrator a partir da prosa de 3.48; os símbolos sigma_Rd, sigma_rup_k e
+      gamma_m não são todos grafados assim na Norma (gamma_m é; os demais são
+      escolha minha). Se o a2 discordar da simbologia, o que vale é a prosa.
+    latex: "\\sigma_{Rd} = \\dfrac{\\sigma_{rup,k}}{\\gamma_m}"
+    sympy: "Eq(sigma_Rd, sigma_rup_k/gamma_m)"
+    variaveis:
+      sigma_Rd: {descricao: "tensão resistente de cálculo", unidade: "kPa", valor: null}
+      sigma_rup_k: {descricao: "valor característico da tensão de ruptura geotécnica (grandeza definida em 3.46)", unidade: "kPa", valor: null}
+      gamma_m:
+        descricao: "coeficiente de ponderação (redução) da resistência última, da Tabela 1 de 6.2.1.1.1"
+        unidade: "adimensional"
+        valor: null
+        valores_da_tabela_1:
+          semiempiricos: "valores propostos no próprio processo e NO MÍNIMO 2,15 (o do processo prevalece se for maior)"
+          analiticos: 2.15
+          semiempiricos_ou_analiticos_com_2_ou_mais_provas_de_carga_na_fase_de_projeto: 1.40
+    dominio_validade: >-
+      Fundação rasa, solicitação de COMPRESSÃO, MÉTODO DE VALORES DE CÁLCULO
+      (NOTA de 3.48: "utilizada no projeto quando se trabalha com valores de
+      cálculo das ações"). NÃO pode ser misturada, na mesma verificação, com
+      sigma_adm/FSg do método de valores característicos. Não cobre tração,
+      deslizamento, tombamento (6.2.1.1.2) nem flutuação (6.2.1.1.3).
+      Nota b da Tabela 1: a linha "Analíticos" pressupõe que NÃO se apliquem
+      coeficientes de ponderação aos parâmetros de resistência do terreno — ou
+      seja, c e phi entram característicos, e a minoração é toda em gamma_m.
+      Nota a: para os métodos semiempíricos, exige-se atender ao "domínio de
+      validade para o terreno local".
+      O NUMERADOR sigma_rup_k NÃO É CALCULÁVEL PELA NORMA: nenhuma equação de
+      capacidade de carga é fornecida (busca negativa registrada).
+      Esta relação sozinha NÃO entrega a tensão de projeto: 7.3 exige "além de
+      atender ao disposto em 7.4" (ELS, 6.2.2).
+    leitura_visual:
+      passada_1: "camada de texto UTF-8 (pymupdf) das páginas PDF 21 e 29"
+      passada_2: "render da página PDF 29 a 300 dpi (página inteira) + recorte da Tabela 1 a 500 dpi; página PDF 21 não re-renderizada por ser prosa sem símbolo"
+      divergencia: false
+    status: NORMATIVO_PROSA_AGUARDA_A2
+
+  - id: NBR6122-6.3.2-majoracao-vento-admissivel
+    norma: "NBR 6122:2022"
+    fonte_tipo: PROSA_NORMATIVA_NAO_EQUACAO
+    item: "6.3.2"
+    pagina: "impressa 21 (PDF 33)"
+    clausula_ref: NBR6122-6.3.2-majoracao-vento-valores-admissiveis
+    titulo: "Majoração da tensão admissível quando o vento é a ação variável principal (método de valores admissíveis)"
+    prosa_literal: >-
+      "os valores de tensão admissível de sapatas e tubulões e as cargas
+      admissíveis em estacas podem ser majorados em até 15 %. Quando esta
+      majoração for utilizada, o fator de segurança global não pode ser inferior
+      a 1,6." / "No caso de galpões industriais, torres de linhas de
+      transmissão, reservatórios elevados, silos graneleiros, torres eólicas,
+      torres de telecomunicações e tanques de produtos químicos, nos quais o
+      vento é a ação variável principal, [...] podem ser majorados em até 30 %."
+    formalizacao_do_a1: >-
+      A fonte NÃO exibe equação. Formalizo como DESIGUALDADE (teto), nunca como
+      igualdade: "em ATÉ 15 %" é limite superior de uma FACULDADE ("podem ser"),
+      não fator a aplicar automaticamente. Escrever sigma_adm_vento =
+      1,15 * sigma_adm seria trair a fonte.
+    latex: '\sigma_{adm,vento} \le (1 + k_v)\,\sigma_{adm} \quad\text{com}\quad k_v \le 0{,}15 \;\;(\text{ou } k_v \le 0{,}30 \text{ na lista fechada}) \quad\text{e}\quad FS_g \ge 1{,}6'
+    sympy: "And(Le(sigma_adm_vento, (1 + k_v)*sigma_adm), Le(k_v, k_v_max), Ge(FSg, Rational(8,5)))"
+    variaveis:
+      sigma_adm_vento: {descricao: "tensão admissível a usar na combinação em que o vento é a ação variável principal", unidade: "kPa", valor: null}
+      sigma_adm: {descricao: "tensão admissível determinada por 7.3 e 7.4, sem majoração", unidade: "kPa", valor: null}
+      k_v:
+        descricao: "majoração efetivamente adotada pelo projetista; a Norma dá o TETO, não o valor. Decisão de engenharia, não do software."
+        unidade: "adimensional"
+        valor: null
+      k_v_max:
+        descricao: "teto da majoração"
+        unidade: "adimensional"
+        valor: null
+        caso_geral: 0.15
+        caso_lista_fechada: 0.30
+      FSg: {descricao: "fator de segurança global; piso de 1,6 imposto QUANDO a majoração é utilizada", unidade: "adimensional", valor: 1.6}
+    dominio_validade: >-
+      MÉTODO DE VALORES ADMISSÍVEIS (valores característicos + FS global), e só
+      ele — 6.3.3 é o equivalente para valores de cálculo e tem outro número.
+      CONDIÇÃO NECESSÁRIA: o vento tem de ser a AÇÃO VARIÁVEL PRINCIPAL da
+      combinação, conforme ABNT NBR 8681 (remissão de 6.3.1). Se o vento NÃO é
+      a ação variável principal, k_v = 0 obrigatoriamente: a Norma escreve "não
+      é permitida a majoração".
+      k_v_max = 0,30 vale SOMENTE para a lista FECHADA e taxativa de sete tipos
+      de obra: galpões industriais, torres de linhas de transmissão,
+      reservatórios elevados, silos graneleiros, torres eólicas, torres de
+      telecomunicações e tanques de produtos químicos. Edifício residencial ou
+      comercial comum fica em k_v_max = 0,15.
+      "Em qualquer caso, deve ser feita a verificação estrutural do elemento de
+      fundação" — a majoração é geotécnica e não alivia o dimensionamento
+      estrutural da sapata.
+      NÃO DECLARADO NA FONTE: como se afere o piso FSg >= 1,6 quando a majoração
+      é aplicada (ver o campo interpretacao_do_a1 da cláusula
+      NBR6122-6.3.2-majoracao-vento-valores-admissiveis — há duas leituras
+      incompatíveis e NÃO escolhi entre elas).
+    leitura_visual:
+      passada_1: "camada de texto UTF-8 (pymupdf) da página PDF 33"
+      passada_2: "render da página PDF 33 a 300 dpi — percentuais 15 %, 30 % e o valor 1,6 conferidos um a um na imagem"
+      divergencia: false
+    status: NORMATIVO_PROSA_AGUARDA_A2
+
+  - id: NBR6122-6.3.3-majoracao-vento-calculo
+    norma: "NBR 6122:2022"
+    fonte_tipo: PROSA_NORMATIVA_NAO_EQUACAO
+    item: "6.3.3"
+    pagina: "impressa 21 (PDF 33)"
+    clausula_ref: NBR6122-6.3.3-majoracao-vento-valores-calculo
+    titulo: "Majoração da tensão resistente de cálculo quando o vento é a ação variável principal (método de valores de cálculo)"
+    prosa_literal: >-
+      "Quando a verificação das solicitações for feita considerando-se as
+      combinações nas quais o vento é a ação variável principal, os valores de
+      tensão resistente de cálculo de sapatas e tubulões e de forças resistentes
+      de cálculo de estacas podem ser majorados em até 10 %."
+    formalizacao_do_a1: >-
+      Mesma ressalva de 6.3.2: desigualdade, nunca igualdade. "em até 10 %" é
+      teto de uma faculdade.
+    latex: "\\sigma_{Rd,vento} \\le (1 + k_v)\\,\\sigma_{Rd} \\quad\\text{com}\\quad k_v \\le 0{,}10"
+    sympy: "And(Le(sigma_Rd_vento, (1 + k_v)*sigma_Rd), Le(k_v, Rational(1,10)))"
+    variaveis:
+      sigma_Rd_vento: {descricao: "tensão resistente de cálculo a usar na combinação em que o vento é a ação variável principal", unidade: "kPa", valor: null}
+      sigma_Rd: {descricao: "tensão resistente de cálculo sem majoração (3.48 + Tabela 1)", unidade: "kPa", valor: null}
+      k_v: {descricao: "majoração adotada pelo projetista; a Norma dá só o teto", unidade: "adimensional", valor: null}
+      k_v_max: {descricao: "teto da majoração no método de valores de cálculo", unidade: "adimensional", valor: 0.10}
+      piso_de_fator_de_seguranca:
+        descricao: "NÃO EXISTE em 6.3.3. A Norma não impõe piso algum de FS ou de gamma_m aqui, ao contrário de 6.3.2 (que impõe 1,6). Valor null por AUSÊNCIA NA FONTE, não por desconhecimento."
+        unidade: "adimensional"
+        valor: null
+    dominio_validade: >-
+      MÉTODO DE VALORES DE CÁLCULO (coeficientes de ponderação), e só ele.
+      Sapatas e tubulões (tensão resistente de cálculo) e estacas (forças
+      resistentes de cálculo). Vento como ação variável principal, conforme
+      ABNT NBR 8681 (remissão de 6.3.1).
+      TRÊS ASSIMETRIAS em relação a 6.3.2, todas verificadas: (1) teto de 10 %,
+      não 15 %; (2) NÃO há em 6.3.3 a lista de sete tipos de obra com majoração
+      ampliada — os 30 % são exclusivos do método de valores admissíveis; (3)
+      NÃO há piso de fator de segurança. Não transportar nada de 6.3.2 para cá
+      por analogia.
+      "Deve ser feita a verificação estrutural do elemento de fundação."
+    leitura_visual:
+      passada_1: "camada de texto UTF-8 (pymupdf) da página PDF 33"
+      passada_2: "render da página PDF 33 a 300 dpi — os 10 % e a ausência de lista de obras e de piso de FS conferidos na imagem"
+      divergencia: false
+    status: NORMATIVO_PROSA_AGUARDA_A2
+
+  # ===========================================================================
+  # RODADA 2026-08-31 — FONTE SECUNDÁRIA, NÃO NORMATIVA
+  #
+  #   CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. "Fundações Diretas: Projeto
+  #   Geotécnico". São Paulo: Oficina de Textos, 2011.
+  #   (arquivo Fundacoes_Diretas_Projeto_Geotecnico_Jos.pdf na raiz do repo)
+  #
+  # Fornecida pelo usuário para fechar as lacunas dos registros
+  # ACERVO-BUSCA-NEG-teixeira-1996 e ACERVO-BUSCA-NEG-correlacoes-spt: a NBR
+  # 6122 EXIGE método teórico e semiempírico (§7.3.2, §7.3.3) mas não reproduz
+  # nenhuma equação nem correlação. Esta é a fonte da formulação; a norma
+  # continua sendo a fonte da obrigatoriedade. As duas coisas não se
+  # substituem.
+  #
+  # NENHUMA destas fórmulas pode virar regra APROVADA no ruleset com base
+  # apenas nesta fonte, e nenhuma pode ser citada em memorial como requisito
+  # normativo.
+  #
+  # ATENÇÃO À EDIÇÃO: o livro é de 2011 e se refere à NBR 6122:2010 e à NBR
+  # 8681:2003. O acervo tem NBR 6122:2022 e NBR 8681:2025. Toda remissão a
+  # número de item feita pelo livro precisa ser reconferida pelo a2.
+  #
+  # MÉTODO DE LEITURA: as 142 páginas do PDF são imagem escaneada pura —
+  # page.get_text() devolve string vazia em TODAS elas, e
+  # tools/decodificar_nbr.py NÃO se aplica (ele decodifica CMap deslocado de
+  # texto real, não faz OCR). Portanto 100% leitura visual, em duas passadas
+  # independentes (página inteira a 160 dpi e recorte a 400–900 dpi).
+  #
+  # MAPEAMENTO DE PÁGINA: a página impressa 33 foi ESCANEADA DUAS VEZES (PDF 32
+  # e PDF 33 — imagens de hashes diferentes, mesmo conteúdo), por isso o
+  # deslocamento impressa↔PDF muda ao longo do arquivo. Cada registro carrega
+  # os dois números, conferidos na própria imagem.
+  # ===========================================================================
+
+  - id: CINTRA-2.2.4-terzaghi-capacidade-de-carga
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas: Projeto Geotécnico. Oficina de Textos, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.4 Superposição de efeitos (com 2.2.1, 2.2.2 e 2.2.3)"
+    pagina: "impressas 28 e 29 (PDF 27 e 28)"
+    clausula_ref: CINTRA-2.2.1-2.2.4-terzaghi-equacao-geral
+    titulo: "Equação de capacidade de carga de Terzaghi (1943) por superposição de efeitos, e os fatores Nc e Nq em forma fechada"
+    latex: '\sigma_r = c\,N_c + q\,N_q + \tfrac{1}{2}\,\gamma\,B\,N_\gamma'
+    sympy: "Eq(sigma_r, c*N_c + q*N_q + gamma*B*N_gamma/2)"
+    formulas_auxiliares:
+      N_c_forma_fechada:
+        latex: 'N_c = \cot\phi\left[e^{\pi\,\mathrm{tg}\,\phi}\,\mathrm{tg}^2\!\left(45^\circ + \phi/2\right) - 1\right]'
+        sympy: "Eq(N_c, cot(phi)*(exp(pi*tan(phi))*tan(rad(45) + phi/2)**2 - 1))"
+        origem: "Prandtl (1921, apud Terzaghi e Peck, 1967), item 2.2.1"
+      N_q_forma_fechada:
+        latex: 'N_q = e^{\pi\,\mathrm{tg}\,\phi}\,\mathrm{tg}^2\!\left(45^\circ + \phi/2\right)'
+        sympy: "Eq(N_q, exp(pi*tan(phi))*tan(rad(45) + phi/2)**2)"
+        origem: "Reisnner (1924, apud Terzaghi e Peck, 1967), item 2.2.2"
+      relacao_entre_Nc_e_Nq:
+        latex: 'N_c = (N_q - 1)\cot\phi'
+        sympy: "Eq(N_c, (N_q - 1)*cot(phi))"
+      N_gamma_SEM_SOLUCAO_ANALITICA:
+        latex: 'N_\gamma = \frac{4E_p}{\gamma B^2}\cos(\alpha - \phi)'
+        sympy: null
+        status: NAO_IMPLEMENTAVEL
+        motivo: >-
+          A fonte afirma textualmente que "não há solução analítica para
+          N_gamma". Esta expressão depende do empuxo passivo E_p, que a fonte
+          NÃO fornece, e de um ângulo alpha desconhecido que só se obtém
+          repetindo o cálculo até minimizar N_gamma. NÃO transformar em código.
+          Para obter N_gamma como número use a Tab. 2.2 de Vesic
+          (CINTRA-VESIC-tabela-2.2-fatores-capacidade-carga) ou a aproximação
+          de Caquot-Kérisel (CINTRA-2.3.1-vesic-N-gamma).
+    variaveis:
+      sigma_r: {descricao: "capacidade de carga do SISTEMA sapata-solo (tensão de ruptura)", unidade: "kPa", valor: null}
+      c: {descricao: "coesão do solo; na notação da fonte, geralmente o valor NÃO DRENADO", unidade: "kPa", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio, q = gamma*h", unidade: "kPa", valor: null}
+      gamma: {descricao: "peso específico; na notação da fonte é SEMPRE o peso específico EFETIVO. A fonte alerta que gamma acima e abaixo da cota da base podem ser diferentes apesar do mesmo símbolo", unidade: "kN/m3", valor: null}
+      B: {descricao: "largura da sapata (menor dimensão da base)", unidade: "m", valor: null}
+      h: {descricao: "profundidade de embutimento da sapata", unidade: "m", valor: null}
+      phi: {descricao: "ângulo de atrito interno; na notação da fonte, geralmente o valor NÃO DRENADO", unidade: "grau", valor: null}
+      N_c: {descricao: "fator de capacidade de carga da parcela de coesão; função apenas de phi", unidade: "adimensional", valor: null}
+      N_q: {descricao: "fator de capacidade de carga da parcela de sobrecarga; função apenas de phi", unidade: "adimensional", valor: null}
+      N_gamma: {descricao: "fator de capacidade de carga da parcela de peso específico; função apenas de phi; SEM solução analítica nesta fonte", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      DECLARADO EXPLICITAMENTE NA FONTE (item 2.2, impressa 26), e é o campo que
+      impede o uso indevido desta equação:
+      (1) SAPATA CORRIDA, com L >= 5B — o problema é tratado como bidimensional.
+      Sapata quadrada, retangular ou circular só entra pelos fatores de forma
+      SEMIEMPÍRICOS de 2.2.5 / Tab. 2.1 (ou Tab. 2.3 de De Beer).
+      (2) EMBUTIMENTO h <= B — é isso que autoriza desprezar a resistência ao
+      cisalhamento da camada acima da cota de apoio e trocá-la pela sobrecarga
+      q = gamma*h. Para h > B a substituição não está justificada pela fonte.
+      (3) MACIÇO RÍGIDO, RUPTURA GERAL. Solo fofo ou mole exige a redução de
+      2.2.6 (c* = 2c/3, tg phi* = 2 tg phi /3).
+      (4) SOLO HOMOGÊNEO. O caso estratificado é tratado em item separado (2.5,
+      impressas 36-40), NÃO extraído nesta rodada — não aplicar esta equação a
+      perfil estratificado.
+      (5) A própria fonte qualifica a equação de APROXIMADA, por ser
+      superposição de três casos particulares.
+    leitura_visual:
+      passada_1: "página PDF 28 (impressa 29) inteira a 160 dpi"
+      passada_2: "página PDF 27 (impressa 28) inteira a 160 dpi — Nc e Nq conferidos termo a termo"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.2.5-terzaghi-peck-fatores-de-forma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.5 Efeito da forma da sapata, com Tab. 2.1"
+    pagina: "impressas 30 e 31 (PDF 29 e 30)"
+    clausula_ref: CINTRA-2.2.5-fatores-forma-tab2.1
+    titulo: "Equação geral com fatores de forma, e Tab. 2.1 (fatores de forma de Terzaghi-Peck)"
+    latex: '\sigma_r = c\,N_c\,S_c + q\,N_q\,S_q + \tfrac{1}{2}\,\gamma\,B\,N_\gamma\,S_\gamma'
+    sympy: "Eq(sigma_r, c*N_c*S_c + q*N_q*S_q + gamma*B*N_gamma*S_gamma/2)"
+    tabela_2_1_fatores_de_forma_terzaghi_peck:
+      - {sapata: "Corrida (lado B)",       S_c: 1.0, S_q: 1, S_gamma: 1.0}
+      - {sapata: "Quadrada (B = L)",       S_c: 1.2, S_q: 1, S_gamma: 0.8}
+      - {sapata: "Circular (B = diâmetro)", S_c: 1.2, S_q: 1, S_gamma: 0.6}
+    variaveis:
+      S_c: {descricao: "fator de forma da parcela de coesão", unidade: "adimensional", valor: null}
+      S_q: {descricao: "fator de forma da parcela de sobrecarga", unidade: "adimensional", valor: null}
+      S_gamma: {descricao: "fator de forma da parcela de peso específico", unidade: "adimensional", valor: null}
+      B: {descricao: "lado da sapata corrida ou quadrada; DIÂMETRO no caso da sapata circular (declarado na própria Tab. 2.1)", unidade: "m", valor: null}
+    dominio_validade: >-
+      A Tab. 2.1 cobre APENAS TRÊS formas: corrida, quadrada e circular. NÃO HÁ
+      LINHA PARA SAPATA RETANGULAR (B != L). Não interpolar entre quadrada e
+      corrida — para retangular a fonte só oferece a Tab. 2.3 (De Beer/Vesic).
+      As duas equações semiempíricas originais de Terzaghi e Peck (1967) das
+      quais a Tab. 2.1 foi extraída têm domínio declarado ESTREITO: sapata
+      circular/quadrada "embutida em um SOLO COMPACTO OU RIJO". A fonte NÃO
+      declara se esse qualificador continua valendo na forma generalizada com
+      Sc/Sq/S_gamma — NAO_DECLARADO_NA_FONTE.
+      Usar a Tab. 2.1 com os fatores N de Terzaghi-Peck, e a Tab. 2.3 com os de
+      Vesic. A fonte não autoriza misturar os dois conjuntos.
+      Herda todas as restrições de CINTRA-2.2.4-terzaghi-capacidade-de-carga,
+      exceto a de sapata corrida — que é justamente o que os fatores de forma
+      relaxam.
+    leitura_visual:
+      passada_1: "página PDF 29 (impressa 30) a 160 dpi — equação geral"
+      passada_2: "página PDF 30 (impressa 31) a 160 dpi — Tab. 2.1 célula a célula"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.2.6-terzaghi-puncionamento
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.2.6 Ruptura por puncionamento"
+    pagina: "impressa 31 (PDF 30)"
+    clausula_ref: CINTRA-2.2.6-puncionamento-reducao-2-3
+    titulo: "Redução empírica de Terzaghi (1943) nos parâmetros de resistência, para ruptura por puncionamento"
+    latex: 'c^{*} = \tfrac{2}{3}c \;;\quad \mathrm{tg}\,\phi^{*} = \tfrac{2}{3}\,\mathrm{tg}\,\phi \;;\quad \sigma^{\prime}_r = c^{*}N^{\prime}_c S_c + q\,N^{\prime}_q S_q + \tfrac{1}{2}\gamma B N^{\prime}_\gamma S_\gamma'
+    sympy: "[Eq(c_est, Rational(2,3)*c), Eq(tan(phi_est), Rational(2,3)*tan(phi)), Eq(sigma_r_linha, c_est*Nc_linha*S_c + q*Nq_linha*S_q + gamma*B*Ngamma_linha*S_gamma/2)]"
+    variaveis:
+      c_est: {descricao: "coesão reduzida c* = 2c/3", unidade: "kPa", valor: null}
+      phi_est: {descricao: "ângulo de atrito reduzido phi*, definido por tg phi* = (2/3) tg phi — NÃO por phi* = 2phi/3", unidade: "grau", valor: null}
+      Nc_linha: {descricao: "N'c, fator de capacidade de carga calculado com phi* (não com phi)", unidade: "adimensional", valor: null}
+      Nq_linha: {descricao: "N'q, calculado com phi*", unidade: "adimensional", valor: null}
+      Ngamma_linha: {descricao: "N'_gamma, calculado com phi*", unidade: "adimensional", valor: null}
+      sigma_r_linha: {descricao: "capacidade de carga aproximada na ruptura por puncionamento", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      SOLOS FOFOS OU MOLES, não passíveis de ruptura geral. A própria fonte
+      declara a redução como EMPÍRICA, adotada "na impossibilidade de realizar
+      um desenvolvimento teórico".
+      ARMADILHA DE NOMENCLATURA, explicitada pela fonte: o que Terzaghi chamou
+      de "ruptura local" é o que este livro chama de PUNCIONAMENTO. Neste livro
+      "ruptura local" é um terceiro modo, intermediário, que NÃO tem equação
+      própria — ver CINTRA-2.4-procedimento-adotado-pelos-autores.
+      ATENÇÃO À FORMA DA REDUÇÃO DE phi: a fonte reduz a TANGENTE, não o ângulo.
+      phi* = arctg( (2/3) tg phi ). Reduzir o ângulo diretamente daria valor
+      diferente e do lado INSEGURO para phi alto.
+      Os fatores de FORMA (Sc, Sq, S_gamma) NÃO são reduzidos — aparecem sem
+      linha na fonte. Só os fatores de capacidade de carga levam linha.
+    leitura_visual:
+      passada_1: "página PDF 30 (impressa 31) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida da posição das linhas (') em N'c, N'q, N'gamma contra Sc, Sq, Sgamma sem linha"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.3.1-vesic-N-gamma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.3.1 Ruptura geral (proposição de Vesic)"
+    pagina: "impressa 32 (PDF 31)"
+    clausula_ref: CINTRA-2.3.1-vesic-Ngamma-e-tabela-2.2
+    titulo: "Vesic (1975): expressão analítica aproximada de N_gamma, de Caquot e Kérisel (1953) — fecha a lacuna deixada por 2.2.4"
+    latex: 'N_\gamma \cong 2\,(N_q + 1)\,\mathrm{tg}\,\phi'
+    sympy: "Eq(N_gamma, 2*(N_q + 1)*tan(phi))"
+    variaveis:
+      N_gamma: {descricao: "fator de capacidade de carga da parcela de peso específico", unidade: "adimensional", valor: null}
+      N_q: {descricao: "fator de capacidade de carga da sobrecarga, pela forma fechada de 2.2.2", unidade: "adimensional", valor: null}
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Solos MAIS RÍGIDOS, PASSÍVEIS DE RUPTURA GERAL — declarado na fonte.
+      O sinal impresso é "≅" (aproximadamente igual), NÃO "=": é aproximação
+      analítica dos valores numéricos de Caquot e Kérisel (1953), não definição.
+      Válida com os fatores de forma de De Beer (Tab. 2.3), que é o conjunto
+      coerente proposto por Vesic; não misturar com a Tab. 2.1.
+      A fonte tabela os resultados de phi = 0 a 50 graus (Tab. 2.2) e não dá
+      valores nem regra fora dessa faixa.
+    observacao: >-
+      É esta expressão, e a Tab. 2.2 dela derivada, que tornam a equação de
+      Terzaghi IMPLEMENTÁVEL neste repositório. Sem ela, N_gamma só existiria
+      como curva da Fig. 2.9, que é gráfico e não é digitalizável.
+    leitura_visual:
+      passada_1: "página PDF 31 (impressa 32) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do sinal ≅ e do parêntese (N_q + 1)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-VESIC-tabela-2.2-fatores-capacidade-carga
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Tab. 2.2 - Fatores de capacidade de carga (Vesic, 1975)"
+    pagina: "impressa 33 (PDF 32 E PDF 33 — a página foi escaneada duas vezes)"
+    clausula_ref: CINTRA-2.3.1-vesic-Ngamma-e-tabela-2.2
+    titulo: "TABELA NUMÉRICA de Nc, Nq, N_gamma, Nq/Nc e tg phi para phi inteiro de 0 a 50 graus (Vesic, 1975)"
+    tipo: TABELA_NUMERICA
+    unidades: "todos os fatores adimensionais; phi em graus"
+    dominio_validade: >-
+      phi INTEIRO de 0 a 50 graus, passo de 1 grau. A fonte NÃO fornece valores
+      para phi > 50 graus e NÃO declara regra de interpolação entre linhas —
+      NAO_DECLARADO_NA_FONTE. Interpolar é decisão do a2, não da fonte.
+      Válida para RUPTURA GERAL. Para puncionamento, entrar na tabela com phi*
+      (de tg phi* = 2 tg phi / 3), obtendo N'c, N'q, N'_gamma — phi* em geral
+      NÃO é inteiro, o que reintroduz a questão da interpolação.
+      As colunas Nq/Nc e tg phi existem porque são exigidas pelos fatores de
+      forma de De Beer (Tab. 2.3).
+    inconsistencia_da_fonte: >-
+      Na linha phi = 0 a coluna Nq/Nc traz 0,20, mas 1,00/5,14 = 0,1946, que
+      arredondaria para 0,19. Conferido a 900 dpi em recorte dedicado: a fonte
+      IMPRIME 0,20. Transcrito como impresso, NÃO corrigido. O a2 decide entre
+      usar o valor impresso e recalcular o quociente. O impacto é pequeno
+      (afeta S_c de sapata retangular/quadrada em solo com phi = 0), mas o
+      caminho de argila não drenada é justamente phi = 0.
+    valores:
+      colunas: [phi_graus, N_c, N_q, N_gamma, Nq_sobre_Nc, tg_phi]
+      linhas:
+      - {phi:  0, Nc:    5.14, Nq:    1.00, N_gamma:    0.00, Nq_sobre_Nc: 0.20, tg_phi: 0.00}
+      - {phi:  1, Nc:    5.38, Nq:    1.09, N_gamma:    0.07, Nq_sobre_Nc: 0.20, tg_phi: 0.02}
+      - {phi:  2, Nc:    5.63, Nq:    1.20, N_gamma:    0.15, Nq_sobre_Nc: 0.21, tg_phi: 0.03}
+      - {phi:  3, Nc:    5.90, Nq:    1.31, N_gamma:    0.24, Nq_sobre_Nc: 0.22, tg_phi: 0.05}
+      - {phi:  4, Nc:    6.19, Nq:    1.43, N_gamma:    0.34, Nq_sobre_Nc: 0.23, tg_phi: 0.07}
+      - {phi:  5, Nc:    6.49, Nq:    1.57, N_gamma:    0.45, Nq_sobre_Nc: 0.24, tg_phi: 0.09}
+      - {phi:  6, Nc:    6.81, Nq:    1.72, N_gamma:    0.57, Nq_sobre_Nc: 0.25, tg_phi: 0.11}
+      - {phi:  7, Nc:    7.16, Nq:    1.88, N_gamma:    0.71, Nq_sobre_Nc: 0.26, tg_phi: 0.12}
+      - {phi:  8, Nc:    7.53, Nq:    2.06, N_gamma:    0.86, Nq_sobre_Nc: 0.27, tg_phi: 0.14}
+      - {phi:  9, Nc:    7.92, Nq:    2.25, N_gamma:    1.03, Nq_sobre_Nc: 0.28, tg_phi: 0.16}
+      - {phi: 10, Nc:    8.35, Nq:    2.47, N_gamma:    1.22, Nq_sobre_Nc: 0.30, tg_phi: 0.18}
+      - {phi: 11, Nc:    8.80, Nq:    2.71, N_gamma:    1.44, Nq_sobre_Nc: 0.31, tg_phi: 0.19}
+      - {phi: 12, Nc:    9.28, Nq:    2.97, N_gamma:    1.69, Nq_sobre_Nc: 0.32, tg_phi: 0.21}
+      - {phi: 13, Nc:    9.81, Nq:    3.26, N_gamma:    1.97, Nq_sobre_Nc: 0.33, tg_phi: 0.23}
+      - {phi: 14, Nc:   10.37, Nq:    3.59, N_gamma:    2.29, Nq_sobre_Nc: 0.35, tg_phi: 0.25}
+      - {phi: 15, Nc:   10.98, Nq:    3.94, N_gamma:    2.65, Nq_sobre_Nc: 0.36, tg_phi: 0.27}
+      - {phi: 16, Nc:   11.63, Nq:    4.34, N_gamma:    3.06, Nq_sobre_Nc: 0.37, tg_phi: 0.29}
+      - {phi: 17, Nc:   12.34, Nq:    4.77, N_gamma:    3.53, Nq_sobre_Nc: 0.39, tg_phi: 0.31}
+      - {phi: 18, Nc:   13.10, Nq:    5.26, N_gamma:    4.07, Nq_sobre_Nc: 0.40, tg_phi: 0.32}
+      - {phi: 19, Nc:   13.93, Nq:    5.80, N_gamma:    4.68, Nq_sobre_Nc: 0.42, tg_phi: 0.34}
+      - {phi: 20, Nc:   14.83, Nq:    6.40, N_gamma:    5.39, Nq_sobre_Nc: 0.43, tg_phi: 0.36}
+      - {phi: 21, Nc:   15.82, Nq:    7.07, N_gamma:    6.20, Nq_sobre_Nc: 0.45, tg_phi: 0.38}
+      - {phi: 22, Nc:   16.88, Nq:    7.82, N_gamma:    7.13, Nq_sobre_Nc: 0.46, tg_phi: 0.40}
+      - {phi: 23, Nc:   18.05, Nq:    8.66, N_gamma:    8.20, Nq_sobre_Nc: 0.48, tg_phi: 0.42}
+      - {phi: 24, Nc:   19.32, Nq:    9.60, N_gamma:    9.44, Nq_sobre_Nc: 0.50, tg_phi: 0.45}
+      - {phi: 25, Nc:   20.72, Nq:   10.66, N_gamma:   10.88, Nq_sobre_Nc: 0.51, tg_phi: 0.47}
+      - {phi: 26, Nc:   22.25, Nq:   11.85, N_gamma:   12.54, Nq_sobre_Nc: 0.53, tg_phi: 0.49}
+      - {phi: 27, Nc:   23.94, Nq:   13.20, N_gamma:   14.47, Nq_sobre_Nc: 0.55, tg_phi: 0.51}
+      - {phi: 28, Nc:   25.80, Nq:   14.72, N_gamma:   16.72, Nq_sobre_Nc: 0.57, tg_phi: 0.53}
+      - {phi: 29, Nc:   27.86, Nq:   16.44, N_gamma:   19.34, Nq_sobre_Nc: 0.59, tg_phi: 0.55}
+      - {phi: 30, Nc:   30.14, Nq:   18.40, N_gamma:   22.40, Nq_sobre_Nc: 0.61, tg_phi: 0.58}
+      - {phi: 31, Nc:   32.67, Nq:   20.63, N_gamma:   25.99, Nq_sobre_Nc: 0.63, tg_phi: 0.60}
+      - {phi: 32, Nc:   35.49, Nq:   23.18, N_gamma:   30.22, Nq_sobre_Nc: 0.65, tg_phi: 0.62}
+      - {phi: 33, Nc:   38.64, Nq:   26.09, N_gamma:   35.19, Nq_sobre_Nc: 0.68, tg_phi: 0.65}
+      - {phi: 34, Nc:   42.16, Nq:   29.44, N_gamma:   41.06, Nq_sobre_Nc: 0.70, tg_phi: 0.67}
+      - {phi: 35, Nc:   46.12, Nq:   33.30, N_gamma:   48.03, Nq_sobre_Nc: 0.72, tg_phi: 0.70}
+      - {phi: 36, Nc:   50.59, Nq:   37.75, N_gamma:   56.31, Nq_sobre_Nc: 0.75, tg_phi: 0.73}
+      - {phi: 37, Nc:   55.63, Nq:   42.92, N_gamma:   66.19, Nq_sobre_Nc: 0.77, tg_phi: 0.75}
+      - {phi: 38, Nc:   61.35, Nq:   48.93, N_gamma:   78.03, Nq_sobre_Nc: 0.80, tg_phi: 0.78}
+      - {phi: 39, Nc:   67.87, Nq:   55.96, N_gamma:   92.25, Nq_sobre_Nc: 0.82, tg_phi: 0.81}
+      - {phi: 40, Nc:   75.31, Nq:   64.20, N_gamma:  109.41, Nq_sobre_Nc: 0.85, tg_phi: 0.84}
+      - {phi: 41, Nc:   83.86, Nq:   73.90, N_gamma:  130.22, Nq_sobre_Nc: 0.88, tg_phi: 0.87}
+      - {phi: 42, Nc:   93.71, Nq:   85.38, N_gamma:  155.55, Nq_sobre_Nc: 0.91, tg_phi: 0.90}
+      - {phi: 43, Nc:  105.11, Nq:   99.02, N_gamma:  186.54, Nq_sobre_Nc: 0.94, tg_phi: 0.93}
+      - {phi: 44, Nc:  118.37, Nq:  115.31, N_gamma:  224.64, Nq_sobre_Nc: 0.97, tg_phi: 0.97}
+      - {phi: 45, Nc:  133.88, Nq:  134.88, N_gamma:  271.76, Nq_sobre_Nc: 1.01, tg_phi: 1.00}
+      - {phi: 46, Nc:  152.10, Nq:  158.51, N_gamma:  330.35, Nq_sobre_Nc: 1.04, tg_phi: 1.04}
+      - {phi: 47, Nc:  173.64, Nq:  187.21, N_gamma:  403.67, Nq_sobre_Nc: 1.08, tg_phi: 1.07}
+      - {phi: 48, Nc:  199.26, Nq:  222.31, N_gamma:  496.01, Nq_sobre_Nc: 1.12, tg_phi: 1.11}
+      - {phi: 49, Nc:  229.93, Nq:  265.51, N_gamma:  613.16, Nq_sobre_Nc: 1.15, tg_phi: 1.15}
+      - {phi: 50, Nc:  266.89, Nq:  319.07, N_gamma:  762.89, Nq_sobre_Nc: 1.20, tg_phi: 1.19}
+    leitura_visual:
+      passada_1: "página PDF 32 (impressa 33) inteira a 160 dpi — 51 linhas x 5 colunas"
+      passada_2: "recortes dedicados das duas metades da tabela a 400 dpi (x 40-260 e x 250-465, y 70-560 em pontos), mais recorte das três primeiras linhas a 900 dpi"
+      passada_3_extra: "página PDF 33 — segundo escaneamento independente da MESMA página impressa 33, lido a 160 dpi; conteúdo idêntico"
+      divergencia: false
+      observacao_sobre_as_passadas: >-
+        As 51 linhas foram lidas integralmente nas duas passadas e conferidas
+        valor a valor, sem nenhuma divergência. A coluna phi da metade esquerda
+        aparece esmaecida no escaneamento, mas é a sequência 0..25 e foi
+        confirmada pela sequência da metade direita (26..50).
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-Tab2.3-de-beer-fatores-de-forma
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "Tab. 2.3 - Fatores de forma (De Beer, 1967, apud Vesic, 1975)"
+    pagina: "impressa 33 (PDF 32 e 33)"
+    clausula_ref: CINTRA-Tab2.3-fatores-forma-de-beer
+    titulo: "Fatores de forma de De Beer — dependem de phi e de B/L, e COBREM sapata retangular"
+    tabela:
+      - sapata: "Corrida"
+        S_c: {latex: '1{,}00', sympy: "1"}
+        S_q: {latex: '1{,}00', sympy: "1"}
+        S_gamma: {latex: '1{,}00', sympy: "1"}
+      - sapata: "Retangular"
+        S_c: {latex: '1 + \frac{B}{L}\cdot\frac{N_q}{N_c}', sympy: "1 + (B/L)*(N_q/N_c)"}
+        S_q: {latex: '1 + \frac{B}{L}\,\mathrm{tg}\,\phi', sympy: "1 + (B/L)*tan(phi)"}
+        S_gamma: {latex: '1 - 0{,}4\,\frac{B}{L}', sympy: "1 - Rational(2,5)*(B/L)"}
+      - sapata: "Circular ou Quadrada"
+        S_c: {latex: '1 + \frac{N_q}{N_c}', sympy: "1 + (N_q/N_c)"}
+        S_q: {latex: '1 + \mathrm{tg}\,\phi', sympy: "1 + tan(phi)"}
+        S_gamma: {latex: '0{,}60', sympy: "Rational(3,5)"}
+    variaveis:
+      B: {descricao: "menor dimensão da base (a fonte NÃO declara explicitamente a orientação nesta tabela)", unidade: "m", valor: null}
+      L: {descricao: "maior dimensão da base", unidade: "m", valor: null}
+      N_q: {descricao: "da Tab. 2.2, para o phi do solo", unidade: "adimensional", valor: null}
+      N_c: {descricao: "da Tab. 2.2, para o phi do solo", unidade: "adimensional", valor: null}
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Este é o único conjunto de fatores de forma desta fonte que COBRE SAPATA
+      RETANGULAR. Deve ser usado com os fatores N de Vesic (Tab. 2.2), não com
+      os de Terzaghi-Peck.
+      NAO_DECLARADO_NA_FONTE: a orientação de B e L (qual é o menor lado) não é
+      declarada nesta tabela; e não há restrição declarada de faixa de B/L.
+      Coerência interna verificada: a linha "Circular ou Quadrada" é o limite
+      B/L = 1 das expressões da linha "Retangular" nas três colunas — inclusive
+      S_gamma, pois 1 - 0,4(1) = 0,60.
+    leitura_visual:
+      passada_1: "página PDF 32 (impressa 33) a 160 dpi"
+      passada_2: "recorte dedicado da Tab. 2.3 a 400 dpi (y 560-700 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.4.1-skempton-argila-nao-drenada
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.4.1 Método de Skempton"
+    pagina: "impressas 34 e 35 (PDF 34 e 35)"
+    clausula_ref: CINTRA-2.4.1-metodo-de-skempton
+    titulo: "Skempton (1951) para argila saturada não drenada (phi = 0)"
+    latex: '\sigma_r = c\,N_c\,S_c + q \;;\quad S_c = 1 + 0{,}2\,\frac{B}{L}'
+    sympy: "[Eq(sigma_r, c*N_c*S_c + q), Eq(S_c, 1 + Rational(1,5)*(B/L))]"
+    variaveis:
+      c: {descricao: "coesão não drenada", unidade: "kPa", valor: null}
+      N_c: {descricao: "fator de capacidade de carga, FUNÇÃO DE h/B — dado apenas pelo GRÁFICO da Fig. 2.10, não digitalizado", unidade: "adimensional", valor: null}
+      S_c: {descricao: "fator de forma de Skempton", unidade: "adimensional", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio", unidade: "kPa", valor: null}
+      B: {descricao: "menor dimensão da base", unidade: "m", valor: null}
+      L: {descricao: "maior dimensão da base", unidade: "m", valor: null}
+    dominio_validade: >-
+      ARGILA SATURADA em condição NÃO DRENADA, phi = 0. É essa condição que
+      permite Nq = 1 e N_gamma = 0 e reduz a equação de Terzaghi a c*Nc*Sc + q.
+      Fora dela a simplificação NÃO vale.
+      N_c NÃO ESTÁ DISPONÍVEL COMO NÚMERO NESTA FONTE: depende de h/B e só
+      aparece na Fig. 2.10, que é gráfico (curva cheia para sapata corrida,
+      curva tracejada para quadrada/circular já com o fator de forma embutido),
+      com h/B de 0 a 6. NÃO foi digitalizado — ver
+      CINTRA-2.4.1-metodo-de-skempton, campo consequencia.
+      Único valor numérico de N_c impresso em texto na fonte: N_c = 6, usado na
+      dedução de Teixeira (1996) para sapata na SUPERFÍCIE (item 4.1.2 a),
+      impressa 112).
+      A fonte oferece DOIS caminhos alternativos e mutuamente exclusivos para
+      sapata quadrada/circular: (a) usar a curva cheia e multiplicar por
+      S_c = 1,2; ou (b) ler a curva tracejada, que JÁ inclui o fator de forma.
+      Aplicar os dois seria contar S_c duas vezes.
+    leitura_visual:
+      passada_1: "página PDF 34 (impressa 34) a 160 dpi"
+      passada_2: "página PDF 35 (impressa 35) a 160 dpi — continuação e Fig. 2.10"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.4.2-meyerhof-dimensoes-efetivas
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.4.2 Método de Meyerhof"
+    pagina: "impressa 35 (PDF 35)"
+    clausula_ref: CINTRA-2.4.2-meyerhof-area-efetiva
+    titulo: "Meyerhof (1953): dimensões fictícias (área efetiva) para carga vertical excêntrica"
+    latex: "B' = B - 2\\,e_B \\;;\\quad L' = L - 2\\,e_L"
+    sympy: "[Eq(B_linha, B - 2*e_B), Eq(L_linha, L - 2*e_L)]"
+    variaveis:
+      B_linha: {descricao: "largura fictícia (efetiva) a usar NO CÁLCULO DE CAPACIDADE DE CARGA", unidade: "m", valor: null}
+      L_linha: {descricao: "comprimento fictício (efetivo)", unidade: "m", valor: null}
+      B: {descricao: "largura real da base", unidade: "m", valor: null}
+      L: {descricao: "comprimento real da base", unidade: "m", valor: null}
+      e_B: {descricao: "excentricidade da carga na direção do lado B", unidade: "m", valor: null}
+      e_L: {descricao: "excentricidade da carga na direção do lado L", unidade: "m", valor: null}
+    dominio_validade: >-
+      CARGA VERTICAL EXCÊNTRICA. A substituição é autorizada pela fonte APENAS
+      "nos cálculos de capacidade de carga" — NÃO para dimensionamento
+      estrutural nem para cálculo de recalque.
+      NAO_DECLARADO_NA_FONTE, e cada um destes é um buraco real:
+      (a) nenhum limite de excentricidade (não há menção a e <= B/6 nem a núcleo
+      central); (b) o que fazer quando 2e_B >= B, isto é B' <= 0; (c) se e_B e
+      e_L são de valores característicos ou de cálculo; (d) se o método de
+      Meyerhof propriamente dito está sendo adotado — a fonte apenas o REMETE a
+      Vargas (1978) e Velloso e Lopes (1996) e NÃO reproduz suas equações.
+      FORA DO ESCOPO MÍNIMO do CLAUDE.md (carga centrada). Registrado porque
+      calc_core/sapata_isolada/ já trata excentricidade sem auditoria
+      geotécnica.
+    leitura_visual:
+      passada_1: "página PDF 35 (impressa 35) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do fator 2 e dos subscritos B e L"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ---------------------------------------------------------------------------
+  # CORRELAÇÕES N_SPT -> PARÂMETROS DO SOLO (item 2.9 do livro)
+  # Fecham a lacuna do registro ACERVO-BUSCA-NEG-correlacoes-spt.
+  # ---------------------------------------------------------------------------
+
+  - id: CINTRA-2.9.1-coesao-por-Nspt
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.1 Coesão"
+    pagina: "impressa 45 (PDF 45)"
+    clausula_ref: CINTRA-2.9.1-coesao-teixeira-godoy-1996
+    titulo: "Teixeira e Godoy (1996): coesão não drenada a partir do N_SPT"
+    latex: 'c = 10\,N_{spt} \quad (\mathrm{kPa})'
+    sympy: "Eq(c, 10*N_spt)"
+    variaveis:
+      c: {descricao: "coesão NÃO DRENADA", unidade: "kPa", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    dominio_validade: >-
+      COESÃO NÃO DRENADA. Condição de uso declarada na fonte: "quando não
+      dispomos de resultados de ensaios de laboratório" — é estimativa de
+      recurso, não substituto de ensaio.
+      NAO_DECLARADO_NA_FONTE: faixa de validade de N_spt, tipo de argila,
+      limite superior de c, e energia de referência do SPT. Nenhum desses é
+      declarado. O contexto do item 2.9 (solos saturados, argilas moles) sugere
+      solo fino, mas a fonte NÃO restringe textualmente.
+    observacao: >-
+      Idêntica à forma c = 0,01*N_spt (MPa) usada na dedução de Teixeira (1996)
+      na impressa 112 — 10 kPa = 0,01 MPa. Consistência interna da fonte
+      confirmada nas duas páginas.
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 45) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 60-470, y 220-300 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.9.2-angulo-de-atrito-por-Nspt
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.2 Ângulo de atrito"
+    pagina: "impressa 45 (PDF 45)"
+    clausula_ref: CINTRA-2.9.2-angulo-de-atrito-godoy-e-teixeira
+    titulo: "Duas correlações N_SPT -> ângulo de atrito: Godoy (1983) e Teixeira (1996)"
+    correlacoes:
+      godoy_1983:
+        latex: '\phi = 28^\circ + 0{,}4\,N_{spt}'
+        sympy: "Eq(phi, 28 + Rational(2,5)*N_spt)"
+      teixeira_1996:
+        latex: '\phi = \sqrt{20\,N_{spt}} + 15^\circ'
+        sympy: "Eq(phi, sqrt(20*N_spt) + 15)"
+    variaveis:
+      phi: {descricao: "ângulo de atrito interno", unidade: "grau", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    dominio_validade: >-
+      A FONTE DECLARA DOIS DOMÍNIOS QUE NÃO COINCIDEM, NO MESMO ITEM:
+      (1) o parágrafo de abertura de 2.9.2 trata do ângulo de atrito interno da
+      AREIA e remete ao ábaco da Fig. 2.20 (Mello, 1971), que exige a tensão
+      vertical EFETIVA na cota do ensaio e distingue areia fina, areia grossa e
+      conjunto — é GRÁFICO, não digitalizado;
+      (2) as DUAS FÓRMULAS acima são introduzidas como "ainda para a estimativa
+      de phi, NA CONDIÇÃO NÃO DRENADA". A fonte NÃO repete a palavra "areia"
+      para elas e NÃO declara faixa de N_spt, tipo de solo nem limite superior
+      de phi. NAO_DECLARADO_NA_FONTE.
+      As duas fórmulas NÃO são equivalentes e divergem bastante: para
+      N_spt = 8, Godoy dá 31,2 graus e Teixeira 27,6 graus; para N_spt = 30,
+      Godoy dá 40,0 e Teixeira 39,5. A fonte NÃO diz qual preferir nem em que
+      caso — decisão do a2.
+    alerta_de_implementacao: >-
+      GEOMETRIA DO RADICAL CONFERIDA A 500 dpi EM DUAS PASSADAS: na fórmula de
+      Teixeira o radical cobre APENAS "20 N_spt"; o "+ 15 graus" está FORA do
+      radical. Ou seja phi = sqrt(20*N_spt) + 15, e NÃO sqrt(20*N_spt + 15).
+      Este é o erro de transcrição mais provável nesta fórmula, e por isso fica
+      registrado explicitamente.
+      Ambas as fórmulas retornam GRAUS e são dimensionalmente heterogêneas
+      (somam um número puro a um ângulo) — são empíricas, não homogêneas.
+    observacao: >-
+      A correlação de Teixeira é a MESMA que reaparece na impressa 113 como
+      insumo do método de Teixeira (1996) para sigma_adm em areia
+      (CINTRA-4.1.2a-teixeira-1996-areia). Transcrição idêntica nas duas
+      páginas, conferida.
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 45) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 60-470, y 380-470 em pontos) — extensão do radical conferida"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-2.9.3-tabelas-peso-especifico-e-classificacao
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "2.9.3 Peso específico — Tab. 2.4 e Tab. 2.5 (Godoy, 1972)"
+    pagina: "impressas 45 e 46 (PDF 45 e 46)"
+    clausula_ref: CINTRA-2.9.3-peso-especifico-e-classificacao-por-Nspt
+    titulo: "Consistência (argila) e compacidade (areia) por faixa de N_SPT, com peso específico — TABELAS, extraíveis"
+    tipo: TABELA_NUMERICA
+    tabela_2_4_solos_argilosos:
+      unidade_peso_especifico: "kN/m3"
+      linhas:
+        - {N_spt: "<= 2",  consistencia: "Muito Mole", gamma: 13}
+        - {N_spt: "3 - 5",  consistencia: "Mole",       gamma: 15}
+        - {N_spt: "6 - 10", consistencia: "Média",      gamma: 17}
+        - {N_spt: "11 - 19", consistencia: "Rija",      gamma: 19}
+        - {N_spt: ">= 20",  consistencia: "Dura",       gamma: 21}
+    tabela_2_5_solos_arenosos:
+      unidade_peso_especifico: "kN/m3"
+      estrutura_da_fonte: >-
+        A coluna Compacidade tem CINCO classes, mas a de peso específico tem
+        apenas TRÊS linhas de valores: "Fofa" e "Pouca Compacta" COMPARTILHAM
+        16/18/19, e "Compacta" e "Muito Compacta" COMPARTILHAM 18/20/21. Isso
+        está assim impresso (conferido a 450 dpi) e NÃO é erro de transcrição.
+        As linhas abaixo desdobram os pares para facilitar consulta; nenhum
+        valor foi interpolado ou inventado.
+      linhas:
+        - {N_spt: "< 5",    compacidade: "Fofa",                  seca: 16, umida: 18, saturada: 19}
+        - {N_spt: "5 - 8",   compacidade: "Pouca Compacta",        seca: 16, umida: 18, saturada: 19}
+        - {N_spt: "9 - 18",  compacidade: "Medianamente Compacta", seca: 17, umida: 19, saturada: 20}
+        - {N_spt: "19 - 40", compacidade: "Compacta",              seca: 18, umida: 20, saturada: 21}
+        - {N_spt: "> 40",   compacidade: "Muito Compacta",        seca: 18, umida: 20, saturada: 21}
+    dominio_validade: >-
+      Condição de uso declarada: "se não houver ensaios de laboratório" —
+      valores APROXIMADOS de recurso.
+      Tab. 2.4 SOMENTE para solos ARGILOSOS (consistência); Tab. 2.5 SOMENTE
+      para solos ARENOSOS (compacidade). A fonte NÃO cobre solos intermediários
+      (silte, areia argilosa, argila arenosa etc.).
+      As faixas de N_spt cobrem todos os inteiros, sem lacuna, nas duas tabelas.
+      A classificação por N_spt é atribuída pela fonte à ABNT NBR 6484/2001 —
+      norma AUSENTE do acervo deste repositório, e em edição de 2001,
+      possivelmente superada.
+    CONTRADICAO_DA_FONTE_NAO_RESOLVIDA: >-
+      O parágrafo sob a Tab. 2.5 afirma, literalmente: "No caso de areia
+      saturada, o valor apresentado na Tab. 2.5 refere-se ao peso específico
+      submerso. Como para o cálculo de capacidade de carga precisamos sempre do
+      peso específico efetivo, é necessário descontar o peso específico da
+      água."
+      As duas frases não podem valer ao mesmo tempo: se o valor JÁ fosse
+      submerso, não haveria o que descontar. Além disso 19/20/21 kN/m3 são
+      ordens de grandeza de peso específico SATURADO (total); submerso ficaria
+      em torno de 9 a 11 kN/m3.
+      Conferido a 500 dpi com a margem esquerda inteira: NÃO há um "não" na
+      frase — o texto é esse mesmo.
+      NENHUMA fórmula de peso específico submerso foi escrita a partir deste
+      trecho, e eu NÃO escolhi entre as duas leituras. DECISÃO DO a2.
+      IMPACTO: aplicar a leitura errada muda gamma por um fator de ~2 nas
+      parcelas de sobrecarga e de peso próprio da equação de capacidade de
+      carga — e é do lado INSEGURO usar 19-21 kN/m3 como se fosse efetivo
+      abaixo do nível d'água.
+    leitura_visual:
+      passada_1: "páginas PDF 45 e 46 inteiras a 160 dpi"
+      passada_2: "recorte da Tab. 2.5 e do parágrafo seguinte a 450 dpi (x 150-470, y 470-700); recorte do parágrafo com margem esquerda a 500 dpi (x 95-480, y 610-690)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ---------------------------------------------------------------------------
+  # TENSÃO ADMISSÍVEL (Cap. 4 do livro)
+  # Fecham a lacuna do registro ACERVO-BUSCA-NEG-teixeira-1996.
+  # ---------------------------------------------------------------------------
+
+  - id: CINTRA-4.1.1-tensao-admissivel-metodo-teorico
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.1 Métodos teóricos"
+    pagina: "impressa 111 (PDF 112)"
+    clausula_ref: CINTRA-4.1.1-metodos-teoricos-FS-3
+    titulo: "Tensão admissível pelo caminho teórico: capacidade de carga dividida pelo fator de segurança global 3,0"
+    latex: '\sigma_a \le \dfrac{\sigma_r}{3{,}0}'
+    sympy: "Le(sigma_a, sigma_r/Rational(3,1))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "kPa", valor: null}
+      sigma_r: {descricao: "VALOR MÉDIO da capacidade de carga, pela fórmula de Terzaghi com os fatores sugeridos por Vesic", unidade: "kPa", valor: null}
+      FS: {descricao: "fator de segurança global", unidade: "adimensional", valor: 3.0}
+    dominio_validade: >-
+      Método de valores admissíveis (fator de segurança global), verificação de
+      ELU. FS = 3,0 vale "na ausência de prova de carga" (declarado na fonte).
+      sigma_r é o VALOR MÉDIO da capacidade de carga — a fonte insiste nisso
+      (impressa 108: o conceito de FS global "é inerente ao valor médio de
+      resistência"), citando Cintra e Aoki (2010, p. 39-40).
+      Este resultado ainda precisa ser confrontado com o ELS (recalque): ver
+      impressa 108, "sigma_a -> rho <= rho_a".
+    coerencia_com_a_norma: >-
+      NÃO CONFLITA com o que já está em kb: NBR 6122:2022 Tabela 1, linha
+      "Analíticos", FSg = 3,00 (registro
+      NBR6122-6.2.1.1.1-tabela1-confirmada-visual). O livro cita a numeração da
+      edição 2010 e escreve "NRB 6122/2010" (typo do original).
+    leitura_visual:
+      passada_1: "página PDF 112 (impressa 111) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida do denominador 3,0"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-sigma-adm-SPT-Nspt-50
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 Métodos semiempíricos, alínea a) SPT"
+    pagina: "impressa 112 (PDF 113)"
+    clausula_ref: CINTRA-4.1.2a-sigma-adm-SPT-regra-Nspt-50
+    titulo: "Regra brasileira sigma_a = N_spt/50 + q (MPa), e a dedução de Teixeira (1996) que a sustenta"
+    latex: '\sigma_a = \dfrac{N_{spt}}{50} + q \quad (\mathrm{MPa}) \qquad \text{com } 5 \le N_{spt} \le 20'
+    sympy: "Eq(sigma_a, N_spt/50 + q)"
+    deducao_de_teixeira_1996:
+      latex: '\sigma_r = c\,N_c \;,\; N_c = 6 \;,\; c = 0{,}01N_{spt}\,(\mathrm{MPa}) \;,\; FS = 3 \;\Rightarrow\; \sigma_a = \frac{0{,}01\,N_{spt}\cdot 6}{3} = 0{,}02\,N_{spt} = \frac{N_{spt}}{50}'
+      sympy: "Eq(sigma_a, (Rational(1,100)*N_spt*6)/3)"
+      condicoes_da_deducao: >-
+        Sapatas RETANGULARES apoiadas na SUPERFÍCIE de terrenos PURAMENTE
+        ARGILOSOS, capacidade de carga pelo método de Skempton (1951) com
+        N_c = 6, c = 0,01*N_spt (MPa) e fator de segurança 3.
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      N_spt: {descricao: "VALOR MÉDIO no bulbo de tensões (não o valor na cota de apoio)", unidade: "adimensional (golpes)", valor: null}
+      q: {descricao: "sobrecarga na cota de apoio. PARCELA FACULTATIVA — a fonte diz que 'pode ou não ser considerada'", unidade: "MPa", valor: null}
+      N_spt_min: {descricao: "limite inferior explícito da faixa de validade", unidade: "adimensional", valor: 5}
+      N_spt_max: {descricao: "limite superior explícito da faixa de validade", unidade: "adimensional", valor: 20}
+      FS_embutido: {descricao: "fator de segurança já embutido no divisor 50", unidade: "adimensional", valor: 3}
+    dominio_validade: >-
+      FAIXA EXPLÍCITA E ESTREITA, DECLARADA NA FONTE: 5 <= N_spt <= 20. Fora
+      dela a fonte NÃO autoriza a fórmula.
+      DOMÍNIO DA DEDUÇÃO, também declarado: sapatas RETANGULARES, apoiadas na
+      SUPERFÍCIE (h = 0), em terreno PURAMENTE ARGILOSO, via Skempton (1951)
+      com N_c = 6, c = 0,01*N_spt (MPa) e FS = 3.
+      N_spt é o VALOR MÉDIO NO BULBO DE TENSÕES.
+      Unidade de saída MPa; q tem de entrar em MPa.
+      O FS = 3 JÁ ESTÁ EMBUTIDO no divisor 50. Aplicar de novo o FSg = 3,00 da
+      Tabela 1 da NBR 6122 sobre este resultado seria DUPLA CONTAGEM — ver o
+      conflito registrado em
+      CINTRA-4.1.2-conflito-FS-embutido-vs-NBR6122-Tabela1.
+    incoerencia_interna_da_fonte: >-
+      A dedução vale para sapata na SUPERFÍCIE (h = 0), mas a fórmula carrega um
+      termo "+ q" de sobrecarga, que só existe se h > 0 — e a fonte ainda torna
+      q facultativo. A fonte NÃO concilia as duas coisas. Registrado sem
+      resolução.
+    alerta_de_atribuicao: >-
+      A fonte apresenta sigma_a = N_spt/50 como "regra CONHECIDA NO MEIO TÉCNICO
+      BRASILEIRO", e NÃO como "o método de Teixeira". O papel de Teixeira (1996)
+      aqui é o de ter DEMONSTRADO a regra para um caso particular. Rotular esta
+      fórmula no memorial como "método de Teixeira (1996)" seria impreciso em
+      relação a esta fonte. O método de Teixeira propriamente dito é o de areia
+      (CINTRA-4.1.2a-teixeira-1996-areia).
+    leitura_visual:
+      passada_1: "página PDF 113 (impressa 112) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 120-480, y 250-310 em pontos) — divisor 50, termo +q e faixa 5..20 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-mello-1975
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 alínea a) SPT — correlação de Mello (1975)"
+    pagina: "impressa 112 (PDF 113)"
+    clausula_ref: CINTRA-4.1.2a-mello-1975-sigma-adm-SPT
+    titulo: "Mello (1975): tensão admissível a partir do N_SPT, sem distinção de tipo de solo"
+    latex: '\sigma_a = 0{,}1\left(\sqrt{N_{spt}} - 1\right) \quad (\mathrm{MPa}) \qquad \text{com } 4 \le N_{spt} \le 16'
+    sympy: "Eq(sigma_a, Rational(1,10)*(sqrt(N_spt) - 1))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+      N_spt_min: {descricao: "limite inferior explícito", unidade: "adimensional", valor: 4}
+      N_spt_max: {descricao: "limite superior explícito", unidade: "adimensional", valor: 16}
+    dominio_validade: >-
+      Faixa explícita: 4 <= N_spt <= 16 — DIFERENTE da faixa 5..20 da regra
+      N_spt/50. Não confundir as duas faixas.
+      "SEM DISTINÇÃO DE SOLO" — a fonte declara explicitamente que esta
+      correlação não separa argila de areia. Saída em MPa.
+      NAO_DECLARADO_NA_FONTE: profundidade, dimensão da sapata, se N_spt é média
+      no bulbo ou valor na cota, e se há fator de segurança embutido (por estar
+      sob o título "métodos semiempíricos" presume-se que sim, mas a fonte NÃO
+      afirma isso para esta fórmula em particular).
+      Nota: o radical cobre apenas N_spt; o "-1" está fora dele, e o fator 0,1
+      multiplica o parêntese inteiro. Conferido a 500 dpi.
+    advertencia_da_propria_fonte: >-
+      A mesma página traz a advertência de Mello (1975, p. 61), citada pelos
+      autores, que se aplica a TODAS as correlações desta seção e deveria
+      acompanhar qualquer uso delas no memorial: "é preciso analisar a origem e
+      validade de tais FORMULÁRIOS DE BOLSO antes de passar a aplicá-los
+      inconscientemente e mesmo prejudicialmente em condições que extravasam do
+      campo experimental do qual decorreram". Os autores acrescentam que "é
+      sempre questionável a aplicabilidade de correlações empíricas desse tipo"
+      e remetem a Hachich e Nader (1992).
+    leitura_visual:
+      passada_1: "página PDF 113 (impressa 112) inteira a 160 dpi"
+      passada_2: "recorte a 500 dpi (x 120-480, y 540-640 em pontos)"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2a-teixeira-1996-areia
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 alínea a) SPT — correlação de Teixeira (1996) para areia, com Fig. 4.1"
+    pagina: "impressa 113 (PDF 114)"
+    clausula_ref: CINTRA-4.1.2a-teixeira-1996-sigma-adm-areia
+    titulo: "MÉTODO DE TEIXEIRA (1996) para sapata em AREIA — o achado que fecha ACERVO-BUSCA-NEG-teixeira-1996"
+    latex: '\sigma_a = 0{,}05 + \left(1 + 0{,}4\,B\right)\dfrac{N_{spt}}{100} \quad (\mathrm{MPa})'
+    sympy: "Eq(sigma_a, Rational(1,20) + (1 + Rational(2,5)*B)*N_spt/100)"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      B: {descricao: "LADO da sapata QUADRADA, EM METROS. A fórmula NÃO é adimensional: o coeficiente 0,4 carrega unidade 1/m", unidade: "m", valor: null}
+      N_spt: {descricao: "índice de resistência à penetração do SPT", unidade: "adimensional (golpes)", valor: null}
+    constantes_do_metodo:
+      termo_constante_MPa: 0.05
+      coeficiente_de_B_por_metro: 0.4
+      divisor: 100
+    parametros_FIXOS_embutidos_na_deducao:
+      profundidade_de_apoio_m: 1.5
+      peso_especifico_da_areia_kN_m3: 18
+      correlacao_de_phi_usada: "phi = sqrt(20*N_spt) + 15 graus (a de TEIXEIRA, não a de Godoy)"
+      capacidade_de_carga_base: "equação de TERZAGHI"
+      fator_de_seguranca_embutido: 3
+    dominio_validade: >-
+      DOMÍNIO MUITO ESTREITO E INTEIRAMENTE DECLARADO NA FONTE — este é o campo
+      que impede o software de aplicar a fórmula fora do lugar:
+      (1) solo AREIA;
+      (2) sapata QUADRADA de lado B, com B EM METROS;
+      (3) profundidade de apoio FIXA em 1,5 m — NÃO é variável da fórmula, é
+      hipótese congelada na dedução;
+      (4) peso específico da areia FIXO em 18 kN/m3 — idem;
+      (5) phi obtido pela correlação de Teixeira, phi = sqrt(20*N_spt) + 15
+      graus;
+      (6) fator de segurança 3 JÁ EMBUTIDO;
+      (7) capacidade de carga calculada por TERZAGHI.
+      A fonte NÃO declara faixa de validade de N_spt para esta fórmula; a Fig.
+      4.1 é desenhada de N_spt = 0 a 25, o que é INDÍCIO e não declaração.
+      A fonte também NÃO declara faixa de B; a Fig. 4.1 mostra apenas B = 1, 2
+      e 3 m.
+      Extrapolar profundidade, peso específico, forma retangular, ou B fora de
+      1 a 3 m, é sair do domínio declarado.
+    figura_associada: >-
+      Fig. 4.1 "Tensão admissível em função de B e de N_spt - sapatas em areia
+      (Teixeira, 1996)" é um GRÁFICO: eixo vertical sigma_a (MPa) de 0 a 0,6;
+      eixo horizontal N_spt de 0 a 25; três retas cheias rotuladas B = 1 m,
+      B = 2 m e B = 3 m; e uma linha TRACEJADA que a fonte identifica como
+      "valores de experiência prática em São Paulo, relatados por Vargas
+      (1951)", correndo entre as retas de B = 1 m e B = 2 m. A curva de Vargas
+      NÃO foi digitalizada.
+    conferencia_de_leitura: >-
+      INTERPRETAÇÃO minha, registrada como conferência de leitura da fórmula e
+      NÃO como caso de teste homologado: para B = 2 m e N_spt = 10,
+      sigma_a = 0,05 + (1 + 0,8)*10/100 = 0,23 MPa, compatível com a Fig. 4.1.
+    leitura_visual:
+      passada_1: "página PDF 114 (impressa 113) inteira a 160 dpi"
+      passada_2: "recorte a 550 dpi (x 100-480, y 150-260 em pontos) — termo 0,05, coeficiente 0,4B e divisor 100 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.2b-sigma-adm-CPT
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.2 Métodos semiempíricos, alínea b) CPT"
+    pagina: "impressa 113 (PDF 114)"
+    clausula_ref: CINTRA-4.1.2b-CPT-teixeira-godoy-1996
+    titulo: "Teixeira e Godoy (1996): tensão admissível a partir da resistência de ponta do CPT"
+    correlacoes:
+      argila:
+        latex: '\sigma_a = \dfrac{q_c}{10} \le 4{,}0\ \mathrm{MPa}'
+        sympy: "Eq(sigma_a, Min(q_c/10, 4))"
+      areia:
+        latex: '\sigma_a = \dfrac{q_c}{15} \le 4{,}0\ \mathrm{MPa}'
+        sympy: "Eq(sigma_a, Min(q_c/15, 4))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "MPa", valor: null}
+      q_c: {descricao: "resistência de ponta do CPT, VALOR MÉDIO no bulbo de tensões", unidade: "MPa", valor: null}
+      q_c_minimo: {descricao: "condição explícita de aplicabilidade", unidade: "MPa", valor: 1.5}
+      teto: {descricao: "teto explícito da tensão admissível nas duas correlações", unidade: "MPa", valor: 4.0}
+    dominio_validade: >-
+      Ensaio CPT (NÃO SPT). Condição explícita q_c >= 1,5 MPa e teto explícito
+      sigma_a <= 4,0 MPa nas duas correlações.
+      q_c é o VALOR MÉDIO NO BULBO DE TENSÕES.
+      Divisor 10 para ARGILA e 15 para AREIA — não trocar.
+      NAO_DECLARADO_NA_FONTE: profundidade, dimensão e forma da sapata, e se o
+      fator de segurança está embutido (presumível pelo contexto de 4.1.2, mas
+      não afirmado).
+      FORA DO CAMINHO CRÍTICO ATUAL: o repositório não tem entrada de dados de
+      CPT, apenas de SPT. Registrado para completude do §7.3.3 da NBR 6122, que
+      cita "SPT, CPT etc.".
+    leitura_visual:
+      passada_1: "página PDF 114 (impressa 113) inteira a 160 dpi"
+      passada_2: "recorte a 550 dpi (x 100-480, y 590-700 em pontos) — divisores 10 e 15, teto 4,0 e piso 1,5 conferidos"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  - id: CINTRA-4.1.3-criterio-de-boston-placa
+    norma: "CINTRA, J.C.A.; AOKI, N.; ALBIERO, J.H. - Fundações Diretas, 2011"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "4.1.3 — critério de obras da cidade de Boston"
+    pagina: "impressa 115 (PDF 116)"
+    clausula_ref: CINTRA-4.1.3-prova-de-carga-em-placa-boston
+    titulo: "Critério de Boston para tensão admissível a partir de prova de carga em placa"
+    latex: '\sigma_a \le \min\left\{\sigma_{10}\;;\;\dfrac{\sigma_{25}}{2}\right\}'
+    sympy: "Le(sigma_a, Min(sigma_10, sigma_25/2))"
+    variaveis:
+      sigma_a: {descricao: "tensão admissível", unidade: "kPa", valor: null}
+      sigma_10: {descricao: "tensão na curva tensão x recalque da PLACA correspondente a 10 mm de recalque", unidade: "kPa", valor: null}
+      sigma_25: {descricao: "tensão na curva tensão x recalque da PLACA correspondente a 25 mm de recalque; é a tensão de ruptura convencional", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      Prova de carga em placa. Os recalques de 10 mm e 25 mm são DA PLACA, não
+      da sapata; a extrapolação placa -> sapata é tratada em capítulo separado
+      (Cap. 3), NÃO extraído nesta rodada.
+      DEFEITO DE APLICAÇÃO REGISTRADO PELA PRÓPRIA FONTE, e que é advertência e
+      não condição de validade: o critério foi desenvolvido para PLACA QUADRADA
+      DE 0,30 m DE LADO e é usado no Brasil desde 1955 "SEM NENHUMA ADAPTAÇÃO"
+      para a placa circular de 0,80 m de diâmetro usual aqui.
+      O denominador 2 corresponde ao fator de segurança sobre a ruptura
+      convencional; o critério de sigma_10 corresponde a fixar recalque
+      admissível de 10 mm para a placa.
+      Segundo Teixeira e Godoy (1996), sigma_25/2 é SEMPRE mais rigoroso do que
+      sigma_10 — ou seja, o mínimo tende a ser sempre o segundo termo.
+    nao_confundir: >-
+      O "FS = 2" deste critério NÃO é o FSg = 2,00 da Tabela 1 da NBR 6122:2022.
+      O da norma vale para "semiempíricos ou analíticos ACRESCIDOS DE DUAS OU
+      MAIS PROVAS DE CARGA executadas na fase de projeto"; este é o denominador
+      do critério de Boston sobre a curva da placa. Ver
+      CINTRA-4.1.2-conflito-FS-embutido-vs-NBR6122-Tabela1.
+      FORA DO CAMINHO CRÍTICO ATUAL: o repositório não tem entrada de curva de
+      prova de carga.
+    leitura_visual:
+      passada_1: "página PDF 116 (impressa 115) inteira a 160 dpi"
+      passada_2: "mesma página, conferência dirigida da chave com os dois termos e do denominador 2"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+
+  # ===========================================================================
+  # RODADA 2026-09-01 — "CUNHA DE SOLO LATERAL" (peso de solo sobre as abas
+  # alargadas da sapata enterrada).
+  #
+  # RESULTADO DA RODADA: BUSCA NEGATIVA. Nenhuma fonte do acervo publica a
+  # geometria nem a equacao desse solido. Entram aqui apenas (a) um MARCADOR DE
+  # AUSENCIA, para que a lacuna fique visivel e nao seja preenchida de memoria,
+  # e (b) a unica formula real que o acervo oferece sobre peso de solo sobre a
+  # sapata, que e um coeficiente global e NAO uma geometria.
+  # Ver kb/clausulas.jsonl: ACERVO-BUSCA-NEG-cunha-de-solo-lateral.
+  # ===========================================================================
+
+  - id: CUNHA-SOLO-LATERAL-SEM-FONTE
+    norma: "NENHUMA — marcador de ausencia"
+    fonte_tipo: INEXISTENTE_NO_ACERVO
+    item: "n/a"
+    pagina: "n/a"
+    clausula_ref: ACERVO-BUSCA-NEG-cunha-de-solo-lateral
+    titulo: >-
+      MARCADOR DE AUSENCIA — peso da cunha de solo lateral (tronco de piramide
+      sobre as abas alargadas da sapata). NAO HA FONTE NO ACERVO.
+    latex: null
+    sympy: null
+    variaveis: null
+    dominio_validade: "SEM_FONTE_NO_ACERVO"
+    o_que_faltaria_para_existir: >-
+      Para que esta entrada pudesse ser preenchida seria preciso, de uma fonte
+      publicada e citavel: (1) a definicao geometrica da fronteira do solido —
+      de onde parte, onde termina, se e tronco de piramide, tronco de cone ou
+      prisma escalonado; (2) o VALOR ou a regra de escolha do angulo de projecao
+      com a horizontal, que e o unico parametro nao dedutivel da geometria da
+      sapata; (3) o dominio de validade — tipo de solo, se vale para solo
+      reaterrado ou so para solo natural nao remexido, se depende da
+      compactacao do reaterro; (4) a declaracao de em QUAIS verificacoes o peso
+      entra (tensao no solo, tombamento, deslizamento, flexao) e com que sinal.
+      Nenhum desses quatro itens existe no acervo.
+    proibicao_explicita: >-
+      NAO PREENCHER ESTA ENTRADA POR MEMORIA NEM POR DEDUCAO A PARTIR DO NOME
+      DOS CAMPOS DE INTERFACE DE UM SOFTWARE DE TERCEIROS (goskip.dev). Rotulo
+      de campo nao e equacao. Regra 1 do a1-bibliotecario.
+    status: SEM_FONTE_NO_ACERVO
+    rodada: "2026-09-01 cunha de solo lateral"
+
+  - id: BASTOS-1.6.3-eq1.6-1.7-Kmaj
+    norma: "Bastos, P.S. - Sapatas de Fundacao (UNESP Bauru/SP, Out/2023)"
+    fonte_tipo: SECUNDARIA_NAO_NORMATIVA
+    item: "1.6.3 — equacoes 1.6 e 1.7"
+    pagina: "PDF 24 (impressa 20)"
+    clausula_ref: BASTOS-1.6.3-Kmaj-peso-solo-sobre-sapata
+    titulo: >-
+      Area da base da sapata com o coeficiente K_maj, que estima em BLOCO o peso
+      proprio da sapata MAIS o solo sobre a sapata
+    formas:
+      geral_eq_1_6:
+        latex: 'S_{sap} = \dfrac{K_{maj}\,N_{gk} + N_{qk}}{P_{adm}}'
+        sympy: "Eq(S_sap, (K_maj*N_gk + N_qk)/P_adm)"
+        observacao: "K_maj multiplica APENAS a parcela permanente."
+      simplificada_eq_1_7:
+        latex: 'S_{sap} = \dfrac{1{,}05\,N_{g+q,k}}{P_{adm}}'
+        sympy: "Eq(S_sap, 1.05*N_gq_k/P_adm)"
+        observacao: >-
+          Forma para quando as parcelas permanente e variavel NAO forem
+          conhecidas. Aqui o 1,05 multiplica a CARGA TOTAL. Nao trocar com a
+          Eq. 1.6.
+    variaveis:
+      S_sap: {descricao: "area de apoio (base) da sapata", unidade: "m2", valor: null}
+      N_gk: {descricao: "carga vertical devida as acoes permanentes, valor caracteristico", unidade: "kN", valor: null}
+      N_qk: {descricao: "carga vertical devida as acoes variaveis, valor caracteristico", unidade: "kN", valor: null}
+      N_gq_k: {descricao: "carga vertical total caracteristica (permanente + variavel), usada na Eq. 1.7", unidade: "kN", valor: null}
+      K_maj: {descricao: "coeficiente majorador da carga vertical das acoes permanentes; estima peso proprio da sapata + solo sobre a sapata", unidade: "adimensional", valor: null}
+      P_adm: {descricao: "tensao admissivel do solo", unidade: "kPa", valor: null}
+    valores_declarados_na_fonte:
+      K_maj_sapata_flexivel: 1.05
+      K_maj_sapata_rigida_min: 1.05
+      K_maj_sapata_rigida_max: 1.10
+      fator_sobre_carga_total_quando_parcelas_desconhecidas: 1.05
+      piso_normativo_NBR6122_5_6: "5 % da carga vertical permanente (citado literalmente pela fonte)"
+      atribuicao: "A faixa 1,05-1,10 e atribuida pela fonte a Campos (ref. [15] da apostila), NAO a norma."
+    dominio_validade: >-
+      Estimativa PRELIMINAR das dimensoes em planta de sapata isolada com carga
+      centrada, em valores caracteristicos (nao majorados por gamma_f),
+      comparada a tensao admissivel do solo.
+      NAO_DECLARADO_NA_FONTE: qual parcela de K_maj corresponde ao concreto e
+      qual ao solo; altura de solo; peso especifico do solo; geometria do
+      volume de solo. K_maj e ADIMENSIONAL e GLOBAL.
+      NAO E MODELO DE CUNHA e nao pode ser usado para calibrar ou validar um:
+      uma cunha lateral sobre abas largas em sapata rasa produziria acrescimo
+      muito superior aos 5-10 % desta faixa, o que evidencia que os dois
+      modelos nao sao mutuamente compativeis.
+    leitura_visual:
+      passada_1: "pagina PDF 24 inteira a 170 dpi — Eq. 1.6, lista de variaveis e paragrafo do K_maj"
+      passada_2: "recortes a 420 e 430 dpi das regioes das duas equacoes — conferido S_sap = (K_maj N_gk + N_qk)/P_adm e S_sap = 1,05 N_(g+q,k)/P_adm; conferidos os valores 1,05 e 1,10 e a citacao literal do 5 % da NBR 6122 §5.6"
+      divergencia: false
+    status: NAO_NORMATIVO_AGUARDA_A2
+    rodada: "2026-09-01 cunha de solo lateral"
+
+  # ===========================================================================
+  # RODADA 2026-09-02 — BACKLOG #13: cadeia de esforços pilarete → sapata
+  #
+  # Escopo mínimo desta rodada (por decisão do usuário): sapata isolada, carga
+  # CENTRADA, pilarete de concreto armado de seção RETANGULAR CONSTANTE, sem
+  # cálculo de 2ª ordem (mas COM o critério que define a fronteira curto/esbelto,
+  # para o a4 RECUSAR fora do domínio — não para calcular fora dele).
+  #
+  # A base metálica, a placa de base e os chumbadores estão FORA DE ESCOPO por
+  # decisão do usuário (NBR 8800, ausente do acervo). N/M/H na base do pilar
+  # metálico são DADO DE ENTRADA.
+  #
+  # ACHADO QUE MUDA O DESENHO DO MOTOR: a NBR 6118:2023 NÃO tem "pedestal"
+  # como elemento de concreto armado (busca negativa registrada em
+  # kb/clausulas.jsonl, id NBR6118-BUSCA-NEG-pedestal). Um pilarete armado é,
+  # para a Norma, um PILAR — e cai integralmente em 13.2.3, 15.8, 17.2.2,
+  # 17.3.5.3 e 18.4. Não existe verificação simplificada para λ pequeno.
+  #
+  # E a NBR 6118 NÃO fornece expressão fechada de N_Rd para compressão centrada
+  # (busca negativa id NBR6118-BUSCA-NEG-NRd-compressao-centrada). Por isso
+  # NÃO HÁ, abaixo, nenhuma fórmula de N_Rd: derivá-la é trabalho do a2, com a
+  # derivação explicitada, a partir de 17.2.2 + 8.2.10.1 + 8.3.6 — e 8.2.10.1
+  # e 8.3.6 NÃO foram extraídos nesta rodada (lacuna conhecida).
+  # ===========================================================================
+
+  - id: NBR6118-11.3.3.4.3-momento-minimo
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3"
+    pagina: 60
+    clausula_ref: NBR6118-11.3.3.4.3-momento-minimo
+    titulo: "Momento mínimo de 1ª ordem em pilares (substitui as imperfeições locais)"
+    latex: "M_{1d,\\min} = N_d\\,(0{,}015 + 0{,}03\\,h)"
+    sympy: "Eq(M_1d_min, N_d*(0.015 + 0.03*h))"
+    variaveis:
+      M_1d_min: {descricao: "momento mínimo de 1ª ordem, de cálculo, na direção considerada", unidade: "kN.m", valor: null}
+      N_d: {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      h: {descricao: "altura total da seção transversal na direção considerada", unidade: "m", valor: null}
+    dominio_validade: >-
+      Pilares e pilares-parede em ESTRUTURAS RETICULADAS. Avaliado POR DIREÇÃO
+      (h é a dimensão da seção na direção considerada, em METROS — a constante
+      0,03 tem unidade implícita e a expressão QUEBRA se h for dado em cm).
+      CONSEQUÊNCIA DIRETA PARA O ESCOPO "CARGA CENTRADA" DESTA RODADA: a NBR
+      6118 não admite dimensionar pilar (logo, pilarete) à compressão
+      estritamente centrada. Mesmo com M_Sd = 0 na entrada, este item impõe
+      M_1d,mín nas duas direções. A este momento devem ser acrescidos os
+      momentos de 2ª ordem da Seção 15 (que esta rodada dispensa apenas quando
+      λ < λ1).
+      A "envoltória mínima de 1ª ordem" da Figura 11.3, citada no mesmo item
+      para seções retangulares, NÃO foi extraída — lacuna conhecida.
+    leitura_visual:
+      passada_1: "página PDF 78 (impressa 60) inteira a 300 dpi"
+      passada_2: "recorte da região do item a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-13.2.3-gamma-n-secao-reduzida
+    norma: "NBR 6118:2023"
+    item: "13.2.3 e Tabela 13.1"
+    pagina: 73
+    clausula_ref: NBR6118-13.2.3-dimensoes-limites-pilar
+    titulo: "Coeficiente adicional γ_n para pilares de menor dimensão entre 14 cm e 19 cm"
+    latex: "\\gamma_n = 1{,}95 - 0{,}05\\,b"
+    sympy: "Eq(gamma_n, 1.95 - 0.05*b)"
+    variaveis:
+      gamma_n: {descricao: "coeficiente adicional que majora os esforços solicitantes FINAIS de cálculo", unidade: "adimensional", valor: null}
+      b: {descricao: "menor dimensão da seção transversal", unidade: "cm", valor: null}
+    tabela_13_1:
+      b_cm:     [">=19", 18, 17, 16, 15, 14]
+      gamma_n:  [1.00, 1.05, 1.10, 1.15, 1.20, 1.25]
+    dominio_validade: >-
+      Pilares e pilares-parede maciços de concreto armado, qualquer forma de
+      seção. VALIDADE ESTRITA: 14 cm <= b < 19 cm. Para b >= 19 cm, γ_n = 1,00.
+      Para b < 14 cm a seção é PROIBIDA — não existe γ_n que a autorize, e a
+      fórmula NÃO deve ser extrapolada. Em qualquer caso A_c >= 360 cm².
+      b em CENTÍMETROS (a constante 0,05 tem unidade implícita).
+      NÃO DECLARADO NA FONTE: a ordem de aplicação de γ_n em relação aos efeitos
+      de 2ª ordem. A NOTA da Tabela 13.1 diz "esforços solicitantes FINAIS de
+      cálculo", o que sugere após a 2ª ordem, mas o texto não é explícito. O a2
+      precisa fixar isso e marcar como interpretação.
+    leitura_visual:
+      passada_1: "página PDF 91 (impressa 73) inteira a 300 dpi"
+      passada_2: "recorte da Tabela 13.1 e do item a 450 dpi — conferidos os 6 pares (b, γ_n) e a expressão"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.6-comprimento-equivalente
+    norma: "NBR 6118:2023"
+    item: "15.6"
+    pagina: 105
+    clausula_ref: NBR6118-15.6-comprimento-equivalente
+    titulo: "Comprimento equivalente ℓ_e do elemento comprimido vinculado em ambas as extremidades"
+    latex: "\\ell_e = \\min\\left(\\ell_0 + h,\\; \\ell\\right)"
+    sympy: "Eq(l_e, Min(l_0 + h, l))"
+    variaveis:
+      l_e: {descricao: "comprimento equivalente do elemento comprimido (pilar)", unidade: "m", valor: null}
+      l_0: {descricao: "distância entre as faces internas dos elementos estruturais, supostos horizontais, que vinculam o pilar", unidade: "m", valor: null}
+      h:   {descricao: "altura da seção transversal do pilar, medida no plano da estrutura em estudo", unidade: "m", valor: null}
+      l:   {descricao: "distância entre os eixos dos elementos estruturais aos quais o pilar está vinculado", unidade: "m", valor: null}
+    dominio_validade: >-
+      Elemento comprimido VINCULADO EM AMBAS AS EXTREMIDADES, em estrutura de
+      NÓS FIXOS. NÃO cobre o pilarete em balanço: para pilar engastado na base
+      e livre no topo, 15.8.2 manda explicitamente ℓ_e = 2ℓ.
+      A definição de ℓ_0 e de ℓ pressupõe elementos horizontais vinculando o
+      pilar em cima e embaixo — condição que pode simplesmente não existir num
+      pilarete de fundação isolado, caso em que este item NÃO se aplica e o
+      software deve pedir a condição de vínculo como entrada explícita, não
+      inferir.
+    leitura_visual:
+      passada_1: "páginas PDF 123 e 124 (impressas 105 e 106) a 300 dpi"
+      passada_2: "recorte da região das duas equações a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.8.2-indice-de-esbeltez
+    norma: "NBR 6118:2023"
+    item: "15.8.2"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.2-dispensa-2a-ordem-local
+    titulo: "Índice de esbeltez λ"
+    latex: "\\lambda = \\dfrac{\\ell_e}{i}"
+    sympy: "Eq(lamb, l_e/i)"
+    variaveis:
+      lamb: {descricao: "índice de esbeltez", unidade: "adimensional", valor: null}
+      l_e:  {descricao: "comprimento equivalente (15.6, ou 2ℓ para pilar engastado na base e livre no topo)", unidade: "m", valor: null}
+      i:    {descricao: "raio de giração MÍNIMO da seção bruta de concreto da peça analisada (definição em 4.3, pág. impressa 6)", unidade: "m", valor: null}
+    dominio_validade: >-
+      Elementos isolados de seção constante e armadura constante ao longo do
+      eixo (15.8.1). ATENÇÃO — LACUNA DELIBERADA: a NBR 6118:2023 NÃO fornece a
+      expressão fechada de i para seção retangular. A Seção 4.3 só define
+      "i — raio de giração mínimo da seção bruta de concreto da peça analisada".
+      A relação i = h/√12 para retângulo é GEOMETRIA (i = √(I/A)), não
+      prescrição normativa: o a2 deve registrá-la como derivação geométrica, com
+      derivação explicitada, e não como transcrição de item da Norma.
+      "Mínimo" implica avaliar as DUAS direções e tomar o menor i — logo o MAIOR λ.
+    leitura_visual:
+      passada_1: "página PDF 125 (impressa 107) inteira a 300 dpi"
+      passada_2: "recorte da equação a 500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-15.8.2-lambda1-limite-pilar-curto
+    norma: "NBR 6118:2023"
+    item: "15.8.2"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.2-dispensa-2a-ordem-local
+    titulo: "Valor-limite λ1 — FRONTEIRA PILAR CURTO x ESBELTO (dispensa dos efeitos locais de 2ª ordem)"
+    latex: "\\lambda_1 = \\dfrac{25 + 12{,}5\\,e_1/h}{\\alpha_b}\\,,\\qquad 35 \\le \\lambda_1 \\le 90"
+    sympy: "Eq(lamb_1, Min(90, Max(35, (25 + 12.5*e_1/h)/alpha_b)))"
+    criterio_de_dispensa:
+      latex: "\\lambda < \\lambda_1 \\Rightarrow \\text{efeitos locais de 2\\textsuperscript{a} ordem podem ser desprezados}"
+      sympy: "Lt(lamb, lamb_1)"
+      literal_da_fonte: >-
+        "Os esforços locais de 2ª ordem em elementos isolados podem ser
+        desprezados quando o índice de esbeltez for menor que o valor-limite λ1
+        estabelecido nesta subseção." — desigualdade ESTRITA (menor que), não <=.
+    variaveis:
+      lamb_1:  {descricao: "valor-limite do índice de esbeltez", unidade: "adimensional", valor: null}
+      e_1:     {descricao: "excentricidade de 1ª ordem na extremidade do pilar onde ocorre o momento de 1ª ordem de maior valor absoluto; NÃO inclui a excentricidade acidental (simbologia 15.1)", unidade: "m", valor: null}
+      h:       {descricao: "altura da seção transversal na direção considerada", unidade: "m", valor: null}
+      alpha_b: {descricao: "coeficiente que depende da vinculação e do diagrama de momentos de 1ª ordem", unidade: "adimensional", valor: null}
+    alpha_b:
+      a_biapoiado_sem_cargas_transversais:
+        latex: "\\alpha_b = 0{,}60 + 0{,}40\\,\\dfrac{M_B}{M_A} \\ge 0{,}40"
+        sympy: "Eq(alpha_b, Max(0.40, 0.60 + 0.40*M_B/M_A))"
+        limites: "1,0 >= alpha_b >= 0,4"
+        M_A: "maior valor absoluto do momento de 1ª ordem ao longo do pilar biapoiado"
+        M_B: "momento de 1ª ordem no outro extremo; sinal POSITIVO se traciona a mesma face que M_A, NEGATIVO em caso contrário"
+        nos_moveis: "em estruturas de nós móveis, M_A e M_B são os momentos TOTAIS (1ª ordem + 2ª ordem global)"
+      b_biapoiado_com_cargas_transversais_significativas: 1.0
+      c_em_balanco: 1.0
+      d_momentos_menores_que_M1d_min_de_11_3_3_4_3: 1.0
+    dominio_validade: >-
+      Elementos isolados (15.4.4) de seção e armadura constantes ao longo do
+      eixo, submetidos à flexo-compressão (15.8.1). ESTE É O CRITÉRIO PEDIDO
+      PELO BACKLOG #13 para separar pilar curto de esbelto.
+      Os limites 35 <= λ1 <= 90 são de TRUNCAMENTO, não de validade: λ1
+      calculado abaixo de 35 vira 35 e acima de 90 vira 90.
+      PARA O PILARETE SOB CARGA CENTRADA DESTA RODADA cai-se na alínea d):
+      como os momentos são menores que M_1d,mín (11.3.3.4.3), α_b = 1,0, e
+      λ1 = max(35, 25 + 12,5·e_1/h) limitado a 90. Com e_1 = 0, λ1 = 35 —
+      este é o número que o a4 deve usar como fronteira de RECUSA.
+      NÃO DECLARADO NA FONTE: como calcular e_1 quando o momento de 1ª ordem é
+      nulo e só existe M_1d,mín (usar e_1 = M_1d,mín/N_d é interpretação, não
+      texto da Norma — o item 15.8.2 diz que e_1 "não inclui a excentricidade
+      acidental", e M_1d,mín É a substituição das imperfeições locais).
+      A avaliação é POR DIREÇÃO (h muda com a direção).
+    fronteiras_adicionais_de_esbeltez:
+      - "λ > λ1: efeitos locais de 2ª ordem OBRIGATÓRIOS (15.8.2) — FORA do escopo desta rodada"
+      - "λ > 90: consideração da FLUÊNCIA obrigatória (15.8.3.1 → 15.8.4)"
+      - "λ > 140: MÉTODO GERAL (análise não linear) obrigatório (15.8.3.2); e γ_n1 majora os efeitos locais (15.8.1)"
+      - "λ > 200: PROIBIDO, exceto elementos pouco comprimidos com N_d < 0,10 f_cd A_c (15.8.1, alterado pela Emenda 1)"
+    leitura_visual:
+      passada_1: "páginas PDF 125 e 126 (impressas 107 e 108) inteiras a 300 dpi"
+      passada_2: "recortes das regiões de λ1, de 35<=λ1<=90 e de α_b a 450-500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF entrega esta equação embaralhada
+      ("lambda alpha 1 1 25 12 5 = + , / b e h"). Só a leitura visual a recupera.
+
+  - id: NBR6118-15.8.1-gamma-n1
+    norma: "NBR 6118:2023"
+    item: "15.8.1"
+    pagina: 107
+    clausula_ref: NBR6118-15.8.1-generalidades-esbeltez
+    titulo: "Coeficiente adicional γ_n1 de majoração dos efeitos locais de 2ª ordem para λ > 140"
+    latex: "\\gamma_{n1} = 1 + \\dfrac{\\lambda - 140}{140} \\ge 1"
+    sympy: "Eq(gamma_n1, Max(1, 1 + (lamb - 140)/140))"
+    variaveis:
+      gamma_n1: {descricao: "coeficiente adicional aplicado aos efeitos locais de 2ª ordem", unidade: "adimensional", valor: null}
+      lamb:     {descricao: "índice de esbeltez", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      SOMENTE para pilares com λ > 140, e SOMENTE sobre os efeitos LOCAIS de 2ª
+      ordem (não sobre os esforços de 1ª ordem). Registrado aqui apenas para
+      FECHAR A FRONTEIRA DE DOMÍNIO: esta rodada NÃO implementa 2ª ordem, logo
+      o a4 deve RECUSAR λ >= λ1 antes de chegar perto de λ = 140. A fórmula não
+      deve ser implementada nesta rodada.
+    leitura_visual:
+      passada_1: "página PDF 125 (impressa 107) inteira a 300 dpi"
+      passada_2: "recorte da equação a 500 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.3.5.3-armadura-longitudinal-pilar
+    norma: "NBR 6118:2023"
+    item: "17.3.5.3.1 e 17.3.5.3.2"
+    pagina: 133
+    clausula_ref: NBR6118-17.3.5.3.1-armadura-minima-pilar
+    titulo: "Armaduras longitudinais mínima e máxima de pilares"
+    latex: "A_{s,\\min} = \\max\\left(0{,}15\\,\\dfrac{N_d}{f_{yd}},\\; 0{,}004\\,A_c\\right) \\qquad A_{s,\\max} = 0{,}08\\,A_c"
+    sympy: "[Eq(A_s_min, Max(0.15*N_d/f_yd, 0.004*A_c)), Eq(A_s_max, 0.08*A_c)]"
+    variaveis:
+      A_s_min: {descricao: "área mínima de armadura longitudinal do pilar", unidade: "cm2", valor: null}
+      A_s_max: {descricao: "área máxima de armadura longitudinal do pilar", unidade: "cm2", valor: null}
+      N_d:     {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      f_yd:    {descricao: "resistência de cálculo ao escoamento do aço", unidade: "kPa (ou MPa, consistente com N_d e A_c)", valor: null}
+      A_c:     {descricao: "área da seção transversal bruta de concreto do pilar", unidade: "cm2", valor: null}
+    dominio_validade: >-
+      Armadura longitudinal de PILARES de concreto armado (o item se chama
+      literalmente "Valores-limites para armaduras longitudinais de pilares").
+      A_s,mín é um MÁXIMO entre duas parcelas — a Norma escreve
+      "A_s,mín = (0,15 N_d/f_yd) >= 0,004 A_c", ou seja, a primeira parcela
+      calculada, com piso na segunda.
+      A_s,máx = 8 % de A_c deve considerar INCLUSIVE a sobreposição de armadura
+      na região de emenda: se a emenda de traspasse com a armadura de espera da
+      sapata for total na mesma seção (o que 9.5.2.1 AUTORIZA para armadura
+      permanentemente comprimida), a taxa fora da emenda fica na prática
+      limitada a 4 % de A_c. Essa é a restrição que costuma governar o pilarete.
+      NÃO DECLARADO NA FONTE: qual combinação de ações fornece o N_d de A_s,mín
+      (adotar a mais desfavorável é interpretação, não texto).
+      Remissão obrigatória a 18.4.2.2 (distribuição transversal).
+    leitura_visual:
+      passada_1: "página PDF 151 (impressa 133) inteira a 300 dpi"
+      passada_2: "recorte das duas expressões a 450 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-18.4.3-espacamento-estribos-pilar
+    norma: "NBR 6118:2023"
+    item: "18.4.3"
+    pagina: 153
+    clausula_ref: NBR6118-18.4.3-armaduras-transversais-pilar
+    titulo: "Armadura transversal de pilares — diâmetro mínimo do estribo e espaçamento longitudinal máximo"
+    latex: "\\phi_t \\ge \\max(5\\ \\mathrm{mm},\\ \\phi/4) \\qquad s \\le \\min\\left(200\\ \\mathrm{mm},\\ b_{\\min},\\ k_\\phi\\,\\phi\\right)"
+    sympy: "[Ge(phi_t, Max(5, phi/4)), Le(s, Min(200, b_min, k_phi*phi))]"
+    k_phi_por_categoria_de_aco:
+      CA-25: 24
+      CA-50: 12
+      CA-60: "NAO_DECLARADO_NA_FONTE — o item lista apenas CA-25 e CA-50"
+    alternativa_estribo_fino:
+      condicao: "phi_t < phi/4, desde que as armaduras sejam constituídas do MESMO TIPO DE AÇO"
+      latex: "s_{\\max} = 90000\\left(\\dfrac{\\phi_t^2}{\\phi}\\right)\\dfrac{1}{f_{yk}}"
+      sympy: "Eq(s_max, 90000*(phi_t**2/phi)/f_yk)"
+      unidades: "f_yk em MPa; phi e phi_t na mesma unidade; s_max resultando em mm"
+      observacao: >-
+        Esta limitação é ADICIONAL ("respeite TAMBÉM"), não substitutiva: o
+        espaçamento continua sujeito ao mínimo entre 200 mm, b_mín e k_φ·φ.
+    variaveis:
+      phi_t: {descricao: "diâmetro do estribo", unidade: "mm", valor: null}
+      phi:   {descricao: "diâmetro da barra longitudinal isolada, ou diâmetro equivalente do feixe", unidade: "mm", valor: null}
+      s:     {descricao: "espaçamento longitudinal entre estribos, medido na direção do eixo do pilar", unidade: "mm", valor: null}
+      s_max: {descricao: "espaçamento máximo adicional quando se adota phi_t < phi/4", unidade: "mm", valor: null}
+      b_min: {descricao: "menor dimensão da seção transversal do pilar", unidade: "mm", valor: null}
+      f_yk:  {descricao: "resistência característica ao escoamento do aço", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Pilares de concreto armado dentro do campo de 18.4.1 (maior dimensão da
+      seção <= 5 × menor dimensão; fora disso é pilar-parede, 18.5).
+      LACUNA DO PRÓPRIO TEXTO NORMATIVO: o item dá k_φ para CA-25 e CA-50 e
+      NÃO dá para CA-60. Se o software aceitar CA-60 na armadura longitudinal
+      do pilarete, o espaçamento máximo fica NAO_DECLARADO_NA_FONTE e o a4 deve
+      recusar ou exigir entrada do engenheiro — não extrapolar.
+      A NOTA sobre redução de 50 % nos espaçamentos para concretos C55 a C90
+      (com ganchos de pelo menos 135°) é RECOMENDAÇÃO ("recomenda-se"), não
+      requisito: não pode virar verificação obrigatória no software.
+      Quando houver necessidade de armadura transversal para força cortante e
+      torção, comparar com os mínimos de 18.3 (vigas) e adotar o MENOR limite —
+      caso fora do escopo desta rodada (carga centrada, sem cortante no pilarete).
+    leitura_visual:
+      passada_1: "páginas PDF 171 e 172 (impressas 153 e 154) a 300 dpi"
+      passada_2: "recortes da região da expressão de s_max a 350 e 420 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF sugere um expoente 1/2 inexistente
+      ("90000 1 2 phi phi / f yk"). A leitura visual mostra a fração 1/f_yk
+      MULTIPLICANDO o parêntese (φ_t²/φ), sem raiz nenhuma. Registrado porque é
+      exatamente o tipo de erro que um parser silencioso introduziria.
+
+  - id: NBR6118-9.5.2.3-traspasse-comprimidas
+    norma: "NBR 6118:2023"
+    item: "9.5.2.3"
+    pagina: 44
+    clausula_ref: NBR6118-9.5.2.3-traspasse-comprimidas
+    titulo: "Comprimento de traspasse de barras COMPRIMIDAS, isoladas — dimensiona a armadura de espera do pilarete"
+    latex: "\\ell_{0c} = \\ell_{b,nec} \\ge \\ell_{0c,\\min} = \\max\\left(0{,}6\\,\\ell_b,\\; 15\\phi,\\; 200\\ \\mathrm{mm}\\right)"
+    sympy: "Eq(l_0c, Max(l_b_nec, 0.6*l_b, 15*phi, 200))"
+    variaveis:
+      l_0c:     {descricao: "comprimento de traspasse de barras comprimidas", unidade: "mm", valor: null}
+      l_b_nec:  {descricao: "comprimento de ancoragem necessário (9.4.2.5 — já extraído no acervo)", unidade: "mm", valor: null}
+      l_b:      {descricao: "comprimento de ancoragem básico (9.4.2.4 — já extraído no acervo)", unidade: "mm", valor: null}
+      phi:      {descricao: "diâmetro da barra emendada (a de MENOR diâmetro, por 9.5.2.1)", unidade: "mm", valor: null}
+    dominio_validade: >-
+      Barras COMPRIMIDAS isoladas, emendadas por traspasse, com bitola
+      phi <= 32 mm (9.5.2). É O ITEM QUE DIMENSIONA A EMENDA ENTRE A ARMADURA DE
+      ESPERA (ARRANQUE) QUE SAI DA SAPATA E A ARMADURA LONGITUDINAL DO PILARETE
+      no regime de compressão centrada desta rodada.
+      NÃO há coeficiente α_0t (a Tabela 9.4 só vale para barras TRACIONADAS,
+      por 9.5.2.2.1) — e por 9.5.2.1, tratando-se de armadura permanentemente
+      comprimida, TODAS as barras podem ser emendadas na mesma seção.
+      Depende de l_b (9.4.2.4) e l_b,nec (9.4.2.5), ambos JÁ no acervo, e por
+      cadeia de f_bd (9.3.2.1), η_1 (Tabela 8.2) e f_ctd (8.2.5) — também já no
+      acervo. Nenhuma reextração foi necessária.
+      Ver ainda 9.5.2.4.2: pelo menos uma barra de armadura transversal 4φ além
+      de cada extremidade da emenda, além dos critérios de 9.5.2.4.1.
+    leitura_visual:
+      passada_1: "página PDF 62 (impressa 44) a 300 dpi"
+      passada_2: "recorte da região da equação a 400 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-9.5.2.2.1-traspasse-tracionadas
+    norma: "NBR 6118:2023"
+    item: "9.5.2.2.1 e Tabela 9.4"
+    pagina: 43
+    clausula_ref: NBR6118-9.5.2.2.1-traspasse-tracionadas
+    titulo: "Comprimento de traspasse de barras TRACIONADAS, isoladas"
+    latex: "\\ell_{0t} = \\alpha_{0t}\\,\\ell_{b,nec} \\ge \\ell_{0t,\\min} = \\max\\left(0{,}3\\,\\alpha_{0t}\\,\\ell_b,\\; 15\\phi,\\; 200\\ \\mathrm{mm}\\right)"
+    sympy: "Eq(l_0t, Max(alpha_0t*l_b_nec, 0.3*alpha_0t*l_b, 15*phi, 200))"
+    tabela_9_4_alpha_0t:
+      barras_emendadas_na_mesma_secao_pct: ["<=20", 25, 33, 50, ">50"]
+      alpha_0t:                            [1.2, 1.4, 1.6, 1.8, 2.0]
+    variaveis:
+      l_0t:     {descricao: "comprimento de traspasse de barras tracionadas", unidade: "mm", valor: null}
+      alpha_0t: {descricao: "coeficiente função da porcentagem de barras emendadas na mesma seção (Tabela 9.4)", unidade: "adimensional", valor: null}
+      l_b_nec:  {descricao: "comprimento de ancoragem necessário (9.4.2.5)", unidade: "mm", valor: null}
+      l_b:      {descricao: "comprimento de ancoragem básico (9.4.2.4)", unidade: "mm", valor: null}
+      phi:      {descricao: "diâmetro da barra emendada", unidade: "mm", valor: null}
+    dominio_validade: >-
+      Barras TRACIONADAS isoladas, com distância livre entre barras emendadas
+      ENTRE 0 E 4φ. Se a distância livre for MAIOR que 4φ, 9.5.2.2.2 manda
+      ACRESCER essa distância ao comprimento calculado — condição geométrica que
+      o software precisa verificar, não pressupor.
+      FORA DO ESCOPO DESTA RODADA (carga centrada ⇒ armadura do pilarete
+      permanentemente comprimida ⇒ usar 9.5.2.3). Registrado porque é o item que
+      passa a valer assim que o escopo admitir inversão de esforço (vento,
+      excentricidade) e a armadura de espera puder tracionar.
+      Note que α_0t aparece DUAS vezes: multiplicando l_b,nec e dentro do piso
+      0,3·α_0t·l_b — erro fácil de cometer implementando.
+    leitura_visual:
+      passada_1: "páginas PDF 61 e 62 (impressas 43 e 44) a 300 dpi"
+      passada_2: "recortes da equação e da Tabela 9.4 a 400 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-7.4.7-cobrimento-nominal
+    norma: "NBR 6118:2023"
+    item: "7.4.7.1, 7.4.7.2, 7.4.7.5 e Tabela 7.2"
+    pagina: 19
+    clausula_ref: NBR6118-Tabela7.2-cobrimento-nominal
+    titulo: "Cobrimento nominal — critério de aceitação e valores da Tabela 7.2"
+    latex: "c_{nom} \\ge c_{min} + \\Delta c \\,,\\quad \\Delta c \\ge 10\\ \\mathrm{mm}\\,;\\qquad c_{nom} \\ge \\phi_{barra}"
+    sympy: "[Ge(c_nom, c_min + Delta_c), Ge(Delta_c, 10), Ge(c_nom, phi)]"
+    variaveis:
+      c_nom:   {descricao: "cobrimento nominal (o que vai no projeto e nos espaçadores)", unidade: "mm", valor: null}
+      c_min:   {descricao: "cobrimento mínimo — menor valor a respeitar ao longo de todo o elemento", unidade: "mm", valor: null}
+      Delta_c: {descricao: "tolerância de execução", unidade: "mm", valor: null}
+      phi:     {descricao: "diâmetro da barra (ou φ_n = φ√n para feixe; 0,5 φ_bainha para bainha)", unidade: "mm", valor: null}
+    tabela_7_2_cobrimento_nominal_mm:
+      nota: "para Δc = 10 mm; colunas = classes de agressividade ambiental I, II, III, IV (Tabela 6.1)"
+      concreto_armado:
+        laje:                                  {I: 20, II: 25, III: 35, IV: 45}
+        viga_pilar:                            {I: 25, II: 30, III: 40, IV: 50}
+        elementos_em_contato_com_o_solo:       {I: 30, II: 30, III: 40, IV: 50}
+      concreto_protendido:
+        laje:                                  {I: 25, II: 30, III: 40, IV: 50}
+        viga_pilar:                            {I: 30, II: 35, III: 45, IV: 55}
+      nota_de_rodape_d_GOVERNA_O_PILARETE: >-
+        "No trecho dos pilares em contato com o solo junto aos elementos de
+        fundação, a armadura deve ter cobrimento nominal >= 45 mm."
+        Piso ABSOLUTO de 45 mm, independente da classe de agressividade — mais
+        restritivo que a linha "Viga/pilar" nas classes I, II e III.
+    dominio_validade: >-
+      Concreto armado e protendido, classes de agressividade I a IV.
+      PARA O PILARETE DE FUNDAÇÃO o valor que governa é a NOTA DE RODAPÉ (d) da
+      Tabela 7.2: c_nom >= 45 mm no trecho em contato com o solo junto aos
+      elementos de fundação. O a2 precisa decidir explicitamente onde termina
+      "o trecho em contato com o solo" num pilarete parcialmente enterrado — a
+      Norma NÃO define essa fronteira (NAO_DECLARADO_NA_FONTE).
+      Na linha "Elementos estruturais em contato com o solo" as classes I e II
+      compartilham UMA ÚNICA CÉLULA de 30 mm — a extração de texto crua entrega
+      3 valores para 4 colunas e leva a pareamento errado.
+      A redução de 5 mm para concretos de classe superior à mínima exigida é
+      permitida ("podem ser reduzidos em até 5 mm"), não automática.
+      A redução para Δc = 5 mm (7.4.7.4) exige projeto conforme ABNT NBR 9062,
+      norma AUSENTE do acervo — fora do domínio implementável.
+      Os cobrimentos são referidos à ARMADURA EXTERNA, em geral a face externa
+      do ESTRIBO (7.4.7.5), não à barra longitudinal.
+    leitura_visual:
+      passada_1: "páginas PDF 37 e 38 (impressas 19 e 20) inteiras a 300 dpi"
+      passada_2: "recorte da Tabela 7.2 e das notas de rodapé a 450 dpi — conferida a célula mesclada I+II = 30 mm e a nota (d)"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-8.2.10.1-sigma-c-diagrama-idealizado
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, Figura 8.2"
+    pagina: 26
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Diagrama tensão-deformação IDEALIZADO do concreto à compressão (parábola-retângulo) — lei constitutiva do ELU"
+    latex: "\\sigma_c = 0{,}85\\,\\eta_c\\,f_{cd}\\left[1-\\left(1-\\frac{\\varepsilon_c}{\\varepsilon_{c2}}\\right)^{n}\\right]"
+    sympy: "Eq(sigma_c, 0.85*eta_c*f_cd*(1 - (1 - eps_c/eps_c2)**n))"
+    parametros_declarados_na_figura:
+      eta_c:
+        - {condicao: "f_ck <= 40 MPa", valor: "1,0", latex: "\\eta_c = 1{,}0"}
+        - {condicao: "f_ck > 40 MPa",  valor: null,  latex: "\\eta_c = \\left(40/f_{ck}\\right)^{1/3}"}
+      n:
+        - {condicao: "f_ck <= 50 MPa", valor: "2", latex: "n = 2"}
+        - {condicao: "f_ck > 50 MPa",  valor: null, latex: "n = 1{,}4 + 23{,}4\\left[(90-f_{ck})/100\\right]^{4}"}
+    variaveis:
+      sigma_c: {descricao: "tensão de compressão no concreto na deformação ε_c", unidade: "MPa", valor: null}
+      eps_c:   {descricao: "deformação específica de encurtamento do concreto (0 <= ε_c <= ε_c2 no ramo curvo)", unidade: "adimensional (‰ no texto)", valor: null}
+      eps_c2:  {descricao: "deformação no início do patamar plástico — ver NBR6118-8.2.10.1-epsilon-c2-epsilon-cu", unidade: "adimensional (‰)", valor: null}
+      eta_c:   {descricao: "fator de redução da resistência introduzido na edição 2023, função de f_ck", unidade: "adimensional", valor: null}
+      n:       {descricao: "expoente da parábola, função de f_ck", unidade: "adimensional", valor: null}
+      f_cd:    {descricao: "resistência de cálculo à compressão do concreto — remissão EXPLÍCITA a 12.3.3 no próprio item", unidade: "MPa", valor: null}
+      f_ck:    {descricao: "resistência característica à compressão do concreto", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Concreto à COMPRESSÃO, análises no ESTADO-LIMITE ÚLTIMO, classes C20 a C90.
+      Válido no intervalo 0 <= ε_c <= ε_c2 para o ramo curvo; de ε_c2 até ε_cu a
+      tensão é CONSTANTE e igual ao pico 0,85·η_c·f_cd (o patamar está no desenho
+      da Figura 8.2, não em fórmula: a expressão sozinha, avaliada acima de ε_c2,
+      NÃO reproduz o patamar e pode até decrescer — armadilha de implementação).
+      A própria Norma oferece a ALTERNATIVA das simplificações da Seção 17
+      (retângulo equivalente de 17.2.2, já no acervo): os dois caminhos não
+      precisam dar o mesmo número e a escolha é do projetista.
+      DUAS DISTINÇÕES POR CLASSE DE CONCRETO, COM LIMIARES DIFERENTES — é o que
+      o a2/a4/a5 precisam tratar: η_c muda em f_ck = 40 MPa; n, ε_c2 e ε_cu mudam
+      em C50/C55. Para f_ck <= 40 MPa, η_c = 1,0 e o pico volta a 0,85·f_cd.
+      Entre 40 e 50 MPa vale η_c = (40/f_ck)^(1/3) COM n = 2 — faixa que um
+      software que só distinga "<= C50 / > C50" implementa errado.
+      η_c NÃO existia na NBR 6118:2014; qualquer memória de treinamento que
+      escreva σ_c = 0,85·f_cd·[1-(1-ε_c/ε_c2)^2] está desatualizada acima de C40.
+      Para análise NÃO LINEAR a Norma manda usar outro diagrama (Figura 8.3),
+      com f_cm = f_ck + 8 MPa — registrado à parte e FORA do escopo do ELU.
+    leitura_visual:
+      passada_1: "página PDF 44 (impressa 26) inteira a 300 dpi"
+      passada_2: "recorte da expressão da Figura 8.2 a 500 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A camada de texto do PDF, mesmo após tools/decodificar_nbr.py, entrega a
+      expressão da Figura 8.2 com as colunas do sistema de chaves intercaladas
+      ("[ ] ck c 1 3 ck c ... 23,4=90 100 n") — ILEGÍVEL. Só a leitura visual
+      recupera a fórmula. Registrado porque é exatamente o caso em que um parser
+      silencioso, ou a memória do modelo, produziria uma equação plausível e falsa.
+
+  - id: NBR6118-8.2.10.1-epsilon-c2-epsilon-cu
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, parágrafo após a Figura 8.2"
+    pagina: 26
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Deformações ε_c2 (início do patamar plástico) e ε_cu (ruptura) do concreto comprimido"
+    latex: "\\text{até C50: }\\varepsilon_{c2}=2{,}0\\text{\\textperthousand},\\ \\varepsilon_{cu}=3{,}5\\text{\\textperthousand}\\ ;\\quad \\text{C55 a C90: }\\varepsilon_{c2}=2{,}0\\text{\\textperthousand}+0{,}085\\text{\\textperthousand}\\,(f_{ck}-50)^{0{,}53},\\ \\varepsilon_{cu}=2{,}6\\text{\\textperthousand}+35\\text{\\textperthousand}\\left[(90-f_{ck})/100\\right]^{4}"
+    sympy: "[Eq(eps_c2, Piecewise((2.0e-3, f_ck <= 50), (2.0e-3 + 0.085e-3*(f_ck - 50)**0.53, True))), Eq(eps_cu, Piecewise((3.5e-3, f_ck <= 50), (2.6e-3 + 35e-3*((90 - f_ck)/100)**4, True)))]"
+    variaveis:
+      eps_c2: {descricao: "deformação específica de encurtamento do concreto no INÍCIO DO PATAMAR PLÁSTICO", unidade: "adimensional (‰ na fonte)", valor: 0.002}
+      eps_cu: {descricao: "deformação específica de encurtamento do concreto NA RUPTURA", unidade: "adimensional (‰ na fonte)", valor: 0.0035}
+      f_ck:   {descricao: "resistência característica à compressão", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Os valores 2,0‰ e 3,5‰ (campo `valor` preenchido acima) valem SOMENTE para
+      concretos de CLASSES ATÉ C50. Para classes C55 a C90 valem as expressões,
+      e ε_cu passa a ser MENOR que 3,5‰ (2,6‰ no limite C90) enquanto ε_c2 CRESCE
+      — as duas deformações convergem. Acima de C90 a Norma não declara nada:
+      NAO_DECLARADO_NA_FONTE.
+      A Norma escreve ε_cu, NÃO ε_cu2: o índice "2" da nomenclatura do Eurocode
+      não aparece na NBR 6118:2023 e não deve ser introduzido no código.
+      Estas são as MESMAS deformações citadas por 17.2.2 alínea g) para definir
+      os domínios da Figura 17.1 — a remissão em 17.2.2 é explicitamente a
+      8.2.10.1, de modo que os dois itens compartilham um único par de valores.
+      ATENÇÃO: a Norma NÃO diz, em nenhum item, que a compressão uniforme
+      ("reta b" de 17.2.2) corresponda a ε = ε_c2. Essa identificação é
+      INTERPRETAÇÃO — ver a cláusula NBR6118-LACUNA-N-Rd-compressao-centrada-estado-da-cadeia.
+    leitura_visual:
+      passada_1: "página PDF 44 (impressa 26) inteira a 300 dpi"
+      passada_2: "recorte do bloco de ε_c2/ε_cu a 450 dpi — conferidos os expoentes 0,53 e 4"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-8.2.10.1-sigma-c-analise-nao-linear
+    norma: "NBR 6118:2023"
+    item: "8.2.10.1, Figura 8.3"
+    pagina: 27
+    clausula_ref: NBR6118-8.2.10.1-diagrama-tensao-deformacao-compressao
+    titulo: "Diagrama tensão-deformação do concreto para ANÁLISE NÃO LINEAR (Figura 8.3) — não é diagrama de cálculo"
+    latex: "\\frac{\\sigma_c}{f_{cm}}=\\frac{k\\,\\eta-\\eta^{2}}{1+(k-2)\\,\\eta}\\,,\\quad k=1{,}05\\,E_{cm}\\,\\lvert\\varepsilon_{c1}\\rvert/f_{cm}\\,,\\quad \\eta=\\varepsilon_c/\\varepsilon_{c1}\\,,\\quad \\varepsilon_{c1}=0{,}7\\,(f_{cm})^{0{,}31}\\le 2{,}8\\text{\\textperthousand}"
+    sympy: "[Eq(sigma_c/f_cm, (k*eta - eta**2)/(1 + (k - 2)*eta)), Eq(k, 1.05*E_cm*Abs(eps_c1)/f_cm), Eq(eta, eps_c/eps_c1), Eq(eps_c1, Min(0.7*f_cm**0.31, 2.8))]"
+    parametros_declarados_na_figura:
+      eps_cu1:
+        - {condicao: "f_ck <= 50 MPa", latex: "\\varepsilon_{cu1} = \\varepsilon_{cu}"}
+        - {condicao: "f_ck > 50 MPa",  latex: "\\varepsilon_{cu1} = 2{,}8 + 27\\left[(98-f_{cm})/100\\right]^{4}"}
+      f_cm: {relacao: "f_cm = f_ck + 8 (MPa)", origem: "texto imediatamente após a Figura 8.3"}
+    variaveis:
+      sigma_c: {descricao: "tensão de compressão no concreto", unidade: "MPa", valor: null}
+      f_cm:    {descricao: "resistência média à compressão; adotar f_cm = f_ck + 8 (MPa)", unidade: "MPa", valor: null}
+      eps_c1:  {descricao: "deformação no pico da curva", unidade: "‰ (a expressão 0,7·(f_cm)^0,31 devolve ‰)", valor: null}
+      eps_cu1: {descricao: "deformação última do diagrama não linear", unidade: "‰", valor: null}
+      k:       {descricao: "parâmetro de forma", unidade: "adimensional", valor: null}
+      eta:     {descricao: "ε_c/ε_c1", unidade: "adimensional", valor: null}
+      E_cm:    {descricao: "módulo de elasticidade que aparece na expressão de k — NÃO DEFINIDO EM NENHUM ITEM DA NORMA", unidade: "MPa (presumível, não declarado)", valor: null}
+    dominio_validade: >-
+      ANÁLISE ESTRUTURAL NÃO LINEAR, compressão simples de CURTA DURAÇÃO.
+      NÃO é diagrama de cálculo no ELU e NÃO pode ser usado para dimensionar
+      seção: o ELU usa a Figura 8.2 ou as simplificações da Seção 17.
+      Trabalha com f_cm (resistência MÉDIA), não com f_cd — misturar os dois é
+      erro do lado inseguro.
+      LACUNA DA PRÓPRIA FONTE: E_cm, que entra em k, não é definido em 8.2.8 nem
+      em nenhum outro ponto do texto corrido da Norma (busca negativa no
+      documento inteiro). Fica NAO_DECLARADO_NA_FONTE — o a2 não pode aprovar
+      esta expressão sem decidir explicitamente o que é E_cm.
+      Nota da fonte: "Para cargas de longa duração, os efeitos da fluência devem
+      ser convenientemente considerados."
+    leitura_visual:
+      passada_1: "página PDF 45 (impressa 27), topo, a 250 dpi"
+      passada_2: "recorte do bloco de expressões da Figura 8.3 a 600 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+    observacao: >-
+      Extraído por completude de item (8.2.10.1 não termina na página 26), não
+      por necessidade do pilarete. O escopo desta rodada é ELU.
+
+  - id: NBR6118-8.3.6-diagrama-aco-passivo
+    norma: "NBR 6118:2023"
+    item: "8.3.6, Figura 8.5"
+    pagina: 29
+    clausula_ref: NBR6118-8.3.6-diagrama-tensao-deformacao-aco-passivo
+    titulo: "Diagrama tensão-deformação de cálculo do AÇO de armadura passiva — A NORMA NÃO ESCREVE EQUAÇÃO"
+    latex: NAO_DECLARADO_NA_FONTE
+    sympy: NAO_DECLARADO_NA_FONTE
+    expressao_fechada_na_fonte: false
+    descricao_da_figura_8_5: >-
+      Conteúdo INTEGRAL da Figura 8.5, lido por visão: ordenada σ_s com dois
+      níveis tracejados, f_yk (superior) e f_yd (inferior); abscissa ε_s com um
+      ÚNICO ponto marcado, ε_su, na extremidade direita; um único ramo reto
+      partindo da origem, rotulado arctg(E_s); dois patamares horizontais, um em
+      f_yd e outro em f_yk, ambos indo até ε_su, onde há linha vertical tracejada.
+      NÃO HÁ na figura nenhuma equação, nenhum valor numérico e nenhum rótulo de
+      deformação além de ε_su. Em particular, ε_yd NÃO é rotulado e ε_su NÃO tem
+      valor atribuído.
+    variaveis:
+      sigma_s: {descricao: "tensão no aço de armadura passiva", unidade: "MPa", valor: null}
+      eps_s:   {descricao: "deformação do aço (igual à do concreto envolvente, por 17.2.2-b)", unidade: "adimensional", valor: null}
+      E_s:     {descricao: "módulo de elasticidade do aço — 210 GPa por 8.3.5, na falta de ensaio", unidade: "GPa", valor: 210}
+      f_yd:    {descricao: "resistência de escoamento de cálculo — a Norma NÃO escreve f_yd = f_yk/γ_s em item algum; decorre de 12.3.1 (f_d = f_k/γ_m) com γ_s da Tabela 12.1", unidade: "MPa", valor: null}
+      f_yk:    {descricao: "resistência característica ao escoamento, de ensaio conforme ABNT NBR ISO 6892-1; para aços SEM patamar, é a tensão da deformação permanente de 0,2 %", unidade: "MPa", valor: null}
+      eps_su:  {descricao: "deformação última do diagrama — SEM VALOR NA FONTE", unidade: "adimensional", valor: null}
+      eps_yd:  {descricao: "deformação de escoamento de cálculo — NÃO DEFINIDA NA FONTE (símbolo só aparece em 17.2.2)", unidade: "adimensional", valor: null}
+    dominio_validade: >-
+      Aço de armadura PASSIVA, com ou sem patamar de escoamento, estados-limite
+      de SERVIÇO E ÚLTIMO, temperatura entre -20 °C e 150 °C, e — autorização
+      explícita no parágrafo de continuação da página 30 — aplicável tanto à
+      TRAÇÃO quanto à COMPRESSÃO. É essa frase que legitima usar o diagrama para
+      a armadura comprimida do pilarete; sem ela a aplicação à compressão seria
+      extrapolação.
+      Uso FACULTATIVO ("pode-se utilizar"). Vale igualmente para CA-25, CA-50 e
+      CA-60: não há distinção por categoria de aço além do valor de f_yk. Não há
+      qualquer distinção por classe de concreto.
+      A CONVERSÃO DO DESENHO EM CÓDIGO É INTERPRETAÇÃO, NÃO TRANSCRIÇÃO — ver o
+      campo `interpretacao_a1_nao_normativa` abaixo, que o a2 deve aprovar ou
+      rejeitar explicitamente antes de qualquer implementação em calc_core.
+    interpretacao_a1_nao_normativa: >-
+      MARCADO COMO INTERPRETAÇÃO DO a1, NÃO É TEXTO DA NORMA. A geometria
+      desenhada na Figura 8.5 corresponde a σ_s = E_s·ε_s para ε_s <= f_yd/E_s e
+      σ_s = f_yd para f_yd/E_s <= ε_s <= ε_su, de onde ε_yd = f_yd/E_s. A Norma
+      não escreve nenhuma dessas três relações. O valor de ε_su permanece
+      indeterminado; para a compressão centrada isso é inócuo (ε_c2 = 2,0‰ está
+      muito abaixo de qualquer patamar de ruptura), mas invalida qualquer
+      verificação que dependa do fim do patamar.
+    leitura_visual:
+      passada_1: "página PDF 47 (impressa 29) inteira a 300 dpi"
+      passada_2: "recorte da Figura 8.5 a 500 dpi — feito especificamente para descartar a hipótese de um rótulo numérico ilegível junto a ε_su; não há"
+      divergencia: false
+    status: DESCRITO_SEM_EQUACAO_NA_FONTE
+    alterada_por_emenda1: false
+    observacao: >-
+      Este é o registro que impede a reconstrução de memória. A NBR 6118 é
+      universalmente ensinada com "f_yd = f_yk/1,15 e ε_yd = f_yd/E_s"; nenhuma
+      dessas duas expressões está escrita em 8.3.6 nem em qualquer outro item.
+      f_yd só existe como rótulo de eixo na Figura 8.5 e como aplicação da regra
+      geral f_d = f_k/γ_m de 12.3.1.
+
+  - id: NBR6118-12.3.3-fcd
+    norma: "NBR 6118:2023"
+    item: "12.3.1 e 12.3.3 (alíneas a e b)"
+    pagina: 70
+    clausula_ref: NBR6118-12.3.3-resistencia-de-calculo-do-concreto
+    titulo: "Resistência de cálculo do concreto f_cd — item remetido explicitamente por 8.2.10.1 e por 17.2.2"
+    latex: "f_d = \\frac{f_k}{\\gamma_m}\\;;\\qquad j \\ge 28\\ \\text{dias}:\\ f_{cd} = \\frac{f_{ck}}{\\gamma_c}\\;;\\qquad j < 28\\ \\text{dias}:\\ f_{cd} = \\frac{f_{ckj}}{\\gamma_c} \\cong \\beta_1\\frac{f_{ck}}{\\gamma_c}\\,,\\ \\beta_1 = \\exp\\left\\{s\\left[1-(28/t)^{1/2}\\right]\\right\\}"
+    sympy: "[Eq(f_d, f_k/gamma_m), Eq(f_cd, f_ck/gamma_c), Eq(beta_1, exp(s*(1 - (28/t)**Rational(1,2))))]"
+    variaveis:
+      f_cd:    {descricao: "resistência de cálculo à compressão do concreto", unidade: "MPa", valor: null}
+      f_ck:    {descricao: "resistência característica à compressão aos 28 dias", unidade: "MPa", valor: null}
+      f_ckj:   {descricao: "resistência característica na idade j", unidade: "MPa", valor: null}
+      gamma_c: {descricao: "coeficiente de ponderação do concreto — Tabela 12.1", unidade: "adimensional", valor: null}
+      beta_1:  {descricao: "relação f_ckj/f_ck", unidade: "adimensional", valor: null}
+      s:       {descricao: "0,38 CPIII e IV; 0,25 CPI e II; 0,20 CPV-ARI (ver Emenda 1)", unidade: "adimensional", valor: null}
+      t:       {descricao: "idade efetiva do concreto", unidade: "dias", valor: null}
+    dominio_validade: >-
+      f_cd = f_ck/γ_c vale SOMENTE para verificação em data j IGUAL OU SUPERIOR
+      A 28 DIAS — é a hipótese usual e a única dentro do escopo desta rodada, mas
+      é uma hipótese, não um dado. Para j < 28 dias vale a alínea b), e a
+      verificação passa a ser DUPLA (aos t dias e aos 28 dias) e o controle
+      tecnológico também. É o caso real de um pilarete recém-concretado que
+      recebe a base metálica antes dos 28 dias — o software não deve assumir
+      silenciosamente j >= 28.
+      A 3ª designação de s (CPV-ARI) FOI ALTERADA PELA EMENDA 1:2026 e passou a
+      abranger todos os concretos de classe C60 ou superior — ver o registro
+      NBR6118-Em1-12.3.3-3a-designacao. Introduz um TERCEIRO limiar de classe
+      (C60), além dos de 40 MPa e C50/C55 de 8.2.10.1.
+    leitura_visual:
+      passada_1: "páginas PDF 88 e 89 (impressas 70 e 71) a 300 dpi"
+      passada_2: "recorte da expressão f_cd = f_ck/γ_c a 400 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true
+    observacao: >-
+      A camada de texto decodificada entrega "f fc cd k c = γ", com numerador e
+      denominador fora de ordem — a fração só se lê por visão.
+
+  - id: NBR6118-12.4.1-gamma-c-gamma-s
+    norma: "NBR 6118:2023"
+    item: "12.4 e 12.4.1, Tabela 12.1 e os parágrafos seguintes"
+    pagina: 71
+    clausula_ref: NBR6118-12.4.1-coeficientes-ponderacao-resistencias-ELU
+    titulo: "Coeficientes de ponderação das resistências no ELU (γ_c e γ_s) e as três correções que os acompanham"
+    latex: "\\gamma_m = \\gamma_{m1}\\cdot\\gamma_{m2}\\cdot\\gamma_{m3}"
+    sympy: "Eq(gamma_m, gamma_m1*gamma_m2*gamma_m3)"
+    tabela_12_1_ELU:
+      normais:                    {gamma_c: 1.4, gamma_s: 1.15}
+      especiais_ou_de_construcao: {gamma_c: 1.2, gamma_s: 1.15}
+      excepcionais:               {gamma_c: 1.2, gamma_s: 1.0}
+    correcoes_apos_a_tabela:
+      - {regra: "γ_c × 1,1", condicao: "elementos estruturais com condições DESFAVORÁVEIS de execução previstas (más condições de transporte, adensamento manual, concretagem deficiente por concentração de armadura)", carater: "OBRIGATÓRIO (\"deve ser multiplicado\")"}
+      - {regra: "γ_c ÷ 1,1", condicao: "testemunhos extraídos da estrutura", carater: "FACULTATIVO (\"admite-se\")"}
+      - {regra: "γ_s × 1,1", condicao: "aço CA-25 sem controle de qualidade da ABNT NBR 7480, em obras de pequena importância", carater: "FACULTATIVO (\"admite-se\")"}
+      - {regra: "remissão", condicao: "elementos pré-moldados e pré-fabricados", carater: "consultar ABNT NBR 9062 — norma AUSENTE do acervo"}
+    variaveis:
+      gamma_c: {descricao: "coeficiente de ponderação da resistência do concreto", unidade: "adimensional", valor: 1.4}
+      gamma_s: {descricao: "coeficiente de ponderação da resistência do aço", unidade: "adimensional", valor: 1.15}
+    dominio_validade: >-
+      ESTADO-LIMITE ÚLTIMO. Os valores 1,4 e 1,15 preenchidos em `valor` acima
+      valem APENAS para combinações NORMAIS; combinações especiais/de construção
+      e excepcionais têm outros valores, inclusive γ_s = 1,0 nas excepcionais.
+      A correção γ_c × 1,1 é OBRIGATÓRIA quando previstas condições desfavoráveis
+      de execução — e nenhum software infere isso de geometria ou de SPT: exige
+      entrada explícita do engenheiro. As outras duas correções são facultativas
+      e de sentido oposto; tratá-las como automáticas é erro.
+      A Emenda 1:2026 ACRESCENTA parágrafo avisando que outras seções da Norma
+      podem impor outros valores de γ_c (ver NBR6118-Em1-12.4.1-novo-paragrafo).
+      A varredura dessas "outras seções" NÃO foi feita nesta rodada — pendência.
+      Nota: é daqui, combinado com f_d = f_k/γ_m de 12.3.1, que sai f_yd; a
+      Norma NÃO escreve "f_yd = f_yk/1,15" em lugar nenhum.
+    leitura_visual:
+      passada_1: "página PDF 89 (impressa 71) inteira a 300 dpi"
+      passada_2: "células da Tabela 12.1 reconferidas no mesmo raster, coluna a coluna"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true
+
+  # ===========================================================================
+  # RODADA 2026-09-03 — backlog #13, rodada 3: ELU do pilarete como FLEXÃO
+  # COMPOSTA OBLÍQUA (envoltória de 17.2.1).
+  #
+  # Todas as equações abaixo foram lidas VISUALMENTE em duas passadas
+  # independentes; nenhuma divergiu. Nenhuma delas é fórmula de N_Rd ou de
+  # M_Rd: a Norma continua sem fechar analiticamente os esforços resistentes
+  # (ver kb/clausulas.jsonl, NBR6118-BUSCA-NEG-sem-formula-fechada-MRd-NRd-
+  # secao-retangular). O que entra aqui é o que a Norma REALMENTE escreve.
+  #
+  # ARMADILHA DESTA RODADA, registrada de propósito: há DUAS expressões de
+  # interação de momentos em duas direções na NBR 6118:2023, com EXPOENTES
+  # DIFERENTES e lados opostos da verificação —
+  #   • Figura 11.3 / Figura 15.2 → expoente 2 (elipse), lado SOLICITANTE
+  #     (envoltória MÍNIMA que os esforços de projeto devem cobrir);
+  #   • 17.2.5 → expoente α (1 ou 1,2), lado RESISTENTE.
+  # Trocá-las é o erro provável. Não use uma no lugar da outra.
+  # ===========================================================================
+
+  - id: NBR6118-17.2.5-interacao-flexao-composta-obliqua
+    norma: "NBR 6118:2023"
+    item: "17.2.5"
+    pagina: 125
+    clausula_ref: NBR6118-17.2.5-flexao-composta-obliqua
+    titulo: "Processo aproximado para flexão composta oblíqua — expressão de interação dos momentos RESISTENTES"
+    latex: "\\left[\\frac{M_{Rd,x}}{M_{Rd,xx}}\\right]^{\\alpha} + \\left[\\frac{M_{Rd,y}}{M_{Rd,yy}}\\right]^{\\alpha} = 1"
+    sympy: "Eq((M_Rd_x/M_Rd_xx)**alpha + (M_Rd_y/M_Rd_yy)**alpha, 1)"
+    variaveis:
+      M_Rd_x:
+        descricao: "componente, segundo o eixo principal de inércia x da seção bruta, do momento resistente de cálculo em flexão oblíqua composta, com N_Rd = N_Sd. INCÓGNITA — é um dos valores que se deseja obter"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_y:
+        descricao: "componente, segundo o eixo principal de inércia y da seção bruta, do momento resistente de cálculo em flexão oblíqua composta, com N_Rd = N_Sd. INCÓGNITA"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_xx:
+        descricao: "momento resistente de cálculo segundo o eixo x em flexão composta NORMAL, com o mesmo valor de N_Rd. Calculado a partir do arranjo e da quantidade de armadura em estudo — a Norma NÃO fornece expressão para ele"
+        unidade: "kN.m"
+        valor: null
+      M_Rd_yy:
+        descricao: "momento resistente de cálculo segundo o eixo y em flexão composta NORMAL, com o mesmo valor de N_Rd. Idem"
+        unidade: "kN.m"
+        valor: null
+      alpha:
+        descricao: "expoente de interação. A Norma declara que depende do valor da força normal, da forma da seção, do arranjo da armadura e de suas porcentagens, mas NÃO fornece expressão nem tabela para ele; fornece apenas dois valores adotáveis"
+        unidade: "adimensional"
+        valor: null
+        valores_declarados_na_fonte:
+          geral: 1.0        # "Em geral pode ser adotado α = 1, a favor da segurança"
+          secao_retangular: 1.2   # "No caso de seções retangulares, pode-se adotar α = 1,2"
+    dominio_validade: >-
+      Flexão oblíqua, SIMPLES OU COMPOSTA, de seções de elementos lineares
+      (cobre o pilarete). Quatro condições que não podem ser perdidas:
+      (1) é declarado PROCESSO APROXIMADO e de uso FACULTATIVO ("pode ser
+      adotada a aproximação") — o critério de segurança continua sendo a
+      envoltória de 17.2.1;
+      (2) NÃO fecha o problema: M_Rd,xx e M_Rd,yy são flexões compostas
+      NORMAIS para o mesmo N_Rd, e a Norma não ensina a calculá-los por
+      fórmula. 17.2.5 REDUZ o problema oblíquo (linha neutra inclinada, duas
+      variáveis) a DOIS problemas normais (uma variável cada) — não elimina a
+      varredura numérica da seção;
+      (3) a Norma escreve "= 1", IGUALDADE, não "≤ 1". A expressão descreve a
+      SUPERFÍCIE da envoltória resistente. Usá-la como teste de aceitação na
+      forma (M_Sd,x/M_Rd,xx)^α + (M_Sd,y/M_Rd,yy)^α ≤ 1 é INTERPRETAÇÃO —
+      coerente com 17.2.1, mas não escrita pela fonte. Decisão do a2;
+      (4) α = 1 é o valor conservador declarado e o default seguro; α = 1,2 só
+      está autorizado para SEÇÃO RETANGULAR. Não há na Norma nenhum outro
+      valor de α, nem expressão para interpolá-lo.
+      A forma lembra uma interação tipo Bresler, mas esta é a expressão da
+      própria NBR 6118:2023, com os expoentes que ela mesma declara: não há
+      necessidade nem autorização para importar expoentes de outra norma ou da
+      bibliografia.
+    leitura_visual:
+      passada_1: "página PDF 143 (impressa 125) inteira a 300 dpi"
+      passada_2: "recorte independente da equação a 700 dpi — feito deliberadamente para confirmar o sinal de IGUALDADE e os dois expoentes α sobre os colchetes"
+      divergencia: false
+      nota_camada_de_texto: >-
+        A camada de texto do PDF, mesmo após tools/decodificar_nbr.py, entrega
+        esta equação com numeradores, denominadores e delimitadores em linhas
+        separadas e fora de ordem ("M | M | M | M | Rd,x | Rd,xx | Rd,y |
+        Rd,yy | ⎡ | ⎣ | ⎢ ... | = | α | α | 1"): ILEGÍVEL. Um parser silencioso
+        montaria a fração errada. Só a leitura visual recupera.
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-11.3.3.4.3-fig11.3-envoltoria-minima-1a-ordem
+    norma: "NBR 6118:2023"
+    item: "11.3.3.4.3, Figura 11.3"
+    pagina: 61
+    clausula_ref: NBR6118-11.3.3.4.3-figura-11.3-envoltoria-minima-1a-ordem
+    titulo: "Envoltória mínima de 1ª ordem — elipse de expoente 2 no plano (M_x, M_y), lado SOLICITANTE"
+    latex: "\\left(\\frac{M_{1d,\\min,x}}{M_{1d,\\min,xx}}\\right)^{2} + \\left(\\frac{M_{1d,\\min,y}}{M_{1d,\\min,yy}}\\right)^{2} = 1"
+    sympy: "Eq((M_1d_min_x/M_1d_min_xx)**2 + (M_1d_min_y/M_1d_min_yy)**2, 1)"
+    componentes_na_figura:
+      M_1d_min_xx:
+        latex: "M_{1d,\\min,xx} = N_d\\,(0{,}015 + 0{,}03\\,h)"
+        sympy: "Eq(M_1d_min_xx, N_d*(0.015 + 0.03*h))"
+        nota: "momento em torno do eixo x (seta HORIZONTAL no croqui da figura); usa h, a dimensão VERTICAL da seção"
+      M_1d_min_yy:
+        latex: "M_{1d,\\min,yy} = N_d\\,(0{,}015 + 0{,}03\\,b)"
+        sympy: "Eq(M_1d_min_yy, N_d*(0.015 + 0.03*b))"
+        nota: "momento em torno do eixo y (seta VERTICAL no croqui da figura); usa b, a dimensão HORIZONTAL da seção"
+    variaveis:
+      M_1d_min_x:  {descricao: "componente em flexão composta OBLÍQUA do momento mínimo de 1ª ordem, segundo x", unidade: "kN.m", valor: null}
+      M_1d_min_y:  {descricao: "componente em flexão composta OBLÍQUA do momento mínimo de 1ª ordem, segundo y", unidade: "kN.m", valor: null}
+      M_1d_min_xx: {descricao: "componente em flexão composta NORMAL do momento mínimo de 1ª ordem, em torno de x — semieixo da elipse sobre M_x", unidade: "kN.m", valor: null}
+      M_1d_min_yy: {descricao: "componente em flexão composta NORMAL do momento mínimo de 1ª ordem, em torno de y — semieixo da elipse sobre M_y", unidade: "kN.m", valor: null}
+      N_d: {descricao: "força normal de cálculo", unidade: "kN", valor: null}
+      h:   {descricao: "dimensão VERTICAL da seção retangular no croqui da Figura 11.3", unidade: "m", valor: null}
+      b:   {descricao: "dimensão HORIZONTAL da seção retangular no croqui da Figura 11.3", unidade: "m", valor: null}
+    dominio_validade: >-
+      PILARES DE SEÇÃO RETANGULAR, em estruturas reticuladas. Uso FACULTATIVO e
+      declarado A FAVOR DA SEGURANÇA ("pode-se definir uma envoltória mínima de
+      1ª ordem, tomada a favor da segurança").
+      EXPOENTE 2 — NÃO é o α de 17.2.5. Esta é a envoltória do lado
+      SOLICITANTE; a de 17.2.5 é do lado RESISTENTE.
+      CORRESPONDÊNCIA CRUZADA DIMENSÃO↔EIXO, explícita na figura: M_xx usa h e
+      M_yy usa b, ou seja, cada momento mínimo usa a dimensão da seção medida
+      NO PLANO EM QUE ELE FLEXIONA. O registro genérico de 11.3.3.4.3 ("h é a
+      altura total da seção transversal na direção considerada") não desambigua
+      isso; a figura, sim.
+      h e b em METROS — a constante 0,03 tem unidade implícita e a expressão
+      QUEBRA se a dimensão vier em cm.
+      CRITÉRIO DE APROVAÇÃO associado (texto após a figura, transcrito na
+      cláusula): a verificação do momento mínimo está atendida quando o
+      dimensionamento adotado produz uma ENVOLTÓRIA RESISTENTE QUE ENGLOBE
+      esta elipse. A Norma manda "englobar" mas NÃO escreve o teste de
+      inclusão de uma curva na outra — isso é derivação, decisão do a2.
+      SÓ BASTA para pilar curto: havendo efeitos locais de 2ª ordem em qualquer
+      direção, aplica-se ainda a envoltória mínima com 2ª ordem de 15.3.2.
+    leitura_visual:
+      passada_1: "página PDF 79 (impressa 61) inteira a 300 dpi"
+      passada_2: "recortes independentes do quadro da equação a 700 dpi e do croqui da seção a 500 dpi — o recorte a 700 dpi foi feito para confirmar o EXPOENTE 2, ponto de maior risco de confusão com o α = 1,2 de 17.2.5"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-15.3.2-fig15.2-envoltoria-minima-2a-ordem
+    norma: "NBR 6118:2023"
+    item: "15.3.2, Figura 15.2"
+    pagina: 102
+    clausula_ref: NBR6118-15.3.2-figura-15.2-envoltoria-minima-2a-ordem
+    titulo: "Envoltória mínima COM 2ª ordem — mesma elipse de expoente 2, com M_d,tot,mín no lugar de M_1d,mín"
+    latex: "\\left(\\frac{M_{d,tot,\\min,x}}{M_{d,tot,\\min,xx}}\\right)^{2} + \\left(\\frac{M_{d,tot,\\min,y}}{M_{d,tot,\\min,yy}}\\right)^{2} = 1"
+    sympy: "Eq((M_d_tot_min_x/M_d_tot_min_xx)**2 + (M_d_tot_min_y/M_d_tot_min_yy)**2, 1)"
+    variaveis:
+      M_d_tot_min_x:  {descricao: "componente em flexão composta OBLÍQUA do momento total mínimo (1ª + 2ª ordens), segundo x", unidade: "kN.m", valor: null}
+      M_d_tot_min_y:  {descricao: "componente em flexão composta OBLÍQUA do momento total mínimo, segundo y", unidade: "kN.m", valor: null}
+      M_d_tot_min_xx: {descricao: "componente em flexão composta NORMAL do momento total mínimo, em torno de x, calculada a partir do momento mínimo de 1ª ordem e de acordo com 15.8.3", unidade: "kN.m", valor: null}
+      M_d_tot_min_yy: {descricao: "componente em flexão composta NORMAL do momento total mínimo, em torno de y, idem", unidade: "kN.m", valor: null}
+    dominio_validade: >-
+      PILARES DE SEÇÃO RETANGULAR EM QUE HÁ NECESSIDADE DE CALCULAR OS EFEITOS
+      LOCAIS DE 2ª ORDEM. FORA DO ESCOPO DE CÁLCULO desta feature, que trata o
+      pilarete como pilar curto (λ < λ1, 2ª ordem dispensada por 15.8.2) — no
+      escopo atual vale a Figura 11.3, não esta. Registrado para marcar a
+      FRONTEIRA: se o a4/a5 vier a aceitar λ ≥ λ1, a envoltória a englobar
+      deixa de ser a de 1ª ordem e passa a ser esta, com M_d,tot,mín por 15.8.3
+      (e, por 15.8.3.1/15.8.3.2, λ > 90 obriga fluência e λ > 140 obriga o
+      método geral).
+      A Norma autoriza explicitamente obter M_d,tot,mín,xx e M_d,tot,mín,yy por
+      DUAS ANÁLISES DE FLEXÃO COMPOSTA NORMAL ISOLADAS, uma por direção
+      principal, com os momentos mínimos de 1ª ordem atuantes nos extremos do
+      pilar — não exige análise oblíqua acoplada.
+      No gráfico da figura as duas elipses são CONCÊNTRICAS: a interna é a de
+      1ª ordem (Figura 11.3), a externa é esta.
+    leitura_visual:
+      passada_1: "página PDF 120 (impressa 102) inteira a 300 dpi"
+      passada_2: "recorte independente do quadro da equação a 700 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-17.2.2-fig17.1-limites-dos-dominios
+    norma: "NBR 6118:2023"
+    item: "17.2.2 alínea g), Figura 17.1"
+    pagina: 122
+    clausula_ref: NBR6118-17.2.2-figura-17.1-limites-numericos-dos-dominios
+    titulo: "Figura 17.1 — limites de deformação dos domínios de ELU (os polos A, B e C e o valor 10‰)"
+    latex: "y_C = \\frac{(\\varepsilon_{cu} - \\varepsilon_{c2})\\,h}{\\varepsilon_{cu}}"
+    sympy: "Eq(y_C, (epsilon_cu - epsilon_c2)*h/epsilon_cu)"
+    limites_lidos_na_figura:
+      polo_A:
+        descricao: "polo do alongamento; dele partem a reta a e os domínios 1 e 2"
+        deformacao: "10‰ (dez por mil) de ALONGAMENTO na armadura tracionada"
+        valor_por_mil: 10.0
+        nota: "ESTE VALOR ESTÁ NA FIGURA, escrito ao lado do ponto A. NÃO está no texto corrido — foi por isso que a rodada anterior o deu como ausente. Ver kb/clausulas.jsonl, NBR6118-CORRECAO-10-por-mil-esta-na-figura-17.1."
+      polo_B:
+        descricao: "polo do encurtamento-limite, na borda comprimida; dele partem os domínios 3, 4 e 4a"
+        deformacao: "ε_cu (encurtamento na ruptura, definido em 8.2.10.1)"
+        valor_por_mil: null
+      polo_C:
+        descricao: "polo do domínio 5; situado sobre a vertical de ε_c2"
+        deformacao: "ε_c2 (encurtamento no início do patamar plástico, definido em 8.2.10.1)"
+        posicao: "à distância y_C = (ε_cu − ε_c2)·h/ε_cu medida a partir do nível da borda COMPRIMIDA (nível do polo B)"
+        valor_por_mil: null
+      reta_a: "tração uniforme — passa pelo polo A"
+      reta_b: "COMPRESSÃO UNIFORME — é a LINHA VERTICAL de abscissa ε_c2, que passa pelo polo C. É a figura, e não o texto, que estabelece que a compressão uniforme corresponde a encurtamento ε_c2 em toda a altura da seção."
+      fronteira_dominio_3_4: "ε_yd na armadura tracionada (domínio 3: ε_s ≥ ε_yd; domínio 4: ε_s < ε_yd). ε_yd aparece na figura APENAS como rótulo de abscissa, SEM valor e SEM expressão — lacuna ABERTA."
+    variaveis:
+      y_C:         {descricao: "distância do polo C à borda comprimida da seção", unidade: "m", valor: null}
+      epsilon_cu:  {descricao: "deformação específica de encurtamento do concreto na ruptura (8.2.10.1)", unidade: "adimensional (‰)", valor: null}
+      epsilon_c2:  {descricao: "deformação específica de encurtamento do concreto no início do patamar plástico (8.2.10.1)", unidade: "adimensional (‰)", valor: null}
+      h:           {descricao: "altura total da seção transversal", unidade: "m", valor: null}
+    dominio_validade: >-
+      Diagrama normativo dos domínios de deformação no ELU de solicitações
+      normais, para seções de vigas e pilares. É ele que fixa os limites da
+      varredura numérica da envoltória N_Rd–M_Rd.
+      ε_c2 e ε_cu NÃO são constantes: dependem da classe do concreto por
+      8.2.10.1 (até C50: 2,0‰ e 3,5‰; de C55 a C90: expressões). A figura
+      NÃO os quantifica — só os nomeia.
+      A Norma escreve APENAS a expressão literal de y_C. Substituir ε_c2 = 2,0‰
+      e ε_cu = 3,5‰ para obter y_C = 3h/7 é conta do agente, NÃO transcrição —
+      e só vale para concreto até C50.
+      LACUNA QUE PERMANECE: ε_yd continua sem valor e sem expressão em toda a
+      Norma. ε_yd = f_yd/E_s é leitura da geometria da Figura 8.5, ou seja,
+      INTERPRETAÇÃO — decisão pendente do a2.
+    leitura_visual:
+      passada_1: "página PDF 140 (impressa 122) inteira a 300 dpi"
+      passada_2: "três recortes independentes a 650 dpi — polo A e eixo inferior (para confirmar o valor 10‰ e a ausência de valor junto a ε_yd), polos B e C com a cota de y_C, e a região da reta b (para confirmar que o rótulo 'b' pertence à vertical de ε_c2)"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  - id: NBR6118-15.3.1-kappa-sec
+    norma: "NBR 6118:2023"
+    item: "15.3.1"
+    pagina: 101
+    clausula_ref: NBR6118-15.3.1-rigidez-secante-adimensional-e-mencao-a-abacos
+    titulo: "Rigidez secante adimensional κ_sec — registrada só por ser o contexto da única menção a ábacos em toda a Norma"
+    latex: "\\kappa_{sec} = \\frac{(EI)_{sec}}{A_c \\cdot h^{2} \\cdot f_{cd}}"
+    sympy: "Eq(kappa_sec, EI_sec/(A_c*h**2*f_cd))"
+    variaveis:
+      kappa_sec: {descricao: "rigidez secante adimensional", unidade: "adimensional", valor: null}
+      EI_sec:    {descricao: "rigidez secante, caracterizada pela reta AB da relação momento-curvatura da Figura 15.1", unidade: "kN.m2", valor: null}
+      A_c:       {descricao: "área da seção de concreto", unidade: "m2", valor: null}
+      h:         {descricao: "altura da seção considerada", unidade: "m", valor: null}
+      f_cd:      {descricao: "resistência de cálculo à compressão do concreto (12.3.3)", unidade: "kPa", valor: null}
+    dominio_validade: >-
+      Relação momento-curvatura de uma seção sob força normal constante, para
+      uso nos processos aproximados de efeitos locais de 2ª ordem (15.8.3.3).
+      FORA DO ESCOPO DE CÁLCULO desta feature (pilarete = pilar curto).
+      Registrado por UM motivo só: a frase que segue esta equação é a ÚNICA
+      ocorrência da palavra "ábaco" em toda a NBR 6118:2023 — "Esse valor da
+      rigidez secante adimensional pode ser colocado, em conjunto com os
+      valores últimos de N_Rd e M_Rd, em ábacos de interação força
+      normal-momento fletor."
+      A Norma apenas CONSTATA que ábacos existem. Não os prescreve como método,
+      não reproduz nenhum, não cita autor nem fonte, e não define as variáveis
+      adimensionais ν e μ que a bibliografia usa para indexá-los. Qualquer
+      ábaco ν–μ de terceiros é FONTE SECUNDÁRIA e não está no acervo.
+      Ver kb/clausulas.jsonl, NBR6118-BUSCA-NEG-abacos-adimensionais-nu-mu.
+    leitura_visual:
+      passada_1: "recorte da equação na página PDF 119 (impressa 101) a 700 dpi"
+      passada_2: "recorte independente a 420 dpi com enquadramento diferente, incluindo a frase de definição que a antecede"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-envoltorias-e-17.2.5
+
+  # ===========================================================================
+  # RODADA 2026-09-03 (d) — backlog #13, rodada 4: ELU DE FORÇA CORTANTE
+  # do pilarete. NBR 6118:2023, §17.4 (elementos lineares) + §18.3.3.2
+  # (detalhamento da armadura transversal para cortante) + Emenda 1:2026.
+  #
+  # LEIA ANTES DE USAR QUALQUER FÓRMULA DESTE BLOCO:
+  #
+  #   (1) §17.4 NÃO É §19.4 NEM §19.5. O motor amplo (sapata) usa
+  #       tau_Rd2 = 0,27·alfa_v·f_cd de 19.5.3.1, que é uma TENSÃO em perímetro
+  #       crítico. Aqui V_Rd2 = 0,27·alfa_v2·f_cd·b_w·d é uma FORÇA em b_w·d.
+  #       Mesmo coeficiente 0,27, grandezas diferentes, itens diferentes,
+  #       símbolos diferentes (alfa_v x alfa_v2). Ver a cláusula
+  #       NBR6118-DELIMITACAO-17.4-vs-19.4-19.5.
+  #
+  #   (2) A NORMA OFERECE DOIS MODELOS E NÃO ESCOLHE. Modelo I (17.4.2.2) tem
+  #       theta = 45° fixo. Modelo II (17.4.2.3) tem theta "variável livremente
+  #       entre 30° e 45°" — ESCOLHA DO PROJETISTA. theta é ENTRADA DECLARADA,
+  #       nunca inferida pelo software (mesma doutrina de ell_e). O mesmo vale
+  #       para a escolha entre os dois modelos.
+  #
+  #   (3) TODAS AS EQUAÇÕES DESTE BLOCO PERDEM SEUS COEFICIENTES na camada de
+  #       texto do PDF: 0,27 / 0,54 / 0,6 / 0,9 / 0,2 / 0,67 / 300 mm / 200 mm
+  #       simplesmente não aparecem no texto decodificado. Todas foram lidas
+  #       VISUALMENTE em duas passadas independentes.
+  # ===========================================================================
+
+  - id: NBR6118-17.4.1.1.1-rho-sw-min
+    norma: "NBR 6118:2023"
+    item: "17.4.1.1.1"
+    pagina: 134
+    clausula_ref: NBR6118-17.4.1.1.1-armadura-transversal-minima
+    titulo: "Taxa geométrica MÍNIMA de armadura transversal por RESISTÊNCIA ao cortante"
+    latex: "\\rho_{sw} = \\dfrac{A_{sw}}{b_w\\,s\\,\\operatorname{sen}\\alpha} \\ge 0{,}2\\,\\dfrac{f_{ct,m}}{f_{ywk}}"
+    sympy: "Ge(A_sw/(b_w*s*sin(alpha)), 0.2*f_ct_m/f_ywk)"
+    variaveis:
+      rho_sw:  {descricao: "taxa geométrica da armadura transversal", unidade: "adimensional", valor: null}
+      A_sw:    {descricao: "área da seção transversal dos estribos", unidade: "cm2", valor: null}
+      b_w:     {descricao: "largura média da alma, medida ao longo da altura útil da seção, respeitada a restrição de 17.4.1.1.2", unidade: "cm", valor: null}
+      s:       {descricao: "espaçamento dos estribos, medido segundo o eixo longitudinal do elemento estrutural", unidade: "cm", valor: null}
+      alpha:   {descricao: "inclinação dos estribos em relação ao eixo longitudinal do elemento estrutural; 45° <= alpha <= 90° por 17.4.1.1.5", unidade: "grau", valor: null}
+      f_ct_m:  {descricao: "resistência média à tração do concreto, dada em 8.2.5 (= 0,3 f_ck^(2/3) para f_ck <= 50 MPa)", unidade: "MPa", valor: null}
+      f_ywk:   {descricao: "resistência característica ao escoamento do aço da armadura transversal", unidade: "MPa", valor: null}
+    dominio_validade: >-
+      Todos os elementos lineares submetidos a força cortante, COM EXCEÇÃO dos
+      três casos de 17.4.1.1.2 — e o terceiro deles é justamente "os pilares e
+      elementos lineares de fundação submetidos predominantemente à compressão"
+      que atendam, simultaneamente, a (i) não ultrapassar f_ctk em nenhum ponto,
+      com a seção calculada em ESTÁDIO I e na combinação mais desfavorável em
+      ELU, e (ii) V_Sd <= V_c, com V_c de 17.4.2.2. Atendidas as duas, "a
+      armadura transversal mínima é a definida na Seção 18".
+      NÃO CONFUNDIR COM 18.4.3: esta é uma TAXA (área por comprimento); 18.4.3 é
+      DIÂMETRO e ESPAÇAMENTO. São exigências DISTINTAS e COMPLEMENTARES, não
+      duplicadas. Quem resolve a sobreposição é o próprio texto: 18.4.3 manda
+      comparar com os mínimos de 18.3 "adotando-se o MENOR dos limites" quando
+      há necessidade de armadura para cortante.
+      Unidades: f_ct,m e f_ywk na MESMA unidade (rho_sw é adimensional). A
+      Norma não declara a unidade; a fonte secundária Bastos usa MPa nas duas.
+      NÃO_DECLARADO_NA_FONTE: qual f_ctk (inf ou sup) usar na condição (i) de
+      17.4.1.1.2-c) — 8.2.5 define f_ctk,inf e f_ctk,sup, e a diferença entre
+      os dois é de 86 %.
+    leitura_visual:
+      passada_1: "página PDF 152 (impressa 134) inteira a 300 dpi"
+      passada_2: "recorte da equação a 520 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # ver NBR6118-Em1-BUSCA-NEG-resto-de-17.4-e-18.3.3
+    observacao: >-
+      A camada de texto devolve a equação embaralhada — "rho alpha sw sw w ct,m
+      ywk = >= A b s sen f f 0 2 ," — na qual o "0,2" aparece partido em "0 2" e
+      o operador ">=" precede a fração. Um parser silencioso poderia produzir
+      0,02 (dez vezes menor, lado INSEGURO) ou inverter a desigualdade. A
+      leitura visual confirma: 0,2 (dois décimos), sinal >=, sen(alpha) NO
+      DENOMINADOR.
+
+  - id: NBR6118-17.4.2.1-condicoes-VRd2-VRd3
+    norma: "NBR 6118:2023"
+    item: "17.4.2.1"
+    pagina: 136
+    clausula_ref: NBR6118-17.4.2.1-condicoes-do-ELU-de-cortante
+    titulo: "As duas condições SIMULTÂNEAS do ELU de força cortante em elemento linear"
+    latex: "V_{Sd} \\le V_{Rd2} \\quad \\text{e} \\quad V_{Sd} \\le V_{Rd3} = V_c + V_{sw}"
+    sympy: "[Le(V_Sd, V_Rd2), Le(V_Sd, V_Rd3), Eq(V_Rd3, V_c + V_sw)]"
+    variaveis:
+      V_Sd:  {descricao: "força cortante solicitante de cálculo, na seção", unidade: "kN", valor: null}
+      V_Rd2: {descricao: "força cortante resistente de cálculo relativa à ruína das diagonais comprimidas de concreto (biela); modelo I ou II", unidade: "kN", valor: null}
+      V_Rd3: {descricao: "força cortante resistente de cálculo relativa à ruína por tração diagonal", unidade: "kN", valor: null}
+      V_c:   {descricao: "parcela de força cortante absorvida por mecanismos complementares ao da treliça", unidade: "kN", valor: null}
+      V_sw:  {descricao: "parcela resistida pela armadura transversal", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Verificação POR SEÇÃO TRANSVERSAL, não por elemento. As duas condições são
+      CUMULATIVAS: falhar em uma reprova. Na região dos apoios os cálculos devem
+      considerar as forças cortantes nas respectivas faces, com as reduções de
+      17.4.1.2.1 — reduções que são FACULTATIVAS, válidas só em apoio direto e
+      PROIBIDAS na verificação da compressão diagonal (V_Rd2).
+      V_Rd2 e V_Rd3 dependem do MODELO (17.4.2.2 ou 17.4.2.3) — a Norma oferece
+      os dois e não escolhe.
+    leitura_visual:
+      passada_1: "página PDF 154 (impressa 136) inteira a 300 dpi"
+      passada_2: "recorte da região das duas condições a 480 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.2-modelo-I-VRd2
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-a)"
+    pagina: 136
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — verificação da compressão diagonal do concreto (biela)"
+    latex: "V_{Rd2} = 0{,}27\\,\\alpha_{v2}\\,f_{cd}\\,b_w\\,d \\qquad \\alpha_{v2} = \\left(1 - \\dfrac{f_{ck}}{250}\\right)"
+    sympy: "[Eq(V_Rd2, 0.27*alpha_v2*f_cd*b_w*d), Eq(alpha_v2, 1 - f_ck/250)]"
+    variaveis:
+      V_Rd2:    {descricao: "força cortante resistente de cálculo relativa à ruína da biela comprimida", unidade: "kN", valor: null}
+      alpha_v2: {descricao: "coeficiente de efetividade do concreto fissurado ao cisalhamento", unidade: "adimensional", valor: null}
+      f_cd:     {descricao: "resistência de cálculo à compressão do concreto (12.3.3)", unidade: "kN/cm2 (consistente com b_w e d em cm)", valor: null}
+      f_ck:     {descricao: "resistência característica à compressão do concreto — NA EXPRESSÃO DE alpha_v2 É OBRIGATORIAMENTE EM MPa", unidade: "MPa", valor: null}
+      b_w:      {descricao: "menor largura da seção, compreendida ao longo da altura útil d", unidade: "cm", valor: null}
+      d:        {descricao: "altura útil da seção, igual à distância da borda comprimida ao CENTROIDE (redação da Emenda 1:2026; 'centro de gravidade' em 2023) da armadura de tração", unidade: "cm", valor: null}
+    dominio_validade: >-
+      Elementos lineares (14.4.1). Modelo I: theta = 45° FIXO — não há escolha de
+      theta neste modelo. NENHUMA DEPENDÊNCIA DE FORÇA NORMAL: N não entra em
+      V_Rd2. A força normal só age na parcela V_c (ver
+      NBR6118-17.4.2.2-modelo-I-Vc).
+      As reduções de V_Sd de 17.4.1.2.1 NÃO se aplicam a esta verificação — é
+      texto expresso da Norma.
+      ARMADILHA DE UNIDADE: f_ck entra em MPa dentro de alpha_v2 e f_cd entra na
+      unidade coerente com b_w·d. Misturar as duas é o erro clássico.
+      NÃO CONFUNDIR com tau_Rd2 = 0,27·alpha_v·f_cd de 19.5.3.1 (punção de laje):
+      lá é TENSÃO em perímetro crítico, aqui é FORÇA em b_w·d, e o símbolo do
+      coeficiente é alpha_v (sem o 2).
+    contraprova_externa: >-
+      BASTOS, Sapatas.pdf, Tabela A-4 (p. impressa 111): V_Rd2 = 0,35·b_w·d [kN,
+      cm] para C20. Conferência: 0,27 × (1 − 20/250) × (2,0/1,4) = 0,3549 —
+      fecha. E o exemplo numérico da p. impressa 85: b_w = 35 cm, d = 70 cm,
+      C20 -> V_Rd2 = 857,5 kN. Ver kb/exemplos.yaml,
+      BASTOS-1.13-viga-alavanca-cortante-modelo-I. É FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "página PDF 154 (impressa 136) inteira a 300 dpi"
+      passada_2: "recorte da equação no rodapé da página a 480 dpi, mais o recorte da definição de alpha_v2 no topo da página PDF 155 a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true    # só a designação de d ("centroide"); sem efeito numérico
+    emenda1_ref: NBR6118-Em1-17.4.2.2-d-centroide
+
+  - id: NBR6118-17.4.2.2-modelo-I-Vsw
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-b)"
+    pagina: 137
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — parcela resistida pela armadura transversal"
+    latex: "V_{sw} = \\dfrac{A_{sw}}{s}\\,0{,}9\\,d\\,f_{ywd}\\,(\\operatorname{sen}\\alpha + \\cos\\alpha)"
+    sympy: "Eq(V_sw, (A_sw/s)*0.9*d*f_ywd*(sin(alpha) + cos(alpha)))"
+    variaveis:
+      V_sw:  {descricao: "parcela da força cortante resistida pela armadura transversal", unidade: "kN", valor: null}
+      A_sw:  {descricao: "área da seção transversal dos estribos (soma dos ramos)", unidade: "cm2", valor: null}
+      s:     {descricao: "espaçamento entre elementos da armadura transversal, medido segundo o eixo longitudinal", unidade: "cm", valor: null}
+      d:     {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      f_ywd: {descricao: "tensão na armadura transversal passiva; limitada a f_yd para estribos e a 70 % de f_yd para barras dobradas, NUNCA superior a 435 MPa", unidade: "kN/cm2", valor: null}
+      alpha: {descricao: "ângulo de inclinação da armadura transversal em relação ao eixo longitudinal; 45° <= alpha <= 90°", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Modelo I. Estribo vertical: alpha = 90°, sen = 1, cos = 0, e a expressão
+      degenera em V_sw = (A_sw/s)·0,9·d·f_ywd.
+      TETO DE 435 MPa em f_ywd: governa CA-60 (f_yd = 521,7 MPa) e NÃO governa
+      CA-50 (f_yd = 434,8 MPa). Implementar o teto é obrigatório — omiti-lo é
+      erro do lado INSEGURO em CA-60.
+      O braço 0,9·d é FIXO na expressão da Norma; não é z calculado da seção.
+      No caso de armadura transversal ATIVA há regra própria (acréscimo de tensão
+      limitado a f_pyd menos a tensão de protensão e a 435 MPa) — FORA DO ESCOPO
+      do pilarete, que é armado.
+    contraprova_externa: >-
+      BASTOS, Tabela A-4 (p. impressa 111), forma invertida para C20:
+      A_sw = 2,55·V_Sd/d − 0,17·b_w [cm2/m, kN, cm], que já embute V_c0 e o
+      estribo vertical. Exemplo numérico p. impressa 86: V_Sd = 574,4 kN,
+      d = 70 cm, b_w = 35 cm -> A_sw = 14,97 cm2/m. FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "página PDF 155 (impressa 137) inteira a 300 dpi"
+      passada_2: "recorte do bloco de equações a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.2-modelo-I-Vc
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-b), designações de V_c, V_c0, f_ctd e M_0"
+    pagina: "137-138"
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — parcela complementar V_c e a ÚNICA interação N–V que a NBR 6118 escreve para §17.4"
+    latex: "V_{c0} = 0{,}6\\,f_{ctd}\\,b_w\\,d \\qquad f_{ctd} = \\dfrac{f_{ctk,inf}}{\\gamma_c} \\qquad V_c = V_{c0}\\left(1 + \\dfrac{M_0}{M_{Sd,\\max}}\\right) \\le 2\\,V_{c0} \\quad (\\text{flexo-compressão}) \\qquad M_0 = P_d\\left(\\dfrac{W_1}{A_c} + e_p\\right) + N_{Sd}\\left(\\dfrac{W_1}{A_c}\\right)"
+    sympy: "[Eq(V_c0, 0.6*f_ctd*b_w*d), Eq(f_ctd, f_ctk_inf/gamma_c), Eq(V_c, Min(V_c0*(1 + M_0/M_Sd_max), 2*V_c0)), Eq(M_0, P_d*(W_1/A_c + e_p) + N_Sd*(W_1/A_c))]"
+    casos_de_V_c:
+      tracionado_LN_fora_da_secao: "V_c = 0"
+      flexao_simples_e_flexo_tracao_com_LN_cortando_a_secao: "V_c = V_c0"
+      flexo_compressao: "V_c = V_c0 (1 + M_0/M_Sd,máx) <= 2 V_c0"
+    variaveis:
+      V_c:       {descricao: "parcela de força cortante absorvida por mecanismos complementares ao da treliça", unidade: "kN", valor: null}
+      V_c0:      {descricao: "valor de referência de V_c", unidade: "kN", valor: null}
+      f_ctd:     {descricao: "resistência de cálculo do concreto à tração", unidade: "kN/cm2", valor: null}
+      f_ctk_inf: {descricao: "resistência característica inferior à tração (8.2.5: 0,7 f_ct,m)", unidade: "MPa", valor: null}
+      gamma_c:   {descricao: "coeficiente de ponderação da resistência do concreto (12.4.1)", unidade: "adimensional", valor: null}
+      b_w:       {descricao: "menor largura da seção ao longo da altura útil d", unidade: "cm", valor: null}
+      d:         {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      M_0:       {descricao: "momento fletor que ANULA a tensão normal de compressão na borda da seção tracionada por M_Sd,máx", unidade: "kN.cm", valor: null}
+      M_Sd_max:  {descricao: "momento fletor de cálculo máximo na seção em análise (alternativa: na seção de maior M_Sd,máx do semitramo)", unidade: "kN.cm", valor: null}
+      P_d:       {descricao: "força de protensão de cálculo — ZERO em concreto armado", unidade: "kN", valor: 0}
+      e_p:       {descricao: "excentricidade do cabo de protensão", unidade: "cm", valor: null}
+      N_Sd:      {descricao: "força normal concomitante com V_Sd; a tensão que M_0 anula é calculada com gamma_f = 1,0 (e gamma_p = 0,9)", unidade: "kN", valor: null}
+      W_1:       {descricao: "módulo de resistência na fibra mais tracionada", unidade: "cm3", valor: null}
+      A_c:       {descricao: "área da seção transversal de concreto", unidade: "cm2", valor: null}
+    dominio_validade: >-
+      ESTA É A RESPOSTA AO ITEM 4 DA RODADA (interação N–V). A NBR 6118:2023 TEM,
+      SIM, efeito explícito da força normal de compressão sobre a resistência ao
+      cortante em §17.4, e ele é EXATAMENTE UM: a majoração da parcela V_c, com
+      TETO em 2·V_c0. Não há qualquer efeito de N sobre V_Rd2 (a biela).
+      PARA O PILARETE (concreto armado, sem protensão) P_d = 0 e
+      M_0 = N_Sd·W_1/A_c.
+      TRÊS ARMADILHAS, todas do texto da própria Norma:
+        (a) A tensão que M_0 anula é calculada "com valores de gamma_f e gamma_p
+            iguais a 1,0 e 0,9, respectivamente". Logo o N_Sd de M_0 NÃO é o N_d
+            majorado da combinação. Usar N_d majorado MAJORA V_c e é do lado
+            INSEGURO. Como conciliar isso com M_Sd,máx, que é de CÁLCULO, é
+            NÃO_DECLARADO_NA_FONTE — decisão do a2.
+        (b) Com M_Sd,máx -> 0 (pilarete quase só comprimido) a razão M_0/M_Sd,máx
+            explode. O teto 2·V_c0 é o único freio e PRECISA estar implementado.
+            Um teste de mutação que remova o teto tem de quebrar.
+        (c) W_1 é "o módulo de resistência na fibra mais tracionada". Em seção
+            retangular de pilar sob flexão OBLÍQUA há duas fibras candidatas,
+            uma por direção, e a Norma não diz qual usar nem se a verificação é
+            por direção. NÃO_DECLARADO_NA_FONTE.
+      f_ctk,inf vem de 8.2.5 (= 0,7·f_ct,m). O gamma_c é o de 12.4.1, sujeito ao
+      novo parágrafo da Emenda 1:2026 ("outros valores devem ser adotados em
+      casos específicos") — ver NBR6118-Em1-12.4.1-novo-paragrafo.
+    contraprova_externa: >-
+      CONFERÊNCIA FECHADA CONTRA A TABELA A-4 DO BASTOS (p. impressa 111), para
+      C20, estribo vertical, gamma_c = 1,4, gamma_s = 1,15, CA-50, flexão
+      simples. Cadeia: f_ct,m = 0,3·20^(2/3) = 2,2104 MPa; f_ctk,inf =
+      0,7 × 2,2104 = 1,5473 MPa; f_ctd = 1,5473/1,4 = 1,1052 MPa =
+      0,110522 kN/cm2 (1 MPa = 0,1 kN/cm2 — a conversão que mais gera erro de
+      uma ordem de grandeza aqui); V_c0 = 0,6 × 0,110522 × b_w·d =
+      0,0663·b_w·d [kN, cm].
+      O 0,0663 NÃO aparece literalmente no Bastos; ele aparece EMBUTIDO em dois
+      lugares da Tabela A-4, e os dois fecham:
+        (1) no termo −0,17·b_w da expressão A_sw = 2,55·V_Sd/d − 0,17·b_w
+            [cm2/m], porque 100·V_c0/(0,9·d·43,5) = 2,5556·(0,0663·b_w) =
+            0,1694·b_w ≈ 0,17·b_w;
+        (2) em V_Sd,mín = 0,101·b_w·d, que é a cortante abaixo da qual a
+            armadura MÍNIMA de 17.4.1.1.1 governa — resolvendo
+            2,5556·V/d − 0,1694·b_w = 20·(f_ct,m/f_ywk)·b_w = 0,08842·b_w
+            resulta V = 0,1011·b_w·d. Fecha na terceira casa.
+      Esta segunda conferência é valiosa porque AMARRA NUMERICAMENTE, num único
+      número de terceiros, 17.4.1.1.1 (rho_sw,mín), 17.4.2.2 (V_c0) e o teto de
+      435 MPa de f_ywd. É a melhor fixture disponível no acervo.
+      ATENÇÃO: V_Sd,mín (0,101·b_w·d) e V_c0 (0,0663·b_w·d) são grandezas
+      DIFERENTES e não devem ser confundidas ao montar fixture.
+      FONTE SECUNDÁRIA, e o exemplo do Bastos é de FLEXÃO SIMPLES (V_c = V_c0):
+      ele NÃO exercita a majoração da flexo-compressão, que fica SEM contraprova
+      externa no acervo.
+    leitura_visual:
+      passada_1: "páginas PDF 155 e 156 (impressas 137 e 138) inteiras a 300 dpi"
+      passada_2: "recorte do bloco V_c/V_c0/f_ctd a 430 dpi e recorte independente da expressão de M_0 a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+    observacao: >-
+      A expressão de M_0 sai da camada de texto como uma pilha de símbolos
+      soltos — "1 1 G S 6G c c W W 0 3 H 1 A A" — da qual NÃO se recupera
+      P_d(W_1/A_c + e_p) + N_Sd(W_1/A_c). Só existe por leitura visual.
+
+  - id: NBR6118-17.4.2.2-decalagem-a-l
+    norma: "NBR 6118:2023"
+    item: "17.4.2.2-c)"
+    pagina: 138
+    clausula_ref: NBR6118-17.4.2.2-modelo-de-calculo-I
+    titulo: "Modelo de cálculo I — decalagem do diagrama de força no banzo tracionado"
+    latex: "a_\\ell = d\\left[\\dfrac{V_{Sd,\\max}}{2\\,(V_{Sd,\\max} - V_c)}\\,(1 + \\operatorname{cotg}\\alpha) - \\operatorname{cotg}\\alpha\\right] \\le d"
+    sympy: "Le(a_l, d*(V_Sd_max/(2*(V_Sd_max - V_c))*(1 + cot(alpha)) - cot(alpha)))"
+    pisos_e_tetos:
+      - "a_l = d, para |V_Sd,máx| <= |V_c|"
+      - "a_l >= 0,5 d, no caso geral"
+      - "a_l >= 0,2 d, para estribos inclinados a 45°"
+      - "a_l <= d (teto da própria expressão)"
+    alternativa_forca_de_tracao:
+      latex: "F_{Sd,cor} = \\dfrac{M_{Sd}}{z} + |V_{Sd}|\\,\\dfrac{a_\\ell}{d} \\le \\dfrac{M_{Sd,\\max}}{z_{\\max}}"
+      sympy: "Le(F_Sd_cor, M_Sd/z + Abs(V_Sd)*a_l/d)"
+    variaveis:
+      a_l:       {descricao: "comprimento de decalagem do diagrama de força no banzo tracionado", unidade: "cm", valor: null}
+      d:         {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      V_Sd_max:  {descricao: "força cortante de cálculo máxima no trecho", unidade: "kN", valor: null}
+      V_c:       {descricao: "parcela complementar de 17.4.2.2", unidade: "kN", valor: null}
+      alpha:     {descricao: "inclinação da armadura transversal", unidade: "grau", valor: null}
+      F_Sd_cor:  {descricao: "força de tração corrigida no banzo tracionado", unidade: "kN", valor: null}
+      M_Sd:      {descricao: "momento fletor de cálculo na seção", unidade: "kN.cm", valor: null}
+      z:         {descricao: "braço de alavanca das forças resultantes internas", unidade: "cm", valor: null}
+      M_Sd_max:  {descricao: "momento fletor de cálculo máximo no trecho em análise", unidade: "kN.cm", valor: null}
+      z_max:     {descricao: "valor de z correspondente a M_Sd,máx", unidade: "cm", valor: null}
+    dominio_validade: >-
+      Matéria de armadura LONGITUDINAL de flexão, não de capacidade ao cortante.
+      Extraída porque o item 17.4.2.2 foi transcrito INTEGRALMENTE (regra 4 do
+      procedimento: não cortar alíneas). Não entra em V_Rd2 nem em V_Rd3.
+      Para o pilarete a aplicabilidade é DUVIDOSA e não foi verificada: a
+      decalagem pressupõe diagrama de momentos ao longo de um vão e armadura
+      longitudinal dimensionada por equilíbrio de seção à flexão — o pilarete é
+      dimensionado por flexão composta oblíqua com armadura simétrica. FORA DO
+      ESCOPO desta rodada; registrado para não sumir.
+    leitura_visual:
+      passada_1: "página PDF 156 (impressa 138) inteira a 300 dpi"
+      passada_2: "recorte da expressão de a_l e da de F_Sd,cor a 430 dpi"
+      divergencia: false
+    status: FORA_DO_ESCOPO_DESTA_RODADA
+    alterada_por_emenda1: false
+
+  - id: NBR6118-17.4.2.3-modelo-II-VRd2
+    norma: "NBR 6118:2023"
+    item: "17.4.2.3-a)"
+    pagina: 138
+    clausula_ref: NBR6118-17.4.2.3-modelo-de-calculo-II
+    titulo: "Modelo de cálculo II — compressão diagonal com theta ARBITRADO PELO PROJETISTA entre 30° e 45°"
+    latex: "V_{Rd2} = 0{,}54\\,\\alpha_{v2}\\,f_{cd}\\,b_w\\,d\\,\\operatorname{sen}^2\\theta\\,(\\operatorname{cotg}\\alpha + \\operatorname{cotg}\\theta) \\qquad \\alpha_{v2} = \\left(1 - \\dfrac{f_{ck}}{250}\\right)"
+    sympy: "[Eq(V_Rd2, 0.54*alpha_v2*f_cd*b_w*d*sin(theta)**2*(cot(alpha) + cot(theta))), Eq(alpha_v2, 1 - f_ck/250)]"
+    variaveis:
+      V_Rd2:    {descricao: "força cortante resistente de cálculo relativa à ruína da biela comprimida", unidade: "kN", valor: null}
+      alpha_v2: {descricao: "coeficiente de efetividade do concreto fissurado ao cisalhamento", unidade: "adimensional", valor: null}
+      f_cd:     {descricao: "resistência de cálculo à compressão do concreto", unidade: "kN/cm2", valor: null}
+      f_ck:     {descricao: "resistência característica à compressão — em MPa dentro de alpha_v2", unidade: "MPa", valor: null}
+      b_w:      {descricao: "menor largura da seção ao longo da altura útil d", unidade: "cm", valor: null}
+      d:        {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      theta:    {descricao: "ângulo de inclinação das bielas de compressão — ESCOLHA DO PROJETISTA, variável LIVREMENTE entre 30° e 45°", unidade: "grau", valor: null}
+      alpha:    {descricao: "ângulo de inclinação da armadura transversal; 45° <= alpha <= 90° (17.4.1.1.5, mantido por 17.4.2.3)", unidade: "grau", valor: null}
+    dominio_validade: >-
+      Elementos lineares. ESTE É O ÚNICO PARÂMETRO DE ESCOLHA DO PROJETISTA em
+      todo o §17.4: "theta variável LIVREMENTE entre 30° e 45°". A Norma NÃO fixa
+      theta, NÃO dá critério de escolha, NÃO recomenda valor e NÃO manda otimizar.
+      Portanto theta é ENTRADA DECLARADA pelo engenheiro, jamais inferida pelo
+      software — mesma doutrina já aplicada a ell_e no pilarete.
+      LIMITES QUE A NORMA PERMITE, transcritos e não escolhidos:
+        30° <= theta <= 45°   (17.4.2.3, primeiro parágrafo)
+        45° <= alpha <= 90°   (17.4.1.1.5, mantido por 17.4.2.3)
+      A ESCOLHA NÃO É NEUTRA: theta menor AUMENTA V_sw (cotg theta cresce) e
+      DIMINUI V_Rd2. Escolher theta é escolher o resultado.
+      PROPRIEDADE DE FRONTEIRA, útil como teste ao a7: em theta = 45° e
+      alpha = 90°, sen²theta = 0,5, cotg alpha = 0, cotg theta = 1, e
+      V_Rd2(II) = 0,54 × 0,5 × alpha_v2 f_cd b_w d = 0,27 alpha_v2 f_cd b_w d =
+      V_Rd2(I). Os dois modelos COINCIDEM nessa fronteira.
+      Observação para o a2: 17.5.1.1 (torção) usa o mesmo intervalo 30°–45° com
+      redação diferente — "pode ser arbitrada pelo projeto". A palavra
+      "arbitrada" confirma a leitura de que a decisão é do projetista.
+    leitura_visual:
+      passada_1: "página PDF 156 (impressa 138) inteira a 300 dpi"
+      passada_2: "recorte da equação e da frase do intervalo de theta a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false   # a lista da Emenda salta de "Página 137" para "Página 141"
+    observacao: >-
+      A camada de texto perde o 0,54 exatamente como perde o 0,27 do Modelo I
+      ("VRd2 Dv2 fcd bw d sen2 T (cotg DFRWJT") e perde também o intervalo de
+      theta ("com T variável livremente entre  e "). Sem leitura visual não há
+      Modelo II nenhum.
+
+  - id: NBR6118-17.4.2.3-modelo-II-Vsw-e-Vc1
+    norma: "NBR 6118:2023"
+    item: "17.4.2.3-b)"
+    pagina: 139
+    clausula_ref: NBR6118-17.4.2.3-modelo-de-calculo-II
+    titulo: "Modelo de cálculo II — armadura transversal e a REDUÇÃO de V_c com o aumento de V_Sd"
+    latex: "V_{sw} = \\dfrac{A_{sw}}{s}\\,0{,}9\\,d\\,f_{ywd}\\,(\\operatorname{cotg}\\alpha + \\operatorname{cotg}\\theta)\\operatorname{sen}\\alpha"
+    sympy: "Eq(V_sw, (A_sw/s)*0.9*d*f_ywd*(cot(alpha) + cot(theta))*sin(alpha))"
+    casos_de_V_c:
+      tracionado_LN_fora_da_secao: "V_c = 0"
+      flexao_simples_e_flexo_tracao_com_LN_cortando_a_secao: "V_c = V_c1"
+      flexo_compressao: "V_c = V_c1 (1 + M_0/M_Sd,máx) < 2 V_c1"
+    V_c1:
+      - "V_c1 = V_c0 quando V_Sd <= V_c0"
+      - "V_c1 = 0 quando V_Sd = V_Rd2"
+      - "interpolando-se linearmente para valores intermediários"
+    variaveis:
+      V_sw:  {descricao: "parcela resistida pela armadura transversal", unidade: "kN", valor: null}
+      A_sw:  {descricao: "área da seção transversal dos estribos", unidade: "cm2", valor: null}
+      s:     {descricao: "espaçamento da armadura transversal", unidade: "cm", valor: null}
+      d:     {descricao: "altura útil da seção", unidade: "cm", valor: null}
+      f_ywd: {descricao: "tensão na armadura transversal, com o mesmo teto de 435 MPa de 17.4.2.2", unidade: "kN/cm2", valor: null}
+      alpha: {descricao: "inclinação da armadura transversal; 45° a 90°", unidade: "grau", valor: null}
+      theta: {descricao: "inclinação das bielas; 30° a 45°, ARBITRADO pelo projetista", unidade: "grau", valor: null}
+      V_c1:  {descricao: "parcela complementar do Modelo II, que decresce linearmente de V_c0 (em V_Sd = V_c0) até 0 (em V_Sd = V_Rd2)", unidade: "kN", valor: null}
+      V_c0:  {descricao: "0,6 f_ctd b_w d, definido em 17.4.2.2 e mantido por 17.4.2.3", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Modelo II. "São mantidas a notação e as limitações definidas em 17.4.2.2" —
+      logo V_c0, f_ctd, M_0, o teto de 435 MPa em f_ywd e o intervalo de alpha
+      valem sem alteração.
+      DIFERENÇA TIPOGRÁFICA REAL, transcrita como está na fonte e NÃO
+      uniformizada por este extrator: o Modelo I escreve "<= 2 V_c0" e o Modelo
+      II escreve "< 2 V_c1" (menor ESTRITO). A Norma não traz nota explicando a
+      diferença. Se é erro de composição, não cabe ao extrator corrigir —
+      decisão do a2. Registrado porque um teste em cima do valor 2·V_c1 vai
+      depender de qual leitura o a2 congelar.
+      A regra de V_c1 é uma INTERPOLAÇÃO LINEAR IMPLÍCITA entre dois pontos
+      (V_Sd = V_c0 -> V_c1 = V_c0) e (V_Sd = V_Rd2 -> V_c1 = 0). A Norma dá os
+      dois extremos e a palavra "interpolando-se linearmente"; NÃO escreve a
+      fórmula fechada. Escrevê-la é derivação — legítima, mas tem de ser
+      declarada como DERIVAÇÃO no ruleset, não como transcrição.
+      NÃO_DECLARADO_NA_FONTE: o comportamento quando V_Sd < V_c0 já está coberto
+      (V_c1 = V_c0), mas o texto não diz o que fazer se V_Sd > V_Rd2 — situação
+      em que, de todo modo, 17.4.2.1 já reprova.
+    contraprova_externa: >-
+      BASTOS, Tabela A-5 (p. impressa 111), "equações simplificadas segundo o
+      Modelo de Cálculo II para concretos do Grupo I", com estribo vertical,
+      gamma_c = 1,4, gamma_s = 1,15, CA-50/CA-60 e flexão simples. Para C20:
+      V_Rd2 = 0,71·b_w·d·sen(theta)·cos(theta). Conferência contra a Norma:
+      0,54 × 0,92 × (2,0/1,4) = 0,7097 e sen²theta·cotg theta = sen theta·cos
+      theta — fecha em forma e em valor. FONTE SECUNDÁRIA; a tabela do Bastos
+      NÃO cobre flexo-compressão.
+    leitura_visual:
+      passada_1: "página PDF 157 (impressa 139) inteira a 300 dpi"
+      passada_2: "recorte do bloco de equações a 430 dpi"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: false
+
+  - id: NBR6118-18.3.3.2-espacamentos-estribos-cortante
+    norma: "NBR 6118:2023"
+    item: "18.3.3.2"
+    pagina: 150
+    clausula_ref: NBR6118-18.3.3.1-18.3.3.2-armadura-transversal-cortante-vigas
+    titulo: "Detalhamento do estribo PARA CORTANTE — diâmetro, espaçamento longitudinal máximo e espaçamento transversal máximo entre ramos"
+    latex: "\\phi_t \\ge 5\\ \\mathrm{mm},\\ \\phi_t \\le b_w/10 \\qquad s_{\\max} = \\begin{cases}\\min(0{,}6d,\\ 300\\ \\mathrm{mm}) & V_d \\le 0{,}67\\,V_{Rd2}\\\\ \\min(0{,}3d,\\ 200\\ \\mathrm{mm}) & V_d > 0{,}67\\,V_{Rd2}\\end{cases} \\qquad s_{t,\\max} = \\begin{cases}\\min(d,\\ 800\\ \\mathrm{mm}) & V_d \\le 0{,}20\\,V_{Rd2}\\\\ \\min(0{,}6d,\\ 350\\ \\mathrm{mm}) & V_d > 0{,}20\\,V_{Rd2}\\end{cases}"
+    sympy: "[Ge(phi_t, 5), Le(phi_t, b_w/10), Eq(s_max, Piecewise((Min(0.6*d, 300), V_d <= 0.67*V_Rd2), (Min(0.3*d, 200), True))), Eq(s_t_max, Piecewise((Min(d, 800), V_d <= 0.20*V_Rd2), (Min(0.6*d, 350), True)))]"
+    limites_de_diametro:
+      minimo_geral: "5 mm"
+      maximo: "1/10 da largura da alma da viga"
+      barra_lisa: "diâmetro NÃO pode ser superior a 12 mm"
+      tela_soldada: "mínimo pode cair para 4,2 mm, desde que tomadas precauções contra corrosão"
+    espacamento_minimo: >-
+      "suficiente para permitir a passagem do vibrador, garantindo um bom
+      adensamento da massa" — critério QUALITATIVO, sem número. A Norma não dá
+      valor; qualquer número que o software adotar é hipótese declarada, não
+      requisito normativo.
+    variaveis:
+      phi_t:   {descricao: "diâmetro da barra que constitui o estribo", unidade: "mm", valor: null}
+      b_w:     {descricao: "largura da alma da viga (o item está em 18.3, Vigas)", unidade: "mm", valor: null}
+      s_max:   {descricao: "espaçamento longitudinal máximo entre estribos", unidade: "mm", valor: null}
+      s_t_max: {descricao: "espaçamento transversal máximo entre ramos sucessivos de estribos", unidade: "mm", valor: null}
+      d:       {descricao: "altura útil da seção", unidade: "mm", valor: null}
+      V_d:     {descricao: "força cortante de cálculo — a Norma escreve V_d neste item e V_Sd em todo o 17.4; se são o mesmo objeto é NAO_DECLARADO_NA_FONTE", unidade: "kN", valor: null}
+      V_Rd2:   {descricao: "força cortante resistente relativa à biela, do modelo adotado (17.4.2.2 ou 17.4.2.3)", unidade: "kN", valor: null}
+    dominio_validade: >-
+      Item redigido para VIGAS (18.3) e alcançado no pilarete por TRÊS remissões
+      expressas: 17.4.1.1.6 ("os espaçamentos máximos e mínimos entre elementos
+      da armadura devem atender às exigências da Seção 18"), 17.4.1.1.2-c)
+      ("nesse caso, a armadura transversal mínima é a definida na Seção 18") e
+      18.4.3 ("quando houver necessidade de armaduras transversais para forças
+      cortantes e torção, esses valores devem ser comparados com os mínimos
+      especificados em 18.3 para vigas, adotando-se o menor dos limites especificados").
+      SOBREPOSIÇÃO COM 18.4.3, e ela é COMPLEMENTAR e não duplicada. Para um
+      pilarete com cortante a verificar valem SIMULTANEAMENTE:
+        (i)   s <= min(200 mm, b_mín, k_phi·phi)      — 18.4.3, detalhamento de pilar
+        (ii)  s <= s_max desta fórmula                 — 18.3.3.2, via 18.4.3
+        (iii) s_t <= s_t,max desta fórmula             — 18.3.3.2
+        (iv)  rho_sw >= 0,2 f_ct,m/f_ywk               — 17.4.1.1.1, salvo exceção de 17.4.1.1.2-c)
+        (v)   phi_t >= max(5 mm, phi/4)                — 18.4.3
+        (vi)  phi_long >= phi_t nas barras de canto    — 18.3.3.2, redação da Emenda 1:2026
+      Note que (v) e (vi) juntas encaixotam a relação dos diâmetros em
+      phi/4 <= phi_t <= phi, o que NENHUMA das duas fontes enuncia junto.
+      INTERPRETAÇÃO NECESSÁRIA, sinalizada e não resolvida aqui: aplicar
+      "phi_t <= b_w/10" a um pilar exige ler b_w como a menor dimensão da seção
+      do pilarete. É leitura natural e conservadora, mas é INTERPRETAÇÃO —
+      18.4.3 não traz teto de diâmetro de estribo, só piso.
+    contraprova_externa: >-
+      BASTOS, p. impressa 86: com V_Rd2 = 857,5 kN e V_Sd = 574,4 kN,
+      0,67·V_Rd2 = 574,5 kN > V_Sd -> s_máx = min(0,6×70, 30) = 30 cm; e
+      0,20·V_Rd2 = 171,5 kN < V_Sd -> s_t,máx = min(0,6×70, 35) = 35 cm. O caso
+      cai a 0,1 kN da fronteira dos 0,67·V_Rd2 — fixture de fronteira pronta
+      para o a7. FONTE SECUNDÁRIA.
+    leitura_visual:
+      passada_1: "páginas PDF 167 e 168 (impressas 150 e 151) a 300 dpi"
+      passada_2: "recortes independentes a 400 dpi do parágrafo de diâmetros e das quatro alíneas de espaçamento"
+      divergencia: false
+    status: OK
+    alterada_por_emenda1: true    # INCLUSÃO de parágrafo (barras de amarração), sem alterar número algum
+    emenda1_ref: NBR6118-Em1-18.3.3.2-barras-de-amarracao
+    observacao: >-
+      A camada de texto decodificada perde TODOS os números deste item ("se 9d d
+      9Rd2 entao Smáx Gd PP"): sem leitura visual não existem nem 0,67, nem
+      0,20, nem 0,6d, nem 300/200/800/350 mm.
