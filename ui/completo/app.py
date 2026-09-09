@@ -33,6 +33,7 @@ from calc_core.sapata_isolada.sapata import ResultadoSapata, Sapata
 
 from . import avisos, projeto, tema
 from .formulario import PainelEntrada, _camada_e_abaixo_na, _hf_valido
+from .janela_pilarete import JanelaPilarete
 from .modelo import construir_modelo_visual
 from .resultado import PainelResultado
 from .visualizacao import PainelVisualizacao
@@ -94,6 +95,14 @@ AVISO_ESCOPO_COMPLETO = avisos.AVISO_ESCOPO_COMPLETO
 
 
 class AppSapataCompleto(tk.Tk):
+    janela_pilarete: JanelaPilarete | None = None
+    """Instância ÚNICA da janela de verificação do pilarete de concreto
+    (REQ-UI-PILARETE-01) — atributo de CLASSE, default `None`. Cada
+    instância de `AppSapataCompleto` grava a SUA janela aqui (via
+    `_abrir_janela_pilarete`), sombreando o default de classe — mesmo
+    padrão de `JanelaPilarete.ultimo_resultado`. Reabrir com a janela já
+    aberta traz a existente para a frente; nunca constrói uma segunda."""
+
     def __init__(self) -> None:
         super().__init__()
         self.title(f"SAPATA-7 — {TITULO} (escopo amplo)")
@@ -234,6 +243,24 @@ class AppSapataCompleto(tk.Tk):
         paned.add(self.formulario, weight=0)
         paned.add(self.visualizacao, weight=3)
         paned.add(self.resultado, weight=2)
+
+    # -------------------------------------------------- pilarete de concreto
+    def _abrir_janela_pilarete(self) -> None:
+        """Abre `JanelaPilarete` (verificação STANDALONE do pilarete de
+        concreto, NBR 6118) ou traz a janela já aberta para a frente —
+        REQ-UI-PILARETE-01: instância ÚNICA, janela NÃO modal (o
+        engenheiro pode continuar consultando esta tela com ela aberta).
+        Nada do pilarete se propaga para o cálculo da sapata: este método
+        não lê nem escreve `self.formulario`, `self._sapata` nem
+        `self._resultado`, e `JanelaPilarete` não guarda referência
+        nenhuma para eles."""
+        if (self.janela_pilarete is not None
+                and self.janela_pilarete.winfo_exists()):
+            self.janela_pilarete.deiconify()
+            self.janela_pilarete.lift()
+            self.janela_pilarete.focus_force()
+            return
+        self.janela_pilarete = JanelaPilarete(self)
 
     def _montar_status(self) -> None:
         barra = ttk.Frame(self, style="Painel.TFrame")

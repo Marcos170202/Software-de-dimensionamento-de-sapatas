@@ -313,6 +313,24 @@ class PainelEntrada(ttk.Frame):
         self.v_ap = self._campo(f, 0, "a_p — direção X [m]", "0.20")
         self.v_bp = self._campo(f, 1, "b_p — direção Y [m]", "0.50")
         self.v_phi_arranque = self._campo(f, 2, "Ø arranque [mm]", "16")
+        # Backlog #13, rodada 5 (REQ-UI-PILARETE-01): botão de acionamento
+        # da janela do pilarete de concreto. Colocado nesta seção porque é
+        # a única do formulário que também descreve um pilar — mas o
+        # pilarete de concreto verificado por aquela janela é um ELEMENTO
+        # DIFERENTE (de fundação, engastado na sapata) e a verificação lá
+        # é STANDALONE: este botão só ABRE a janela, nunca lê nem escreve
+        # nenhum campo daqui (ver `_abrir_janela_pilarete` abaixo).
+        ttk.Button(f, text="Verificar pilarete de concreto (NBR 6118)...",
+                   command=self._abrir_janela_pilarete).grid(
+            row=3, column=0, columnspan=2, sticky="w", padx=8, pady=(4, 8))
+
+    def _abrir_janela_pilarete(self) -> None:
+        """Delega a abertura/foco da janela do pilarete à janela principal
+        (REQ-UI-PILARETE-01): a instância ÚNICA e o não-bloqueio pertencem
+        a ela, não a este painel — `PainelEntrada` só aciona o botão.
+        `winfo_toplevel()` é a janela de nível superior que contém este
+        painel (a janela principal do escopo amplo, em produção)."""
+        self.winfo_toplevel()._abrir_janela_pilarete()
 
     # -------------------------------------------------------------- materiais
     def _secao_materiais(self, pai: ttk.Frame, row: int) -> None:
