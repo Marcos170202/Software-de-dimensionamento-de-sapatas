@@ -1858,3 +1858,72 @@ backlog #13 fica invalidado por estes dois commits — nova rodada A7
 necessária sobre `calc_core/estrutural/pilarete/`. A revisão de
 `ui/completo/janela_pilarete.py`/`tests/test_ui_pilarete.py` (tela nova,
 commit `dabd2c1`) é rodada de GATE 2 separada, ainda pendente.
+
+---
+
+## Adendo — GATE 2, tela do pilarete (`ui/completo/janela_pilarete.py`, commit `dabd2c1`) — rodada 1 de 3
+
+## (a6) — **REPROVADO**, nota 4,0
+
+**Escopo.** `ui/completo/janela_pilarete.py` (nova, standalone `tk.Toplevel`),
+`ui/completo/app.py`/`formulario.py` (botão de lançamento) e
+`tests/test_ui_pilarete.py` (42 testes), implementando REQ-UI-PILARETE-01 a
+-12 do `ruleset.yaml` v15.
+
+**Camada 1.** 892 passed em 16,06s · cobertura do módulo 97% · radon A (2,02)
+· bandit 0 · ruff limpo em `janela_pilarete.py` (4 achados, todos F401 no
+arquivo de teste). `mypy --strict` não acionável (baseline pré-existente de
+669 erros em `ui/`, anterior a este commit).
+
+**7 dos 9 pontos adversariais aprovados sem ressalva** (regra 4 — só chama
+`verificar_pilarete()`; standalone — nenhuma escrita automática em campo da
+sapata; tri-estado; nenhum `messagebox` — os dois bugs desta rodada
+(modal bloqueante ao adicionar barra vazia; corrupção de estado no loop de
+teste) confirmados fechados por reprodução, não só releitura; Faixa A/B
+visualmente distinta; cobrimento×barras com racional; memorial literal —
+`caixa.get(...) == list(resultado.memorial())` checado por execução).
+
+**Defeito ALTA — motivo da reprovação:** `janela_pilarete.py:321` (`_montar`,
+REQ-UI-PILARETE-12) — o aviso de que as entradas do pilarete **não são
+salvas no `.s7proj`** existe só no docstring do módulo (linhas 31-35), não
+em nenhum widget da tela (varredura recursiva de `text` confirma ausência
+de "não são salvas"/"s7proj"/"projeto"). Sem teste cobrindo o critério.
+
+**Dois MÉDIA:** (i) `tests/test_ui_pilarete.py:963-968` — asserção
+vacuamente verdadeira (`_adicionar_barra()` deixa `pos_h`/`pos_b` vazios,
+o que já quebra `_verificar()` por si só antes de testar a invalidação por
+edição; passaria mesmo sem a invalidação real); (ii)
+`janela_pilarete.py:760-762` (`ell_e_declarado`/`ell_0` sob
+`VINCULADO_DOIS_EXTREMOS`) sem nenhuma execução em teste — metade do
+GRUPO 1 de REQ-UI-PILARETE-04 descoberta.
+
+**Cinco BAIXA** (não bloqueantes): acoplamento por posição em
+`memorial()[-1]` (`:994`); comentário deslocado (`:116`); fórmula
+`1,95 − 0,05·b` não nomeada no card, atenuado por estar literal no
+memorial (`:1006`); 4×F401 no teste; `formulario.py:333` sem guarda em
+`winfo_toplevel()._abrir_janela_pilarete()`.
+
+**Achado sem severidade:** título pintado de verde quando `atendido`, mas
+em Faixa B `atendido=True` pode conviver com cortante nunca verificado
+(bloco próprio já sai em âmbar — não é veredito inseguro, só sugestão de
+também amarelar o título nesse caso).
+
+**Ação de processo, não defeito de código:** `ruleset.yaml` §
+REQ-UI-PILARETE-06 item 4 ficou desatualizado — condiciona o aviso de
+"espaçamento não conferido" à frase de quando REQ-PILARETE-20(c) não
+estivesse implementado, mas REQ-PILARETE-20(c) foi implementado em
+`1861586`. A tela reescreveu `TEXTO_ESPACAMENTO_NAO_CONFERIDO`
+corretamente (manter o texto antigo seria afirmação falsa e do lado
+inseguro); o ruleset precisa de correção de texto pelo a2 antes da
+próxima rodada, para não deixar a norma escrita do software divergente do
+que o código de fato faz.
+
+**Nota final: 4,0** (E1 4,0 · E2 5,0 · E3 4,5 · E4 4,5 · E5 3,5, média
+ponderada 4,35, `min(4,35; E1; E2)=4,0`). Portão exige E1≥4,5 e E5≥4,0.
+Não liberado para GATE 3. Relatório completo (não versionado):
+`relatorios/revisao_codigo_ui_pilarete_v15.json`.
+
+**Próximo passo:** a2 corrige o texto de REQ-UI-PILARETE-06 item 4; a3
+endereça o ALTA (aviso visível de não-persistência) e os dois MÉDIA
+(teste vacuamente verdadeiro; cobertura do GRUPO 1 de REQ-04) — rodada 2
+de 3 do GATE 2 desta tela.
