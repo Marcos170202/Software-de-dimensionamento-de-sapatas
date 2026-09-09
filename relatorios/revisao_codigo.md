@@ -1927,3 +1927,58 @@ Não liberado para GATE 3. Relatório completo (não versionado):
 endereça o ALTA (aviso visível de não-persistência) e os dois MÉDIA
 (teste vacuamente verdadeiro; cobertura do GRUPO 1 de REQ-04) — rodada 2
 de 3 do GATE 2 desta tela.
+
+---
+
+## Adendo — GATE 2, tela do pilarete (`ui/completo/janela_pilarete.py`, commit `c8d1773`) — rodada 2 de 3
+
+## (a6) — **APROVADO**, nota 4,5
+
+**Escopo desta rodada.** Restrito aos quatro pontos que reprovaram a rodada
+1 (ver adendo anterior) — os 7 pontos já aprovados sem ressalva não foram
+reabertos.
+
+**1. ALTA REQ-UI-PILARETE-12 — fechado.** `AVISO_PERSISTENCIA` confirmado
+por execução como filho direto do `Toplevel`, fora da área rolável e de
+`frame_resultado`: `winfo_ismapped()` verdadeiro assim que a janela abre,
+sem depender de `_verificar()`, e permanece assim em qualquer estado ou
+tamanho de janela testado. Conteúdo do aviso confirmado verdadeiro
+(fechar/reabrir devolve campos vazios).
+
+**2. MÉDIA (teste vacuamente verdadeiro) — fechado.** Três mutantes
+plantados (comentando cada ponto de invalidação — traces de posição,
+`_remover_barra`, `_adicionar_barra`) e mortos pelos três blocos do teste
+reescrito. Controle decisivo: o teste **antigo** (pré-`c8d1773`) passa com
+o mutante aplicado — confirma que a vacuidade apontada na rodada 1 era
+real.
+
+**3. MÉDIA (cobertura `VINCULADO_DOIS_EXTREMOS`) — fechado.** Os dois
+testes novos cobrem as linhas antes descobertas; mutantes em
+`ell_e_declarado`/`ell_0` mortos pelos testes de divergência.
+
+**4. Fix do a2 (ruleset v16) — confirmado.** `TEXTO_ESPACAMENTO_NAO_CONFERIDO`
+diz exatamente o que o item 4 revisado exige; a frase vetada da v14 não
+aparece em nenhum texto exibido (varredura de 21.216 caracteres). Diff
+estrutural YAML v15→v16 tocou só `versao` e o registro
+REQ-UI-PILARETE-06 — alcance da invalidação declarado pelo a2 confirmado
+correto (não reabre GATE 2/3 de `calc_core/estrutural/pilarete/`).
+
+**Regressão:** 895 passed, cobertura do módulo 97%, ruff/bandit limpos,
+`mypy --strict` com o mesmo baseline pré-existente de 669 erros (delta
+zero), `sha256sum -c ruleset.lock` OK.
+
+**Nota final: 4,5** (E1 4,5 · E2 5,0 · E3 4,5 · E4 5,0 · E5 4,5, média
+4,70, `min(4,70; E1; E2)=4,5`). Sem veto. Portão atendido.
+
+**Defeitos remanescentes, não bloqueantes:** BAIXA — `SIM118` novo em
+`tests/test_ui_pilarete.py:1108`/`:370` (falso positivo, `"text" in w`
+para `Misc`, sugestão `# noqa` com motivo ou helper); observação sem
+severidade herdada da rodada 1 (título verde em Faixa B com cortante não
+verificado); observação de processo — `tools/checar_rastreabilidade.py`
+não existe no repositório.
+
+**Libera para GATE 3 (a7) o pacote pilarete inteiro**
+(`calc_core/estrutural/pilarete/` + `ui/completo/janela_pilarete.py`) numa
+rodada só, já que o GATE 3 anterior do núcleo foi invalidado pela correção
+de V25/REQ-PILARETE-20/21 (adendo acima). Rodada 3 de 3 não foi
+necessária.
