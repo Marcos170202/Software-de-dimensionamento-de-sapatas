@@ -10,10 +10,82 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 15
+versao: 16
 escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua); a partir da v13, COM ELU de FORÇA CORTANTE (17.4, Modelos I e II) quando o pilarete satisfaz a definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)), e com RECUSA explícita do cortante quando não satisfaz; a partir da v14, COM a TELA do pilarete (janela própria, verificação STANDALONE que NÃO se propaga ao cálculo da sapata)"
-data_congelamento: "2026-08-28"   # da v8; v9 a v15 NÃO congelam — ver ruleset.lock
+data_congelamento: "2026-08-28"   # da v8; v9 a v16 NÃO congelam — ver ruleset.lock
 
+# =============================================================================
+# VERSÃO 16 — CORREÇÃO DE TEXTO, e só. Um item de UM requisito de tela ficou
+#             desatualizado por uma implementação que já tinha sido concluída e
+#             ratificada. Backlog do usuário, item #13, rodada 7.
+#
+# O QUE ESTA VERSÃO NÃO É, primeiro, porque é o que decide a consequência de
+# processo: NÃO cria, não altera e não muda o status de nenhuma `regra`,
+# `derivacao` ou `pratica_consagrada`; NÃO altera nenhum requisito de `calc_core`
+# (`requisitos_para_a5` sai IDÊNTICA à da v15, REQ-PILARETE-20 e
+# REQ-PILARETE-21 inclusive); NÃO muda escopo, fórmula, limite numérico,
+# critério de recusa ou método de segurança. Nenhuma linha de `calc_core/`
+# precisa mudar por causa dela, e nenhuma mudou.
+#
+# O QUE MUDA, exatamente: `requisitos_para_a3` >
+# REQ-UI-PILARETE-06-uma-bitola-so-area-vinda-do-nucleo-e-a-contagem-de-barras
+# ganha `versao_do_texto: 2` e tem REESCRITOS (i) o item (4) do `texto`, (ii) o
+# parágrafo de fecho e (iii) o último `criterio_de_aceite`, mais um critério
+# novo. Os itens (1), (2) e (3), a prioridade, o lado e os três primeiros
+# critérios de aceite saem LITERALMENTE como na v14. Uma frase do preâmbulo
+# ("o núcleo aceita HOJE, sem cruzar") passou para o pretérito com a data do
+# commit, porque o presente virou falso.
+#
+# POR QUÊ: o item (4) da v14 condicionava o aviso da tela à hipótese de
+# REQ-PILARETE-20(c) "não ser implementado", e prescrevia LITERALMENTE a frase
+# "Este valor NÃO é conferido contra as posições declaradas acima — confira-o à
+# mão". REQ-PILARETE-20(c) FOI implementado no commit 1861586
+# (`exigir_armadura_consistente_com_as_barras`, com
+# `exigir_arranjo_em_anel` à frente), e a v15 RATIFICOU o desenho. A partir daí
+# a frase prescrita virou AFIRMAÇÃO FALSA e do lado INSEGURO — manda conferir à
+# mão o que o software confere e sugere que um valor "seguro" alto é inócuo,
+# quando é justamente o que a guarda RECUSA. O a3 já tinha reescrito
+# `TEXTO_ESPACAMENTO_NAO_CONFERIDO` (commit dabd2c1) e o a6 registrou a
+# divergência como AÇÃO DE PROCESSO, não defeito de código, na rodada 1 do
+# GATE 2 da tela (`relatorios/revisao_codigo.md`). A v16 é essa ação: alinhar a
+# norma escrita do software ao que o código de fato faz. O requisito agora
+# prescreve o CONTEÚDO que a tela exibe, não uma frase literal obsoleta, e
+# registra as três coisas que o cruzamento continua NÃO cobrindo, para que o
+# próximo desalinhamento tenha onde ser lido.
+#
+# RECONFERIDO POR EXECUÇÃO PRÓPRIA DO a2 (não por releitura do relato de
+# ninguém), seção 30×30 cm, 4 phi 16 nos vértices, d' = 5,8 cm, espaçamentos
+# reais de 184,00 mm nas duas direções:
+#   declarado 200 mm -> RECUSA, parametro "(espacamento_entre_eixos_mm,
+#     posições das barras)", valor (200,00 ; 184,00);
+#   declarado 184 mm -> passa, real mínimo e máximo 184,00 mm;
+#   declarado 100 mm -> passa, e DEVE passar: é conservador no piso, e o teto
+#     de 18.4.2.2 lê o MAIOR real, nunca o declarado (v15, PONTO 1).
+# Conferido também que a chamada é INCONDICIONAL e ANTERIOR a §17.2/§17.4
+# (`elemento.py`, dentro de `verificar_pilarete`, único nome de verificação em
+# `__all__`) e que a tela não antecipa nem suprime a recusa: ela só converte o
+# campo e o repassa (`_construir_dados`, em `janela_pilarete.py` — citado por
+# NOME de função, não por linha, porque a tela está em rodada 2 do GATE 2 e as
+# linhas se movem).
+#
+# CLAUDE.md REGRA 5 — ALCANCE DA INVALIDAÇÃO, e este é o ponto que a v16 existe
+# para deixar registrado: alterar o ruleset invalida aprovações de A6/A7. Aqui a
+# alteração é de TEXTO DE REQUISITO DE TELA e o único artefato cuja conformidade
+# ela pode mudar é `ui/completo/janela_pilarete.py`, que JÁ está em rodada 2 de 3
+# do GATE 2 por outro motivo (o ALTA de REQ-UI-PILARETE-12, aviso de
+# não-persistência). O GATE 2 e o GATE 3 de `calc_core/estrutural/pilarete/`
+# (REQ-PILARETE-20/21) NÃO são reabertos: nenhum requisito de núcleo mudou de
+# texto, e a v16 não podia sequer reprovar código que já satisfaz o que ela
+# descreve — ela descreve o que esse código faz. As aprovações sobre
+# `calc_core/geotecnico/` e o restante de `ui/` continuam VÁLIDAS.
+#
+# CHECAGEM DIMENSIONAL: 0 FALHA, e não poderia ser diferente — a v16 não
+# introduz nem altera fórmula alguma. O que sustenta esta versão é o SANITY
+# CHECK NUMÉRICO por execução (§4 da cascata), transcrito acima.
+#
+# GATE 1 CONTINUA NÃO CONGELADO: dívida de hash das 25 regras anteriores à v9 e
+# 7 pendências humanas de escopo amplo.
+#
 # =============================================================================
 # VERSÃO 15 — reconferência de REQ-PILARETE-20 sobre o commit 1861586. Backlog
 #             do usuário, item #13, rodada 6.
@@ -9003,11 +9075,18 @@ requisitos_para_a3:
 
   - id: REQ-UI-PILARETE-06-uma-bitola-so-area-vinda-do-nucleo-e-a-contagem-de-barras
     criado_na_v14: true
+    versao_do_texto: 2   # v16: SÓ o item (4) e o fecho — correção de TEXTO
+                         # desatualizado pelo commit 1861586 (REQ-PILARETE-20),
+                         # que passou a cruzar espaçamento × posições. Itens
+                         # (1), (2) e (3) e o criterio_de_aceite deles ficam
+                         # LITERALMENTE como na v14. NÃO é mudança de regra de
+                         # cálculo nem de escopo.
     prioridade: ALTA
     lado: INSEGURO
     texto: >-
       CONTENÇÃO, DO LADO DA TELA, DE DUAS DAS TRÊS LACUNAS DE REQ-PILARETE-20.
-      O núcleo aceita hoje, sem cruzar, `BarraLongitudinal.area` contra
+      O núcleo aceitava, até o commit 1861586, sem cruzar,
+      `BarraLongitudinal.area` contra
       `phi_longitudinal_mm` e `numero_de_barras` contra `len(barras)`. Medido
       pelo a2 por execução: declarando phi = 16 mm e áreas de phi 25 mm numa
       seção 30×30 C25 com N_d = 1000 kN e M_Sd,x = M_Sd,y = 36 kN·m, o índice
@@ -9033,21 +9112,68 @@ requisitos_para_a3:
           declarou, e mantê-la como segundo campo editável só criaria a
           divergência que REQ-PILARETE-20(2) descreve (declarar 4 e montar 2
           aprova o "uma barra por vértice" de uma seção que não os tem).
-      (4) O QUE A TELA NÃO CONSEGUE CONTER, e por isso fica escrito aqui em vez
-          de sumir: `espacamento_entre_eixos_mm` continua sendo declaração
-          independente das posições, porque cruzar os dois exige aritmética sobre
-          as posições, que a tela não pode fazer (CLAUDE.md regra 4). Enquanto
-          REQ-PILARETE-20(c) não for implementado, o campo fica IMEDIATAMENTE ao
-          lado da tabela de barras, com aviso explícito: "Este valor NÃO é
-          conferido contra as posições declaradas acima — confira-o à mão. Ele
-          governa dois limites de 18.4.2.2 (espaçamento livre mínimo e
-          espaçamento entre eixos máximo)." O aviso é OBRIGATÓRIO e o a6 o trata
-          como veto se ausente, exatamente como os avisos das Exigências 1 e 2
-          de REQ-UI-CAMADA-05.
-      ESTE REQUISITO NÃO FECHA A LACUNA DO NÚCLEO. Ele fecha o caminho que passa
-      por esta tela. Qualquer outro chamador — teste, script, integração futura —
-      continua exposto até REQ-PILARETE-20 ser implementado, e é por isso que a
-      lacuna está registrada lá, com a consequência de processo, e não só aqui.
+      (4) ESPAÇAMENTO ENTRE EIXOS — O CRUZAMENTO EXISTE, E O TEXTO DA TELA TEM
+          DE DIZER O QUE ELE FAZ. Este item foi REESCRITO na v16: a v14
+          prescrevia aqui a frase "Este valor NÃO é conferido contra as posições
+          declaradas acima — confira-o à mão", condicionada a REQ-PILARETE-20(c)
+          "não ser implementado". Ele FOI implementado, no commit 1861586, e a
+          condição caiu. O campo `espacamento_entre_eixos_mm` continua sendo
+          declaração independente das posições, e a tela continua PROIBIDA de
+          cruzá-los por conta própria (cruzar exige aritmética sobre as
+          posições — CLAUDE.md regra 4); quem faz essa aritmética é o NÚCLEO:
+          `exigir_armadura_consistente_com_as_barras`
+          (`calc_core/estrutural/pilarete/geometria.py`), chamada
+          INCONDICIONALMENTE por `verificar_pilarete`
+          (`calc_core/estrutural/pilarete/elemento.py`) antes de §17.2, de §17.4
+          e de todo o detalhamento, e precedida internamente por
+          `exigir_arranjo_em_anel`, que RECUSA arranjo com barra interior — o
+          domínio em que a medição do espaçamento real é exata
+          (REQ-PILARETE-21(a)).
+          O QUE A GUARDA FAZ, reconferido POR EXECUÇÃO do a2 na v16 (30×30 cm,
+          4 phi 16 nos vértices, d' = 5,8 cm, espaçamentos reais de 184,0 mm nas
+          duas direções): declarar 200 mm RECUSA, com `parametro =
+          "(espacamento_entre_eixos_mm, posições das barras)"` e valor
+          (200,00 ; 184,00); declarar 184 mm passa; declarar 100 mm TAMBÉM
+          passa, porque é conservador — o PISO de 18.4.2.2 (espaçamento livre
+          >= max(20 mm; phi; 1,2·d_agr)) é verificado com o DECLARADO, que a
+          guarda obriga a ser <= o menor real, e o TETO (<= min(2·b_mín;
+          400 mm)) com o MAIOR espaçamento REAL, nunca com o declarado (v15,
+          PONTO 1).
+          A FRASE DA v14 ESTÁ VETADA. Depois de 1861586 ela é AFIRMAÇÃO FALSA, e
+          falsa do lado INSEGURO: manda o usuário conferir à mão o que o
+          software confere, e insinua que declarar um número "seguro" alto é
+          inócuo — quando é exatamente o que a guarda RECUSA.
+          O QUE A TELA DEVE EXIBIR, junto ao campo e sem exigir clique em
+          "detalhes": (i) que o núcleo CRUZA o valor declarado com as posições
+          declaradas, e que o declarado tem de ser <= o MENOR espaçamento real
+          entre eixos, sob pena de RECUSA; (ii) que é o MAIOR espaçamento real,
+          não o declarado, que vai ao teto de 18.4.2.2; (iii) que o valor a
+          declarar é o VERDADEIRO, nunca um número "seguro" arbitrário, porque
+          esta janela não posiciona barra nenhuma pelo usuário. É exatamente o
+          conteúdo da constante `TEXTO_ESPACAMENTO_NAO_CONFERIDO` de
+          `ui/completo/janela_pilarete.py` (commit dabd2c1), cujo NOME ficou
+          herdado da v14 e é só nome: o que o a6 julga é o TEXTO EXIBIDO, não o
+          identificador. O texto é OBRIGATÓRIO e o a6 o trata como veto se
+          ausente, exatamente como os avisos das Exigências 1 e 2 de
+          REQ-UI-CAMADA-05.
+          O QUE O CRUZAMENTO NÃO COBRE, escrito aqui para não repetir o erro de
+          requisito desatualizado: (a) as POSIÇÕES são declaração do usuário e
+          nada as confere contra a peça real — nenhum software o faz, e é por
+          isso que o texto manda declarar o valor verdadeiro; (b) declarar
+          espaçamento MENOR que o real passa sem aviso, de modo que o campo não
+          é espelho das posições e sim um limite inferior declarado — é
+          conservador no piso e o teto não o usa, e por isso NÃO é defeito; (c)
+          a guarda vive em `verificar_pilarete`, único entry point público do
+          módulo (`__all__`), e não em `SecaoRetangular`: um chamador que monte
+          a seção e chame as funções de §17.2/§17.4 diretamente segue sem o
+          cruzamento. Nada disso é lacuna DESTA TELA, que só chama
+          `verificar_pilarete`.
+      ESTE REQUISITO NÃO FECHOU A LACUNA DO NÚCLEO. Ele fechou o caminho que
+      passa por esta tela. A lacuna do núcleo foi fechada por REQ-PILARETE-20
+      (commit 1861586, ratificado pelo a2 na v15) — e é por isso que ela estava
+      registrada LÁ, com a consequência de processo, e não só aqui. Qualquer
+      chamador que não passe por `verificar_pilarete` continua exposto, agora
+      pelo motivo da alínea (c) do item (4) e não por ausência da verificação.
     criterio_de_aceite:
       - >-
         Busca textual em `janela_pilarete.py` não encontra `math.pi`,
@@ -9061,7 +9187,16 @@ requisitos_para_a3:
         construído; montar 3 produz 3, e o veredito sai NÃO ATENDIDO por
         `atende_numero_de_barras` — recusa nenhuma é levantada pela tela.
       - >-
-        O aviso do item (4) está visível junto ao campo de espaçamento.
+        O texto do item (4) está visível junto ao campo de espaçamento, e o
+        que ele exibe diz que o núcleo CRUZA o valor com as posições. A frase
+        da v14 ("NÃO é conferido contra as posições declaradas") NÃO aparece em
+        texto exibido nenhum da janela — a busca é sobre o TEXTO MOSTRADO, não
+        sobre o código-fonte, onde o nome da constante segue herdado da v14.
+      - >-
+        Declarar espaçamento entre eixos MAIOR que o menor espaçamento real
+        implicado pelas posições produz na tela a RECUSA do núcleo (200 mm
+        contra 184 mm reais, na seção 30×30 com 4 phi 16 e d' = 5,8 cm), com a
+        fonte 18.4.2.2 — a tela não a antecipa nem a suprime.
 
   - id: REQ-UI-PILARETE-07-faixa-A-e-faixa-B-na-tela-e-a-proibicao-do-visto-verde
     criado_na_v14: true

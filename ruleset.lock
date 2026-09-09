@@ -5,6 +5,60 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 16 (2026-09-09) — CORREÇÃO DE TEXTO de UM item de UM requisito de
+# tela, desatualizado por implementação já concluída. Backlog #13, rodada 7.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave, com `yaml.safe_load` da v15 em `git show HEAD:ruleset.yaml` contra o
+# arquivo novo): `regras`, `derivacoes`, `praticas_consagradas`,
+# `requisitos_para_a4`, `requisitos_para_a5` e `escopo_amplo_em_conferencia`
+# saem IDÊNTICAS às da v15. `requisitos_para_a3` tem os MESMOS 32 ids, na MESMA
+# ordem, com UM registro alterado em três campos (`texto`,
+# `criterio_de_aceite`, `versao_do_texto`):
+#   regras (normativas) ............ 41 APROVADA
+#                                    13 APROVADA_COM_USO_RESTRITO
+#                                     7 PENDENTE_HUMANO
+#                                     4 REJEITADA               (inalterado)
+#   derivacoes .....................  4 APROVADA
+#                                    10 APROVADA_COM_USO_RESTRITO (inalterado)
+#   requisitos_para_a5 ............. 22                          (inalterado)
+#   requisitos_para_a3 ............. 32                          (inalterado)
+#
+# O QUE A v16 CORRIGE: REQ-UI-PILARETE-06, item (4), condicionava o aviso da
+# tela à hipótese de REQ-PILARETE-20(c) NÃO estar implementado e prescrevia a
+# frase literal "Este valor NÃO é conferido contra as posições declaradas
+# acima — confira-o à mão". REQ-PILARETE-20(c) FOI implementado no commit
+# 1861586 e ratificado pela v15, de modo que a frase prescrita passou a ser
+# AFIRMAÇÃO FALSA, do lado INSEGURO. O item (4) e o fecho do requisito foram
+# reescritos para o estado real: o cruzamento é feito por
+# `exigir_armadura_consistente_com_as_barras`, precedida de
+# `exigir_arranjo_em_anel`, chamada INCONDICIONALMENTE por `verificar_pilarete`
+# antes de §17.2, de §17.4 e do detalhamento. O requisito passou a prescrever o
+# CONTEÚDO que a tela exibe (o de `TEXTO_ESPACAMENTO_NAO_CONFERIDO`, commit
+# dabd2c1) em vez de uma frase literal obsoleta, e a registrar as TRÊS coisas
+# que o cruzamento continua não cobrindo. Itens (1), (2) e (3) e os três
+# primeiros critérios de aceite ficaram LITERALMENTE como na v14.
+#
+# RECONFERIDO POR EXECUÇÃO PRÓPRIA DO a2 (30×30 cm, 4 phi 16 nos vértices,
+# d' = 5,8 cm, reais 184,00 mm nas duas direções): declarado 200 mm -> RECUSA
+# (200,00 ; 184,00); 184 mm -> passa; 100 mm -> passa, e deve, porque é
+# conservador no piso e o teto lê o MAIOR real.
+#
+# NÃO É MUDANÇA DE ESCOPO NEM DE REGRA DE CÁLCULO. CLAUDE.md REGRA 5, alcance:
+# o único artefato cuja conformidade esta versão pode alterar é
+# `ui/completo/janela_pilarete.py`, que já está em rodada 2 de 3 do GATE 2 por
+# outro motivo (ALTA de REQ-UI-PILARETE-12). O GATE 2 e o GATE 3 de
+# `calc_core/estrutural/pilarete/` (REQ-PILARETE-20/21) NÃO são reabertos —
+# nenhum requisito de núcleo mudou. As aprovações sobre `calc_core/geotecnico/`
+# e o restante de `ui/` continuam VÁLIDAS.
+#
+# CHECAGEM DIMENSIONAL: 0 FALHA. A v16 não introduz nem altera fórmula alguma;
+# quem sustenta esta versão é o sanity check numérico por execução (§4).
+#
+# GATE 1 CONTINUA NÃO CONGELADO: dívida de hash das 25 regras anteriores à v9
+# e 7 pendências humanas de escopo amplo.
+#
+# ===========================================================================
 # VERSÃO 15 (2026-09-08) — reconferência de REQ-PILARETE-20 sobre o commit
 # 1861586. Backlog #13, rodada 6.
 #
@@ -527,4 +581,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-2400f365914618f944f525e4ae4f3bac73e249fad686442756a90b6692e14cfe  ruleset.yaml
+2769f91e70d923cbd3a30f45cf85e855f4cf72c465ca83ac5ee86ffa2f77e15c  ruleset.yaml
