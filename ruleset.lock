@@ -5,6 +5,81 @@
 # registrada.
 #
 # ===========================================================================
+# VERSÃO 15 (2026-09-08) — reconferência de REQ-PILARETE-20 sobre o commit
+# 1861586. Backlog #13, rodada 6.
+#
+# CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
+# chave, com `yaml.safe_load` da v14 em `git show HEAD:ruleset.yaml` contra o
+# arquivo novo): `regras`, `derivacoes`, `praticas_consagradas`,
+# `requisitos_para_a4`, `requisitos_para_a3` e `escopo_amplo_em_conferencia`
+# saem IDÊNTICAS às da v14. `requisitos_para_a5` muda por UM acréscimo e UMA
+# alteração de texto (REQ-PILARETE-20), com os antigos na mesma ordem:
+#   regras (normativas) ............ 41 APROVADA
+#                                    13 APROVADA_COM_USO_RESTRITO
+#                                     7 PENDENTE_HUMANO
+#                                     4 REJEITADA               (inalterado)
+#   derivacoes .....................  4 APROVADA
+#                                    10 APROVADA_COM_USO_RESTRITO (inalterado)
+#   requisitos_para_a5 ............. 22                          (eram 21)
+#   requisitos_para_a3 ............. 32                          (inalterado)
+#
+# O QUE A v15 DECIDE: o a5 implementou REQ-PILARETE-20 (commit 1861586) e o
+# requisito exigia reconferência explícita do a2 sobre DUAS decisões de desenho
+# antes do GATE 2. As duas foram reconferidas por LEITURA DA FONTE e por
+# EXECUÇÃO PRÓPRIA do a2, e as duas estão RATIFICADAS. O texto definitivo
+# substituiu a linguagem provisória dentro de REQ-PILARETE-20.
+#
+# ITEM NORMATIVO CONFIRMADO: 18.4.2.2 "Distribuição transversal" (p. impressa
+# 153 = PDF p. 171) — NÃO 18.3.3.2, que é espaçamento de ESTRIBOS por cortante.
+#
+#   PONTO 1 (piso pelo declarado, teto pelo maior real) — RATIFICADO. Não são
+#     duas leituras: é UM princípio, cada limite verificado com o canal MAIS
+#     CONSERVADOR dos dois. Os dois sujeitos gramaticais da Norma são grandezas
+#     REAIS ("espaçamento mínimo livre entre as FACES DAS BARRAS" e "espaçamento
+#     MÁXIMO entre EIXOS DAS BARRAS"); ler o teto pelo declarado, como a v14
+#     fazia, era TRANSCRIÇÃO ERRADA, do lado inseguro. A recusa só do lado do
+#     piso tem razão: exigir igualdade com o maior real recusaria toda seção
+#     retangular. MEDIDO pelo a2 (90×20 cm, 4 phi 16 nos cantos, d' = 5,8 cm):
+#     teto compara 784,0 mm com 400,0 mm -> NÃO ATENDE (na v14 comparava 84,0
+#     mm -> ATENDIA); piso INTOCADO, 68,0 mm e 52,0 mm contra 22,8 mm, ATENDE.
+#   PONTO 2 (recusar bitola mista) — RATIFICADO, como limite de ESCOPO DESTA
+#     VERSÃO e NÃO da Norma (a NBR 6118 não proíbe bitola mista). Não há base
+#     normativa para um phi_equivalente: o único diâmetro equivalente da
+#     matéria é o de FEIXES de barras IGUAIS (phi_n = phi·raiz(n)); todo o resto
+#     fala de "o diâmetro DA BARRA", por barra. Conferido por execução que a
+#     recusa sai com forca = escopo_desta_versao_nao_limite_da_norma.
+#
+# DEFEITO NOVO, ENCONTRADO PELA PRÓPRIA RECONFERÊNCIA (ratificar o DESENHO de
+# (c) obrigou a auditar a MEDIÇÃO do "espaçamento real"):
+#   REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo
+#       PRIORIDADE ALTA, lado INSEGURO. (a) uma barra no INTERIOR da seção cria
+#       camada intermediária que não reduz o espaçamento ao longo de face
+#       nenhuma, mas reduz o número que agora governa o teto. MEDIDO (90×40 cm,
+#       phi 16, teto 400 mm): 4 barras nos cantos -> 784,0 mm, NÃO ATENDE
+#       (certo); as MESMAS 4 mais UMA no centroide -> 392,0 mm, ATENDE, com o
+#       espaçamento real de cada face longa ainda em 784 mm. O arranjo é
+#       simétrico nos dois eixos e passa `arranjo_simetrico()` de 17.2.5.
+#       (b) o piso de phi >= 10 mm lê o phi DECLARADO: phi 16 declarado com
+#       barras de área de phi 8 passa, `atende_phi_minimo = True`. (c) o
+#       `fonte=` da recusa de bitola mista atribui à Norma uma frase que ela não
+#       escreve. NÃO é regressão do commit 1861586 — é FIX INCOMPLETO.
+#       kb/pendencias.md > V25 (rodada 2026-09-08, "Defeito NOVO").
+#
+# CLAUDE.md REGRA 5: as aprovações de A6/A7 do backlog #13 sobre
+# `calc_core/estrutural/pilarete/` JÁ ESTAVAM invalidadas pelo commit 1861586,
+# que o declara; a v15 não as restaura e acrescenta um bloqueio — o backlog #13
+# NÃO vai ao GATE 2 sobre esse commit, porque a função que o a6 revisaria é
+# exatamente a que carrega REQ-PILARETE-21(a). As aprovações sobre
+# `calc_core/geotecnico/` e `ui/` continuam VÁLIDAS.
+#
+# CHECAGEM DIMENSIONAL: 0 FALHA. A v15 não introduz fórmula nenhuma, e a
+# cascata §2 não pegaria nenhum dos três achados (mm contra mm; m² contra m²) —
+# foi o SANITY CHECK NUMÉRICO por execução, §4, que pegou os três.
+#
+# GATE 1 CONTINUA NÃO CONGELADO: dívida de hash das 25 regras anteriores à v9
+# e 7 pendências humanas de escopo amplo.
+#
+# ===========================================================================
 # VERSÃO 14 (2026-09-08) — a TELA do pilarete. Backlog #13, rodada 5.
 #
 # CONTAGEM (conferida por comparação estrutural das duas árvores YAML, chave a
@@ -452,4 +527,4 @@
 # APROVADA_COM_USO_RESTRITO é status criado na versão 6: aprovado DENTRO do
 # campo `uso_autorizado` e proibido fora dele (`nao_autorizado`). Para o GATE 1
 # conta como resolvido; para o A6 é veto se o uso em código exceder o campo.
-6aced5ed1b15dcc2c1c4789986c4a57fededb0fa464775a37f740df1a521cb45  ruleset.yaml
+2400f365914618f944f525e4ae4f3bac73e249fad686442756a90b6692e14cfe  ruleset.yaml

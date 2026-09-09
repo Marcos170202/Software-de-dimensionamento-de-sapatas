@@ -10,10 +10,106 @@
 # Alterar este arquivo invalida as aprovações de A6 e A7 registradas em
 # relatorios/ — nova rodada de revisão e validação é obrigatória.
 
-versao: 14
+versao: 15
 escopo: "sapata isolada, carga centrada, solo homogêneo; e, a partir da v11, pilarete de concreto (pilar CURTO) e a transferência de esforços pilarete->sapata — a partir da v12, COM veredito de ELU de solicitações NORMAIS (flexão composta oblíqua); a partir da v13, COM ELU de FORÇA CORTANTE (17.4, Modelos I e II) quando o pilarete satisfaz a definição de elemento linear de 14.4.1 (ell >= 3·máx(b,h)), e com RECUSA explícita do cortante quando não satisfaz; a partir da v14, COM a TELA do pilarete (janela própria, verificação STANDALONE que NÃO se propaga ao cálculo da sapata)"
-data_congelamento: "2026-08-28"   # da v8; v9 a v14 NÃO congelam — ver ruleset.lock
+data_congelamento: "2026-08-28"   # da v8; v9 a v15 NÃO congelam — ver ruleset.lock
 
+# =============================================================================
+# VERSÃO 15 — reconferência de REQ-PILARETE-20 sobre o commit 1861586. Backlog
+#             do usuário, item #13, rodada 6.
+#
+# O QUE ESTA VERSÃO É: o a5 implementou REQ-PILARETE-20 (commit 1861586) e o
+# requisito exigia, com todas as letras, que o a2 RECONFERISSE duas decisões de
+# desenho antes do GATE 2 — o cruzamento de espaçamento (alínea c) e a decisão
+# sobre bitolas mistas. As duas foram reconferidas POR LEITURA DA FONTE e POR
+# EXECUÇÃO PRÓPRIA (não por releitura do relato do a5) e as duas estão
+# RATIFICADAS. O texto definitivo entrou em REQ-PILARETE-20, seção "DECISÃO DO
+# a2 (v15)", substituindo a linguagem provisória ("a desenhar pelo a5",
+# "decidir isso é do a5"). Nenhuma regra, derivação ou prática consagrada foi
+# criada, alterada ou teve status mudado.
+#
+# ITEM NORMATIVO CONFIRMADO, e não é o que o despacho supunha: quem rege o
+# espaçamento entre BARRAS LONGITUDINAIS é 18.4.2.2 ("Distribuição
+# transversal", p. impressa 153 = PDF p. 171), NÃO 18.3.3.2, que é espaçamento
+# de ESTRIBOS por cortante. Conferido por extração direta com decodificação do
+# CMap deslocado. Os dois limites da página têm por sujeito gramatical
+# GRANDEZAS REAIS DA PEÇA — "o espaçamento mínimo livre entre as FACES DAS
+# BARRAS" e "o espaçamento MÁXIMO entre EIXOS DAS BARRAS". A Norma não conhece
+# "espaçamento declarado": declarar é invenção do software.
+#
+# PONTO 1 — RATIFICADO, e a assimetria some quando se olha direito. Não são
+# duas leituras: é UM princípio — cada limite é verificado com o canal MAIS
+# CONSERVADOR dos dois. Teto por max(declarado; maior real), piso por
+# min(declarado; menor real), que é o declarado porque a guarda o obriga a ser
+# <= o menor real. A única assimetria verdadeira é ONDE HÁ RECUSA, e ela tem
+# razão: `declarado == maior real` recusaria TODA seção retangular (90×20 dá
+# 784 mm numa direção e 84 mm na outra); `declarado <= menor real` não recusa
+# nenhuma seção legítima. Ler o teto pelo declarado, como a v14 fazia, era
+# TRANSCRIÇÃO ERRADA de 18.4.2.2, do lado inseguro.
+# MEDIDO PELO a2 no exemplo pedido (90×20 cm, 4 phi 16 nos cantos, d' = 5,8 cm,
+# brita 19 mm): reais 784,0 e 84,0 mm; teto 400,0 mm; comparado com o teto
+# 784,0 mm -> NÃO ATENDE (na v14, 84,0 mm -> ATENDIA). PISO INTOCADO: 68,0 mm
+# na seção corrente e 52,0 mm na emenda, contra 22,8 mm exigidos, ATENDE nos
+# dois. Reprovação, não recusa: falta de barra intermediária é defeito de
+# PROJETO.
+#
+# PONTO 2 — RATIFICADO: RECUSAR bitola mista, e é LIMITE DE ESCOPO DESTA
+# VERSÃO, NÃO DA NORMA (a NBR 6118 não proíbe bitola mista). O a2 procurou a
+# base para um phi_equivalente e ela NÃO EXISTE: o único diâmetro equivalente
+# da matéria é o de FEIXES, phi_n = phi·raiz(n), para barras IGUAIS; todo o
+# resto de 18.4.2.1/18.4.2.2/9.5.2.3/18.4.3 fala de "o diâmetro DA BARRA", por
+# barra. Sem fonte, as opções honestas eram phi POR BARRA (mudança de API) ou
+# recusa — e recusar é a doutrina do projeto, a mesma de CA-60 em 18.4.3.
+# Conferido por execução que a recusa sai com
+# forca = escopo_desta_versao_nao_limite_da_norma.
+#
+# O QUE A RECONFERÊNCIA ENCONTROU DE NOVO, e é o motivo pelo qual esta versão
+# não é só editorial: ratificar o DESENHO de (c) obrigou a auditar a MEDIÇÃO do
+# "espaçamento real", e ela mede errado um arranjo que o núcleo aceita.
+# REQ-PILARETE-21 (`requisitos_para_a5`, PRIORIDADE ALTA, lado INSEGURO):
+#   (a) `espacamentos_entre_eixos_pelas_barras` projeta as barras em CAMADAS por
+#       eixo. Uma barra no INTERIOR da seção cria camada intermediária que NÃO
+#       reduz o espaçamento ao longo de face nenhuma, mas reduz o número que
+#       governa o teto. MEDIDO: 90×40 cm, phi 16, teto 400 mm — 4 barras nos
+#       cantos dão 784,0 mm e NÃO ATENDEM (certo); as MESMAS 4 mais UMA barra
+#       no centroide dão 392,0 mm e ATENDEM, enquanto o espaçamento real de
+#       cada face longa continua 784 mm. O arranjo de 5 barras é simétrico nos
+#       dois eixos e passa `arranjo_simetrico()` de 17.2.5. Mesmo modo de falha
+#       de V25. Correção mínima: RECUSAR barra interior (ESCOPO_DESTA_VERSAO).
+#   (b) o piso de phi >= 10 mm (18.4.2.1) lê o phi DECLARADO. MEDIDO: phi 16
+#       declarado com todas as barras de área de phi 8 passa, com
+#       `atende_phi_minimo = True`. Aplicar o MESMO princípio ratificado em (c).
+#   (c) o `fonte=` da recusa de bitola mista atribui à Norma uma frase que ela
+#       não escreve ("são verificados contra um phi ÚNICO"): a Norma verifica
+#       POR BARRA; quem tem phi único é o software.
+# NÃO é regressão do commit 1861586, que melhora estritamente a v14: é FIX
+# INCOMPLETO. O a2 NÃO corrigiu código — auditou e devolveu ao a5.
+#
+# CLAUDE.md REGRA 5, com o alcance dito por extenso: esta versão ALTERA
+# REQ-PILARETE-20 (acrescenta o texto definitivo das duas alíneas) e CRIA
+# REQ-PILARETE-21, os dois sobre `calc_core/estrutural/pilarete/`. As
+# aprovações de A6 (GATE 2) e A7 (GATE 3) do backlog #13 sobre esse pacote JÁ
+# ESTAVAM INVALIDADAS pelo próprio commit 1861586, que o declara. Esta versão
+# NÃO as restaura, e acrescenta um bloqueio: o backlog #13 NÃO vai ao GATE 2
+# sobre o commit 1861586, porque a função que o a6 revisaria é exatamente a que
+# carrega REQ-PILARETE-21(a) e mexer nela depois invalidaria a aprovação de
+# novo. As aprovações de A6/A7 sobre `calc_core/geotecnico/` e sobre `ui/`
+# continuam VÁLIDAS: `regras`, `derivacoes`, `praticas_consagradas`,
+# `requisitos_para_a4`, `requisitos_para_a3` e `escopo_amplo_em_conferencia`
+# saem desta versão IDÊNTICAS às da v14.
+#
+# CHECAGEM DIMENSIONAL: `python tools/checar_dimensoes.py` rodado nesta rodada
+# — 0 FALHA. A v15 não introduz fórmula nenhuma; o que se verificou é que nada
+# regrediu. A cascata §2 não teria pego nenhum dos dois pontos reconferidos
+# (mm comparado com mm nos dois lados do espaçamento; m² nas duas leituras de
+# área) nem REQ-PILARETE-21 — foi o SANITY CHECK NUMÉRICO por execução, §4 da
+# cascata, que pegou tudo. Registrado porque é o padrão que se repete no
+# pilarete desde a v13.
+#
+# GATE 1 CONTINUA NÃO CONGELADO, e não é por causa desta versão: seguem
+# abertas a dívida de hash das 25 regras anteriores à v9 e as 7 pendências
+# humanas de escopo amplo.
+#
 # =============================================================================
 # VERSÃO 14 — a TELA do pilarete. Backlog do usuário, item #13, rodada 5.
 #
@@ -7649,9 +7745,10 @@ requisitos_para_a5:
             serve a dois limites de sinal contrário, guarda de um lado só NÃO
             basta e o desenho tem de ser feito por extenso pelo a5 e
             RECONFERIDO pelo a2 antes de aprovar (é a única das três que não é
-            imediata). Enquanto ela não existir, o memorial imprime lado a lado
-            o espaçamento declarado e as posições das barras, para que o
-            cruzamento seja ao menos AUDITÁVEL por leitura humana.
+            imediata). O desenho FOI feito (a5, commit 1861586) e FOI
+            reconferido e RATIFICADO pelo a2 na v15 — o texto definitivo está
+            na seção DECISÃO DO a2 (v15), alínea (c), no fim deste requisito, e
+            é ele que vale.
       POSIÇÃO NA CASCATA: no passo (6-bis) de `verificar_pilarete`, junto com o
       cruzamento de cobrimento e ANTES de §17.2 e de §17.4, pela razão já
       escrita ali — nenhum número pode sair de uma geometria de armadura
@@ -7661,7 +7758,8 @@ requisitos_para_a5:
       verifica TODO o detalhamento contra um phi ÚNICO. Ou o cruzamento (a)
       passa a admitir um phi por barra, ou seção com bitolas mistas é RECUSADA.
       Decidir isso é do a5, com reconferência do a2; o que está PROIBIDO é
-      continuar aceitando em silêncio.
+      continuar aceitando em silêncio. DECIDIDO pelo a5 (RECUSAR) e RATIFICADO
+      pelo a2 na v15 — ver a alínea (a-bis) da seção DECISÃO DO a2 (v15).
       CONSEQUÊNCIA DE PROCESSO, dita sem atenuação (CLAUDE.md regra 5):
       implementar este requisito TOCA `calc_core/estrutural/pilarete/` e portanto
       INVALIDA as aprovações de A6 (GATE 2) e A7 (GATE 3) do backlog #13. Elas
@@ -7677,6 +7775,160 @@ requisitos_para_a5:
       e (3) não é contível pela tela porque a tela não pode fazer a aritmética
       que o cruzamento exige (CLAUDE.md regra 4).
       kb/pendencias.md > V25.
+      ==================================================================
+      DECISÃO DO a2 (v15) — TEXTO DEFINITIVO DAS DUAS ALÍNEAS QUE ESTE
+      REQUISITO MANDAVA RECONFERIR. Substitui toda a linguagem provisória
+      acima ("a desenhar pelo a5", "decidir isso é do a5"). Reconferência feita
+      sobre o commit 1861586 por LEITURA DA FONTE e por EXECUÇÃO PRÓPRIA do
+      a2, não por releitura do relato do a5. kb/pendencias.md > V25, FECHADA.
+      ITEM NORMATIVO CONFIRMADO, e não é o que o despacho supunha: quem rege é
+      18.4.2.2 "Distribuição transversal" (p. impressa 153 = PDF p. 171), NÃO
+      18.3.3.2 — este é espaçamento de ESTRIBOS por cortante. Conferido por
+      extração direta da página com decodificação do CMap deslocado (+3 por
+      caractere). A página traz os dois limites, um por parágrafo, e os dois
+      sujeitos gramaticais são GRANDEZAS REAIS DA PEÇA: "o espaçamento mínimo
+      livre entre as FACES DAS BARRAS longitudinais [...] deve ser igual ou
+      superior ao maior dos seguintes valores: 20 mm; diâmetro da barra, do
+      feixe ou da luva; 1,2 vez a dimensão máxima característica do agregado
+      graúdo" e "o espaçamento MÁXIMO entre EIXOS DAS BARRAS, ou de centros de
+      feixes de barras, deve ser menor ou igual a duas vezes a menor dimensão
+      da seção no trecho considerado, sem exceder 400 mm". A Norma NÃO conhece
+      "espaçamento declarado" — declarar é invenção do software.
+      (c) ESPAÇAMENTO — RATIFICADO, e reenunciado sob UM princípio só, porque
+          a "assimetria" some quando se olha direito: CADA LIMITE É VERIFICADO
+          COM O CANAL MAIS CONSERVADOR DOS DOIS. O TETO lê
+          max(declarado; MAIOR espaçamento real entre camadas) e o PISO lê
+          min(declarado; MENOR espaçamento real) — que é o próprio declarado,
+          porque a guarda o obriga a ser <= o menor real. Ler o teto pelo
+          declarado, como a v14 fazia, era TRANSCRIÇÃO ERRADA de 18.4.2.2 e do
+          lado INSEGURO; a mudança do a5 a corrige.
+          A ÚNICA assimetria verdadeira é ONDE HÁ RECUSA, e ela tem razão
+          normativa: exigir `declarado == maior real` recusaria TODA seção
+          retangular, porque as duas direções têm espaçamentos diferentes por
+          construção (90×20 dá 784 mm e 84 mm); exigir `declarado <= menor
+          real` não recusa nenhuma seção legítima e fecha o único lado em que o
+          declarado pode ser MENOS conservador que a peça (declarar um vão
+          livre que a peça não tem).
+          E é REPROVAÇÃO, não recusa, no teto: excesso de espaçamento entre
+          eixos é falta de barra intermediária, defeito de PROJETO, não entrada
+          fora de domínio. Recusa e reprovação não são intercambiáveis
+          (REQ-UI-PILARETE-08).
+          MEDIDO POR EXECUÇÃO PELO a2 no exemplo que o despacho mandou conferir
+          — 90×20 cm, 4 barras phi 16 nos cantos, d' = 5,8 cm, brita 19 mm:
+          espaçamentos reais 784,0 mm e 84,0 mm; teto = min(2·200; 400) =
+          400,0 mm; valor comparado com o teto = 784,0 mm -> NÃO ATENDE (na
+          v14 comparava-se 84,0 mm -> ATENDIA: era o buraco). PISO INTOCADO
+          pela mudança: seção corrente 84 − 16 = 68,0 mm >= 22,8 mm ATENDE, e
+          na emenda 84 − 16 − 16 = 52,0 mm >= 22,8 mm ATENDE. Confirmadas as
+          duas metades do que o requisito pedia.
+      (a-bis) BITOLAS MISTAS — RATIFICADA A RECUSA, e é LIMITE DE ESCOPO DESTA
+          VERSÃO DO SOFTWARE, NÃO DA NORMA. A NBR 6118 NÃO proíbe bitola mista.
+          O a2 procurou a base normativa para o caminho alternativo (um
+          phi_equivalente) e ela NÃO EXISTE: o único diâmetro equivalente que a
+          Norma define nesta matéria está na mesma p. 153 e é para FEIXES
+          ("para feixes de barras deve-se considerar o diâmetro do feixe
+          phi_n = phi·raiz(n)"), feixe de barras IGUAIS; todo o resto fala de
+          "o diâmetro DA BARRA", por barra — 18.4.2.1 (phi >= 10 mm,
+          phi <= b_mín/8), o espaçamento livre de 18.4.2.2, o ell_b de
+          9.3.2.1/9.5.2.3 e o phi_t >= phi/4 de 18.4.3. Sem fonte, as opções
+          honestas eram DUAS: phi POR BARRA (mudança de API, fora do escopo
+          desta rodada) ou RECUSA. Recusar é a doutrina já estabelecida no
+          projeto — a mesma de CA-60 em 18.4.3 e da cortante oblíqua: RECUSAR
+          é melhor que APROXIMAR sem fonte segura.
+          CONFERIDO POR EXECUÇÃO que está registrado como escopo e não como
+          proibição normativa: 2 phi 16 + 2 phi 20 numa seção 30×30 devolvem
+          RecusaForaDeDominio com
+          forca = escopo_desta_versao_nao_limite_da_norma e mensagem terminando
+          em "É limite desta versão do software, não da Norma". Correto.
+          QUANDO ISTO PODE SER REABERTO: só com phi por barra em
+          `BarraLongitudinal`, e aí cada limite de 18.4.2.1/18.4.2.2/9.5.2.3
+          passa a ser verificado barra a barra, como a Norma escreve. Até lá,
+          bitola mista é RECUSA e o motivo declarado é escopo.
+      RESSALVA DA RATIFICAÇÃO, e ela não é retórica: ratificar o DESENHO de (c)
+      não ratifica a MEDIÇÃO do "espaçamento real". Reconferir "o maior
+      espaçamento real" obrigou a auditar COMO o real é medido, e
+      `espacamentos_entre_eixos_pelas_barras` mede errado um arranjo que o
+      núcleo aceita. Isso virou REQ-PILARETE-21, devolvido ao a5, e é o que
+      impede o backlog #13 de ir ao GATE 2 sobre o commit 1861586.
+
+  - id: REQ-PILARETE-21-medir-o-espacamento-real-e-o-piso-de-phi-pelo-canal-certo
+    criado_na_v15: true
+    prioridade: ALTA
+    lado: INSEGURO
+    texto: >-
+      ACHADO DO a2 NA RECONFERÊNCIA DE REQ-PILARETE-20 (v15, commit 1861586).
+      NÃO é regressão do commit e NÃO invalida a ratificação do desenho: o
+      commit MELHORA estritamente a v14 nos três pares. É FIX INCOMPLETO — a
+      direção está certa, o domínio coberto não é todo o que o núcleo aceita.
+      (a) BARRA NO INTERIOR DA SEÇÃO ANULA O TETO DE 18.4.2.2 — LADO INSEGURO.
+          `espacamentos_entre_eixos_pelas_barras` projeta as barras em CAMADAS
+          por eixo (conjunto de `pos_h` distintos e conjunto de `pos_b`
+          distintos) e devolve as diferenças entre camadas CONSECUTIVAS. Uma
+          barra no INTERIOR da seção — que não pertence a face nenhuma — cria
+          uma camada intermediária que NÃO reduz o espaçamento entre barras
+          vizinhas ao longo de nenhuma face, mas REDUZ o número que a guarda
+          calcula e que agora governa o teto.
+          MEDIDO POR EXECUÇÃO PELO a2, seção 90×40 cm, phi 16, d' = 5,8 cm,
+          teto = min(2·400; 400) = 400 mm:
+            4 barras nos cantos -> maior espaçamento calculado 784,0 mm ->
+              NÃO ATENDE (correto);
+            4 cantos + 1 barra no CENTROIDE (5 barras) -> maior espaçamento
+              calculado 392,0 mm -> ATENDE, com o piso atendendo (126,0 mm na
+              seção corrente e 110,0 mm na emenda) e a verificação inteira
+              rodando até o fim — ENQUANTO o espaçamento REAL entre as barras
+              de canto de cada face longa continua sendo 784 mm, violado.
+          O arranjo de 5 barras é SIMÉTRICO NOS DOIS EIXOS e por isso passa
+          `SecaoRetangular.arranjo_simetrico()` (17.2.5). É o MESMO modo de
+          falha de V25 — o núcleo aceita uma declaração que não sabe medir e o
+          veredito vira para ATENDIDO — e do mesmo lado.
+          O docstring do a5 declara o resíduo, mas com uma frase FACTUALMENTE
+          ERRADA que tem de sair: "um arranjo que não seja em anel [...] está
+          fora do que 18.4.2.2 descreve". 18.4.2.2 rege QUALQUER seção
+          poligonal, inclusive com barra interna ("em seções poligonais deve
+          existir pelo menos uma barra em cada vértice" é PISO, não arranjo
+          exclusivo). Quem está fora do domínio é o HELPER, não o arranjo. E
+          DECLARAR um resíduo não substitui RECUSÁ-LO: é exatamente o princípio
+          de REQ-PILARETE-09 que este requisito inteiro serve.
+          O QUE FAZER, e é a correção mínima: RECUSAR, com
+          forca = ESCOPO_DESTA_VERSAO, `barras` que contenham barra INTERIOR —
+          barra cujo `pos_h` não seja o mínimo nem o máximo dos `pos_h` E cujo
+          `pos_b` não seja o mínimo nem o máximo dos `pos_b`. Restrito ao
+          arranjo em ANEL (toda barra em alguma face), a projeção por camadas
+          É o espaçamento entre eixos de barras vizinhas ao longo de cada face,
+          e o helper passa a ser exato no domínio que aceita. A mensagem diz que
+          é limite do SOFTWARE (não sabe medir espaçamento de barra interna),
+          não da Norma. Alternativa admissível, se o a5 preferir: medir o
+          espaçamento face a face e manter o arranjo aceito — mas aí a medição
+          tem de ser demonstrada por execução no caso das 5 barras acima.
+      (b) O PISO DE phi >= 10 mm (18.4.2.1) LÊ O CANAL MENOS CONSERVADOR —
+          LADO INSEGURO, MÉDIA. É o resíduo que o próprio a5 pediu ao a2 para
+          reconferir na alínea (a) de REQ-PILARETE-20; ele EXISTE e o a2 o
+          MEDIU: phi DECLARADO 16 mm com TODAS as barras de área de phi 8 mm
+          passa a verificação inteira, com `atende_phi_minimo = True` — barras
+          reais de 8 mm aprovadas contra um piso normativo de 10 mm. A
+          sub-declaração uniforme é conservadora em A_s, M_Rd, ell_b, cobrimento
+          e espaçamento livre, e é do lado ERRADO exatamente no piso de phi.
+          O QUE FAZER: o MESMO princípio que a v15 ratificou em (c) — cada
+          limite lê o canal MAIS CONSERVADOR. O piso phi >= 10 mm passa a ler
+          min(phi declarado; bitola implícita pela MENOR área declarada) e o
+          teto phi <= b_mín/8 continua lendo o declarado (max dos dois, que é o
+          declarado pela guarda (a) de REQ-PILARETE-20). O arredondamento
+          comercial legítimo continua passando: 2,00 cm² declarados para phi 16
+          dão bitola implícita 15,96 mm, folgadíssimo sobre 10 mm.
+      (c) REDAÇÃO DO `fonte=` DA RECUSA DE BITOLAS MISTAS — BAIXA, mas é
+          citação de fonte e vai ao memorial. O campo diz "ABNT NBR 6118:2023,
+          18.4.2.1 e 18.4.2.2, p. 153 — o piso de phi >= 10 mm, o teto de
+          phi <= b_mín/8, o espaçamento livre e o ell_b de 9.5.2.3 são
+          verificados contra um phi ÚNICO". A Norma NÃO escreve isso: ela
+          verifica POR BARRA. Quem tem um phi único é o SOFTWARE. Reescrever o
+          `fonte` para citar o que a Norma diz (os limites são por barra) e
+          deixar o "um phi só" onde ele pertence, que é a descrição do limite
+          de escopo — o `forca` e a `sugestao` já estão certos.
+      CONSEQUÊNCIA DE PROCESSO (CLAUDE.md regra 5): o backlog #13 NÃO vai ao
+      GATE 2 sobre o commit 1861586. A função que o a6 revisaria é exatamente a
+      que carrega (a); aprovar e depois mexer nela invalidaria a aprovação de
+      novo. a5 fecha este requisito, e só então a6.
+      kb/pendencias.md > V25 (rodada de 2026-09-08, seção "Defeito NOVO").
 
   - id: REQ-ETA-C-01-eta-c-ausente-no-motor-amplo-lado-inseguro
     prioridade: ALTA

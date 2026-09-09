@@ -2079,3 +2079,149 @@ terceira transição (Modelo I com θ preenchido → recusa). Não é defeito do
 núcleo: ignorar entrada de um ramo não tomado é legítimo. É defeito **de tela**
 exibir um valor que não teve efeito, e por isso REQ-UI-PILARETE-04 obriga a
 esvaziar o ramo abandonado e enviar `None`.
+
+---
+
+# RODADA 2026-09-08 (ruleset versão 15) — reconferência de REQ-PILARETE-20 sobre o commit `1861586` (backlog #13, rodada 6)
+
+## V25 — FECHADA PELO a2 em 2026-09-08: os dois desenhos do a5 RATIFICADOS, com um defeito NOVO devolvido
+
+**O que estava aberto.** REQ-PILARETE-20 deixou dois pontos explicitamente
+condicionados a reconferência do a2: a alínea (c) — o desenho do cruzamento de
+espaçamento, cujo número serve a **dois limites de sinal contrário** — e a
+escolha entre admitir φ por barra ou **recusar** bitolas mistas. O a5
+implementou os dois no commit `1861586`. Esta é a decisão do a2 sobre eles.
+
+### Ponto 1 — piso pelo DECLARADO, teto pelo MAIOR REAL: **RATIFICADO**
+
+**Item normativo confirmado, e NÃO é o que o despacho supunha.** Quem rege é
+**18.4.2.2 "Distribuição transversal"** (NBR 6118:2023, p. impressa 153 = PDF
+p. 171), não 18.3.3.2 — este último é espaçamento de **estribos** por cortante.
+Conferido por extração direta da página com a decodificação do CMap deslocado
+(cada caractere +3): a página traz os dois limites, um em cada parágrafo.
+
+> "O espaçamento mínimo livre entre as faces das barras longitudinais, medido
+> no plano da seção transversal, fora da região de emendas, deve ser igual ou
+> superior ao maior dos seguintes valores: 20 mm; diâmetro da barra, do feixe
+> ou da luva; 1,2 vez a dimensão máxima característica do agregado graúdo.
+> […] Esses valores se aplicam também às regiões de emendas por traspasse das
+> barras."
+
+> "O espaçamento **máximo** entre eixos das barras, ou de centros de feixes de
+> barras, deve ser menor ou igual a duas vezes a menor dimensão da seção no
+> trecho considerado, sem exceder 400 mm."
+
+**Leitura.** Os dois sujeitos gramaticais são **grandezas reais da peça**: o
+"espaçamento mínimo livre" e o "espaçamento **máximo** entre eixos". A Norma
+não conhece "espaçamento declarado" — declarar é invenção do software. Logo:
+
+- o **teto** tem de ler o **MAIOR espaçamento real**. É transcrição literal, não
+  escolha de desenho; a leitura anterior (pelo declarado) era **transcrição
+  errada** e do lado inseguro, e a mudança do a5 a corrige;
+- o **piso** tem de ler o **MENOR espaçamento real**. O a5 lê o declarado — mas
+  a guarda nova obriga `declarado ≤ menor real`, de modo que o valor usado é
+  sempre `min(declarado, menor real)`.
+
+**Portanto a assimetria não é assimetria: é um princípio único** — *cada limite
+é verificado com o canal MAIS CONSERVADOR dos dois*. Teto por
+`max(declarado; maior real)`, piso por `min(declarado; menor real)`. A única
+assimetria verdadeira é **onde há RECUSA**, e ela tem razão: exigir
+`declarado == maior real` recusaria toda seção retangular (as duas direções têm
+espaçamentos diferentes por construção — 90×20 dá 784 mm e 84 mm), enquanto
+exigir `declarado ≤ menor real` não recusa nenhuma seção legítima e fecha o
+único lado em que o declarado pode ser **menos** conservador que a peça.
+
+**Verificado por execução própria do a2** (não por releitura do relato do a5),
+seção 90×20 cm, 4 barras φ16 nos cantos, d' = 5,8 cm, brita 19 mm:
+
+| grandeza | valor | veredito |
+|---|---|---|
+| espaçamentos reais pelas posições | 784,0 mm e 84,0 mm | — |
+| teto 18.4.2.2 = min(2·200; 400) | 400,0 mm | — |
+| valor comparado com o teto (v15) | **784,0 mm** | **NÃO ATENDE** |
+| valor comparado com o teto (v14) | 84,0 mm (declarado) | ATENDIA — era o buraco |
+| piso, seção corrente: 84 − 16 = 68 mm ≥ 22,8 mm | 68,0 mm | ATENDE |
+| piso, na emenda: 84 − 16 − 16 = 52 mm ≥ 22,8 mm | 52,0 mm | ATENDE |
+
+Confirma as duas metades do que foi pedido: **o teto passa a pegar os 784 mm e
+reprova**, e **o piso não é afetado** pela mudança (segue lendo o declarado,
+84 mm, e atende nas duas verificações). Confirma também que a resposta certa é
+**reprovação, não recusa**: excesso de espaçamento entre eixos é falta de barra
+intermediária, defeito de **projeto**, não entrada fora de domínio.
+
+### Ponto 2 — recusa de bitolas mistas: **RATIFICADO**
+
+**Procurei a base normativa para o caminho alternativo (φ_equivalente) e ela
+não existe.** O único diâmetro equivalente que a NBR 6118 define nesta matéria
+está na mesma página 153 e é para **feixes**: "Para feixes de barras deve-se
+considerar o diâmetro do feixe φ_n = φ√n" — feixe de barras **iguais**, não
+seção com bitolas diferentes. Todo o resto do que consome φ fala de "**o**
+diâmetro **da barra**", por barra: 18.4.2.1 (φ ≥ 10 mm e φ ≤ b_mín/8), o
+espaçamento livre de 18.4.2.2, o ℓ_b de 9.3.2.1/9.5.2.3, o φ_t ≥ φ/4 de 18.4.3.
+Não há, na Norma, autorização para reduzir um conjunto de bitolas a um número.
+As opções honestas eram duas: **φ por barra** (mudança de API) ou **recusa**.
+Recusar é a decisão certa, e é a doutrina já estabelecida no projeto (recusar >
+aproximar sem fonte segura), a mesma de CA-60 em 18.4.3 e de cortante oblíqua.
+
+**Confirmado que está registrado como limite de ESCOPO, não da Norma** —
+verificado por execução, com 2φ16 + 2φ20 na mesma seção 30×30:
+`RecusaForaDeDominio(parametro="áreas das barras (bitolas mistas)",
+forca="escopo_desta_versao_nao_limite_da_norma")`, e a mensagem termina com
+"É limite desta versão do software, não da Norma". A Norma **não proíbe**
+bitola mista; o software é que ainda não sabe verificá-la. Correto.
+
+**Uma correção de redação, e não é preciosismo.** O campo `fonte=` dessa mesma
+recusa diz "ABNT NBR 6118:2023, 18.4.2.1 e 18.4.2.2, p. 153 — o piso de
+φ ≥ 10 mm […] são verificados contra um φ ÚNICO". Isso atribui à Norma uma
+frase que ela não escreve: a Norma verifica **por barra**; quem tem um φ único
+é o software. O `forca` e a `sugestao` já dizem a verdade, mas o `fonte` de uma
+recusa é citação de fonte e vai para o memorial. Devolvido ao a5 em
+REQ-PILARETE-21(c).
+
+### Defeito NOVO encontrado nesta reconferência — devolvido ao a5, não corrigido pelo a2
+
+Reconferir "o maior espaçamento **real**" obrigou a auditar **como** o real é
+medido, e `espacamentos_entre_eixos_pelas_barras` mede errado para um arranjo
+que o núcleo aceita: ela projeta as barras em **camadas por eixo** e devolve as
+diferenças entre camadas consecutivas. Uma barra **no interior** da seção cria
+uma camada intermediária que **não reduz** o espaçamento entre barras vizinhas
+ao longo de nenhuma face — mas reduz o número que a guarda calcula.
+
+**Medido por execução pelo a2**, seção 90×40 cm, φ16, d' = 5,8 cm, teto = 400 mm:
+
+| arranjo | maior espaçamento calculado | veredito do teto | espaçamento REAL na face |
+|---|---|---|---|
+| 4 barras nos cantos | 784,0 mm | NÃO ATENDE (certo) | 784 mm |
+| 4 cantos **+ 1 barra no centroide** | 392,0 mm | **ATENDE** | **784 mm — segue violado** |
+
+O arranjo de 5 barras é **simétrico nos dois eixos**, portanto passa a guarda de
+`arranjo_simetrico()` de 17.2.5, e passou a verificação inteira: piso 126 mm e
+110 mm (atende), teto "atende". A barra do centroide não está em face nenhuma e
+não pode diminuir o vão entre as barras de canto de nenhuma das duas faces
+longas. É o **mesmo modo de falha de V25** — o núcleo aceita uma declaração que
+ele não sabe medir e o veredito vira para ATENDIDO — e do mesmo lado INSEGURO.
+
+Não é regressão do commit `1861586`: na v14 esse caso já passava (o teto lia o
+declarado). É **fix incompleto**: a direção está certa, a medição do "real" não
+cobre todo o domínio que o núcleo aceita. O docstring do a5 declara o resíduo,
+mas com uma frase **factualmente errada** — "um arranjo que não seja em anel
+[…] está fora do que 18.4.2.2 descreve". 18.4.2.2 rege qualquer seção poligonal,
+inclusive com barra interna; quem está fora do domínio é o **helper**, não o
+arranjo. Declarar um resíduo não substitui recusá-lo (REQ-PILARETE-09).
+
+Segundo achado, menor e do mesmo tipo, também devolvido: o resíduo que o próprio
+a5 pediu para o a2 reconferir na alínea (a) **existe e é do lado inseguro na
+folha de 18.4.2.1**. Medido: φ declarado 16 mm com todas as barras de área de
+φ 8 mm passa, e `atende_phi_minimo = True` — barras reais de 8 mm aprovadas
+contra um piso de 10 mm. Conservador em A_s, M_Rd, ℓ_b e espaçamento livre; do
+lado errado exatamente no piso de φ. O conserto é o **mesmo princípio do
+Ponto 1**: o piso de φ ≥ 10 mm lê o canal mais conservador, que é a **bitola
+implícita pela área**; o teto φ ≤ b_mín/8 continua lendo o declarado.
+
+Os três itens viraram **REQ-PILARETE-21** (`requisitos_para_a5`, ruleset v15).
+O a2 **não corrige código** — auditou, devolveu.
+
+**Consequência de processo.** O backlog #13 **não vai ao GATE 2 (a6) sobre o
+commit `1861586`**: a função que o a6 revisaria é exatamente a que carrega o
+buraco, e mexer nela depois da aprovação a invalidaria de novo (CLAUDE.md
+regra 5). a5 fecha REQ-PILARETE-21, e só então a6.
