@@ -200,6 +200,18 @@ TEXTO_BITOLA_UNICA = (
 )
 """REQ-UI-PILARETE-06(1): por que não há campo de área/bitola por barra."""
 
+AVISO_PERSISTENCIA = (
+    "As entradas do pilarete não são salvas no projeto (.s7proj) nesta "
+    "versão: esta janela abre vazia a cada sessão, e nenhum campo aqui "
+    "sobrevive a fechar e reabrir. Use \"Copiar\" ou \"Salvar memorial "
+    "como .txt\" antes de fechar para não perder o resultado desta "
+    "verificação — o memorial do pilarete também NÃO entra no PDF/Excel "
+    "da sapata."
+)
+"""REQ-UI-PILARETE-12: aviso FIXO (rodapé, fora do frame de resultado, não
+depende de nenhuma verificação ter rodado) — motivo do ALTA do GATE 2,
+rodada 1: o aviso existia só no docstring do módulo, não em widget algum."""
+
 _TRI_ESTADO_VALORES = ("", "Sim", "Não")
 
 
@@ -322,6 +334,14 @@ class JanelaPilarete(tk.Toplevel):
         ttk.Label(self, text=AVISO_METODO_DE_CALCULO, style="Banner.TLabel",
                   wraplength=880, justify="left", padding=(10, 6)).pack(
             fill="x")
+
+        # REQ-UI-PILARETE-12: rodapé FIXO fora da área rolável — visível
+        # sempre, nunca dentro de `frame_resultado` (não depende de
+        # nenhuma verificação ter rodado). Empacotado ANTES da área
+        # rolável para reservar a faixa inferior da janela.
+        ttk.Label(self, text=AVISO_PERSISTENCIA, style="Banner.TLabel",
+                  wraplength=880, justify="left", padding=(10, 6)).pack(
+            side="bottom", fill="x")
 
         interior = self._area_rolavel(self)
 

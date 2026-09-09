@@ -329,6 +329,72 @@ def test_trocar_vinculacao_esvazia_ell_e_e_ell_0():
         root.destroy()
 
 
+def test_grupo1_vinculado_dois_extremos_aparece_e_verifica_com_sucesso():
+    """REQ-UI-PILARETE-04, GRUPO 1 — metade nunca exercitada no GATE 2,
+    rodada 1: `ell_e_declarado`/`ell_0` (`janela_pilarete.py:760-762`) só
+    existem sob `vinculacao=VINCULADO_DOIS_EXTREMOS`. Cobre as duas metades
+    do campo condicional (o frame aparece com essa vinculação, some com
+    qualquer outra — a metade "some" já era coberta por
+    `test_trocar_vinculacao_esvazia_ell_e_e_ell_0`) e confirma que
+    `_verificar()` roda com sucesso sob esse ramo, com os valores
+    declarados chegando ao núcleo tal como digitados (não o `ell_e = 2·ell`
+    do ramo em balanço)."""
+    from ui.completo.janela_pilarete import JanelaPilarete
+
+    root = _tk_root()
+    try:
+        j = JanelaPilarete(root)
+
+        # Vazio -> GRUPO 1 escondido (estado inicial, REQ-UI-PILARETE-04).
+        j.update_idletasks()
+        assert not j._frame_vinculado.winfo_ismapped()
+
+        _preencher_geometria_A(j)   # ainda com ENGASTADO_BASE_LIVRE_TOPO
+        j.v_vinculacao.set("VINCULADO_DOIS_EXTREMOS")
+        j.update_idletasks()
+        # GRUPO 1 aparece com essa vinculação — metade "aparece".
+        assert j._frame_vinculado.winfo_ismapped()
+
+        # ell_e = min(ell_0 + h_secao, ell) = min(0,90 + 0,30 ; 1,00) = 1,00
+        j.v_ell_0.set("0.90")
+        j.v_ell_e.set("1.00")
+
+        dados = j._construir_dados()
+        assert dados.vinculacao == "VINCULADO_DOIS_EXTREMOS"
+        assert dados.ell_e_declarado == 1.00
+        assert dados.ell_0 == 0.90
+
+        j._verificar()
+        assert j.ultimo_resultado is not None, [
+            w.cget("text") for w in _todos_os_widgets(j.frame_resultado)
+            if hasattr(w, "cget") and "text" in w.keys()]
+    finally:
+        root.destroy()
+
+
+def test_grupo1_vinculado_dois_extremos_divergencia_recusa_com_numeros():
+    """`ell_e_declarado` que não bate com `min(ell_0 + h, ell)` é RECUSA do
+    núcleo (15.6), não uma conta que a janela silenciosamente corrige —
+    completa a cobertura do ramo com um caso de recusa, não só de sucesso."""
+    from ui.completo.janela_pilarete import JanelaPilarete
+
+    root = _tk_root()
+    try:
+        j = JanelaPilarete(root)
+        _preencher_geometria_A(j)
+        j.v_vinculacao.set("VINCULADO_DOIS_EXTREMOS")
+        j.v_ell_0.set("0.90")
+        j.v_ell_e.set("1.50")   # esperado seria 1,00 — declaração divergente
+
+        j._verificar()
+        assert j.ultimo_resultado is None
+        textos = _textos_da_janela(j.frame_resultado)
+        assert any("RECUSADO" in t for t in textos)
+        assert any("ell_e_declarado" in t for t in textos)
+    finally:
+        root.destroy()
+
+
 def test_trocar_modelo_de_ii_para_i_esvazia_theta():
     from ui.completo.janela_pilarete import JanelaPilarete
 
@@ -951,26 +1017,51 @@ def test_verificar_depois_alterar_qualquer_campo_zera_o_resultado():
 
 
 def test_adicionar_remover_editar_barra_invalida_o_resultado():
+    """REQ-UI-PILARETE-11-c: os três pontos de edição da tabela de barras
+    (adicionar, editar, remover) invalidam um resultado DE FATO existente.
+
+    Cada bloco abaixo parte de `_verificar()` bem-sucedido
+    (`ultimo_resultado is not None`) ANTES de editar a tabela — critério
+    real de invalidação. GATE 2, rodada 1: a versão anterior deste teste
+    chamava `_adicionar_barra()` (que nasce com `pos_h`/`pos_b` vazios) e
+    então reverificava ANTES de testar editar/remover; essa reverificação
+    já falhava sozinha em `_ler_barras` por causa da barra vazia, deixando
+    `ultimo_resultado` em `None` por um motivo diferente do que o teste
+    dizia cobrir — as asserções seguintes de `is None` passariam mesmo que
+    a invalidação por edição/remoção não existisse. Cada bloco agora usa
+    uma janela nova para não herdar esse "já None" de um bloco anterior."""
     from ui.completo.janela_pilarete import JanelaPilarete
 
     root = _tk_root()
     try:
+        # ---- EDITAR uma barra existente invalida um resultado válido. ----
         j = JanelaPilarete(root)
         _preencher_geometria_A(j)
         j._verificar()
-        assert j.ultimo_resultado is not None
-
-        j._adicionar_barra()
+        assert j.ultimo_resultado is not None, "setup falhou (editar)"
+        registro = j._linhas_barras[0]
+        registro["pos_h"].set("0.06")
         assert j.ultimo_resultado is None
         assert j.frame_resultado.winfo_children() == []
 
+        # ---- REMOVER uma barra existente invalida um resultado válido. ----
+        j = JanelaPilarete(root)
+        _preencher_geometria_A(j)
         j._verificar()
-        j._linhas_barras[0]["pos_h"].set("0.06")
+        assert j.ultimo_resultado is not None, "setup falhou (remover)"
+        j._remover_barra(j._linhas_barras[-1])
         assert j.ultimo_resultado is None
+        assert j.frame_resultado.winfo_children() == []
 
+        # ---- ADICIONAR uma barra invalida um resultado válido, mesmo com
+        # a barra nova ainda vazia — a invalidação é IMEDIATA, no próprio
+        # clique em "+ Adicionar barra" (`_invalidar_resultado` explícito
+        # em `_adicionar_barra`), sem esperar outro "Verificar".
+        j = JanelaPilarete(root)
+        _preencher_geometria_A(j)
         j._verificar()
-        registro = j._linhas_barras[-1]
-        j._remover_barra(registro)
+        assert j.ultimo_resultado is not None, "setup falhou (adicionar)"
+        j._adicionar_barra()
         assert j.ultimo_resultado is None
         assert j.frame_resultado.winfo_children() == []
     finally:
@@ -992,6 +1083,37 @@ def test_nao_existe_atributo_de_instancia_guardando_o_resultado_entre_cliques():
 # ============================================================================
 # REQ-UI-PILARETE-12 — fronteira com o núcleo, persistência e exportação.
 # ============================================================================
+def test_aviso_de_persistencia_visivel_no_widget_sem_depender_de_resultado():
+    """GATE 2, rodada 1 — motivo do ALTA: o aviso de que as entradas do
+    pilarete não são salvas no `.s7proj` existia só no docstring do módulo
+    (linhas 31-35), não em nenhum widget. Varredura recursiva de `text`
+    (mesma técnica do a6) confirmando que a string está presente E visível
+    (`winfo_ismapped`) na janela RECÉM-ABERTA, sem depender de nenhuma
+    `_verificar()` ter rodado — o aviso não é `frame_resultado`."""
+    from ui.completo.janela_pilarete import AVISO_PERSISTENCIA, JanelaPilarete
+
+    root = _tk_root()
+    try:
+        j = JanelaPilarete(root)
+        j.update_idletasks()   # mapeamento só reflete a realidade depois
+
+        textos = _textos_da_janela(j)
+        candidatos = [t for t in textos
+                      if "não são salvas" in t or "s7proj" in t.lower()]
+        assert candidatos, "nenhum widget da janela menciona a não-persistência"
+        assert AVISO_PERSISTENCIA in textos
+
+        widgets_com_o_aviso = [
+            w for w in _todos_os_widgets(j)
+            if hasattr(w, "cget") and "text" in w.keys()
+            and w.cget("text") == AVISO_PERSISTENCIA]
+        assert widgets_com_o_aviso, "aviso não está em nenhum widget da janela"
+        assert all(w.winfo_ismapped() for w in widgets_com_o_aviso), (
+            "aviso presente no texto, mas escondido (não mapeado)")
+    finally:
+        root.destroy()
+
+
 def test_s7proj_identico_antes_e_depois_de_usar_a_janela_do_pilarete(tmp_path):
     from calc_core.sapata_isolada.acoes import CasoCarga
     from ui.completo import projeto
