@@ -13,7 +13,7 @@ from .material import (
     STEEL_MATERIAL_CATALOG,
     SteelMaterial,
 )
-from .members import Beam, Bracing, Column
+from .members import Beam, Bracing, Column, Member
 from .node import Node
 from .section import (
     CircularTubeSection,
@@ -33,6 +33,7 @@ __all__ = [
     "Column",
     "Connection",
     "ConnectionType",
+    "Member",
     "Node",
     "PINNED_CONNECTION",
     "RIGID_CONNECTION",

@@ -9,7 +9,14 @@ description = "Motor de cálculo para modelagem e dimensionamento de estruturas 
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-dependencies = []
+dependencies = [
+    # Álgebra linear (montagem/solução do sistema de rigidez global em
+    # analysis/). Não é uma dependência de interface — mantém o motor
+    # de cálculo livre de GUI/framework, só usa a ferramenta numérica
+    # padrão do ecossistema Python em vez de reimplementar eliminação
+    # gaussiana à mão.
+    "numpy>=1.26",
+]
 
 [project.optional-dependencies]
 dev = [

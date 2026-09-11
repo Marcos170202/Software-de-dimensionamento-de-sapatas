@@ -28,8 +28,10 @@ class ConnectionType(Enum):
     momento-rotação própria (``rotational_stiffness``)."""
 
     PINNED = auto()
-    """Rotulada — não transmite momento; apenas força axial e
-    cortante."""
+    """Rotulada — não transmite momento fletor; apenas força axial e
+    cortante. (A camada de análise trata a torção separadamente da
+    classificação aqui — ver limitação documentada em
+    ``estrutura_metalica.analysis.stiffness``.)"""
 
 
 @dataclass(frozen=True, slots=True)

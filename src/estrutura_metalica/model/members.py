@@ -3,13 +3,14 @@ processo de modelagem.
 
 Cada elemento liga dois nós (pelo ``id``, não pela instância — a
 resolução/validação de que os ids existem e formam um modelo
-consistente é responsabilidade da camada de agregação do modelo, ainda
-não implementada nesta fase) e carrega o perfil, o material e a
-classificação de ligação em cada extremidade.
+consistente é responsabilidade da camada de agregação do modelo,
+``estrutura_metalica.analysis.model.StructuralModel``) e carrega o
+perfil, o material e a classificação de ligação em cada extremidade.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from .connection import PINNED_CONNECTION, RIGID_CONNECTION, Connection, ConnectionType
@@ -23,6 +24,12 @@ class _StructuralMember:
 
     Não é instanciada diretamente — serve só para não repetir a
     validação de nós/seção/material/ligações nas três subclasses.
+
+    ``orientation_angle`` (radianos) fixa a orientação dos eixos
+    principais da seção em torno do eixo longitudinal do elemento —
+    ver ``estrutura_metalica.analysis.stiffness`` para a convenção
+    exata (ângulo 0 = orientação padrão: eixo forte resistindo à
+    flexão no plano "vertical" da orientação automática do elemento).
     """
 
     id: int
@@ -32,12 +39,18 @@ class _StructuralMember:
     material: SteelMaterial
     start_connection: Connection = field(default=RIGID_CONNECTION)
     end_connection: Connection = field(default=RIGID_CONNECTION)
+    orientation_angle: float = 0.0
 
     def __post_init__(self) -> None:
         if self.start_node_id == self.end_node_id:
             raise ValueError(
                 f"Elemento {self.id}: nó inicial e final não podem ser o mesmo "
                 f"(id={self.start_node_id!r})."
+            )
+        if not math.isfinite(self.orientation_angle):
+            raise ValueError(
+                f"Elemento {self.id}: 'orientation_angle' deve ser finito, "
+                f"recebido: {self.orientation_angle!r}"
             )
 
 
@@ -79,10 +92,19 @@ class Bracing(_StructuralMember):
     Ambas as extremidades são forçosamente rotuladas — não é permitido
     passar ``start_connection``/``end_connection`` diferentes de
     rotulada, pois a hipótese de barra biarticulada é o que torna o
-    contraventamento um elemento de treliça (só rigidez axial) em vez
-    de um elemento de pórtico. O padrão já é rotulado em ambas as
-    pontas (sobrescrevendo o padrão rígido herdado de
-    ``_StructuralMember``), então normalmente nem precisa ser passado.
+    contraventamento um elemento de treliça (só rigidez axial e de
+    flexão liberada) em vez de um elemento de pórtico. O padrão já é
+    rotulado em ambas as pontas (sobrescrevendo o padrão rígido herdado
+    de ``_StructuralMember``), então normalmente nem precisa ser
+    passado.
+
+    LIMITAÇÃO: a camada de análise mantém a torção sempre transmitida
+    entre as extremidades, mesmo aqui (ver
+    ``estrutura_metalica.analysis.stiffness``) — irrelevante na
+    prática (rigidez torcional de contraventamentos é tipicamente
+    desprezível e nada no modelo depende da rotação da barra em torno
+    do próprio eixo), mas não é o comportamento exato de uma rótula
+    esférica real.
     """
 
     start_connection: Connection = field(default=PINNED_CONNECTION)
@@ -104,3 +126,9 @@ class Bracing(_StructuralMember):
                     f"(PINNED), recebido: {connection.connection_type.name}. "
                     "Contraventamentos são barras biarticuladas por hipótese."
                 )
+
+
+Member = Column | Beam | Bracing
+"""Alias de tipo para qualquer elemento estrutural — usado pela camada
+``analysis`` (agregação do modelo, montagem da rigidez) para aceitar
+pilares, vigas e contraventamentos de forma uniforme."""

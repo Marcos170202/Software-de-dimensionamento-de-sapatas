@@ -52,6 +52,28 @@ def test_beam_can_be_marked_composite() -> None:
     assert beam.is_composite is True
 
 
+def test_column_defaults_orientation_angle_to_zero() -> None:
+    col = Column(id=1, start_node_id=1, end_node_id=2, section=_SECTION, material=ASTM_A992)
+    assert col.orientation_angle == 0.0
+
+
+def test_column_accepts_custom_orientation_angle() -> None:
+    col = Column(
+        id=1, start_node_id=1, end_node_id=2, section=_SECTION, material=ASTM_A992,
+        orientation_angle=1.5707963267948966,
+    )
+    assert col.orientation_angle == pytest.approx(1.5707963267948966)
+
+
+@pytest.mark.parametrize("bad_value", [float("nan"), float("inf"), float("-inf")])
+def test_rejects_non_finite_orientation_angle(bad_value: float) -> None:
+    with pytest.raises(ValueError):
+        Column(
+            id=1, start_node_id=1, end_node_id=2, section=_SECTION, material=ASTM_A992,
+            orientation_angle=bad_value,
+        )
+
+
 def test_beam_can_have_semi_rigid_end() -> None:
     semi_rigid = Connection(connection_type=ConnectionType.SEMI_RIGID, rotational_stiffness=5e6)
     beam = Beam(
