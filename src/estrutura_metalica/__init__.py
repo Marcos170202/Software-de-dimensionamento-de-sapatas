@@ -28,14 +28,16 @@ Fases já implementadas:
   ponto), força cortante (5.4.1.3/5.4.3.1, seções I/H/U fletidas no
   eixo perpendicular à alma), momento fletor (5.4.1.3/5.4.2/Anexo D —
   FLT, FLM e FLA de seções I/H/U duplamente simétricas fletidas no
-  eixo maior, vigas de alma não esbelta), interação entre força axial
-  e momento fletor biaxial (5.5.1.2, barras sem torção), a limitação
-  recomendada do índice de esbeltez (5.2.8/5.3.7) e início das
-  ligações metálicas (6.2.5.1, força resistente do metal da solda em
-  soldas de filete concêntricas). Ver ``docs/normative/NBR8800-RULES.md``
-  para a rastreabilidade completa e o que ainda está fora do escopo
-  (interação com torção, vigas de alma esbelta, metal-base em soldas,
-  parafusos, bases de pilares).
+  eixo maior, vigas de alma não esbelta), Anexo E (momento fletor
+  resistente de cálculo de vigas de alma esbelta SOLDADAS, duplamente
+  simétricas — escoamento da mesa tracionada, FLT e FLM), interação
+  entre força axial e momento fletor biaxial (5.5.1.2, barras sem
+  torção), a limitação recomendada do índice de esbeltez (5.2.8/5.3.7)
+  e início das ligações metálicas (6.2.5.1, força resistente do metal
+  da solda em soldas de filete concêntricas). Ver
+  ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa
+  e o que ainda está fora do escopo (interação com torção, metal-base
+  em soldas, parafusos, bases de pilares).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
 lançamento em planta, restante das ligações metálicas (parafusos,

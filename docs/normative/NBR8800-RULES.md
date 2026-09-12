@@ -371,9 +371,11 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
   verificação de momento fletor — não apenas substituir o ramo de FLA
   por uma fórmula diferente. `check_flexural_resistance_major_axis`
   VALIDA essa precondição (levanta `ValueError` se violada) antes de
-  calcular FLT/FLM/FLA, mas o **Anexo E não está implementado** — para
-  vigas de alma esbelta, nenhuma função do módulo `flexure` pode ser
-  usada.
+  calcular FLT/FLM/FLA. **STATUS ATUALIZADO**: o Anexo E agora ESTÁ
+  implementado para seções soldadas com dois eixos de simetria — ver
+  `estrutura_metalica.normative.nbr8800.slender_web.check_flexural_resistance_slender_web_major_axis`
+  (NBR8800-SLWEB-001 a 005) — para vigas de alma esbelta, use essa
+  função em vez desta.
 - **IMPLEMENTATION:** N/A (limitação documentada + validação de
   precondição, não uma regra de cálculo) — ver
   `estrutura_metalica.normative.nbr8800.flexure.check_flexural_resistance_major_axis`.
@@ -507,6 +509,109 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   `estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`.
 - **TEST:** `tests/normative/test_nbr8800_welds.py`.
 
+## RULE-ID: NBR8800-SLWEB-001
+
+- **SOURCE:** NBR 8800:2024, Anexo E, E.5.2, página 148: "Vigas de
+  alma esbelta, para os efeitos deste Anexo, são aquelas com seção I
+  ou H soldada, com dois eixos de simetria [...], com o parâmetro de
+  esbeltez da alma, λ=h/tw, superior a λr=5,70·sqrt(E/fy)"; E.5.3-b:
+  "a relação h/tw não pode exceder 260 nem: 11,7·sqrt(E/fy), para
+  a/h ≤ 1,5; 0,42·E/fy, para a/h > 1,5".
+- **DESCRIPTION:** Fecha, para o caso de alma esbelta, a limitação de
+  segurança registrada em NBR8800-FLEX-007: quando `h/tw >
+  5,70·sqrt(E/fy)`, o Anexo D inteiro deixa de se aplicar e o Anexo E
+  passa a ser exigido. Esta regra valida as DUAS precondições de
+  aplicabilidade do Anexo E antes de qualquer cálculo: (i) a alma deve
+  de fato ser esbelta (`h/tw > 5,70·sqrt(E/fy)` — senão, usar o Anexo
+  D); (ii) `h/tw` não pode exceder 260 nem o segundo limite
+  (dependente de `a/h`). Escopo restrito a seções com DOIS eixos de
+  simetria (E.5.3-a, requisito para seções com um eixo de simetria,
+  não implementado).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.slender_web` (função privada
+  `_validate_slender_web_applicability`), usada em
+  `check_flexural_resistance_slender_web_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
+
+## RULE-ID: NBR8800-SLWEB-002
+
+- **SOURCE:** NBR 8800:2024, Anexo E, E.6.1, página 148: "O valor do
+  momento fletor resistente de cálculo, para o estado-limite último de
+  escoamento da mesa tracionada, é calculado conforme a seguir:
+  `MRd = Wxt·fy/γa1`."
+- **DESCRIPTION:** Momento fletor resistente de cálculo para o
+  escoamento da mesa tracionada, um estado-limite específico de vigas
+  de alma esbelta (sem equivalente na Tabela D.1 do Anexo D, onde a
+  mesa tracionada não governa por não haver redução `kpg`).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.slender_web.check_tension_flange_yielding`.
+- **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
+
+## RULE-ID: NBR8800-SLWEB-003
+
+- **SOURCE:** NBR 8800:2024, Anexo E, E.6.2-a, página 149: curva de 3
+  trechos de `MRd` (`λ ≤ λy`→`My/γa1`; `λy<λ≤λr`→interpolação linear
+  entre `My` e `Mr`; `λ>λr`→`Mcr/γa1`), com `My=kpg·fy·Wxc`,
+  `Mr=kpg·(fy-σr)·Wxc`, `Mcr=Cb·kpg·π²·E·Wxc/λ²`, `λ=Lb/ryc`,
+  `λy=1,10·sqrt(E/fy)`, `λr=π·sqrt(E·Cb/(fy-σr))`, e
+  `kpg=1-[ar/(1200+300·ar)]·(hc/tw-5,70·sqrt(E/fy)) ≤ 1,0`, onde
+  `ar=hc·tw/Afc ≤ 10`.
+- **DESCRIPTION:** Momento fletor resistente de cálculo para FLT em
+  vigas de alma esbelta soldadas — mesma estrutura conceitual de 3
+  trechos de NBR8800-FLEX-003 (Anexo D), mas com o fator de redução de
+  resistência à flexão `kpg` ("plate girder") aplicado a `My`/`Mr`, e
+  fórmulas mais simples de `Mcr`/`λr` (sem os termos de `J`/`Cw` do
+  Anexo D). **LIMITAÇÃO DE SEGURANÇA sobre `σr`**: o texto do Anexo E
+  lido não redefine `σr` — reaproveita-se aqui o valor `σr=0,30·fy`
+  definido para essa mesma grandeza em D.2.8-e (única definição de
+  `σr` encontrada no documento), ver ATENÇÃO 2 no docstring do módulo.
+  **LIMITAÇÃO adicional**: `ryc` (raio de giração da mesa comprimida
+  mais um terço da altura da alma comprimida) não tem fórmula fechada
+  no texto lido — é exigido como parâmetro de entrada, não calculado
+  internamente (ver ATENÇÃO 3 no docstring do módulo).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.slender_web.compression_flange_area_ratio`,
+  `estrutura_metalica.normative.nbr8800.slender_web.plate_girder_bending_strength_reduction_factor`,
+  `estrutura_metalica.normative.nbr8800.slender_web.check_slender_web_lateral_torsional_buckling`
+  (reaproveita
+  `estrutura_metalica.normative.nbr8800.flexure.flexural_resistance`
+  para a curva de 3 trechos — ver ATENÇÃO 1 no docstring do módulo).
+- **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
+
+## RULE-ID: NBR8800-SLWEB-004
+
+- **SOURCE:** NBR 8800:2024, Anexo E, E.6.3, página 150: mesma curva
+  de 3 trechos de E.6.2-a, com `Mcr=0,90·kpg·E·kc·Wxc/λ²`,
+  `λ=bf/(2tf)`, `λy=0,38·sqrt(E/fy)`, `λr=0,95·sqrt(kc·E/(fy-σr))`,
+  `kc` dado na Tabela 4, nota a.
+- **DESCRIPTION:** Momento fletor resistente de cálculo para FLM em
+  vigas de alma esbelta — E.5.2 restringe todo o Anexo E a seções
+  SOLDADAS, por isso reaproveita-se diretamente
+  `flange_local_buckling_coefficient_welded`
+  (NBR8800-FLEX-005) para `kc`, sem o caso "laminado" que existe em
+  D.2.8-f (não aplicável aqui).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.slender_web.check_slender_web_flange_local_buckling`
+  (reaproveita
+  `estrutura_metalica.normative.nbr8800.flexure.flange_local_buckling_coefficient_welded`
+  e
+  `estrutura_metalica.normative.nbr8800.flexure.flexural_resistance`).
+- **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
+
+## RULE-ID: NBR8800-SLWEB-005
+
+- **SOURCE:** NBR 8800:2024, 5.4.2.1 (ver NBR8800-FLEX-001, o mesmo
+  princípio de `Mrd` = menor entre os estados-limite aplicáveis) e
+  Anexo E, E.6 completo (páginas 148-150).
+- **DESCRIPTION:** Agregador que calcula o `Mrd` COMPLETO (dentro do
+  escopo desta fase) de uma viga de alma esbelta soldada, duplamente
+  simétrica, fletida no eixo maior: `Mrd = min(Mrd_E.6.1, Mrd_FLT,
+  Mrd_FLM)` (NBR8800-SLWEB-002/003/004). Valida as precondições de
+  aplicabilidade do Anexo E antes de calcular (NBR8800-SLWEB-001).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.slender_web.check_flexural_resistance_slender_web_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -537,9 +642,13 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   cantoneiras duplas e seções sólidas — FLT, FLM e FLA da PRIMEIRA
   linha (seções duplamente simétricas, eixo maior) já estão completos
   (NBR8800-FLEX-001/004/005/006).
-- **Anexo E** (páginas 148-151): momento fletor resistente de cálculo
-  de vigas de ALMA ESBELTA — substitui o Anexo D inteiramente quando a
-  seção não satisfaz D.1.2 (ver NBR8800-FLEX-007).
+- **Anexo E, itens restantes** (páginas 148-151): E.5.3-a (requisito
+  de `αy` para seções com um eixo de simetria — só duas simetrias
+  estão implementadas, NBR8800-SLWEB-001); E.6.4 (FLM de seções-caixão
+  e tubulares retangulares de alma esbelta — remete a E.2.2/Tabela D.1,
+  não implementado); cálculo fechado de `ryc` (ver ATENÇÃO 3 no
+  docstring do módulo `slender_web` — exigido como parâmetro de
+  entrada, não derivado internamente).
 - **Anexos F, G, H, I**: aberturas em almas de vigas, barras de seção
   variável, fadiga e vibrações em pisos, respectivamente.
 - **5.4.3.2 a 5.4.3.6** (páginas 58-60): força cortante resistente

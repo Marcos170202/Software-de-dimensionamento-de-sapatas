@@ -14,18 +14,20 @@ cálculo de seções I/H/U fletidas no eixo perpendicular à alma),
 5.4.1.3/5.4.2/Anexo D (momento fletor resistente de cálculo — FLT, FLM
 e FLA — de seções I/H com dois eixos de simetria e seções U não
 sujeitas a momento de torção, fletidas no eixo de maior momento de
-inércia, vigas de alma não esbelta), 5.5.1.2 (interação entre força
-axial e momento fletor biaxial, barras sem torção) e início da Etapa 6
-de ligações — 6.2.5.1 (força resistente de cálculo do metal da solda
-em soldas de filete de pernas iguais/ângulo reto, carregadas
-concentricamente).
+inércia, vigas de alma não esbelta), Anexo E (momento fletor
+resistente de cálculo de vigas de alma esbelta SOLDADAS, duplamente
+simétricas), 5.5.1.2 (interação entre força axial e momento fletor
+biaxial, barras sem torção) e início da Etapa 6 de ligações — 6.2.5.1
+(força resistente de cálculo do metal da solda em soldas de filete de
+pernas iguais/ângulo reto, carregadas concentricamente).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
 cortante para os demais tipos de seção (5.4.3.2 a 5.4.3.6), demais
 linhas da Tabela D.1 (seções monossimétricas, tubulares/caixão,
-sólidas) e flexão no eixo de menor momento de inércia, vigas de alma
-esbelta (Anexo E), interação com momento de torção (5.5.2, seções
+sólidas) e flexão no eixo de menor momento de inércia, seções-caixão e
+tubulares de alma esbelta (Anexo E.6.4), vigas de alma esbelta com um
+eixo de simetria, interação com momento de torção (5.5.2, seções
 tubulares), seções monossimétricas/assimétricas em compressão
 (5.3.5.2/5.3.5.3), barras compostas, verificação do metal-base em
 soldas (6.5), soldas de penetração/tampão, grupos de filetes
@@ -76,6 +78,14 @@ from .shear import (
     shear_buckling_coefficient,
     shear_resistance,
 )
+from .slender_web import (
+    check_flexural_resistance_slender_web_major_axis,
+    check_slender_web_flange_local_buckling,
+    check_slender_web_lateral_torsional_buckling,
+    check_tension_flange_yielding,
+    compression_flange_area_ratio,
+    plate_girder_bending_strength_reduction_factor,
+)
 from .slenderness import (
     COMPRESSION_SLENDERNESS_LIMIT,
     TENSION_SLENDERNESS_LIMIT,
@@ -112,10 +122,15 @@ __all__ = [
     "check_compression_slenderness",
     "check_fillet_weld_shear",
     "check_flexural_resistance_major_axis",
+    "check_flexural_resistance_slender_web_major_axis",
     "check_lateral_torsional_buckling",
     "check_shear_major_axis",
+    "check_slender_web_flange_local_buckling",
+    "check_slender_web_lateral_torsional_buckling",
+    "check_tension_flange_yielding",
     "check_tension_member",
     "check_tension_slenderness",
+    "compression_flange_area_ratio",
     "effective_area_without_local_buckling",
     "effective_shear_area_major_axis",
     "fillet_weld_effective_area",
@@ -132,6 +147,7 @@ __all__ = [
     "moment_gradient_factor_doubly_symmetric",
     "net_area_without_holes",
     "plastic_shear_force",
+    "plate_girder_bending_strength_reduction_factor",
     "polar_radius_of_gyration",
     "reduction_factor",
     "shear_buckling_coefficient",
