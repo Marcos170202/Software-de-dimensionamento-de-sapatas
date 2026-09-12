@@ -168,6 +168,66 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
   `estrutura_metalica.normative.nbr8800.slenderness.check_compression_slenderness`.
 - **TEST:** `tests/normative/test_nbr8800_slenderness.py`.
 
+## RULE-ID: NBR8800-SHEAR-001
+
+- **SOURCE:** NBR 8800:2024, 5.4.1.3, página 53: "No dimensionamento
+  das barras submetidas a momento fletor e força cortante, devem ser
+  atendidas as seguintes condições: MSd ≤ MRd; VSd ≤ VRd".
+- **DESCRIPTION:** Condição de dimensionamento ao cisalhamento:
+  `Vsd ≤ Vrd`. A condição equivalente de momento fletor (`Msd ≤ Mrd`,
+  5.4.2) **não é implementada nesta fase**.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.shear.check_shear_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_shear.py`.
+
+## RULE-ID: NBR8800-SHEAR-002
+
+- **SOURCE:** NBR 8800:2024, 5.4.3.1.2, página 57-58: "Vpℓ =
+  0,60·Aw·fy [...] Aw = d·tw, onde d é a altura total da seção
+  transversal; tw é a espessura da alma."
+- **DESCRIPTION:** Força cortante correspondente à plastificação da
+  alma por cisalhamento (`Vpℓ = 0,60·Aw·fy`) e área efetiva de
+  cisalhamento para seções I, H e U fletidas em relação ao eixo
+  perpendicular à alma (`Aw = d·tw`).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.shear.plastic_shear_force`,
+  `estrutura_metalica.normative.nbr8800.shear.effective_shear_area_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_shear.py`.
+
+## RULE-ID: NBR8800-SHEAR-003
+
+- **SOURCE:** NBR 8800:2024, 5.4.3.1.1, página 57: curva de 3 trechos
+  de `Vrd` (`λ = h/tw`; `λp = 1,10·sqrt(kv·E/fy)`;
+  `λr = 1,37·sqrt(kv·E/fy)`); `h` é a altura da alma (distância entre
+  as faces internas das mesas em perfis soldados, ou esse valor menos
+  os dois raios de concordância mesa/alma em perfis laminados).
+- **DESCRIPTION:** Força cortante resistente de cálculo `Vrd` em 3
+  trechos (plastificação / flambagem inelástica / flambagem elástica
+  por cisalhamento), aplicável apenas a seções I, H e U fletidas em
+  relação ao eixo perpendicular à alma. Nota: distinção crítica entre
+  `h` (altura livre da alma, usada aqui e em `kv`) e `d` (altura total
+  da seção, usada em `Aw`, NBR8800-SHEAR-002). Há uma pequena
+  descontinuidade (~0,4% relativo) em `λ=λr`, pois `λr/λp =
+  1,37/1,10 = 1,24545...` não é exatamente `1,24` — característica da
+  fórmula empírica da norma, não um erro de implementação.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.shear.shear_resistance`,
+  `estrutura_metalica.normative.nbr8800.shear.check_shear_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_shear.py`.
+
+## RULE-ID: NBR8800-SHEAR-004
+
+- **SOURCE:** NBR 8800:2024, 5.4.3.1.1, página 57: "kv = 5,34, para
+  almas sem enrijecedores transversais e para a/h > 3; kv = 5,0 +
+  5/(a/h)², para todos os outros casos".
+- **DESCRIPTION:** Coeficiente de flambagem por cisalhamento `kv`,
+  usado em `λp`/`λr` (NBR8800-SHEAR-003). Não implementa 5.4.3.1.3
+  (requisitos construtivos dos próprios enrijecedores transversais — a
+  distância `a` é recebida como parâmetro, não verificada/dimensionada).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.shear.shear_buckling_coefficient`.
+- **TEST:** `tests/normative/test_nbr8800_shear.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -186,9 +246,22 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
 - **5.3.5.4** (páginas 50-51): comprimento destravado equivalente para
   cantoneiras simples conectadas por uma aba.
 - **5.3.6** (páginas 51-52): barras compostas comprimidas.
-- **5.4** (força cortante, momento fletor — páginas 53-60), **5.5**
-  (interação de esforços — páginas 60-62): fases normativas futuras,
-  não abertas nesta etapa.
+- **5.4.2** (momento fletor resistente de cálculo — páginas 53-56,
+  Anexos D/E): fase normativa futura, substancialmente mais complexa
+  que 5.4.3 (classificação da seção compacta/semicompacta/esbelta,
+  flambagem lateral com torção).
+- **5.4.3.2 a 5.4.3.6** (páginas 58-60): força cortante resistente
+  para seções tubulares/caixão, T, cantoneiras duplas, I/H/U fletidas
+  em torno do eixo fraco, e tubulares circulares — mesma estrutura de
+  fórmula de 5.4.3.1 (NBR8800-SHEAR-002/003), com `kv`/área efetiva de
+  cisalhamento diferentes.
+- **5.4.3.1.3** (página 58): requisitos construtivos para
+  dimensionamento dos próprios enrijecedores transversais (ver
+  NBR8800-SHEAR-004).
+- **5.4.4/5.4.5** (chapas de reforço/lamelas e requisitos para seções
+  soldadas).
+- **5.5** (interação de esforços — páginas 60-62): fase normativa
+  futura, não aberta nesta etapa.
 - **Ligações** (parafusos, soldas, chapa de base): fase futura
   (PROCESSO_MODELAGEM_METALICA.md, Etapa 6 — "Dimensionamento de
   ligações").
