@@ -8,6 +8,7 @@ from estrutura_metalica.normative.nbr8800 import (
     LoadCombinationClass,
     SteelResistanceFactors,
     steel_resistance_factors,
+    weld_metal_resistance_factor,
 )
 
 
@@ -34,3 +35,17 @@ def test_rejects_non_positive_or_non_finite_factors(field: str, bad_value: float
     kwargs[field] = bad_value
     with pytest.raises(ValueError):
         SteelResistanceFactors(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("combination_class", "expected_gamma_w2"),
+    [
+        (LoadCombinationClass.NORMAL, 1.35),
+        (LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO, 1.35),
+        (LoadCombinationClass.EXCEPCIONAL, 1.15),
+    ],
+)
+def test_weld_metal_resistance_factor_matches_tabela_9(
+    combination_class: LoadCombinationClass, expected_gamma_w2: float
+) -> None:
+    assert weld_metal_resistance_factor(combination_class) == pytest.approx(expected_gamma_w2)

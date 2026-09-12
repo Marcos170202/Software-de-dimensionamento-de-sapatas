@@ -438,6 +438,75 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   já implementado).
 - **TEST:** N/A.
 
+## RULE-ID: NBR8800-CONN-001
+
+- **SOURCE:** NBR 8800:2024, 6.2.5.1, página 76: "A força resistente
+  de cálculo, `Fw,Rd`, dos diversos tipos de solda está indicada na
+  Tabela 9 [...]"; Tabela 9 (página 78), linha "Filete", coluna
+  "Cisalhamento na seção efetiva": "Metal da solda: `0,6·Aw·fw/γw2`
+  [nota f, i]"; nota i: "O valor de `γw2` é igual a 1,35 para
+  combinações normais, especiais ou de construção e igual a 1,15 para
+  combinações excepcionais."
+- **DESCRIPTION:** Força resistente de cálculo do METAL DA SOLDA ao
+  cisalhamento na seção efetiva de uma solda de filete,
+  `Fw,Rd = 0,6·fw·Aw/γw2`, e o coeficiente `γw2` (mesma estrutura de
+  tabela de `steel_resistance_factors`/`LoadCombinationClass`, mas com
+  valores próprios da Tabela 9, não da Tabela 3). **LIMITAÇÃO DE
+  SEGURANÇA**: a Tabela 9 exige adicionalmente que "o metal-base deve
+  atender a 6.5" (elementos de ligação submetidos a cisalhamento,
+  incluindo colapso por rasgamento/"block shear") — 6.5 NÃO está
+  implementado nesta fase; usar apenas `Fw,Rd` (metal da solda) para
+  dimensionar uma ligação completa é NÃO CONSERVADOR quando o
+  metal-base governa.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.resistance_factors.weld_metal_resistance_factor`,
+  `estrutura_metalica.normative.nbr8800.welds.fillet_weld_shear_resistance`,
+  `estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`.
+- **TEST:** `tests/normative/test_nbr8800_resistance_factors.py`,
+  `tests/normative/test_nbr8800_welds.py`.
+
+## RULE-ID: NBR8800-CONN-002
+
+- **SOURCE:** NBR 8800:2024, 6.2.2.2, página 75: "a) a área efetiva de
+  uma solda de filete deve ser calculada como o produto do
+  comprimento efetivo da solda pela espessura da garganta efetiva; b)
+  a garganta efetiva de uma solda de filete é igual à menor distância
+  medida da raiz à face plana teórica da solda [...]".
+- **DESCRIPTION:** Área efetiva (`Aw = comprimento efetivo · garganta
+  efetiva`) e garganta efetiva de uma solda de filete PADRÃO (pernas
+  iguais, ângulo reto de 90° entre as partes — o caso mais comum, onde
+  a "menor distância da raiz à face plana teórica" se reduz a
+  `te = dw·sen(45°)`). **LIMITAÇÃO DE SEGURANÇA**: não implementa a
+  fórmula geral para pernas desiguais/ângulos diferentes de 90°, o
+  acréscimo de 3 mm para soldas de arco submerso com pernas
+  ortogonais maiores que 10 mm (6.2.2.2-b), nem o fator de redução β
+  para filetes longitudinais longos (6.2.2.2-d) — para esses casos, a
+  área efetiva calculada por este módulo seria diferente (geralmente
+  menor no caso do fator β) da exigida pela norma.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.welds.fillet_weld_effective_throat`,
+  `estrutura_metalica.normative.nbr8800.welds.fillet_weld_effective_area`.
+- **TEST:** `tests/normative/test_nbr8800_welds.py`.
+
+## RULE-ID: NBR8800-CONN-003
+
+- **SOURCE:** NBR 8800:2024, Tabela 11 (página 80): "Tamanho mínimo da
+  perna de uma solda de filete, `dw`" — "Abaixo de 6,3 e até 6,3": 3
+  mm; "Acima de 6,3 até 12,5": 5 mm; "Acima de 12,5 até 19": 6 mm;
+  "Acima de 19": 8 mm (função da menor espessura do metal-base na
+  junta).
+- **DESCRIPTION:** Tamanho mínimo da perna de uma solda de filete, em
+  função da menor espessura das partes ligadas — requisito
+  construtivo obrigatório (não recomendado), validado por
+  `check_fillet_weld_shear` antes de calcular `Fw,Rd` (levanta
+  `ValueError` se violado). Não implementa o tamanho MÁXIMO da perna
+  (6.2.6.2.2).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.welds.minimum_fillet_weld_leg_size`,
+  usado em
+  `estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`.
+- **TEST:** `tests/normative/test_nbr8800_welds.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -491,6 +560,25 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   verificação, e `Trd` nunca foi implementado em nenhuma fase anterior
   deste pacote — 5.5.1.2/5.5.1.3 (interação sem torção) já estão
   implementadas (NBR8800-COMB-001/002).
-- **Ligações** (parafusos, soldas, chapa de base): fase futura
-  (PROCESSO_MODELAGEM_METALICA.md, Etapa 6 — "Dimensionamento de
-  ligações").
+- **6.2** (soldas, demais itens — páginas 73-81): verificação do
+  metal-base em soldas de filete (6.5, ver LIMITAÇÃO DE SEGURANÇA em
+  NBR8800-CONN-001); soldas de penetração total/parcial e de
+  tampão/rasgo (Tabela 9, demais linhas); combinação de tipos
+  diferentes de solda (6.2.3); requisitos de metal de solda e
+  procedimentos de soldagem (6.2.4); tamanho MÁXIMO da perna de filete
+  (6.2.6.2.2) e demais limitações (6.2.6); fórmula geral da garganta
+  efetiva para pernas desiguais/ângulos diferentes de 90°, acréscimo
+  de arco submerso, e fator de redução β para filetes longitudinais
+  longos (ver NBR8800-CONN-002); grupos de filetes com resultante
+  excêntrica ao centro geométrico (6.2.5.2-b/c, método do centro
+  instantâneo de rotação).
+- **6.3 a 6.8** (páginas 82-113): parafusos e barras redondas
+  rosqueadas (6.3); pinos (6.4); elementos de ligação — tracionados,
+  comprimidos, cisalhados, colapso por rasgamento (6.5); pressão de
+  contato (6.6); bases de pilares (6.7); projeto/montagem/inspeção de
+  ligações com parafusos de alta resistência (6.8). Nenhuma dessas
+  frentes foi aberta ainda — `SteelSection`/`Connection` não expressam
+  furos, parafusos, chapas de ligação nem placas de base.
+- **7/8** (páginas 114+): elementos mistos de aço e concreto e
+  ligações mistas — fora do escopo deste pacote (`estrutura_metalica`
+  trata apenas de estruturas de aço puro).

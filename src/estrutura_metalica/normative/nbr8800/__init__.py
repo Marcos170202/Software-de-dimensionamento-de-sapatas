@@ -14,8 +14,11 @@ cálculo de seções I/H/U fletidas no eixo perpendicular à alma),
 5.4.1.3/5.4.2/Anexo D (momento fletor resistente de cálculo — FLT, FLM
 e FLA — de seções I/H com dois eixos de simetria e seções U não
 sujeitas a momento de torção, fletidas no eixo de maior momento de
-inércia, vigas de alma não esbelta) e 5.5.1.2 (interação entre força
-axial e momento fletor biaxial, barras sem torção).
+inércia, vigas de alma não esbelta), 5.5.1.2 (interação entre força
+axial e momento fletor biaxial, barras sem torção) e início da Etapa 6
+de ligações — 6.2.5.1 (força resistente de cálculo do metal da solda
+em soldas de filete de pernas iguais/ângulo reto, carregadas
+concentricamente).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
@@ -24,7 +27,9 @@ linhas da Tabela D.1 (seções monossimétricas, tubulares/caixão,
 sólidas) e flexão no eixo de menor momento de inércia, vigas de alma
 esbelta (Anexo E), interação com momento de torção (5.5.2, seções
 tubulares), seções monossimétricas/assimétricas em compressão
-(5.3.5.2/5.3.5.3), barras compostas, ligações.
+(5.3.5.2/5.3.5.3), barras compostas, verificação do metal-base em
+soldas (6.5), soldas de penetração/tampão, grupos de filetes
+excêntricos, parafusos, pinos, bases de pilares.
 """
 
 from __future__ import annotations
@@ -61,6 +66,7 @@ from .resistance_factors import (
     LoadCombinationClass,
     SteelResistanceFactors,
     steel_resistance_factors,
+    weld_metal_resistance_factor,
 )
 from .shear import (
     ShearCheckResult,
@@ -79,6 +85,14 @@ from .slenderness import (
     slenderness_ratio,
 )
 from .tension import TensionCheckResult, check_tension_member, net_area_without_holes
+from .welds import (
+    WeldCheckResult,
+    check_fillet_weld_shear,
+    fillet_weld_effective_area,
+    fillet_weld_effective_throat,
+    fillet_weld_shear_resistance,
+    minimum_fillet_weld_leg_size,
+)
 
 __all__ = [
     "COMPRESSION_SLENDERNESS_LIMIT",
@@ -91,10 +105,12 @@ __all__ = [
     "SlendernessCheckResult",
     "SteelResistanceFactors",
     "TensionCheckResult",
+    "WeldCheckResult",
     "axial_bending_interaction_ratio",
     "check_axial_and_bending_interaction",
     "check_compression_member",
     "check_compression_slenderness",
+    "check_fillet_weld_shear",
     "check_flexural_resistance_major_axis",
     "check_lateral_torsional_buckling",
     "check_shear_major_axis",
@@ -102,6 +118,9 @@ __all__ = [
     "check_tension_slenderness",
     "effective_area_without_local_buckling",
     "effective_shear_area_major_axis",
+    "fillet_weld_effective_area",
+    "fillet_weld_effective_throat",
+    "fillet_weld_shear_resistance",
     "flange_local_buckling_coefficient_welded",
     "flange_local_buckling_moment_rolled",
     "flange_local_buckling_moment_welded",
@@ -109,6 +128,7 @@ __all__ = [
     "flexural_resistance",
     "lateral_torsional_buckling_moment",
     "lateral_torsional_buckling_slenderness_limit",
+    "minimum_fillet_weld_leg_size",
     "moment_gradient_factor_doubly_symmetric",
     "net_area_without_holes",
     "plastic_shear_force",
@@ -121,4 +141,5 @@ __all__ = [
     "steel_resistance_factors",
     "torsional_buckling_force",
     "warping_constant_i_section",
+    "weld_metal_resistance_factor",
 ]
