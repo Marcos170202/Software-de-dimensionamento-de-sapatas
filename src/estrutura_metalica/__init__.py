@@ -17,11 +17,24 @@ Fases já implementadas:
   e os elementos estruturais :class:`~estrutura_metalica.model.Column`,
   :class:`~estrutura_metalica.model.Beam` e
   :class:`~estrutura_metalica.model.Bracing`.
+- ``analysis``: Etapas 4 e 5 (sincronização 3D e análise) —
+  :class:`~estrutura_metalica.analysis.StructuralModel` (agregação),
+  matriz de rigidez do elemento de pórtico 3D, montagem global e
+  solução linear elástica de 1ª ordem
+  (:func:`~estrutura_metalica.analysis.solve`).
+- ``normative.nbr8800``: início da Etapa 6 (dimensionamento) — ABNT
+  NBR 8800:2024, tração (5.2), compressão (5.3, flambagem por flexão e
+  por torção para seções com dupla simetria ou simétricas em relação a
+  um ponto) e a limitação recomendada do índice de esbeltez (5.2.8/
+  5.3.7). Ver ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade
+  completa e o que ainda está fora do escopo (cortante, flexão,
+  interação de esforços, ligações).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
-lançamento em planta, geração automática do pórtico espacial (análise),
-NBR 8800 (dimensionamento), detalhamento/desenho e o elo de saída
-(reações de apoio) com o módulo de sapatas/fundações deste repositório.
+lançamento em planta, força cortante/momento fletor/interação de
+esforços/ligações (NBR 8800, restante da Etapa 6), detalhamento/
+desenho e o elo de saída (reações de apoio) com o módulo de sapatas/
+fundações deste repositório.
 """
 
 __version__ = "0.1.0"
