@@ -228,6 +228,169 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
   `estrutura_metalica.normative.nbr8800.shear.shear_buckling_coefficient`.
 - **TEST:** `tests/normative/test_nbr8800_shear.py`.
 
+## RULE-ID: NBR8800-FLEX-001
+
+- **SOURCE:** NBR 8800:2024, 5.4.1.3, página 53 (condição `MSd ≤ MRd`,
+  já registrada em NBR8800-SHEAR-001) e 5.4.2.1, página 54: "O momento
+  fletor resistente de cálculo, MRd, deve ser determinado de acordo
+  com os Anexos D ou E, o que for aplicável [...] Devem ser
+  considerados, conforme o caso, os estados-limite últimos de
+  flambagem lateral com torção (FLT), flambagem local da mesa
+  comprimida (FLM), flambagem local da alma (FLA) [...]".
+- **DESCRIPTION:** Condição de dimensionamento ao momento fletor,
+  `Msd ≤ Mrd`, onde `Mrd` é o MENOR valor entre todos os
+  estados-limite aplicáveis à seção (mesmo princípio de
+  `Ne=min(Nex,Ney,Nez)` em NBR8800-COMP-005 e da curva de `Vrd` em
+  NBR8800-SHEAR-003). Para seções I, H com dois eixos de simetria e
+  seções U não sujeitas a momento de torção, fletidas no eixo de
+  maior momento de inércia (Tabela D.1, primeira linha), `Mrd =
+  min(Mrd_FLT, Mrd_FLM, Mrd_FLA)` — os três estados-limite aplicáveis
+  a esse caso — implementado por
+  `check_flexural_resistance_major_axis` (NBR8800-FLEX-004).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.check_flexural_resistance_major_axis`,
+  `estrutura_metalica.normative.nbr8800.flexure.check_lateral_torsional_buckling`
+  (apenas FLT, isoladamente).
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-002
+
+- **SOURCE:** NBR 8800:2024, 5.4.2.3-a, página 54: "em todos os casos,
+  excluindo os descritos em 5.4.2.3-b) e 5.4.2.3-c): Cb = 12,5·Mmax /
+  (2,5·Mmax + 3·MA + 4·MB + 3·MC) · Rm [...] Rm [é] 1,0 para todas as
+  seções duplamente simétricas [...]".
+- **DESCRIPTION:** Fator de modificação para diagrama de momento
+  fletor não uniforme, `Cb`, caso geral (`Rm=1,0`, único caso coberto —
+  a fórmula de `Rm` para seções monossimétricas com curvatura reversa,
+  `0,5+2·(Iy,m/Iy)²`, não é implementada). Não implementa 5.4.2.3-b)/c)
+  (balanços) nem 5.4.2.4/5.4.2.5 (fórmulas alternativas de `Cb` para
+  seções I/U com uma mesa livre para se deslocar lateralmente).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.moment_gradient_factor_doubly_symmetric`.
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-003
+
+- **SOURCE:** NBR 8800:2024, Anexo D, Tabela D.1 (primeira linha,
+  coluna FLT) e D.2.8-a, páginas 144-145: `λr = (1,38·Cb·sqrt(Iy·J) /
+  (ry·J·β1)) · sqrt(1 + sqrt(1 + 27·Cw·β1²/(Cb²·Iy)))`; `Mcr =
+  (Cb·π²·E·Iy/Lb²) · sqrt((Cw/Iy)·(1 + 0,039·J·Lb²/Cw))`, onde
+  `β1 = (fy-σr)·W/(E·J)`; e página 146, item e): "A tensão residual de
+  compressão nas mesas, σr, deve ser considerada igual a 30% da
+  resistência ao escoamento do aço utilizado."
+- **DESCRIPTION:** Momento fletor crítico de flambagem elástica por
+  FLT (`Mcr`), parâmetro de esbeltez correspondente ao início do
+  escoamento (`λr`) e momento fletor de plastificação/momento
+  correspondente ao início do escoamento (`Mpℓ=fy·Z`, `Mr=(fy-0,3·fy)·W`),
+  para seções I, H com dois eixos de simetria e seções U não sujeitas
+  a momento de torção, fletidas no eixo de maior momento de inércia
+  (Tabela D.1, primeira linha) — `λp=1,76·sqrt(E/fy)` (D.2.1). Curva de
+  3 trechos de `Mrd` conforme D.2.1 (mesma estrutura conceitual de
+  NBR8800-SHEAR-003), com uma pequena descontinuidade (~0,18%
+  relativo) em `λ=λr` documentada no código (mesma natureza das
+  descontinuidades já registradas em NBR8800-COMP-002/NBR8800-SHEAR-003).
+  Também implementa `Cw=Iy·(d-tf)²/4` para seções I (D.2.8-a), útil
+  quando essa propriedade não está disponível de catálogo.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.lateral_torsional_buckling_moment`,
+  `estrutura_metalica.normative.nbr8800.flexure.lateral_torsional_buckling_slenderness_limit`,
+  `estrutura_metalica.normative.nbr8800.flexure.flexural_resistance`,
+  `estrutura_metalica.normative.nbr8800.flexure.warping_constant_i_section`,
+  `estrutura_metalica.normative.nbr8800.flexure.check_lateral_torsional_buckling`.
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-004
+
+- **SOURCE:** NBR 8800:2024, 5.4.2.1 (ver NBR8800-FLEX-001) e 5.4.2.2,
+  página 54: "Para assegurar a validade da análise elástica, o momento
+  fletor resistente de cálculo não pode ser considerado maior que
+  1,50·W·fy/γa1 [...]".
+- **DESCRIPTION:** Agregador que calcula o `Mrd` COMPLETO (dentro do
+  escopo desta fase) de uma barra I/H/U duplamente simétrica fletida
+  no eixo maior: `Mrd = min(Mrd_FLT, Mrd_FLM, Mrd_FLA)`
+  (NBR8800-FLEX-001/005/006), com o limite adicional de 5.4.2.2
+  aplicado ao resultado final. Valida a precondição de D.1.2 antes de
+  calcular (NBR8800-FLEX-007).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.check_flexural_resistance_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-005
+
+- **SOURCE:** NBR 8800:2024, Anexo D, Tabela D.1 (primeira linha,
+  coluna FLM) e D.2.8-e/f/h, páginas 144-146: "Para perfis laminados:
+  Mcr = 0,69·E/λ² · Wc, λr = 0,83·sqrt(E/(fy-σr)). Para perfis
+  soldados: Mcr = 0,90·E·kc/λ² · Wc, λr = 0,95·sqrt(E/((fy-σr)/kc)),
+  com kc conforme Tabela 4, nota de rodapé a" (D.2.8-f); "b/t [...] no
+  caso de seções I e H [...] b é a metade da largura total" (D.2.8-h);
+  e Tabela 4, nota a, página 47: "kc = 4/sqrt(h/tw), sendo
+  0,35 ≤ kc ≤ 0,76".
+- **DESCRIPTION:** Momento fletor crítico de flambagem local elástica
+  da mesa comprimida (`Mcr`, FLM) para perfis LAMINADOS e SOLDADOS
+  (fórmulas distintas), com o coeficiente `kc` da Tabela 4 (nota a)
+  para perfis soldados, e o índice de esbeltez da mesa `λ=(bf/2)/tf`
+  (D.2.8-h). Curva de 3 trechos de `Mrd` conforme D.2.1 (mesma
+  estrutura de NBR8800-FLEX-003), com `Mr=(fy-0,3·fy)·W` (mesma
+  fórmula usada em FLT, D.2.8-e) e `λp=0,38·sqrt(E/fy)`.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.flange_local_buckling_coefficient_welded`,
+  `estrutura_metalica.normative.nbr8800.flexure.flange_local_buckling_moment_rolled`,
+  `estrutura_metalica.normative.nbr8800.flexure.flange_local_buckling_moment_welded`,
+  usadas em `check_flexural_resistance_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-006
+
+- **SOURCE:** NBR 8800:2024, Anexo D, Tabela D.1 (primeira linha,
+  coluna FLA), página 144: "Mr = fy·W [...] λ = h/tw [...]
+  λp = 3,76·sqrt(E/fy) [...] λr = 5,70·sqrt(E/fy)"; e página 143,
+  D.2.2: remete ao Anexo E para `λ > λr` (FLA).
+- **DESCRIPTION:** Curva de 3 trechos de `Mrd` para flambagem local da
+  alma (FLA), com `Mr=fy·W` (diferente de FLT/FLM, que usam
+  `Mr=(fy-σr)·W`) e `λ=h/tw`. O terceiro trecho (`λ>λr`) não é
+  calculável por uma fórmula fechada — remete ao Anexo E (vigas de
+  alma esbelta), tratado como precondição de aplicabilidade (ver
+  NBR8800-FLEX-007), não um terceiro ramo substituído.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.flexure.check_flexural_resistance_major_axis`
+  (cálculo de FLA embutido, reaproveitando
+  `estrutura_metalica.normative.nbr8800.flexure.flexural_resistance`).
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`.
+
+## RULE-ID: NBR8800-FLEX-007
+
+- **SOURCE:** NBR 8800:2024, D.1.2, página 137: "Vigas de alma não
+  esbelta são aquelas constituídas por seções I, H, U [...] cujas
+  almas, quando perpendiculares ao eixo de flexão, têm parâmetro de
+  esbeltez λ inferior ou igual a λr (λ e λr determinados na Tabela D.1
+  para o estado-limite FLA) [...]".
+- **DESCRIPTION:** **LIMITAÇÃO DE SEGURANÇA**: D.1.2 restringe TODO o
+  Anexo D (não apenas o estado-limite FLA) a vigas de alma NÃO
+  esbelta. Se a alma for esbelta (`h/tw > λr=5,70·sqrt(E/fy)`), a
+  norma exige usar o Anexo E (vigas de alma esbelta) para TODA a
+  verificação de momento fletor — não apenas substituir o ramo de FLA
+  por uma fórmula diferente. `check_flexural_resistance_major_axis`
+  VALIDA essa precondição (levanta `ValueError` se violada) antes de
+  calcular FLT/FLM/FLA, mas o **Anexo E não está implementado** — para
+  vigas de alma esbelta, nenhuma função do módulo `flexure` pode ser
+  usada.
+- **IMPLEMENTATION:** N/A (limitação documentada + validação de
+  precondição, não uma regra de cálculo) — ver
+  `estrutura_metalica.normative.nbr8800.flexure.check_flexural_resistance_major_axis`.
+- **TEST:** `tests/normative/test_nbr8800_flexure.py`
+  (`test_rejects_slender_web`, `test_accepts_web_at_exact_slenderness_limit`).
+
+**Nota adicional sobre o sinal de `msd`:** `FlexureCheckResult.is_ok`/
+`utilization` (herdados de `CheckResult`) comparam `msd` diretamente
+contra `mrd` (sempre positivo), sem valor absoluto — a condição
+normativa de 5.4.1.3 é sobre a MAGNITUDE do momento (`|Msd|<=Mrd`). Um
+`msd` negativo grande (momento no sentido oposto, comum em vigas
+contínuas ou combinações com inversão de sinal) faria `is_ok` retornar
+`True` de forma NÃO CONSERVADORA. **O chamador é responsável por
+passar `abs(msd)`** — mesma responsabilidade já documentada para `Vsd`
+em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
+`test_is_ok_ignores_sign_caller_must_pass_magnitude`).
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -246,10 +409,23 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
 - **5.3.5.4** (páginas 50-51): comprimento destravado equivalente para
   cantoneiras simples conectadas por uma aba.
 - **5.3.6** (páginas 51-52): barras compostas comprimidas.
-- **5.4.2** (momento fletor resistente de cálculo — páginas 53-56,
-  Anexos D/E): fase normativa futura, substancialmente mais complexa
-  que 5.4.3 (classificação da seção compacta/semicompacta/esbelta,
-  flambagem lateral com torção).
+- **5.4.2.3-b)/c), 5.4.2.4, 5.4.2.5** (páginas 54-55): `Cb` para
+  balanços e para seções I/U com uma mesa livre para se deslocar
+  lateralmente — apenas o caso geral duplamente simétrico (5.4.2.3-a)
+  está implementado (NBR8800-FLEX-002).
+- **5.4.2.6** (página 55): dimensionamento ao momento fletor com furos
+  na mesa tracionada.
+- **Anexo D, demais linhas da Tabela D.1** (páginas 137-146): seções
+  I/H monossimétricas, seções I/H/U fletidas no eixo de menor momento
+  de inércia, seções-caixão/tubulares retangulares, seções T,
+  cantoneiras duplas e seções sólidas — FLT, FLM e FLA da PRIMEIRA
+  linha (seções duplamente simétricas, eixo maior) já estão completos
+  (NBR8800-FLEX-001/004/005/006).
+- **Anexo E** (páginas 148-151): momento fletor resistente de cálculo
+  de vigas de ALMA ESBELTA — substitui o Anexo D inteiramente quando a
+  seção não satisfaz D.1.2 (ver NBR8800-FLEX-007).
+- **Anexos F, G, H, I**: aberturas em almas de vigas, barras de seção
+  variável, fadiga e vibrações em pisos, respectivamente.
 - **5.4.3.2 a 5.4.3.6** (páginas 58-60): força cortante resistente
   para seções tubulares/caixão, T, cantoneiras duplas, I/H/U fletidas
   em torno do eixo fraco, e tubulares circulares — mesma estrutura de
