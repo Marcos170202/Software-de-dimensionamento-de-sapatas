@@ -28,15 +28,17 @@ Fases já implementadas:
   um ponto), força cortante (5.4.1.3/5.4.3.1, seções I/H/U fletidas no
   eixo perpendicular à alma), momento fletor (5.4.1.3/5.4.2/Anexo D —
   FLT, FLM e FLA de seções I/H/U duplamente simétricas fletidas no
-  eixo maior, vigas de alma não esbelta) e a limitação recomendada do
-  índice de esbeltez (5.2.8/5.3.7). Ver ``docs/normative/NBR8800-RULES.md``
-  para a rastreabilidade completa e o que ainda está fora do escopo
-  (interação de esforços, vigas de alma esbelta, ligações).
+  eixo maior, vigas de alma não esbelta), interação entre força axial
+  e momento fletor biaxial (5.5.1.2, barras sem torção) e a limitação
+  recomendada do índice de esbeltez (5.2.8/5.3.7). Ver
+  ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa
+  e o que ainda está fora do escopo (interação com torção, vigas de
+  alma esbelta, ligações).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
-lançamento em planta, interação de esforços/ligações (NBR 8800,
-restante da Etapa 6), detalhamento/desenho e o elo de saída (reações
-de apoio) com o módulo de sapatas/fundações deste repositório.
+lançamento em planta, ligações (NBR 8800, restante da Etapa 6),
+detalhamento/desenho e o elo de saída (reações de apoio) com o módulo
+de sapatas/fundações deste repositório.
 """
 
 __version__ = "0.1.0"

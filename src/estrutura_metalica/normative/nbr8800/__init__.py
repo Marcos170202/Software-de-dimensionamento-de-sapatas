@@ -14,20 +14,26 @@ cálculo de seções I/H/U fletidas no eixo perpendicular à alma),
 5.4.1.3/5.4.2/Anexo D (momento fletor resistente de cálculo — FLT, FLM
 e FLA — de seções I/H com dois eixos de simetria e seções U não
 sujeitas a momento de torção, fletidas no eixo de maior momento de
-inércia, vigas de alma não esbelta).
+inércia, vigas de alma não esbelta) e 5.5.1.2 (interação entre força
+axial e momento fletor biaxial, barras sem torção).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
 cortante para os demais tipos de seção (5.4.3.2 a 5.4.3.6), demais
 linhas da Tabela D.1 (seções monossimétricas, tubulares/caixão,
 sólidas) e flexão no eixo de menor momento de inércia, vigas de alma
-esbelta (Anexo E), interação de esforços (5.5), seções
-monossimétricas/assimétricas em compressão (5.3.5.2/5.3.5.3), barras
-compostas, ligações.
+esbelta (Anexo E), interação com momento de torção (5.5.2, seções
+tubulares), seções monossimétricas/assimétricas em compressão
+(5.3.5.2/5.3.5.3), barras compostas, ligações.
 """
 
 from __future__ import annotations
 
+from .combined_forces import (
+    CombinedForcesCheckResult,
+    axial_bending_interaction_ratio,
+    check_axial_and_bending_interaction,
+)
 from .compression import (
     CompressionCheckResult,
     check_compression_member,
@@ -77,6 +83,7 @@ from .tension import TensionCheckResult, check_tension_member, net_area_without_
 __all__ = [
     "COMPRESSION_SLENDERNESS_LIMIT",
     "TENSION_SLENDERNESS_LIMIT",
+    "CombinedForcesCheckResult",
     "CompressionCheckResult",
     "FlexureCheckResult",
     "LoadCombinationClass",
@@ -84,6 +91,8 @@ __all__ = [
     "SlendernessCheckResult",
     "SteelResistanceFactors",
     "TensionCheckResult",
+    "axial_bending_interaction_ratio",
+    "check_axial_and_bending_interaction",
     "check_compression_member",
     "check_compression_slenderness",
     "check_flexural_resistance_major_axis",

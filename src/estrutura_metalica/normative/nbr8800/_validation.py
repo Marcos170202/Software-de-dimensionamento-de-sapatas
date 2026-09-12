@@ -18,3 +18,13 @@ def is_positive_finite(value: float) -> bool:
     erro claro na entrada.
     """
     return math.isfinite(value) and value > 0
+
+
+def is_non_negative_finite(value: float) -> bool:
+    """``True`` se ``value`` é finito e maior ou igual a zero.
+
+    Usado para grandezas que podem legitimamente ser zero (ex.: um
+    esforço solicitante de cálculo nulo em um dos eixos), ao contrário
+    de :func:`is_positive_finite` (grandezas estritamente positivas,
+    como uma área ou um comprimento)."""
+    return math.isfinite(value) and value >= 0

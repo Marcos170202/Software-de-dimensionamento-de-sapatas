@@ -391,6 +391,53 @@ passar `abs(msd)`** — mesma responsabilidade já documentada para `Vsd`
 em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
 `test_is_ok_ignores_sign_caller_must_pass_magnitude`).
 
+## RULE-ID: NBR8800-COMB-001
+
+- **SOURCE:** NBR 8800:2024, 5.5.1.2, página 60: "Para a atuação
+  simultânea da força axial de tração ou de compressão e de momentos
+  fletores, deve ser atendida a limitação fornecida pelas seguintes
+  equações de interação: a) para NSd/NRd ≥ 0,2: NSd/NRd + (8/9)·
+  (Mx,Sd/Mx,Rd + My,Sd/My,Rd) ≤ 1,0; b) para NSd/NRd < 0,2: NSd/(2·NRd)
+  + (Mx,Sd/Mx,Rd + My,Sd/My,Rd) ≤ 1,0."
+- **DESCRIPTION:** Interação entre força axial (tração OU compressão,
+  a que for aplicável) e momento fletor biaxial, para barras SEM
+  torção. Duas equações conforme a razão `Nsd/Nrd` seja maior/igual ou
+  menor que 0,2. `Nrd` deve ser o mesmo tipo de esforço de `Nsd`
+  (`Nt,Rd` de 5.2 ou `Nc,Rd` de 5.3, conforme aplicável); `Mx,Rd`/
+  `My,Rd` determinados conforme 5.4.2 (ver NBR8800-FLEX-004 para o
+  eixo de maior momento de inércia — o eixo de menor momento de
+  inércia não está implementado, ver docstring do módulo `flexure`).
+  **ATENÇÃO**: diferente de `ShearCheckResult`/`FlexureCheckResult`,
+  as funções deste módulo EXIGEM que `n_sd`/`mx_sd`/`my_sd` já sejam
+  passados como magnitude (`>=0`), levantando `ValueError` caso
+  contrário — decisão deliberada para não repetir a mesma armadilha de
+  sinal já documentada (não corrigida) em `ShearCheckResult`/
+  `FlexureCheckResult`.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.combined_forces.axial_bending_interaction_ratio`,
+  `estrutura_metalica.normative.nbr8800.combined_forces.check_axial_and_bending_interaction`.
+- **TEST:** `tests/normative/test_nbr8800_combined_forces.py`.
+
+## RULE-ID: NBR8800-COMB-002
+
+- **SOURCE:** NBR 8800:2024, 5.5.1.3, página 61: "Para os casos de
+  força cortante atuante na direção de um dos eixos centrais de
+  inércia, a verificação da barra a esse esforço deve ser feita
+  conforme 5.4.3."
+- **DESCRIPTION:** Quando a força cortante atua em um único eixo
+  central de inércia, NÃO há equação de interação adicional — basta
+  verificar `Vsd ≤ Vrd` isoladamente conforme 5.4.3
+  (NBR8800-SHEAR-001 a 004). Não há nenhuma função nova a implementar
+  para este caso; documentado aqui apenas para rastreabilidade
+  (registrar que a cláusula foi lida e conscientemente não gerou
+  código, por já estar coberta). O caso de força cortante atuando
+  SIMULTANEAMENTE nos dois eixos remete a 5.5.2.3-b)/d) (seções
+  tubulares combinadas com torção) — fora do escopo, ver abaixo.
+- **IMPLEMENTATION:** N/A (remete diretamente a
+  `estrutura_metalica.normative.nbr8800.shear.check_shear_major_axis`,
+  já implementado).
+- **TEST:** N/A.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -436,8 +483,14 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   NBR8800-SHEAR-004).
 - **5.4.4/5.4.5** (chapas de reforço/lamelas e requisitos para seções
   soldadas).
-- **5.5** (interação de esforços — páginas 60-62): fase normativa
-  futura, não aberta nesta etapa.
+- **5.5.2** (páginas 61-62): seções tubulares circulares e retangulares
+  submetidas a momento de torção, força axial, momentos fletores e
+  força cortante — inclui `Trd` para torção pura (5.5.2.1) e a equação
+  de interação com torção (5.5.2.2). `SteelSection` não distingue
+  seções tubulares de I/H/U com a riqueza necessária para essa
+  verificação, e `Trd` nunca foi implementado em nenhuma fase anterior
+  deste pacote — 5.5.1.2/5.5.1.3 (interação sem torção) já estão
+  implementadas (NBR8800-COMB-001/002).
 - **Ligações** (parafusos, soldas, chapa de base): fase futura
   (PROCESSO_MODELAGEM_METALICA.md, Etapa 6 — "Dimensionamento de
   ligações").
