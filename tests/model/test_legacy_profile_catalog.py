@@ -7,11 +7,17 @@ import math
 import pytest
 
 from estrutura_metalica.model import (
+    GERDAU_ANGLE_PROFILES,
     GERDAU_I_PROFILES,
+    GERDAU_T_PROFILES,
     GERDAU_U_PROFILES,
+    GerdauAngleProfile,
     GerdauIProfile,
+    GerdauTProfile,
     GerdauUProfile,
+    get_gerdau_angle_profile,
     get_gerdau_i_profile,
+    get_gerdau_t_profile,
     get_gerdau_u_profile,
 )
 
@@ -178,5 +184,148 @@ class TestGerdauUProfileValidation:
 
     def test_radii_of_gyration(self) -> None:
         profile = _generic_u_profile()
+        assert profile.rx == pytest.approx(math.sqrt(profile.ix / profile.area))
+        assert profile.ry == pytest.approx(math.sqrt(profile.iy / profile.area))
+
+
+def test_angle_catalog_has_fifty_profiles() -> None:
+    assert len(GERDAU_ANGLE_PROFILES) == 50
+
+
+def test_t_catalog_has_ten_profiles() -> None:
+    assert len(GERDAU_T_PROFILES) == 10
+
+
+def test_get_gerdau_angle_profile_matches_catalog_values() -> None:
+    profile = get_gerdau_angle_profile("L50.8x6.35")
+    assert profile.leg * 1e3 == pytest.approx(50.8, rel=1e-6)
+    assert profile.thickness * 1e3 == pytest.approx(6.35, rel=1e-6)
+    assert profile.area * 1e4 == pytest.approx(6.06, rel=1e-6)
+    assert profile.ix * 1e8 == pytest.approx(14.6, rel=1e-6)
+    assert profile.wx * 1e6 == pytest.approx(4.10, rel=1e-6)
+    assert profile.rz_min * 1e2 == pytest.approx(0.99, rel=1e-6)
+    assert profile.centroid * 1e2 == pytest.approx(1.50, rel=1e-6)
+    assert profile.mass_linear == pytest.approx(4.74, rel=1e-6)
+    assert profile.b_imperial == '2"'
+    assert profile.t_imperial == '1/4"'
+
+
+def test_angle_profile_iy_wy_ry_equal_x_axis_by_equal_legs() -> None:
+    profile = get_gerdau_angle_profile("L50.8x6.35")
+    assert profile.iy == profile.ix
+    assert profile.wy == profile.wx
+    assert profile.ry == profile.rx
+
+
+def test_get_gerdau_t_profile_matches_catalog_values() -> None:
+    profile = get_gerdau_t_profile("T50.8x6.35")
+    assert profile.depth * 1e3 == pytest.approx(50.8, rel=1e-6)
+    assert profile.thickness * 1e3 == pytest.approx(6.35, rel=1e-6)
+    assert profile.area * 1e4 == pytest.approx(6.05, rel=1e-6)
+    assert profile.ix * 1e8 == pytest.approx(14.47, rel=1e-6)
+    assert profile.wx * 1e6 == pytest.approx(4.04, rel=1e-6)
+    assert profile.iy * 1e8 == pytest.approx(7.03, rel=1e-6)
+    assert profile.wy * 1e6 == pytest.approx(2.77, rel=1e-6)
+    assert profile.x_centroid * 1e2 == pytest.approx(1.50, rel=1e-6)
+    assert profile.mass_linear == pytest.approx(4.74, rel=1e-6)
+
+
+@pytest.mark.parametrize("name", list(GERDAU_ANGLE_PROFILES))
+def test_angle_area_consistent_with_ix_across_catalog(name: str) -> None:
+    # Tolerância folgada (15%): duas linhas (L 1" e L 1.1/4", ambas
+    # espessura 1/8") divergem mais que as demais — ver ATENÇÃO 3 no
+    # docstring do módulo (item sobre cantoneiras).
+    profile = GERDAU_ANGLE_PROFILES[name]
+    assert profile.ix == pytest.approx(profile.area * profile.rx**2, rel=0.15)
+
+
+@pytest.mark.parametrize("name", list(GERDAU_T_PROFILES))
+def test_t_area_consistent_with_ix_and_iy_across_catalog(name: str) -> None:
+    profile = GERDAU_T_PROFILES[name]
+    assert profile.ix == pytest.approx(profile.area * profile.rx**2, rel=1e-2)
+    assert profile.iy == pytest.approx(profile.area * profile.ry**2, rel=1e-2)
+
+
+def test_get_gerdau_angle_profile_raises_key_error_with_full_listing() -> None:
+    with pytest.raises(KeyError, match="L999x1"):
+        get_gerdau_angle_profile("L999x1")
+
+
+def test_get_gerdau_t_profile_raises_key_error_with_full_listing() -> None:
+    with pytest.raises(KeyError, match="T999x1"):
+        get_gerdau_t_profile("T999x1")
+
+
+def _generic_angle_profile(**overrides: object) -> GerdauAngleProfile:
+    defaults: dict[str, object] = dict(
+        name="L50.8x6.35",
+        b_imperial='2"',
+        t_imperial='1/4"',
+        mass_linear=4.74,
+        leg=0.0508,
+        thickness=0.00635,
+        area=0.000606,
+        ix=1.46e-07,
+        wx=4.1e-06,
+        rz_min=0.0099,
+        centroid=0.015,
+        source="teste",
+    )
+    defaults.update(overrides)
+    return GerdauAngleProfile(**defaults)  # type: ignore[arg-type]
+
+
+def _generic_t_profile(**overrides: object) -> GerdauTProfile:
+    defaults: dict[str, object] = dict(
+        name="T50.8x6.35",
+        bitola_label='2 x 1/4"',
+        mass_linear=4.74,
+        depth=0.0508,
+        thickness=0.00635,
+        area=0.000605,
+        ix=1.447e-07,
+        wx=4.04e-06,
+        iy=7.03e-08,
+        wy=2.77e-06,
+        x_centroid=0.015,
+        source="teste",
+    )
+    defaults.update(overrides)
+    return GerdauTProfile(**defaults)  # type: ignore[arg-type]
+
+
+class TestGerdauAngleProfileValidation:
+    @pytest.mark.parametrize(
+        "field", ["mass_linear", "leg", "thickness", "area", "ix", "wx", "rz_min", "centroid"]
+    )
+    def test_rejects_non_positive_properties(self, field: str) -> None:
+        with pytest.raises(ValueError):
+            _generic_angle_profile(**{field: 0.0})
+
+    def test_iy_wy_ry_mirror_x_axis(self) -> None:
+        profile = _generic_angle_profile()
+        assert profile.iy == profile.ix
+        assert profile.wy == profile.wx
+        assert profile.ry == profile.rx
+        assert profile.rx == pytest.approx(math.sqrt(profile.ix / profile.area))
+
+
+class TestGerdauTProfileValidation:
+    @pytest.mark.parametrize(
+        "field",
+        ["mass_linear", "depth", "thickness", "area", "ix", "wx", "iy", "wy", "x_centroid"],
+    )
+    def test_rejects_non_positive_properties(self, field: str) -> None:
+        with pytest.raises(ValueError):
+            _generic_t_profile(**{field: 0.0})
+
+    def test_rejects_centroid_not_smaller_than_depth(self) -> None:
+        with pytest.raises(ValueError):
+            _generic_t_profile(x_centroid=0.06, depth=0.0508)
+        with pytest.raises(ValueError):
+            _generic_t_profile(x_centroid=0.0508, depth=0.0508)
+
+    def test_radii_of_gyration(self) -> None:
+        profile = _generic_t_profile()
         assert profile.rx == pytest.approx(math.sqrt(profile.ix / profile.area))
         assert profile.ry == pytest.approx(math.sqrt(profile.iy / profile.area))
