@@ -154,6 +154,93 @@ class RectangularTubeSection(SteelSection):
 
 
 @dataclass(frozen=True, slots=True)
+class IProfileSection(SteelSection):
+    """Perfil laminado/soldado I/H de catálogo (bitola comercial).
+
+    Além das propriedades herdadas de :class:`SteelSection` (área,
+    ``ix``, ``iy``, ``j`` — St. Venant, ``cw``, ``depth`` = altura
+    total ``d``), guarda as dimensões e propriedades geométricas
+    adicionais exigidas pelas verificações da NBR 8800:2024 que não
+    são calculáveis a partir de ``ix``/``iy``/``area`` sozinhos —
+    valores de CATÁLOGO (não de fórmula), lidos diretamente do
+    fabricante (ver ``source``).
+
+    ``bf``: largura da mesa (m). ``tw``: espessura da alma (m).
+    ``tf``: espessura da mesa (m). ``h``: distância livre entre as
+    faces internas das mesas, descontados os raios de concordância
+    ("h" na convenção da NBR 8800 — usada na razão de esbeltez da
+    alma ``h/tw``; distinta da altura total ``depth``/``d``, e também
+    distinta de uma eventual altura "h" de catálogo medida entre as
+    faces das mesas SEM descontar o raio, quando o fabricante
+    publica as duas). ``wx``/``wy``: módulo resistente elástico,
+    eixos X e Y (m³). ``zx``/``zy``: módulo resistente plástico,
+    eixos X e Y (m³). ``rt``: raio de giração da mesa comprimida mais
+    1/3 da alma comprimida (m) — necessário para os cálculos de FLT
+    de vigas de alma esbelta soldadas (Anexo E,
+    :mod:`~estrutura_metalica.normative.nbr8800.slender_web`), onde a
+    NBR 8800 não fornece fórmula fechada e exige valor de catálogo ou
+    cálculo direto da seção. ``mass_linear``: massa por metro (kg/m,
+    informativo). ``source``: identificação do catálogo/edição de
+    onde os valores foram extraídos (rastreabilidade).
+
+    As razões de esbeltez local (``bf/(2·tf)`` para a mesa,
+    ``h/tw`` para a alma) NÃO são armazenadas — são triviais de obter
+    a partir de ``bf``/``tf``/``h``/``tw`` e devem ser calculadas pelo
+    chamador (ver
+    :mod:`~estrutura_metalica.normative.nbr8800.slender_web`/
+    ``compression``), evitando depender de uma eventual coluna de
+    catálogo "λ" cuja consistência com as dimensões básicas não foi
+    conferida para todas as bitolas (ver ATENÇÃO no módulo de
+    catálogo).
+    """
+
+    bf: float = 0.0
+    tw: float = 0.0
+    tf: float = 0.0
+    h: float = 0.0
+    wx: float = 0.0
+    zx: float = 0.0
+    wy: float = 0.0
+    zy: float = 0.0
+    rt: float = 0.0
+    mass_linear: float = 0.0
+    source: str = ""
+
+    def __post_init__(self) -> None:
+        # Nota: usa a chamada explícita (não ``super().__post_init__()``)
+        # porque ``@dataclass(slots=True)`` recria a classe após a
+        # execução do corpo da classe — o ``super()`` sem argumentos
+        # depende da célula de fechamento ``__class__`` capturada na
+        # definição, que ainda aponta para a classe ANTES da
+        # substituição por slots, e falha com
+        # "TypeError: super(type, obj): obj must be an instance or
+        # subtype of type".
+        SteelSection.__post_init__(self)
+        for value, label in (
+            (self.bf, "bf"),
+            (self.tw, "tw"),
+            (self.tf, "tf"),
+            (self.h, "h"),
+            (self.wx, "wx"),
+            (self.zx, "zx"),
+            (self.wy, "wy"),
+            (self.zy, "zy"),
+            (self.rt, "rt"),
+            (self.mass_linear, "mass_linear"),
+        ):
+            if value <= 0:
+                raise ValueError(
+                    f"Propriedade '{label}' do perfil '{self.name}' deve ser positiva, "
+                    f"recebido: {value!r}"
+                )
+        if self.h >= self.depth:
+            raise ValueError(
+                f"Altura livre da alma 'h'={self.h!r} do perfil '{self.name}' deve ser "
+                f"menor que a altura total 'depth'={self.depth!r}"
+            )
+
+
+@dataclass(frozen=True, slots=True)
 class CircularTubeSection(SteelSection):
     """Tubo circular de parede fina/espessa.
 

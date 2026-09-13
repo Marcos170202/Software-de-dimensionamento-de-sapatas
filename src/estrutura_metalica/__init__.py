@@ -13,10 +13,17 @@ Fases já implementadas:
   Etapa 3 (materiais) do processo — :class:`~estrutura_metalica.model.Node`,
   :class:`~estrutura_metalica.model.SteelMaterial`, hierarquia de
   :class:`~estrutura_metalica.model.SteelSection` (perfis I/H, U, tubos
-  circular/retangular), :class:`~estrutura_metalica.model.ConnectionType`
-  e os elementos estruturais :class:`~estrutura_metalica.model.Column`,
+  circular/retangular), :class:`~estrutura_metalica.model.ConnectionType`,
+  os elementos estruturais :class:`~estrutura_metalica.model.Column`,
   :class:`~estrutura_metalica.model.Beam` e
-  :class:`~estrutura_metalica.model.Bracing`.
+  :class:`~estrutura_metalica.model.Bracing`, um catálogo de perfis I/H
+  REAIS (:data:`~estrutura_metalica.model.GERDAU_W_H_PROFILES`, 107
+  bitolas Gerdau W/H, revisão 11/2018 — ver
+  :func:`~estrutura_metalica.model.get_gerdau_w_h_profile`) e um
+  catálogo de parafusos estruturais REAIS
+  (:data:`~estrutura_metalica.model.STRUCTURAL_BOLT_CATALOG`, ASTM
+  A325/A490/A307, catálogo Rudge Ramos — ver
+  :func:`~estrutura_metalica.model.get_structural_bolt`).
 - ``analysis``: Etapas 4 e 5 (sincronização 3D e análise) —
   :class:`~estrutura_metalica.analysis.StructuralModel` (agregação),
   matriz de rigidez do elemento de pórtico 3D, montagem global e
