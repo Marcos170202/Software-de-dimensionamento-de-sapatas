@@ -19,10 +19,12 @@ resistente de cálculo de vigas de alma esbelta SOLDADAS, duplamente
 simétricas), 5.5.1.2 (interação entre força axial e momento fletor
 biaxial, barras sem torção) e Etapa 6 de ligações — 6.2.5.1 (força
 resistente de cálculo do metal da solda em soldas de filete de pernas
-iguais/ângulo reto, carregadas concentricamente) e 6.3.2/6.3.3
+iguais/ângulo reto, carregadas concentricamente), 6.3.2/6.3.3
 (parafusos comuns e de alta resistência e barras redondas rosqueadas
 em ligações por contato — tração, cisalhamento, pressão de contato em
-furos padrão e interação tração-cisalhamento).
+furos padrão e interação tração-cisalhamento) e 6.3.4 (ligações por
+atrito com parafusos de alta resistência protendidos — deslizamento
+nos estados-limite último e de serviço, com ``μ``/Tabela 13/Tabela 19).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
@@ -34,9 +36,10 @@ eixo de simetria, interação com momento de torção (5.5.2, seções
 tubulares), seções monossimétricas/assimétricas em compressão
 (5.3.5.2/5.3.5.3), barras compostas, verificação do metal-base em
 soldas (6.5), soldas de penetração/tampão, grupos de filetes
-excêntricos, ligações parafusadas por atrito/protensão crítica (6.3.4),
+excêntricos, efeito de alavanca em parafusos tracionados (6.3.5),
 requisitos de espaçamento/distância a bordas de parafusos (6.3.7),
-pinos (6.4), bases de pilares (6.7).
+métodos de aperto/inspeção de parafusos protendidos (6.8.4.2 a
+6.8.4.7), pinos (6.4), bases de pilares (6.7).
 """
 
 from __future__ import annotations
@@ -44,6 +47,9 @@ from __future__ import annotations
 from .bolts import (
     BoltCheckResult,
     BoltCombinedCheckResult,
+    FrictionSurfaceClass,
+    HighStrengthBoltGrade,
+    SlipCriticalHoleType,
     bolt_bearing_resistance,
     bolt_combined_tension_and_shear_ratio,
     bolt_effective_area_tension,
@@ -54,6 +60,14 @@ from .bolts import (
     check_bolt_combined_tension_and_shear,
     check_bolt_shear,
     check_bolt_tension,
+    check_slip_resistance_service,
+    check_slip_resistance_ultimate,
+    filler_plate_factor,
+    friction_coefficient,
+    minimum_bolt_pretension_force,
+    slip_resistance_factor,
+    slip_resistance_service,
+    slip_resistance_ultimate,
     threaded_rod_tensile_resistance_cap,
 )
 from .combined_forces import (
@@ -132,9 +146,12 @@ __all__ = [
     "CombinedForcesCheckResult",
     "CompressionCheckResult",
     "FlexureCheckResult",
+    "FrictionSurfaceClass",
+    "HighStrengthBoltGrade",
     "LoadCombinationClass",
     "ShearCheckResult",
     "SlendernessCheckResult",
+    "SlipCriticalHoleType",
     "SteelResistanceFactors",
     "TensionCheckResult",
     "WeldCheckResult",
@@ -159,12 +176,15 @@ __all__ = [
     "check_shear_major_axis",
     "check_slender_web_flange_local_buckling",
     "check_slender_web_lateral_torsional_buckling",
+    "check_slip_resistance_service",
+    "check_slip_resistance_ultimate",
     "check_tension_flange_yielding",
     "check_tension_member",
     "check_tension_slenderness",
     "compression_flange_area_ratio",
     "effective_area_without_local_buckling",
     "effective_shear_area_major_axis",
+    "filler_plate_factor",
     "fillet_weld_effective_area",
     "fillet_weld_effective_throat",
     "fillet_weld_shear_resistance",
@@ -173,8 +193,10 @@ __all__ = [
     "flange_local_buckling_moment_welded",
     "flexural_buckling_force",
     "flexural_resistance",
+    "friction_coefficient",
     "lateral_torsional_buckling_moment",
     "lateral_torsional_buckling_slenderness_limit",
+    "minimum_bolt_pretension_force",
     "minimum_fillet_weld_leg_size",
     "moment_gradient_factor_doubly_symmetric",
     "net_area_without_holes",
@@ -186,6 +208,9 @@ __all__ = [
     "shear_resistance",
     "slenderness_parameter",
     "slenderness_ratio",
+    "slip_resistance_factor",
+    "slip_resistance_service",
+    "slip_resistance_ultimate",
     "steel_resistance_factors",
     "threaded_rod_tensile_resistance_cap",
     "torsional_buckling_force",

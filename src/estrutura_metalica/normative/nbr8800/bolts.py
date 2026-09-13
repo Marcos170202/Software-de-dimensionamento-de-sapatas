@@ -1,14 +1,15 @@
 """Ligações parafusadas — parafusos e barras redondas rosqueadas.
 
 Fonte: ABNT NBR 8800:2024, 6.3 "Parafusos e barras redondas
-rosqueadas" (páginas 82-88). Fórmulas conferidas por leitura direta
+rosqueadas" (páginas 82-88) e 6.8.4.1/Tabela 19 (página 110-111, força
+de protensão mínima). Fórmulas conferidas por leitura direta
 (renderização visual) do PDF da norma — ver rastreabilidade completa
 em ``docs/normative/NBR8800-RULES.md``.
 
-Escopo desta fase: apenas parafusos comuns (ASTM A307) e de alta
-resistência (ASTM F3125/F3125M, ISO 4016/898-1) em ligações por
-CONTATO (pressão de contato/cisalhamento simples), sem protensão
-crítica ao deslizamento. Cobre:
+Escopo desta fase: parafusos comuns (ASTM A307) e de alta resistência
+(ASTM F3125/F3125M, ISO 4016/898-1) em ligações por CONTATO (pressão
+de contato/cisalhamento simples) E em ligações por ATRITO com
+parafusos de alta resistência protendidos. Cobre:
 
 - 6.3.2.2 — área bruta (``Ab = 0,25π·db²``) e área efetiva para tração
   (``Abe = 0,75·Ab``);
@@ -24,18 +25,23 @@ crítica ao deslizamento. Cobre:
   consecutivos ou entre um furo extremo e a borda), nas duas variantes
   (deformação no furo como limitação de projeto, ou não);
 - 6.3.3.4 — equação de interação entre tração e cisalhamento
-  combinados, ``(Ft,Sd/Ft,Rd)² + (Fv,Sd/Fv,Rd)² ≤ 1,0``.
+  combinados, ``(Ft,Sd/Ft,Rd)² + (Fv,Sd/Fv,Rd)² ≤ 1,0``;
+- 6.3.4 — ligações por atrito com parafusos de alta resistência: força
+  resistente ao deslizamento no ESTADO-LIMITE ÚLTIMO (6.3.4.3,
+  ``Ff,Rd``, furos alargados/alongados) e no ESTADO-LIMITE DE SERVIÇO
+  (6.3.4.4, ``Ff,Rk``, furos padrão/pouco alongados transversais), com
+  o coeficiente de atrito ``μ`` (6.3.4.1), o fator ``Ce`` de chapas de
+  enchimento, ``γe`` (Tabela 13) e a força de protensão mínima ``FTb``
+  (Tabela 19, 6.8.4.1).
 
 **ATENÇÃO — LIMITAÇÕES DE SEGURANÇA**:
 
 1. **Furos não padrão**: :func:`bolt_bearing_resistance` implementa
    apenas o caso 6.3.3.3-a) (furos padrão, alargados, pouco alongados
    em qualquer direção e muito alongados na direção da força — mesma
-   fórmula para todos, mas o uso de furos alargados/alongados é
-   restrito a ligações por atrito, 6.3.4, não implementadas — ver item
-   3). O caso 6.3.3.3-b) (furos muito alongados na direção
-   PERPENDICULAR à força, fator 1,0/2,0 em vez de 1,2-1,5/2,4-3,0) NÃO
-   está implementado.
+   fórmula para todos). O caso 6.3.3.3-b) (furos muito alongados na
+   direção PERPENDICULAR à força, fator 1,0/2,0 em vez de
+   1,2-1,5/2,4-3,0) NÃO está implementado.
 2. **Tampão rosca em barras redondas rosqueadas**: a força resistente
    de cálculo à tração de uma barra redonda rosqueada (exceto
    chumbadores, ver 6.7) não pode superar ``Ab·fy/γa1`` — ver
@@ -45,37 +51,51 @@ crítica ao deslizamento. Cobre:
    para parafusos comuns/de alta resistência (onde esse limite não se
    aplica). :func:`check_bolt_tension` NÃO aplica esse limite
    automaticamente.
-3. **Ligações por atrito NÃO implementadas**: 6.3.4 (força resistente
-   ao deslizamento, ``Ff,Rd``, que depende de protensão mínima
-   ``FTb``/6.8.4.1, coeficiente de atrito ``μ``, fator ``Ce`` e
-   ``γe``/Tabela 13) está inteiramente fora do escopo. As funções deste
-   módulo cobrem apenas ligações por CONTATO (tração/cisalhamento/
-   pressão de contato), nunca deslizamento como estado-limite.
-4. **Requisitos construtivos não verificados**: espaçamento mínimo/
+3. **Ligações por atrito são um requisito ADICIONAL, não substituto**:
+   6.3.4.1 exige que uma ligação por atrito atenda a 6.3.4.3 OU 6.3.4.4
+   (o que for aplicável, ver 6.3.4.2) "e ainda atenda a 6.3.3" —
+   :func:`check_slip_resistance_ultimate`/:func:`check_slip_resistance_service`
+   verificam APENAS o deslizamento; o cisalhamento (6.3.3.2) e a
+   pressão de contato (6.3.3.3) de uma ligação por atrito devem SEMPRE
+   ser verificados também, com :func:`check_bolt_shear`/
+   :func:`check_bolt_bearing` — considerando o estado-limite último em
+   que a ligação eventualmente desliza e passa a trabalhar por contato.
+4. **``FTb`` — apenas parafusos ASTM tabelados**: :func:`minimum_bolt_pretension_force`
+   implementa a Tabela 19 (parafusos ASTM F3125/F3125M, graus A325/
+   F1852 e A490/F2280) como tabela de consulta EXATA por diâmetro
+   nominal — não interpola nem cobre parafusos ISO 4016/898-1 ou
+   diâmetros fora da Tabela 19 (levanta ``ValueError``).
+5. **Requisitos construtivos não verificados**: espaçamento mínimo/
    máximo entre parafusos e distâncias mínimas/máximas a bordas (6.3.7,
    não lido nesta fase) NÃO são validados por nenhuma função aqui —
    ao contrário de :func:`~estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`,
    que valida o tamanho mínimo de solda (Tabela 11), não há validação
-   equivalente de geometria de furos neste módulo.
+   equivalente de geometria de furos neste módulo. Os requisitos de
+   acabamento de superfície (Figura 13, região mínima sem pintura) e os
+   métodos de aperto/inspeção (6.8.4.2 a 6.8.4.7 — rotação da porca,
+   chave calibrada, indicador direto de tração, Tabela 20) também NÃO
+   são verificados — são procedimentos de execução/inspeção em obra,
+   não cálculo.
 
 Também NÃO implementado nesta fase (ver
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): 6.3.1
-(requisitos de montagem/aperto — remete a 6.8), 6.3.4 (ligações por
-atrito, ver item 3 acima), 6.3.5 (parafusos tracionados com efeito de
-alavanca), Tabela 12 (alternativa simplificada à equação de interação
-de 6.3.3.4 — implementa-se apenas a equação, não a tabela), pinos
-(6.4), elementos de ligação (6.5), pressão de contato de chapas
-(6.6), bases de pilares (6.7), 6.8 (projeto/montagem/inspeção de
-ligações com parafusos de alta resistência, inclusive ``FTb``).
+(requisitos de montagem/aperto — remete a 6.8), 6.3.5 (parafusos
+tracionados com efeito de alavanca, "prying"), Tabela 12 (alternativa
+simplificada à equação de interação de 6.3.3.4 — implementa-se apenas
+a equação, não a tabela), pinos (6.4), elementos de ligação (6.5),
+pressão de contato de chapas (6.6), bases de pilares (6.7), 6.8 (demais
+itens — arruelas, métodos de aperto/inspeção, ver item 5 acima).
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 
 from ._check_result import CheckResult
 from ._validation import is_non_negative_finite, is_positive_finite
+from .resistance_factors import LoadCombinationClass
 
 
 def bolt_gross_area(bolt_diameter: float) -> float:
@@ -498,3 +518,360 @@ def check_bolt_combined_tension_and_shear(
     return BoltCombinedCheckResult(
         ft_sd=ft_sd, ft_rd=ft_rd, fv_sd=fv_sd, fv_rd=fv_rd, interaction_ratio=ratio
     )
+
+
+# --- Ligações por atrito (6.3.4) ---------------------------------------
+
+
+class FrictionSurfaceClass(Enum):
+    """Classe de tratamento de superfície de contato em uma ligação por
+    atrito (NBR 8800:2024, 6.3.4.1) — determina o coeficiente de atrito
+    médio ``μ`` (ver :func:`friction_coefficient`).
+
+    ``LAMINADA_OU_GALVANIZADA_COM_ESCOVA`` reúne as classes A e C do
+    texto da norma (superfícies laminadas limpas sem pintura, isentas
+    de óleos/graxas; OU superfícies galvanizadas a quente com
+    rugosidade aumentada manualmente por escova de aço) — ambas têm o
+    MESMO ``μ=0,30`` (6.3.4.1-a). ``JATEADA`` é a classe B (superfícies
+    jateadas sem pintura, ``μ=0,50``). ``GALVANIZADA_LISA`` é o caso
+    (sem letra de classe no texto) de superfície galvanizada a quente
+    SEM tratamento de rugosidade (``μ=0,20``).
+    """
+
+    LAMINADA_OU_GALVANIZADA_COM_ESCOVA = "laminada_ou_galvanizada_com_escova"
+    JATEADA = "jateada"
+    GALVANIZADA_LISA = "galvanizada_lisa"
+
+
+#: NBR 8800:2024, 6.3.4.1 (RULE-ID NBR8800-CONN-009 — ver
+#: docs/normative/NBR8800-RULES.md): coeficiente de atrito médio ``μ``
+#: por classe de superfície.
+_MU_SUPERFICIE: dict[FrictionSurfaceClass, float] = {
+    FrictionSurfaceClass.LAMINADA_OU_GALVANIZADA_COM_ESCOVA: 0.30,
+    FrictionSurfaceClass.JATEADA: 0.50,
+    FrictionSurfaceClass.GALVANIZADA_LISA: 0.20,
+}
+
+
+def friction_coefficient(surface_class: FrictionSurfaceClass) -> float:
+    """Coeficiente de atrito médio, ``μ`` (NBR 8800:2024, 6.3.4.1),
+    para a classe de superfície de contato dada — ver
+    :class:`FrictionSurfaceClass`.
+
+    A norma permite ainda estabelecer outros valores de ``μ`` com base
+    em ensaios conforme os requisitos do RCSC — NÃO coberto por esta
+    função (que implementa apenas os três valores tabelados no texto).
+    """
+    return _MU_SUPERFICIE[surface_class]
+
+
+def filler_plate_factor(has_two_or_more_filler_plates: bool) -> float:
+    """Fator relacionado a chapas de enchimento, ``Ce`` (NBR 8800:2024,
+    6.3.4.1): ``0,85`` quando houver DUAS OU MAIS chapas de enchimento
+    entre as partes conectadas, ``1,0`` nos demais casos (nenhuma
+    chapa, ou apenas uma).
+    """
+    return 0.85 if has_two_or_more_filler_plates else 1.0
+
+
+class SlipCriticalHoleType(Enum):
+    """Tipo de furo em uma ligação por atrito de estado-limite ÚLTIMO
+    (NBR 8800:2024, 6.3.4.2/6.3.4.3) — determina ``γe`` (Tabela 13, ver
+    :func:`slip_resistance_factor`). Aplicável apenas quando o
+    deslizamento é considerado estado-limite ÚLTIMO (furos alargados,
+    ou pouco alongados com alongamento PARALELO à força, ou muito
+    alongados em qualquer direção) — furos padrão e furos pouco
+    alongados com alongamento TRANSVERSAL usam
+    :func:`slip_resistance_service` (estado-limite de SERVIÇO), sem
+    ``γe``.
+    """
+
+    ALARGADO_OU_POUCO_ALONGADO_PARALELO = "alargado_ou_pouco_alongado_paralelo"
+    MUITO_ALONGADO_QUALQUER_DIRECAO = "muito_alongado_qualquer_direcao"
+
+
+#: NBR 8800:2024, Tabela 13 (página 87, RULE-ID NBR8800-CONN-010 — ver
+#: docs/normative/NBR8800-RULES.md): coeficiente de ponderação da
+#: resistência ``γe`` ao deslizamento, estado-limite último.
+_TABELA_13_GAMMA_E: dict[tuple[LoadCombinationClass, SlipCriticalHoleType], float] = {
+    (
+        LoadCombinationClass.NORMAL,
+        SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+    ): 1.20,
+    (
+        LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO,
+        SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+    ): 1.20,
+    (
+        LoadCombinationClass.EXCEPCIONAL,
+        SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+    ): 1.00,
+    (
+        LoadCombinationClass.NORMAL,
+        SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+    ): 1.40,
+    (
+        LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO,
+        SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+    ): 1.40,
+    (
+        LoadCombinationClass.EXCEPCIONAL,
+        SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+    ): 1.15,
+}
+
+
+def slip_resistance_factor(
+    combination_class: LoadCombinationClass, hole_type: SlipCriticalHoleType
+) -> float:
+    """Coeficiente de ponderação da resistência ao deslizamento no
+    estado-limite último, ``γe`` (NBR 8800:2024, Tabela 13), conforme a
+    classe de combinação e o tipo de furo — ver
+    :class:`SlipCriticalHoleType`.
+    """
+    return _TABELA_13_GAMMA_E[(combination_class, hole_type)]
+
+
+class HighStrengthBoltGrade(Enum):
+    """Grau do parafuso de alta resistência ASTM F3125/F3125M, para
+    fins da força de protensão mínima (Tabela 19) — ver
+    :func:`minimum_bolt_pretension_force`."""
+
+    A325_OU_F1852 = "a325_ou_f1852"
+    A490_OU_F2280 = "a490_ou_f2280"
+
+
+#: NBR 8800:2024, Tabela 19 (página 111, RULE-ID NBR8800-CONN-011 — ver
+#: docs/normative/NBR8800-RULES.md): força de protensão mínima ``FTb``
+#: (N) em parafusos ASTM F3125/F3125M, por diâmetro nominal (m) —
+#: trios ``(diâmetro, FTb grau A325/F1852, FTb grau A490/F2280)``, em
+#: ordem crescente de diâmetro. Diâmetros em polegada convertidos
+#: exatamente (1 pol. = 25,4 mm); diâmetros métricos (16/20/22/24/27/
+#: 30/35/36 mm) são parafusos distintos dos equivalentes em polegada
+#: mais próximos (valores de ``FTb`` diferentes, exceto 1 3/8 pol./35mm
+#: — mesmo valor tabelado, coincidência de arredondamento da norma).
+_TABELA_19_FTB: tuple[tuple[float, float, float], ...] = (
+    (0.0127, 53_000.0, 67_000.0),  # 1/2"
+    (0.015875, 85_000.0, 106_000.0),  # 5/8"
+    (0.016, 91_000.0, 114_000.0),  # 16 mm
+    (0.01905, 125_000.0, 157_000.0),  # 3/4"
+    (0.020, 142_000.0, 178_000.0),  # 20 mm
+    (0.022, 176_000.0, 221_000.0),  # 22 mm
+    (0.022225, 173_000.0, 217_000.0),  # 7/8"
+    (0.024, 205_000.0, 257_000.0),  # 24 mm
+    (0.0254, 227_000.0, 285_000.0),  # 1"
+    (0.027, 267_000.0, 334_000.0),  # 27 mm
+    (0.028575, 286_000.0, 358_000.0),  # 1 1/8"
+    (0.030, 326_000.0, 408_000.0),  # 30 mm
+    (0.03175, 363_000.0, 455_000.0),  # 1 1/4"
+    (0.034925, 433_000.0, 542_000.0),  # 1 3/8"
+    (0.035, 433_000.0, 542_000.0),  # 35 mm
+    (0.036, 475_000.0, 595_000.0),  # 36 mm
+    (0.0381, 527_000.0, 660_000.0),  # 1 1/2"
+)
+_TABELA_19_TOLERANCIA_DIAMETRO_M = 0.00005  # 0,05 mm
+
+
+def minimum_bolt_pretension_force(bolt_diameter: float, grade: HighStrengthBoltGrade) -> float:
+    """Força de protensão mínima por parafuso, ``FTb`` (NBR 8800:2024,
+    6.8.4.1, Tabela 19), para um parafuso ASTM F3125/F3125M do
+    diâmetro e grau dados.
+
+    Consulta EXATA (tolerância de 0,05 mm) — NÃO interpola entre
+    diâmetros tabelados e levanta ``ValueError`` se ``bolt_diameter``
+    não corresponder a nenhum diâmetro da Tabela 19. Não cobre
+    parafusos ISO 4016/898-1 (a norma não tabela ``FTb`` para eles).
+
+    ``bolt_diameter``: diâmetro nominal do parafuso, ``db`` (m).
+    ``grade``: ver :class:`HighStrengthBoltGrade`.
+    """
+    if not is_positive_finite(bolt_diameter):
+        raise ValueError(
+            f"minimum_bolt_pretension_force: bolt_diameter deve ser finito e "
+            f"positivo, recebido: {bolt_diameter!r}"
+        )
+    for diameter_m, ftb_a325, ftb_a490 in _TABELA_19_FTB:
+        if abs(bolt_diameter - diameter_m) <= _TABELA_19_TOLERANCIA_DIAMETRO_M:
+            return ftb_a325 if grade is HighStrengthBoltGrade.A325_OU_F1852 else ftb_a490
+    raise ValueError(
+        f"minimum_bolt_pretension_force: bolt_diameter ({bolt_diameter!r}) não "
+        f"corresponde a nenhum diâmetro tabelado na Tabela 19"
+    )
+
+
+def slip_resistance_ultimate(
+    mu: float,
+    ce: float,
+    ftb: float,
+    num_slip_planes: float,
+    ft_sd: float,
+    gamma_e: float,
+) -> float:
+    """Força resistente de cálculo ao deslizamento de um parafuso de
+    alta resistência protendido, estado-limite ÚLTIMO, ``Ff,Rd`` (NBR
+    8800:2024, 6.3.4.3): aplicável quando o deslizamento é considerado
+    estado-limite último (ver 6.3.4.2 e :class:`SlipCriticalHoleType`).
+
+    ``Ff,Rd = (1,13·μ·Ce·FTb·ns/γe)·(1 - Ft,Sd/(1,13·FTb))``.
+
+    Exige que 6.3.3 (cisalhamento/pressão de contato) seja TAMBÉM
+    verificado — ver ATENÇÃO 3 no docstring do módulo.
+
+    ``mu``: coeficiente de atrito médio — ver :func:`friction_coefficient`.
+    ``ce``: fator de chapas de enchimento — ver :func:`filler_plate_factor`.
+    ``ftb``: força de protensão mínima por parafuso — ver
+    :func:`minimum_bolt_pretension_force`. ``num_slip_planes``: número
+    de planos de deslizamento, ``ns`` (tipicamente 1 ou 2). ``ft_sd``:
+    força de tração solicitante de cálculo no parafuso que reduz a
+    protensão, calculada com as combinações últimas de ações (N),
+    podendo ser zero. ``gamma_e``: NBR 8800:2024, Tabela 13 — ver
+    :func:`slip_resistance_factor`.
+    """
+    if not is_positive_finite(mu):
+        raise ValueError(
+            f"slip_resistance_ultimate: mu deve ser finito e positivo, recebido: {mu!r}"
+        )
+    if not is_positive_finite(ce):
+        raise ValueError(
+            f"slip_resistance_ultimate: ce deve ser finito e positivo, recebido: {ce!r}"
+        )
+    if not is_positive_finite(ftb):
+        raise ValueError(
+            f"slip_resistance_ultimate: ftb deve ser finito e positivo, recebido: {ftb!r}"
+        )
+    if not is_positive_finite(num_slip_planes):
+        raise ValueError(
+            f"slip_resistance_ultimate: num_slip_planes deve ser finito e "
+            f"positivo, recebido: {num_slip_planes!r}"
+        )
+    if not is_non_negative_finite(ft_sd):
+        raise ValueError(
+            f"slip_resistance_ultimate: ft_sd deve ser finito e não-negativo, "
+            f"recebido: {ft_sd!r}"
+        )
+    if not is_positive_finite(gamma_e):
+        raise ValueError(
+            f"slip_resistance_ultimate: gamma_e deve ser finito e positivo, "
+            f"recebido: {gamma_e!r}"
+        )
+    if ft_sd >= 1.13 * ftb:
+        raise ValueError(
+            f"slip_resistance_ultimate: ft_sd ({ft_sd!r}) deve ser menor que "
+            f"1,13·ftb ({1.13 * ftb!r}) — protensão totalmente anulada pela tração"
+        )
+    return (1.13 * mu * ce * ftb * num_slip_planes / gamma_e) * (1.0 - ft_sd / (1.13 * ftb))
+
+
+def slip_resistance_service(
+    mu: float,
+    ce: float,
+    ftb: float,
+    num_slip_planes: float,
+    ft_sk: float,
+) -> float:
+    """Força resistente nominal ao deslizamento de um parafuso de alta
+    resistência protendido, estado-limite de SERVIÇO, ``Ff,Rk`` (NBR
+    8800:2024, 6.3.4.4): aplicável quando o deslizamento é considerado
+    estado-limite de SERVIÇO (furos padrão, ou pouco alongados com
+    alongamento TRANSVERSAL — ver 6.3.4.2).
+
+    ``Ff,Rk = 0,80·μ·Ce·FTb·ns·(1 - Ft,Sk/(0,80·FTb))``.
+
+    Comparar com a força cortante solicitante CARACTERÍSTICA (raras de
+    serviço, 4.8.7.3.4) — ou, simplificadamente, 70 % da força cortante
+    solicitante de cálculo das combinações últimas normais (mesma
+    simplificação vale para ``ft_sk``, conforme o texto da norma).
+    Exige que 6.3.3 seja TAMBÉM verificado — ver ATENÇÃO 3 no docstring
+    do módulo.
+
+    ``mu``/``ce``/``ftb``/``num_slip_planes``: ver
+    :func:`slip_resistance_ultimate`. ``ft_sk``: força de tração
+    solicitante CARACTERÍSTICA no parafuso que reduz a protensão (N),
+    podendo ser zero.
+    """
+    if not is_positive_finite(mu):
+        raise ValueError(
+            f"slip_resistance_service: mu deve ser finito e positivo, recebido: {mu!r}"
+        )
+    if not is_positive_finite(ce):
+        raise ValueError(
+            f"slip_resistance_service: ce deve ser finito e positivo, recebido: {ce!r}"
+        )
+    if not is_positive_finite(ftb):
+        raise ValueError(
+            f"slip_resistance_service: ftb deve ser finito e positivo, recebido: {ftb!r}"
+        )
+    if not is_positive_finite(num_slip_planes):
+        raise ValueError(
+            f"slip_resistance_service: num_slip_planes deve ser finito e "
+            f"positivo, recebido: {num_slip_planes!r}"
+        )
+    if not is_non_negative_finite(ft_sk):
+        raise ValueError(
+            f"slip_resistance_service: ft_sk deve ser finito e não-negativo, "
+            f"recebido: {ft_sk!r}"
+        )
+    if ft_sk >= 0.80 * ftb:
+        raise ValueError(
+            f"slip_resistance_service: ft_sk ({ft_sk!r}) deve ser menor que "
+            f"0,80·ftb ({0.80 * ftb!r}) — protensão totalmente anulada pela tração"
+        )
+    return 0.80 * mu * ce * ftb * num_slip_planes * (1.0 - ft_sk / (0.80 * ftb))
+
+
+def check_slip_resistance_ultimate(
+    fv_sd: float,
+    mu: float,
+    ce: float,
+    ftb: float,
+    num_slip_planes: float,
+    ft_sd: float,
+    gamma_e: float,
+) -> BoltCheckResult:
+    """Verifica um parafuso de alta resistência protendido ao
+    deslizamento, estado-limite ÚLTIMO (NBR 8800:2024, 6.3.4.3).
+
+    Verifica APENAS o deslizamento — ver ATENÇÃO 3 no docstring do
+    módulo: 6.3.3 (cisalhamento/pressão de contato) deve SEMPRE ser
+    verificado adicionalmente, com :func:`check_bolt_shear`/
+    :func:`check_bolt_bearing`.
+
+    ``fv_sd``: força cortante solicitante de cálculo no plano
+    considerado (N). Demais parâmetros: ver
+    :func:`slip_resistance_ultimate`.
+    """
+    if not is_positive_finite(fv_sd):
+        raise ValueError(
+            f"check_slip_resistance_ultimate: fv_sd deve ser finito e "
+            f"positivo, recebido: {fv_sd!r}"
+        )
+    ff_rd = slip_resistance_ultimate(mu, ce, ftb, num_slip_planes, ft_sd, gamma_e)
+    return BoltCheckResult(force_sd=fv_sd, force_rd=ff_rd)
+
+
+def check_slip_resistance_service(
+    fv_sk: float,
+    mu: float,
+    ce: float,
+    ftb: float,
+    num_slip_planes: float,
+    ft_sk: float,
+) -> BoltCheckResult:
+    """Verifica um parafuso de alta resistência protendido ao
+    deslizamento, estado-limite de SERVIÇO (NBR 8800:2024, 6.3.4.4).
+
+    Verifica APENAS o deslizamento — ver ATENÇÃO 3 no docstring do
+    módulo: 6.3.3 deve SEMPRE ser verificado adicionalmente.
+
+    ``fv_sk``: força cortante solicitante CARACTERÍSTICA no plano
+    considerado (N) — ver :func:`slip_resistance_service` para a
+    simplificação de 70 % permitida pela norma. Demais parâmetros: ver
+    :func:`slip_resistance_service`.
+    """
+    if not is_positive_finite(fv_sk):
+        raise ValueError(
+            f"check_slip_resistance_service: fv_sk deve ser finito e "
+            f"positivo, recebido: {fv_sk!r}"
+        )
+    ff_rk = slip_resistance_service(mu, ce, ftb, num_slip_planes, ft_sk)
+    return BoltCheckResult(force_sd=fv_sk, force_rd=ff_rk)

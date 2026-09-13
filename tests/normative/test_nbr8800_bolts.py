@@ -13,6 +13,10 @@ import pytest
 from estrutura_metalica.normative.nbr8800 import (
     BoltCheckResult,
     BoltCombinedCheckResult,
+    FrictionSurfaceClass,
+    HighStrengthBoltGrade,
+    LoadCombinationClass,
+    SlipCriticalHoleType,
     bolt_bearing_resistance,
     bolt_combined_tension_and_shear_ratio,
     bolt_effective_area_tension,
@@ -23,6 +27,14 @@ from estrutura_metalica.normative.nbr8800 import (
     check_bolt_combined_tension_and_shear,
     check_bolt_shear,
     check_bolt_tension,
+    check_slip_resistance_service,
+    check_slip_resistance_ultimate,
+    filler_plate_factor,
+    friction_coefficient,
+    minimum_bolt_pretension_force,
+    slip_resistance_factor,
+    slip_resistance_service,
+    slip_resistance_ultimate,
     threaded_rod_tensile_resistance_cap,
 )
 
@@ -370,3 +382,262 @@ class TestWorkedExample:
             deformation_is_design_limit=True,
         )
         assert result.force_rd == pytest.approx(160_000.0, rel=1e-6)
+
+
+class TestFrictionCoefficient:
+    @pytest.mark.parametrize(
+        ("surface_class", "expected_mu"),
+        [
+            (FrictionSurfaceClass.LAMINADA_OU_GALVANIZADA_COM_ESCOVA, 0.30),
+            (FrictionSurfaceClass.JATEADA, 0.50),
+            (FrictionSurfaceClass.GALVANIZADA_LISA, 0.20),
+        ],
+    )
+    def test_matches_6_3_4_1(
+        self, surface_class: FrictionSurfaceClass, expected_mu: float
+    ) -> None:
+        assert friction_coefficient(surface_class) == pytest.approx(expected_mu)
+
+
+class TestFillerPlateFactor:
+    def test_two_or_more_filler_plates(self) -> None:
+        assert filler_plate_factor(True) == pytest.approx(0.85)
+
+    def test_zero_or_one_filler_plate(self) -> None:
+        assert filler_plate_factor(False) == pytest.approx(1.0)
+
+
+class TestSlipResistanceFactor:
+    @pytest.mark.parametrize(
+        ("combination_class", "hole_type", "expected_gamma_e"),
+        [
+            (
+                LoadCombinationClass.NORMAL,
+                SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+                1.20,
+            ),
+            (
+                LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO,
+                SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+                1.20,
+            ),
+            (
+                LoadCombinationClass.EXCEPCIONAL,
+                SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+                1.00,
+            ),
+            (
+                LoadCombinationClass.NORMAL,
+                SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+                1.40,
+            ),
+            (
+                LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO,
+                SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+                1.40,
+            ),
+            (
+                LoadCombinationClass.EXCEPCIONAL,
+                SlipCriticalHoleType.MUITO_ALONGADO_QUALQUER_DIRECAO,
+                1.15,
+            ),
+        ],
+    )
+    def test_matches_tabela_13(
+        self,
+        combination_class: LoadCombinationClass,
+        hole_type: SlipCriticalHoleType,
+        expected_gamma_e: float,
+    ) -> None:
+        result = slip_resistance_factor(combination_class, hole_type)
+        assert result == pytest.approx(expected_gamma_e)
+
+
+class TestMinimumBoltPretensionForce:
+    @pytest.mark.parametrize(
+        ("diameter", "grade", "expected_n"),
+        [
+            (0.0127, HighStrengthBoltGrade.A325_OU_F1852, 53_000.0),
+            (0.0127, HighStrengthBoltGrade.A490_OU_F2280, 67_000.0),
+            (0.015875, HighStrengthBoltGrade.A325_OU_F1852, 85_000.0),
+            (0.016, HighStrengthBoltGrade.A325_OU_F1852, 91_000.0),
+            (0.020, HighStrengthBoltGrade.A325_OU_F1852, 142_000.0),
+            (0.020, HighStrengthBoltGrade.A490_OU_F2280, 178_000.0),
+            (0.034925, HighStrengthBoltGrade.A325_OU_F1852, 433_000.0),
+            (0.035, HighStrengthBoltGrade.A325_OU_F1852, 433_000.0),
+            (0.0381, HighStrengthBoltGrade.A490_OU_F2280, 660_000.0),
+        ],
+    )
+    def test_matches_tabela_19(
+        self, diameter: float, grade: HighStrengthBoltGrade, expected_n: float
+    ) -> None:
+        result = minimum_bolt_pretension_force(diameter, grade)
+        assert result == pytest.approx(expected_n)
+
+    def test_distinguishes_close_but_distinct_diameters(self) -> None:
+        # 5/8" (15,875mm) e 16mm sao parafusos distintos com FTb diferentes.
+        ftb_5_8 = minimum_bolt_pretension_force(0.015875, HighStrengthBoltGrade.A325_OU_F1852)
+        ftb_16mm = minimum_bolt_pretension_force(0.016, HighStrengthBoltGrade.A325_OU_F1852)
+        assert ftb_5_8 != pytest.approx(ftb_16mm)
+
+    def test_rejects_diameter_not_in_table(self) -> None:
+        with pytest.raises(ValueError, match="Tabela 19"):
+            minimum_bolt_pretension_force(0.010, HighStrengthBoltGrade.A325_OU_F1852)
+
+    def test_rejects_non_positive_diameter(self) -> None:
+        with pytest.raises(ValueError):
+            minimum_bolt_pretension_force(0.0, HighStrengthBoltGrade.A325_OU_F1852)
+
+
+class TestSlipResistanceUltimate:
+    _KWARGS = dict(mu=0.30, ce=1.0, ftb=142_000.0, num_slip_planes=1.0, ft_sd=0.0, gamma_e=1.20)
+
+    def test_matches_formula(self) -> None:
+        result = slip_resistance_ultimate(**self._KWARGS)
+        expected = (1.13 * 0.30 * 1.0 * 142_000.0 * 1.0 / 1.20) * (
+            1.0 - 0.0 / (1.13 * 142_000.0)
+        )
+        assert result == pytest.approx(expected)
+        assert result == pytest.approx(40_115.0, rel=1e-6)
+
+    def test_tension_reduces_resistance(self) -> None:
+        no_tension = slip_resistance_ultimate(**self._KWARGS)
+        with_tension = slip_resistance_ultimate(**{**self._KWARGS, "ft_sd": 50_000.0})
+        assert with_tension < no_tension
+        assert with_tension == pytest.approx(27_613.66, rel=1e-4)
+
+    def test_rejects_tension_that_fully_cancels_pretension(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["ft_sd"] = 1.13 * kwargs["ftb"]
+        with pytest.raises(ValueError):
+            slip_resistance_ultimate(**kwargs)
+
+    @pytest.mark.parametrize("field", ["mu", "ce", "ftb", "num_slip_planes", "gamma_e"])
+    def test_rejects_non_positive_inputs(self, field: str) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs[field] = 0.0
+        with pytest.raises(ValueError):
+            slip_resistance_ultimate(**kwargs)
+
+    def test_rejects_negative_ft_sd(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["ft_sd"] = -1.0
+        with pytest.raises(ValueError):
+            slip_resistance_ultimate(**kwargs)
+
+
+class TestSlipResistanceService:
+    _KWARGS = dict(mu=0.30, ce=1.0, ftb=142_000.0, num_slip_planes=1.0, ft_sk=0.0)
+
+    def test_matches_formula(self) -> None:
+        result = slip_resistance_service(**self._KWARGS)
+        expected = 0.80 * 0.30 * 1.0 * 142_000.0 * 1.0 * (1.0 - 0.0 / (0.80 * 142_000.0))
+        assert result == pytest.approx(expected)
+        assert result == pytest.approx(34_080.0, rel=1e-6)
+
+    def test_tension_reduces_resistance(self) -> None:
+        no_tension = slip_resistance_service(**self._KWARGS)
+        with_tension = slip_resistance_service(**{**self._KWARGS, "ft_sk": 30_000.0})
+        assert with_tension < no_tension
+
+    def test_rejects_tension_that_fully_cancels_pretension(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["ft_sk"] = 0.80 * kwargs["ftb"]
+        with pytest.raises(ValueError):
+            slip_resistance_service(**kwargs)
+
+    @pytest.mark.parametrize("field", ["mu", "ce", "ftb", "num_slip_planes"])
+    def test_rejects_non_positive_inputs(self, field: str) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs[field] = 0.0
+        with pytest.raises(ValueError):
+            slip_resistance_service(**kwargs)
+
+    def test_rejects_negative_ft_sk(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["ft_sk"] = -1.0
+        with pytest.raises(ValueError):
+            slip_resistance_service(**kwargs)
+
+
+class TestCheckSlipResistanceUltimate:
+    _KWARGS = dict(
+        fv_sd=1.0, mu=0.30, ce=1.0, ftb=142_000.0, num_slip_planes=1.0, ft_sd=0.0, gamma_e=1.20
+    )
+
+    def test_rejects_non_positive_fv_sd(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["fv_sd"] = 0.0
+        with pytest.raises(ValueError):
+            check_slip_resistance_ultimate(**kwargs)
+
+    def test_returns_bolt_check_result(self) -> None:
+        result = check_slip_resistance_ultimate(**self._KWARGS)
+        assert isinstance(result, BoltCheckResult)
+        assert result.force_rd == pytest.approx(40_115.0, rel=1e-6)
+
+    def test_is_ok_below_and_above_capacity(self) -> None:
+        low = check_slip_resistance_ultimate(**{**self._KWARGS, "fv_sd": 1.0})
+        high = check_slip_resistance_ultimate(**{**self._KWARGS, "fv_sd": 1_000_000.0})
+        assert low.is_ok is True
+        assert high.is_ok is False
+
+
+class TestCheckSlipResistanceService:
+    _KWARGS = dict(fv_sk=1.0, mu=0.30, ce=1.0, ftb=142_000.0, num_slip_planes=1.0, ft_sk=0.0)
+
+    def test_rejects_non_positive_fv_sk(self) -> None:
+        kwargs = dict(self._KWARGS)
+        kwargs["fv_sk"] = 0.0
+        with pytest.raises(ValueError):
+            check_slip_resistance_service(**kwargs)
+
+    def test_returns_bolt_check_result(self) -> None:
+        result = check_slip_resistance_service(**self._KWARGS)
+        assert isinstance(result, BoltCheckResult)
+        assert result.force_rd == pytest.approx(34_080.0, rel=1e-6)
+
+    def test_is_ok_below_and_above_capacity(self) -> None:
+        low = check_slip_resistance_service(**{**self._KWARGS, "fv_sk": 1.0})
+        high = check_slip_resistance_service(**{**self._KWARGS, "fv_sk": 1_000_000.0})
+        assert low.is_ok is True
+        assert high.is_ok is False
+
+
+class TestFrictionConnectionWorkedExample:
+    """Ligação por atrito hipotética: parafuso M20 ASTM A325 (``FTb``
+    da Tabela 19, 20 mm -> 142 000 N), superfície classe A (laminada
+    limpa sem pintura, ``μ=0,30``), sem chapas de enchimento
+    (``Ce=1,0``), 1 plano de deslizamento, sem tração concomitante.
+
+    Cálculo à mão (NBR 8800:2024, 6.3.4.3/6.3.4.4):
+    - Ff,Rd (furo alargado, combinação normal, ``γe=1,20``):
+      ``1,13·0,30·1,0·142000·1/1,20 = 40 115,0 N``
+    - Ff,Rk (furo padrão, estado-limite de serviço):
+      ``0,80·0,30·1,0·142000·1 = 34 080,0 N``
+    """
+
+    _FTB = 142_000.0
+    _MU = 0.30
+    _CE = 1.0
+    _NS = 1.0
+
+    def test_ff_rd_matches_hand_calculation(self) -> None:
+        ftb = minimum_bolt_pretension_force(0.020, HighStrengthBoltGrade.A325_OU_F1852)
+        assert ftb == pytest.approx(self._FTB)
+        gamma_e = slip_resistance_factor(
+            LoadCombinationClass.NORMAL,
+            SlipCriticalHoleType.ALARGADO_OU_POUCO_ALONGADO_PARALELO,
+        )
+        result = check_slip_resistance_ultimate(
+            fv_sd=1.0, mu=self._MU, ce=self._CE, ftb=ftb, num_slip_planes=self._NS,
+            ft_sd=0.0, gamma_e=gamma_e,
+        )
+        assert result.force_rd == pytest.approx(40_115.0, rel=1e-6)
+
+    def test_ff_rk_matches_hand_calculation(self) -> None:
+        ftb = minimum_bolt_pretension_force(0.020, HighStrengthBoltGrade.A325_OU_F1852)
+        result = check_slip_resistance_service(
+            fv_sk=1.0, mu=self._MU, ce=self._CE, ftb=ftb, num_slip_planes=self._NS, ft_sk=0.0
+        )
+        assert result.force_rd == pytest.approx(34_080.0, rel=1e-6)

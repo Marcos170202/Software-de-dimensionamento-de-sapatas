@@ -36,14 +36,16 @@ Fases já implementadas:
   e ligações metálicas (6.2.5.1, força resistente do metal da solda em
   soldas de filete concêntricas; 6.3.2/6.3.3, parafusos e barras
   redondas rosqueadas em ligações por contato — tração, cisalhamento,
-  pressão de contato e interação tração-cisalhamento). Ver
+  pressão de contato e interação tração-cisalhamento; 6.3.4, ligações
+  por atrito com parafusos de alta resistência protendidos —
+  deslizamento nos estados-limite último e de serviço). Ver
   ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa
   e o que ainda está fora do escopo (interação com torção, metal-base
-  em soldas, ligações por atrito, pinos, bases de pilares).
+  em soldas, efeito de alavanca em parafusos, pinos, bases de pilares).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
-lançamento em planta, restante das ligações metálicas (ligações por
-atrito, metal-base em soldas, pinos, bases de pilares),
+lançamento em planta, restante das ligações metálicas (metal-base em
+soldas, efeito de alavanca, pinos, bases de pilares),
 detalhamento/desenho e o elo de saída (reações de apoio) com o módulo
 de sapatas/fundações deste repositório.
 """

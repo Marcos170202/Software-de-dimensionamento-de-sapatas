@@ -704,6 +704,90 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   `estrutura_metalica.normative.nbr8800.bolts.check_bolt_combined_tension_and_shear`.
 - **TEST:** `tests/normative/test_nbr8800_bolts.py`.
 
+## RULE-ID: NBR8800-CONN-009
+
+- **SOURCE:** NBR 8800:2024, 6.3.4.1, página 86-87: "μ é o coeficiente
+  médio de atrito, especificado a seguir: a) 0,30 para superfícies
+  classe A [...] e para superfícies classe C [...]; b) 0,50 para
+  superfícies classe B [...]; c) 0,20 para superfícies galvanizadas a
+  quente [sem tratamento de rugosidade]." "Ce é um fator relacionado a
+  chapas de enchimento, igual a 0,85 quando houver duas ou mais chapas
+  entre as partes conectadas e igual a 1,0 nos demais casos."
+- **DESCRIPTION:** Coeficiente de atrito médio `μ` por classe de
+  superfície de contato (classes A e C reunidas em um único membro de
+  enum, por terem o MESMO `μ=0,30`) e fator `Ce` de chapas de
+  enchimento — insumos de 6.3.4.3/6.3.4.4.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.FrictionSurfaceClass`,
+  `estrutura_metalica.normative.nbr8800.bolts.friction_coefficient`,
+  `estrutura_metalica.normative.nbr8800.bolts.filler_plate_factor`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-010
+
+- **SOURCE:** NBR 8800:2024, Tabela 13, página 87: "Valores do
+  coeficiente de ponderação da resistência `γe`" — 1,20/1,40
+  (combinações últimas normais, especiais ou de construção) e
+  1,00/1,15 (combinações últimas excepcionais), conforme o tipo de
+  furo ("furos alargados e furos pouco alongados com alongamento
+  paralelo à direção da força aplicada" ou "furos muito alongados com
+  alongamento em qualquer direção").
+- **DESCRIPTION:** `γe`, exigido apenas quando o deslizamento é
+  estado-limite ÚLTIMO (6.3.4.2/6.3.4.3 — furos alargados/alongados).
+  Reaproveita `LoadCombinationClass` (já usado por
+  `steel_resistance_factors`/`weld_metal_resistance_factor`) para o
+  eixo de combinação de ações.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.SlipCriticalHoleType`,
+  `estrutura_metalica.normative.nbr8800.bolts.slip_resistance_factor`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-011
+
+- **SOURCE:** NBR 8800:2024, 6.8.4.1/Tabela 19, página 110-111: "Os
+  parafusos de alta resistência com protensão inicial devem ser
+  apertados de forma a se obter uma força mínima de protensão (`FTb`)
+  adequada a cada diâmetro e tipo de parafuso usado. Essa força de
+  protensão é fornecida na Tabela 19 para os parafusos ASTM."
+- **DESCRIPTION:** Força de protensão mínima `FTb`, por diâmetro
+  nominal e grau (A325/F1852 ou A490/F2280) de um parafuso ASTM
+  F3125/F3125M — implementada como TABELA DE CONSULTA EXATA (não uma
+  fórmula fechada), fiel aos valores impressos na Tabela 19, incluindo
+  diâmetros em polegada e em milímetro como entradas distintas (mesmo
+  quando numericamente muito próximas, ex.: 5/8" vs. 16 mm têm `FTb`
+  diferentes na tabela).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.HighStrengthBoltGrade`,
+  `estrutura_metalica.normative.nbr8800.bolts.minimum_bolt_pretension_force`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-012
+
+- **SOURCE:** NBR 8800:2024, 6.3.4.3, página 86: "O valor da força
+  resistente de cálculo é calculado conforme a seguir:
+  `Ff,Rd = (1,13μCeFTbns/γe)·(1 - Ft,Sd/(1,13FTb))`." 6.3.4.4, página
+  88: "O valor da força resistente nominal é calculado conforme a
+  seguir: `Ff,Rk = 0,80μCeFTbns·(1 - Ft,Sk/(0,80FTb))`."
+- **DESCRIPTION:** Força resistente ao deslizamento de um parafuso de
+  alta resistência protendido — `Ff,Rd` no estado-limite ÚLTIMO
+  (6.3.4.3, furos alargados/alongados, comparado a `Fv,Sd`) e `Ff,Rk`
+  no estado-limite de SERVIÇO (6.3.4.4, furos padrão/pouco alongados
+  transversais, comparado à força cortante CARACTERÍSTICA de serviço
+  ou, simplificadamente, 70% de `Fv,Sd`). **LIMITAÇÃO/REQUISITO
+  ADICIONAL**: 6.3.4.1 exige que a ligação atenda TAMBÉM a 6.3.3
+  (cisalhamento/pressão de contato, NBR8800-CONN-006/007) — as funções
+  desta regra verificam apenas o deslizamento, não substituem aquela
+  verificação. Fora do escopo: 6.3.5 (efeito de alavanca), os métodos
+  de aperto/inspeção (6.8.4.2 a 6.8.4.7 — arruelas, rotação da porca,
+  chave calibrada, indicador direto de tração, Tabela 20) e o
+  acabamento mínimo de superfície (Figura 13).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.slip_resistance_ultimate`,
+  `estrutura_metalica.normative.nbr8800.bolts.slip_resistance_service`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_slip_resistance_ultimate`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_slip_resistance_service`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -774,23 +858,29 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   excêntrica ao centro geométrico (6.2.5.2-b/c, método do centro
   instantâneo de rotação).
 - **6.3, itens restantes** (páginas 82-88): requisitos de aperto/
-  montagem (6.3.1, remete a 6.8); ligações por atrito com parafusos de
-  alta resistência (6.3.4 — força resistente ao deslizamento, protensão
-  mínima, coeficiente de atrito, Tabela 13); parafusos tracionados com
-  efeito de alavanca ("prying", 6.3.5); Tabela 12 (alternativa
-  simplificada à equação de interação, ver NBR8800-CONN-008);
-  requisitos de espaçamento/distância a bordas (6.3.7, não lido nesta
-  fase); 6.3.3.3-b) (furos muito alongados perpendiculares à força, ver
-  NBR8800-CONN-007). O núcleo de 6.3.2/6.3.3 (tração, cisalhamento,
-  pressão de contato em furos padrão, interação tração-cisalhamento) já
-  está implementado (NBR8800-CONN-004 a 008).
-- **6.4 a 6.8** (páginas 89-113): pinos (6.4); elementos de ligação —
-  tracionados, comprimidos, cisalhados, colapso por rasgamento (6.5);
-  pressão de contato de chapas (6.6); bases de pilares (6.7); projeto/
-  montagem/inspeção de ligações com parafusos de alta resistência (6.8,
-  inclusive `FTb`, protensão mínima). Nenhuma dessas frentes foi aberta
-  ainda — `SteelSection`/`Connection` não expressam furos, chapas de
-  ligação nem placas de base.
+  montagem (6.3.1, remete a 6.8, exceto o acabamento de superfície em
+  ligações por atrito — ver NBR8800-CONN-009/012); parafusos
+  tracionados com efeito de alavanca ("prying", 6.3.5); Tabela 12
+  (alternativa simplificada à equação de interação, ver
+  NBR8800-CONN-008); requisitos de espaçamento/distância a bordas
+  (6.3.7, não lido nesta fase); 6.3.3.3-b) (furos muito alongados
+  perpendiculares à força, ver NBR8800-CONN-007). O núcleo de
+  6.3.2/6.3.3 (tração, cisalhamento, pressão de contato em furos
+  padrão, interação tração-cisalhamento) e de 6.3.4 (ligações por
+  atrito — deslizamento nos estados-limite último e de serviço,
+  coeficiente de atrito, `Ce`, `γe`/Tabela 13, `FTb`/Tabela 19) já
+  estão implementados (NBR8800-CONN-004 a 012).
+- **6.4 a 6.8, itens restantes** (páginas 89-113): pinos (6.4);
+  elementos de ligação — tracionados, comprimidos, cisalhados, colapso
+  por rasgamento (6.5); pressão de contato de chapas (6.6); bases de
+  pilares (6.7); 6.8, itens restantes — arruelas (6.8.4.2), métodos de
+  aperto/inspeção (6.8.4.3 a 6.8.4.7 — rotação da porca, chave
+  calibrada, indicador direto de tração, Tabela 20, reutilização de
+  parafusos). Nenhuma dessas frentes foi aberta ainda —
+  `SteelSection`/`Connection` não expressam furos, chapas de ligação
+  nem placas de base; os métodos de aperto/inspeção são procedimentos
+  de execução em obra, não cálculo (ver ATENÇÃO 5 no docstring do
+  módulo `bolts`).
 - **7/8** (páginas 114+): elementos mistos de aço e concreto e
   ligações mistas — fora do escopo deste pacote (`estrutura_metalica`
   trata apenas de estruturas de aço puro).
