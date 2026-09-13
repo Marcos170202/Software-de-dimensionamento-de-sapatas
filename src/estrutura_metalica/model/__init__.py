@@ -26,6 +26,14 @@ de exemplo):
   (:mod:`~estrutura_metalica.model.bolt_catalog`, parafusos ASTM
   A325/A490/A307).
 
+Também inclui, em :mod:`~estrutura_metalica.model.material`, aços de
+catálogo REAIS adicionais além dos citados no
+PROCESSO_MODELAGEM_METALICA.md: dois europeus (``EN_10025_S275``/
+``EN_10025_S355``) e três de chapa grossa (``ASTM_A572_GR42``,
+``ASTM_A588``/``ASTM_A242`` — patináveis, tipo "Corten") — ver o
+docstring desse módulo para as faixas de espessura e a fonte
+(ArcelorMittal "Aços Planos"/Usiminas "Tiras a Quente").
+
 Ver a documentação de cada módulo para a fonte e as limitações de
 cada catálogo (seções monossimétricas/assimétricas, propriedades não
 tabuladas etc.).
@@ -57,7 +65,10 @@ from .legacy_profile_catalog import (
 )
 from .material import (
     ASTM_A36,
+    ASTM_A242,
+    ASTM_A572_GR42,
     ASTM_A572_GR50,
+    ASTM_A588,
     ASTM_A992,
     EN_10025_S275,
     EN_10025_S355,
@@ -88,7 +99,10 @@ from .vallourec_catalog import (
 
 __all__ = [
     "ASTM_A36",
+    "ASTM_A242",
+    "ASTM_A572_GR42",
     "ASTM_A572_GR50",
+    "ASTM_A588",
     "ASTM_A992",
     "BRITISH_STEEL_UB_PROFILES",
     "EN_10025_S275",

@@ -21,6 +21,23 @@ da faixa para ``E < 3 mm`` (mais conservador): S275 ``fu=410 MPa``;
 S355 ``fu=470 MPa`` (a faixa completa impressa é 410–580 MPa e
 470–630 MPa respectivamente, variando com a direção do ensaio e a
 espessura).
+
+``ASTM_A572_GR42``/``ASTM_A588``/``ASTM_A242``: aços de chapa grossa
+("Aços de Qualidade Estrutural"/"...Resistentes à Corrosão
+Atmosférica", ArcelorMittal, "Aços Planos", tabela "Principais
+Normas") — fy/fu conferidos nessa mesma fonte para as faixas de
+espessura indicadas (ASTM A572 Gr. 50 e ASTM A36 já cadastrados
+acima também aparecem nessa tabela, com os MESMOS valores já usados
+— confirmação cruzada independente da fonte original):
+
+- ``ASTM_A572_GR42``: ``fy=290 MPa`` mín., ``fu=415 MPa`` mín.,
+  espessura 2,00–19,00 mm.
+- ``ASTM_A588`` (aço patinável/"Corten", graus A/B/K — mesmas
+  propriedades mecânicas para os três graus, que diferem apenas na
+  composição química): ``fy=345 MPa`` mín., ``fu=485 MPa`` mín.,
+  espessura 6,00–12,00 mm.
+- ``ASTM_A242`` Tipo 1 (aço patinável): ``fy=345 MPa`` mín.,
+  ``fu=480 MPa`` mín., espessura 4,75–16,00 mm.
 """
 
 from __future__ import annotations
@@ -91,8 +108,20 @@ ASTM_A572_GR50 = SteelMaterial(name="ASTM A572 Gr. 50", fy=345e6, fu=450e6, e=_E
 ASTM_A992 = SteelMaterial(name="ASTM A992", fy=345e6, fu=450e6, e=_E_ACO)
 EN_10025_S275 = SteelMaterial(name="EN 10025 S275", fy=275e6, fu=410e6, e=_E_ACO)
 EN_10025_S355 = SteelMaterial(name="EN 10025 S355", fy=355e6, fu=470e6, e=_E_ACO)
+ASTM_A572_GR42 = SteelMaterial(name="ASTM A572 Gr. 42", fy=290e6, fu=415e6, e=_E_ACO)
+ASTM_A588 = SteelMaterial(name="ASTM A588", fy=345e6, fu=485e6, e=_E_ACO)
+ASTM_A242 = SteelMaterial(name="ASTM A242", fy=345e6, fu=480e6, e=_E_ACO)
 
 STEEL_MATERIAL_CATALOG: dict[str, SteelMaterial] = {
     material.name: material
-    for material in (ASTM_A36, ASTM_A572_GR50, ASTM_A992, EN_10025_S275, EN_10025_S355)
+    for material in (
+        ASTM_A36,
+        ASTM_A572_GR50,
+        ASTM_A992,
+        EN_10025_S275,
+        EN_10025_S355,
+        ASTM_A572_GR42,
+        ASTM_A588,
+        ASTM_A242,
+    )
 }

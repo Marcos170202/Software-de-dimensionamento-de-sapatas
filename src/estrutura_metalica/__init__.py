@@ -21,10 +21,9 @@ Fases já implementadas:
   paralelas), Gerdau I/U/cantoneira/T (abas inclinadas), British
   Steel UB/UC (94+53 bitolas, BS EN 10365:2017) e perfis tubulares
   "MSH" Vallourec circular/quadrado/retangular (562+223+450 bitolas,
-  EN 10210) —, dois aços europeus adicionais
-  (:data:`~estrutura_metalica.model.EN_10025_S275`/
-  :data:`~estrutura_metalica.model.EN_10025_S355`) e um catálogo de
-  parafusos estruturais REAIS
+  EN 10210) —, aços de catálogo adicionais (EN 10025 S275/S355; ASTM
+  A572 Gr. 42, A588 e A242 de chapa grossa — ArcelorMittal "Aços
+  Planos") e um catálogo de parafusos estruturais REAIS
   (:data:`~estrutura_metalica.model.STRUCTURAL_BOLT_CATALOG`, ASTM
   A325/A490/A307, catálogo Rudge Ramos — ver
   :func:`~estrutura_metalica.model.get_structural_bolt`). Ver o
