@@ -18,8 +18,12 @@ Fases já implementadas:
   :class:`~estrutura_metalica.model.Beam` e
   :class:`~estrutura_metalica.model.Bracing`, catálogos de perfis
   REAIS de múltiplos fabricantes — Gerdau W/H (107 bitolas, abas
-  paralelas), Gerdau I/U/cantoneira/T (abas inclinadas) e British
-  Steel UB/UC (94+53 bitolas, BS EN 10365:2017) — e um catálogo de
+  paralelas), Gerdau I/U/cantoneira/T (abas inclinadas), British
+  Steel UB/UC (94+53 bitolas, BS EN 10365:2017) e perfis tubulares
+  "MSH" Vallourec circular/quadrado/retangular (562+223+450 bitolas,
+  EN 10210) —, dois aços europeus adicionais
+  (:data:`~estrutura_metalica.model.EN_10025_S275`/
+  :data:`~estrutura_metalica.model.EN_10025_S355`) e um catálogo de
   parafusos estruturais REAIS
   (:data:`~estrutura_metalica.model.STRUCTURAL_BOLT_CATALOG`, ASTM
   A325/A490/A307, catálogo Rudge Ramos — ver

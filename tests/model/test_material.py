@@ -8,6 +8,8 @@ from estrutura_metalica.model import (
     ASTM_A36,
     ASTM_A572_GR50,
     ASTM_A992,
+    EN_10025_S275,
+    EN_10025_S355,
     STEEL_MATERIAL_CATALOG,
     SteelMaterial,
 )
@@ -61,7 +63,9 @@ def test_rejects_non_positive_explicit_g() -> None:
         SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, g=-1.0)
 
 
-@pytest.mark.parametrize("material", [ASTM_A36, ASTM_A572_GR50, ASTM_A992])
+@pytest.mark.parametrize(
+    "material", [ASTM_A36, ASTM_A572_GR50, ASTM_A992, EN_10025_S275, EN_10025_S355]
+)
 def test_catalog_materials_are_valid(material: SteelMaterial) -> None:
     assert material.fu >= material.fy > 0
     assert material.e == pytest.approx(200_000e6)
@@ -71,4 +75,15 @@ def test_catalog_dict_is_keyed_by_name() -> None:
     assert STEEL_MATERIAL_CATALOG["ASTM A36"] is ASTM_A36
     assert STEEL_MATERIAL_CATALOG["ASTM A572 Gr. 50"] is ASTM_A572_GR50
     assert STEEL_MATERIAL_CATALOG["ASTM A992"] is ASTM_A992
-    assert len(STEEL_MATERIAL_CATALOG) == 3
+    assert STEEL_MATERIAL_CATALOG["EN 10025 S275"] is EN_10025_S275
+    assert STEEL_MATERIAL_CATALOG["EN 10025 S355"] is EN_10025_S355
+    assert len(STEEL_MATERIAL_CATALOG) == 5
+
+
+def test_en_10025_grades_match_usiminas_catalog_values() -> None:
+    # Usiminas "Tiras a Quente", tabela de propriedades mecânicas
+    # conforme EN 10025-2 - valores para E<=16mm (mais fina/comum).
+    assert EN_10025_S275.fy == pytest.approx(275e6)
+    assert EN_10025_S275.fu == pytest.approx(410e6)
+    assert EN_10025_S355.fy == pytest.approx(355e6)
+    assert EN_10025_S355.fu == pytest.approx(470e6)

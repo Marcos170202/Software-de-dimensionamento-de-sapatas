@@ -5,6 +5,22 @@ brasileira para os aços citados no PROCESSO_MODELAGEM_METALICA.md
 (seção "Etapa 3 — Materiais e cargas"). Eles NÃO substituem a
 verificação da certidão de qualidade/laudo do material realmente
 fornecido em obra — servem como valor-padrão de pré-dimensionamento.
+
+``EN_10025_S275``/``EN_10025_S355``: aços europeus (Usiminas, "Tiras
+a Quente", tabela de propriedades mecânicas conforme EN 10025-2) —
+usados por perfis laminados British Steel (UB/UC, ver
+:mod:`~estrutura_metalica.model.british_steel_catalog`) e chapas de
+aço em geral. **ATENÇÃO**: a EN 10025-2 reduz ``fy`` para espessuras
+maiores — os valores aqui são os da faixa mais fina e mais comum
+(``E ≤ 16 mm``: S275 ``fy=275 MPa``; S355 ``fy=355 MPa``); para
+``16 < E ≤ 20 mm`` a norma já reduz para 265 MPa/345 MPa
+respectivamente (dependência de espessura NÃO modelada por
+:class:`SteelMaterial` — um único valor por material). ``fu`` também
+varia em faixa (não um único valor) — adotado aqui o limite inferior
+da faixa para ``E < 3 mm`` (mais conservador): S275 ``fu=410 MPa``;
+S355 ``fu=470 MPa`` (a faixa completa impressa é 410–580 MPa e
+470–630 MPa respectivamente, variando com a direção do ensaio e a
+espessura).
 """
 
 from __future__ import annotations
@@ -73,7 +89,10 @@ _E_ACO = 200_000e6  # Pa
 ASTM_A36 = SteelMaterial(name="ASTM A36", fy=250e6, fu=400e6, e=_E_ACO)
 ASTM_A572_GR50 = SteelMaterial(name="ASTM A572 Gr. 50", fy=345e6, fu=450e6, e=_E_ACO)
 ASTM_A992 = SteelMaterial(name="ASTM A992", fy=345e6, fu=450e6, e=_E_ACO)
+EN_10025_S275 = SteelMaterial(name="EN 10025 S275", fy=275e6, fu=410e6, e=_E_ACO)
+EN_10025_S355 = SteelMaterial(name="EN 10025 S355", fy=355e6, fu=470e6, e=_E_ACO)
 
 STEEL_MATERIAL_CATALOG: dict[str, SteelMaterial] = {
-    material.name: material for material in (ASTM_A36, ASTM_A572_GR50, ASTM_A992)
+    material.name: material
+    for material in (ASTM_A36, ASTM_A572_GR50, ASTM_A992, EN_10025_S275, EN_10025_S355)
 }

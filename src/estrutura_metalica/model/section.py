@@ -322,3 +322,102 @@ class CircularTubeSection(SteelSection):
             d=d,
             t=t,
         )
+
+
+@dataclass(frozen=True, slots=True)
+class CircularHollowProfile(CircularTubeSection):
+    """Perfil tubular circular de catálogo ("MSH" — Módulo de Seção
+    Hueca — EN 10210/10219), com propriedades adicionais de catálogo
+    que :class:`CircularTubeSection` não guarda.
+
+    Ao contrário de :meth:`CircularTubeSection.from_dimensions`
+    (aproximação de anel de parede fina/espessa EXATA, mas sem
+    módulo resistente), os valores aqui são de CATÁLOGO — ``area``/
+    ``ix``/``j`` herdados conferem com a fórmula exata do anel dentro
+    de ~3% (checado nas 562 bitolas do catálogo Vallourec MSH,
+    revisão do manual técnico — ver
+    :mod:`~estrutura_metalica.model.vallourec_catalog`).
+
+    ``wel``/``wpl``: módulo resistente elástico/plástico (m³, igual
+    nos dois eixos por axissimetria). ``ct``: constante do módulo de
+    torção (m³, ``τ = T/Ct`` na fibra mais externa). Não confundir
+    com ``j`` (herdado, "It" no catálogo — constante de torção de
+    Saint-Venant, m⁴). ``surface_area_per_length``: área de
+    superfície por metro linear (m²/m, informativo — pintura/
+    galvanização).
+    """
+
+    wel: float = 0.0
+    wpl: float = 0.0
+    ct: float = 0.0
+    surface_area_per_length: float = 0.0
+    mass_linear: float = 0.0
+    source: str = ""
+
+    def __post_init__(self) -> None:
+        # Ver nota em IProfileSection.__post_init__ sobre por que a
+        # chamada é explícita (não ``super()``).
+        SteelSection.__post_init__(self)
+        for value, label in (
+            (self.wel, "wel"),
+            (self.wpl, "wpl"),
+            (self.ct, "ct"),
+            (self.surface_area_per_length, "surface_area_per_length"),
+            (self.mass_linear, "mass_linear"),
+        ):
+            if value <= 0:
+                raise ValueError(
+                    f"Propriedade '{label}' do perfil '{self.name}' deve ser positiva, "
+                    f"recebido: {value!r}"
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class RectangularHollowProfile(RectangularTubeSection):
+    """Perfil tubular retangular ou quadrado de catálogo ("MSH" — EN
+    10210/10219), com propriedades adicionais de catálogo que
+    :class:`RectangularTubeSection` não guarda.
+
+    Cobre TANTO seções quadradas (``h == b``, onde ``welx == wely``
+    e ``wplx == wply`` por simetria) QUANTO retangulares (``h != b``)
+    — um quadrado é apenas o caso particular ``h == b`` de um
+    retângulo, sem necessidade de uma classe separada.
+
+    Ao contrário de :meth:`RectangularTubeSection.from_dimensions`
+    (aproximação de parede fina — cantos vivos, sem os raios de
+    concordância reais de um perfil tubular laminado/soldado), os
+    valores aqui são de CATÁLOGO (com os raios de concordância reais
+    já embutidos) — ver
+    :mod:`~estrutura_metalica.model.vallourec_catalog`.
+
+    ``welx``/``wely``/``wplx``/``wply``: módulo resistente elástico/
+    plástico, eixos x (forte, "xx") e y (fraco, "yy") — m³. ``ct``:
+    constante do módulo de torção (m³). ``surface_area_per_length``:
+    área de superfície por metro linear (m²/m, informativo).
+    """
+
+    welx: float = 0.0
+    wely: float = 0.0
+    wplx: float = 0.0
+    wply: float = 0.0
+    ct: float = 0.0
+    surface_area_per_length: float = 0.0
+    mass_linear: float = 0.0
+    source: str = ""
+
+    def __post_init__(self) -> None:
+        SteelSection.__post_init__(self)
+        for value, label in (
+            (self.welx, "welx"),
+            (self.wely, "wely"),
+            (self.wplx, "wplx"),
+            (self.wply, "wply"),
+            (self.ct, "ct"),
+            (self.surface_area_per_length, "surface_area_per_length"),
+            (self.mass_linear, "mass_linear"),
+        ):
+            if value <= 0:
+                raise ValueError(
+                    f"Propriedade '{label}' do perfil '{self.name}' deve ser positiva, "
+                    f"recebido: {value!r}"
+                )

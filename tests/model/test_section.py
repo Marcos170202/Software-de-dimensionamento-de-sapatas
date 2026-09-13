@@ -7,8 +7,10 @@ import math
 import pytest
 
 from estrutura_metalica.model import (
+    CircularHollowProfile,
     CircularTubeSection,
     IProfileSection,
+    RectangularHollowProfile,
     RectangularTubeSection,
     SectionShape,
     SteelSection,
@@ -216,3 +218,94 @@ class TestCompressedFlangeRadiusOfGyration:
         kwargs[field] = 0.0
         with pytest.raises(ValueError):
             compressed_flange_radius_of_gyration(**kwargs)
+
+
+def _generic_circular_hollow(**overrides: object) -> CircularHollowProfile:
+    defaults: dict[str, object] = dict(
+        name="TC42.4x4",
+        shape=SectionShape.TUBE_CIRCULAR,
+        area=0.000483,
+        ix=8.99e-08,
+        iy=8.99e-08,
+        j=1.8e-07,
+        depth=0.0424,
+        d=0.0424,
+        t=0.004,
+        wel=4.24e-06,
+        wpl=5.92e-06,
+        ct=8.48e-06,
+        surface_area_per_length=0.133,
+        mass_linear=3.79,
+        source="teste",
+    )
+    defaults.update(overrides)
+    return CircularHollowProfile(**defaults)  # type: ignore[arg-type]
+
+
+def _generic_rectangular_hollow(**overrides: object) -> RectangularHollowProfile:
+    defaults: dict[str, object] = dict(
+        name="TQ60x5",
+        shape=SectionShape.TUBE_RECTANGULAR,
+        area=0.00107,
+        ix=5.33e-07,
+        iy=5.33e-07,
+        j=8.64e-07,
+        depth=0.06,
+        h=0.06,
+        b=0.06,
+        t=0.005,
+        welx=1.78e-05,
+        wely=1.78e-05,
+        wplx=2.19e-05,
+        wply=2.19e-05,
+        ct=2.57e-05,
+        surface_area_per_length=0.227,
+        mass_linear=8.42,
+        source="teste",
+    )
+    defaults.update(overrides)
+    return RectangularHollowProfile(**defaults)  # type: ignore[arg-type]
+
+
+class TestCircularHollowProfile:
+    def test_valid_profile_keeps_extra_fields(self) -> None:
+        profile = _generic_circular_hollow()
+        assert profile.wel == pytest.approx(4.24e-06)
+        assert profile.wpl == pytest.approx(5.92e-06)
+        assert profile.ct == pytest.approx(8.48e-06)
+        assert profile.surface_area_per_length == pytest.approx(0.133)
+        assert profile.mass_linear == pytest.approx(3.79)
+
+    def test_inherits_base_section_validation(self) -> None:
+        with pytest.raises(ValueError):
+            _generic_circular_hollow(area=0.0)
+
+    @pytest.mark.parametrize(
+        "field", ["wel", "wpl", "ct", "surface_area_per_length", "mass_linear"]
+    )
+    def test_rejects_non_positive_extra_properties(self, field: str) -> None:
+        with pytest.raises(ValueError):
+            _generic_circular_hollow(**{field: 0.0})
+
+
+class TestRectangularHollowProfile:
+    def test_valid_profile_keeps_extra_fields(self) -> None:
+        profile = _generic_rectangular_hollow()
+        assert profile.welx == pytest.approx(1.78e-05)
+        assert profile.wely == pytest.approx(1.78e-05)
+        assert profile.wplx == pytest.approx(2.19e-05)
+        assert profile.wply == pytest.approx(2.19e-05)
+        assert profile.ct == pytest.approx(2.57e-05)
+        assert profile.surface_area_per_length == pytest.approx(0.227)
+        assert profile.mass_linear == pytest.approx(8.42)
+
+    def test_inherits_base_section_validation(self) -> None:
+        with pytest.raises(ValueError):
+            _generic_rectangular_hollow(area=0.0)
+
+    @pytest.mark.parametrize(
+        "field", ["welx", "wely", "wplx", "wply", "ct", "surface_area_per_length", "mass_linear"]
+    )
+    def test_rejects_non_positive_extra_properties(self, field: str) -> None:
+        with pytest.raises(ValueError):
+            _generic_rectangular_hollow(**{field: 0.0})
