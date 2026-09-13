@@ -25,9 +25,12 @@ em ligações por contato — tração, cisalhamento, pressão de contato em
 furos padrão e interação tração-cisalhamento), 6.3.4 (ligações por
 atrito com parafusos de alta resistência protendidos — deslizamento
 nos estados-limite último e de serviço, com ``μ``/Tabela 13/Tabela 19),
-6.4 (pinos — momento fletor, cisalhamento e esmagamento) e 6.5.3 a
+6.4 (pinos — momento fletor, cisalhamento e esmagamento), 6.5.3 a
 6.5.6 (elementos de ligação — tração, compressão, cisalhamento e
-colapso por rasgamento).
+colapso por rasgamento) e 6.6.5/6.7 (bases de pilares de perfil I/H —
+APENAS o Caso C1, compressão axial concêntrica: espessura mínima da
+placa de base, tensão de contato no concreto e cisalhamento por
+atrito).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
@@ -42,8 +45,11 @@ grupos de filetes excêntricos (6.2), efeito de alavanca em parafusos
 tracionados (6.3.5), requisitos de espaçamento/distância a bordas de
 parafusos (6.3.7 a 6.3.12), métodos de aperto/inspeção de parafusos
 protendidos (6.8.4.2 a 6.8.4.7), ligações excêntricas (6.5.2), chapas
-de enchimento em soldas (6.5.7.1), pressão de contato (6.6), bases de
-pilares (6.7). A verificação do metal-base em soldas de filete
+de enchimento em soldas (6.5.7.1), pressão de contato em superfícies
+usinadas/não usinadas e aparelhos de apoio cilíndricos (6.6.1 a 6.6.4),
+bases de pilares — Casos C2/C3/T1/T2/T3, dispositivos de cisalhamento
+e Tabela 18 (6.7, itens restantes — ver ATENÇÃO no docstring do módulo
+``column_base``). A verificação do metal-base em soldas de filete
 (Tabela 9, "o metal-base deve atender a 6.5") agora é POSSÍVEL —
 ``connection_elements`` implementa 6.5.3/6.5.5/6.5.6 — mas não é
 automática: o chamador deve montar essa verificação combinando
@@ -79,6 +85,24 @@ from .bolts import (
     slip_resistance_service,
     slip_resistance_ultimate,
     threaded_rod_tensile_resistance_cap,
+)
+from .column_base import (
+    ColumnBaseCaseC1Result,
+    ColumnBaseCheckResult,
+    check_column_base_case_c1,
+    column_base_concrete_bearing_stress,
+    column_base_effective_length_x,
+    column_base_effective_length_y,
+    column_base_friction_shear_resistance,
+    column_base_lambda,
+    column_base_plate_effective_length_c1,
+    column_base_plate_min_thickness_case_c1,
+    column_base_x_parameter,
+    column_base_yield_line_m,
+    column_base_yield_line_n,
+    column_base_yield_line_n0,
+    concrete_bearing_resistance,
+    concrete_grout_shear_friction_limit,
 )
 from .combined_forces import (
     CombinedForcesCheckResult,
@@ -134,6 +158,7 @@ from .pins import (
 from .resistance_factors import (
     LoadCombinationClass,
     SteelResistanceFactors,
+    concrete_resistance_factor,
     steel_resistance_factors,
     weld_metal_resistance_factor,
 )
@@ -176,6 +201,8 @@ __all__ = [
     "TENSION_SLENDERNESS_LIMIT",
     "BoltCheckResult",
     "BoltCombinedCheckResult",
+    "ColumnBaseCaseC1Result",
+    "ColumnBaseCheckResult",
     "CombinedForcesCheckResult",
     "CompressionCheckResult",
     "ConnectionElementCheckResult",
@@ -206,6 +233,7 @@ __all__ = [
     "check_bolt_combined_tension_and_shear",
     "check_bolt_shear",
     "check_bolt_tension",
+    "check_column_base_case_c1",
     "check_compression_member",
     "check_compression_slenderness",
     "check_connection_element_compression",
@@ -226,7 +254,21 @@ __all__ = [
     "check_tension_flange_yielding",
     "check_tension_member",
     "check_tension_slenderness",
+    "column_base_concrete_bearing_stress",
+    "column_base_effective_length_x",
+    "column_base_effective_length_y",
+    "column_base_friction_shear_resistance",
+    "column_base_lambda",
+    "column_base_plate_effective_length_c1",
+    "column_base_plate_min_thickness_case_c1",
+    "column_base_x_parameter",
+    "column_base_yield_line_m",
+    "column_base_yield_line_n",
+    "column_base_yield_line_n0",
     "compression_flange_area_ratio",
+    "concrete_bearing_resistance",
+    "concrete_grout_shear_friction_limit",
+    "concrete_resistance_factor",
     "effective_area_without_local_buckling",
     "effective_shear_area_major_axis",
     "filler_plate_factor",

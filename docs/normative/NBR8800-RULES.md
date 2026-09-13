@@ -40,6 +40,20 @@ norma, mesmas fórmulas, entidades de domínio diferentes).
   `estrutura_metalica.normative.nbr8800.resistance_factors.steel_resistance_factors`.
 - **TEST:** `tests/normative/test_nbr8800_resistance_factors.py`.
 
+## RULE-ID: NBR8800-BASE-001
+
+- **SOURCE:** NBR 8800:2024, 4.9.2, Tabela 3, coluna "Concreto",
+  página 25: γc = 1,40 (combinações normais); 1,20 (especiais ou de
+  construção); 1,20 (excepcionais).
+- **DESCRIPTION:** Coeficiente de ponderação da resistência do
+  concreto, γc — adicionado exclusivamente para uso pelo módulo
+  `column_base` (6.6.5/6.7, apoio da placa de base sobre bloco de
+  concreto). NÃO implica suporte a elementos mistos de aço e concreto
+  (Seções 7/8, fora do escopo deste pacote).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.resistance_factors.concrete_resistance_factor`.
+- **TEST:** `tests/normative/test_nbr8800_resistance_factors.py`.
+
 ## RULE-ID: NBR8800-TRAC-001
 
 - **SOURCE:** NBR 8800:2024, 5.2.1.2 (condição `Nt,Sd <= Nt,Rd`) e
@@ -932,6 +946,102 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   `estrutura_metalica.normative.nbr8800.bolts.filler_plate_thickness_reduction_factor`.
 - **TEST:** `tests/normative/test_nbr8800_bolts.py`.
 
+## RULE-ID: NBR8800-BASE-002
+
+- **SOURCE:** NBR 8800:2024, 6.6.5, página 99: "A tensão resistente de
+  cálculo à pressão de contato, na área A1 da região carregada sob
+  placas de apoio, é calculada conforme a seguir [...]: a) quando a
+  superfície de concreto se estender além da placa de apoio e seu
+  contorno for homotético em relação à região carregada:
+  `σc,Rd = (0,85fck/γc)·sqrt(A2/A1) ≤ 1,7fck/γc`."
+- **DESCRIPTION:** Tensão de compressão resistente de cálculo do apoio
+  da placa de base sobre o bloco de concreto — prerequisito de 6.7,
+  único item de 6.6 implementado neste pacote (6.6.1 a 6.6.4, demais
+  tipos de pressão de contato, fora do escopo). Caso notável: quando
+  `A2/A1=4`, os dois termos da fórmula coincidem exatamente
+  (`sqrt(4)=2` e `0,85·2=1,7`).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.column_base.concrete_bearing_resistance`.
+- **TEST:** `tests/normative/test_nbr8800_column_base.py`.
+
+## RULE-ID: NBR8800-BASE-003
+
+- **SOURCE:** NBR 8800:2024, 6.7.2.1, páginas 102-103: `ℓx = d+4a1`;
+  `ℓy = (0,5nb−1)a2+2a1 ≥ bf+25 mm`; `m = (ℓx−0,95d)/2`;
+  `n = (ℓy−0,80bf)/2`; `n0 = sqrt(d·bf)/4`;
+  `X = [4dbf/(d+bf)²]·Nsd/(ℓxℓyσc,Rd)`; `λ = 2sqrt(X)/(1+sqrt(1−X)) ≤ 1,0`.
+- **DESCRIPTION:** Grandezas geométricas do método das linhas de
+  escoamento ("yield line", mesmo espírito conceitual do AISC Design
+  Guide 1) para o dimensionamento de placas de base — comuns a todos
+  os Casos (C1/C2/C3/T1/T2/T3), mas cujo uso final (`ℓmax`) difere por
+  caso; esta fase implementa apenas o uso do Caso C1 (ver
+  NBR8800-BASE-004). `X > 1` levanta `ValueError` (a tensão de contato
+  solicitante já excederia `σc,Rd`; a geometria da placa deve ser
+  alterada).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_effective_length_x`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_effective_length_y`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_yield_line_m`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_yield_line_n`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_yield_line_n0`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_x_parameter`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_lambda`.
+- **TEST:** `tests/normative/test_nbr8800_column_base.py`.
+
+## RULE-ID: NBR8800-BASE-004
+
+- **SOURCE:** NBR 8800:2024, 6.7.2.2-a, página 105: "para o caso C1,
+  ou seja, `e=0`: `tp,min = ℓmax·sqrt(2σc,Sd/(fy/γa1))`;
+  `σc,Sd = Nsd/(ℓxℓy)`", onde `ℓmax` é "o maior valor entre m, n e
+  λn0" (Caso C1).
+- **DESCRIPTION:** Espessura mínima da placa de base e tensão de
+  contato solicitante, exclusivamente para o Caso C1 (força axial de
+  compressão CONCÊNTRICA, `e=0` — o mais comum). **LIMITAÇÃO DE
+  SEGURANÇA**: os Casos C2/C3 (compressão com excentricidade) e T1/T2/
+  T3 (tração) têm fórmulas de `tp,min`/`ℓmax` DIFERENTES — usar estas
+  funções fora do Caso C1 é incorreto (ver ATENÇÃO no docstring do
+  módulo).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_plate_effective_length_c1`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_concrete_bearing_stress`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_plate_min_thickness_case_c1`.
+- **TEST:** `tests/normative/test_nbr8800_column_base.py`.
+
+## RULE-ID: NBR8800-BASE-005
+
+- **SOURCE:** NBR 8800:2024, 6.7.2.2-a, página 105: "
+  `VRd = μσc,Sdℓxℓy/γa2 ≤ τc,Rdℓxℓy`", onde "μ é o coeficiente de
+  atrito entre a placa de base e a argamassa expansiva de
+  assentamento, podendo ser considerado igual a 0,45"; 6.7.2.1 (nota,
+  remetendo a 6.6.1): "`τc,Rd = 0,2fck/γc ≤ 4 MPa`."
+- **DESCRIPTION:** Força cortante resistente de cálculo por atrito na
+  base do pilar, Caso C1. **LIMITAÇÃO DE SEGURANÇA**: quando
+  `VSd > VRd`, a norma exige dispositivos especiais (placa de
+  cisalhamento, 6.7.2.4, ou arruelas especiais soldadas, 6.7.2.5) —
+  NENHUM dos dois está implementado; a única resposta desta fase é
+  reportar que a condição de 6.7.1.5-e não é atendida.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.column_base.concrete_grout_shear_friction_limit`,
+  `estrutura_metalica.normative.nbr8800.column_base.column_base_friction_shear_resistance`.
+- **TEST:** `tests/normative/test_nbr8800_column_base.py`.
+
+## RULE-ID: NBR8800-BASE-006
+
+- **SOURCE:** NBR 8800:2024, 6.7.1.5, página 101: "Considera-se que os
+  estados-limite mencionados em 6.7.1.3 não tenham sido violados se:
+  a) tp≥tp,min [...]; d) [...] σc,Sd≤σc,Rd [...]; e) VSd≤VRd [...]."
+- **DESCRIPTION:** Agregador que calcula e verifica, para uma base de
+  pilar de perfil I/H sob compressão CONCÊNTRICA (Caso C1), os itens
+  a), d) e e) de 6.7.1.5 (o item b) — tração em chumbadores — não se
+  aplica ao Caso C1; o item c) — disposições construtivas da Tabela 18
+  — não é verificado, ver ATENÇÃO 3 no docstring do módulo). Também
+  NÃO verifica a solda pilar-placa (ATENÇÃO 4, usar o módulo `welds`
+  separadamente) nem bases de pilares tubulares (ATENÇÃO 5, remete à
+  ABNT NBR 16239).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.column_base.check_column_base_case_c1`.
+- **TEST:** `tests/normative/test_nbr8800_column_base.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -1024,16 +1134,25 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   6.5.3 a 6.5.6 (tração, compressão, cisalhamento e colapso por
   rasgamento de elementos de ligação) já estão implementados
   (NBR8800-CONN-013 a 020, módulos `pins`/`connection_elements`).
-- **6.6/6.7/6.8, itens restantes** (páginas 97-113): pressão de
-  contato — superfícies usinadas/não usinadas, aparelhos de apoio
-  cilíndricos (6.6); bases de pilares (6.7); 6.8, itens restantes —
-  arruelas (6.8.4.2), métodos de aperto/inspeção (6.8.4.3 a 6.8.4.7 —
-  rotação da porca, chave calibrada, indicador direto de tração, Tabela
-  20, reutilização de parafusos). Nenhuma dessas frentes foi aberta
-  ainda — `SteelSection`/`Connection` não expressam placas de base nem
-  aparelhos de apoio; os métodos de aperto/inspeção são procedimentos
-  de execução em obra, não cálculo (ver ATENÇÃO 5 no docstring do
-  módulo `bolts`).
+- **6.6/6.7, itens restantes** (páginas 97-109): pressão de contato em
+  superfícies usinadas/não usinadas e aparelhos de apoio cilíndricos
+  maciços (6.6.1 a 6.6.4 — apenas 6.6.5, apoios de concreto, está
+  implementado, ver NBR8800-BASE-002); em bases de pilares (6.7), os
+  Casos C2, C3 (compressão com excentricidade) e T1, T2, T3 (tração) —
+  apenas o Caso C1 está implementado (NBR8800-BASE-003 a 006);
+  dispositivos de cisalhamento quando `VSd>VRd` (placa de
+  cisalhamento, 6.7.2.4; arruelas especiais soldadas, 6.7.2.5);
+  disposições construtivas da Tabela 18 (dimensões de chumbadores/
+  arruelas especiais, armadura mínima do bloco); bases de pilares
+  tubulares (remete à ABNT NBR 16239). `SteelSection`/`Connection` não
+  expressam placas de base nem aparelhos de apoio, e a solda
+  pilar-placa não é verificada pelo módulo `column_base` (usar
+  `welds` separadamente).
+- **6.8, itens restantes** (páginas 109-113): arruelas (6.8.4.2),
+  métodos de aperto/inspeção (6.8.4.3 a 6.8.4.7 — rotação da porca,
+  chave calibrada, indicador direto de tração, Tabela 20, reutilização
+  de parafusos) — procedimentos de execução em obra, não cálculo (ver
+  ATENÇÃO 5 no docstring do módulo `bolts`).
 - **7/8** (páginas 114+): elementos mistos de aço e concreto e
   ligações mistas — fora do escopo deste pacote (`estrutura_metalica`
   trata apenas de estruturas de aço puro).

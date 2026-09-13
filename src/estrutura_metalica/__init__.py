@@ -41,15 +41,18 @@ Fases já implementadas:
   deslizamento nos estados-limite último e de serviço; 6.4, pinos —
   momento fletor, cisalhamento e esmagamento; 6.5.3 a 6.5.6, elementos
   de ligação — tração, compressão, cisalhamento e colapso por
-  rasgamento). Ver ``docs/normative/NBR8800-RULES.md`` para a
-  rastreabilidade completa e o que ainda está fora do escopo (interação
-  com torção, efeito de alavanca em parafusos, bases de pilares).
+  rasgamento; 6.6.5/6.7, bases de pilares de perfil I/H — APENAS o
+  Caso C1, compressão axial concêntrica). Ver
+  ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa e
+  o que ainda está fora do escopo (interação com torção, efeito de
+  alavanca em parafusos, bases de pilares com momento fletor ou tração
+  nos chumbadores — Casos C2/C3/T1/T2/T3).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
 lançamento em planta, restante das ligações metálicas (efeito de
-alavanca em parafusos, bases de pilares), detalhamento/desenho e o elo
-de saída (reações de apoio) com o módulo de sapatas/fundações deste
-repositório.
+alavanca em parafusos, bases de pilares — Casos C2/C3/T1/T2/T3),
+detalhamento/desenho e o elo de saída (reações de apoio) com o módulo
+de sapatas/fundações deste repositório.
 """
 
 __version__ = "0.1.0"

@@ -7,6 +7,7 @@ import pytest
 from estrutura_metalica.normative.nbr8800 import (
     LoadCombinationClass,
     SteelResistanceFactors,
+    concrete_resistance_factor,
     steel_resistance_factors,
     weld_metal_resistance_factor,
 )
@@ -49,3 +50,17 @@ def test_weld_metal_resistance_factor_matches_tabela_9(
     combination_class: LoadCombinationClass, expected_gamma_w2: float
 ) -> None:
     assert weld_metal_resistance_factor(combination_class) == pytest.approx(expected_gamma_w2)
+
+
+@pytest.mark.parametrize(
+    ("combination_class", "expected_gamma_c"),
+    [
+        (LoadCombinationClass.NORMAL, 1.40),
+        (LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO, 1.20),
+        (LoadCombinationClass.EXCEPCIONAL, 1.20),
+    ],
+)
+def test_concrete_resistance_factor_matches_tabela_3(
+    combination_class: LoadCombinationClass, expected_gamma_c: float
+) -> None:
+    assert concrete_resistance_factor(combination_class) == pytest.approx(expected_gamma_c)

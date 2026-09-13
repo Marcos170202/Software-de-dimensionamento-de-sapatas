@@ -1,5 +1,5 @@
-"""Coeficientes de ponderação da resistência do aço estrutural e do
-metal de solda (ELU).
+"""Coeficientes de ponderação da resistência do aço estrutural, do
+concreto e do metal de solda (ELU).
 
 Fonte: ABNT NBR 8800:2024, 4.9.2 "Coeficientes de ponderação das
 resistências no estado-limite último (ELU)", Tabela 3 "Valores dos
@@ -9,12 +9,14 @@ rodapé i (página 78, γw2). Valores conferidos por leitura direta
 (renderização visual) do PDF da norma — ver rastreabilidade completa
 em ``docs/normative/NBR8800-RULES.md``.
 
-Escopo: apenas a coluna "Aço estrutural" (γa1 = escoamento e
-instabilidade; γa2 = ruptura) da Tabela 3 — as colunas de concreto
-(γc) e aço das armaduras (γs) são omitidas nesta fase, sem elementos
-mistos aço-concreto implementados ainda — e γw2 (metal da solda em
-soldas de filete) da Tabela 9, nota i. γw1 (nota h) não é implementado
-nesta fase.
+Escopo: a coluna "Aço estrutural" (γa1 = escoamento e instabilidade;
+γa2 = ruptura) da Tabela 3, e a coluna "Concreto" (γc) — usada
+exclusivamente pelo módulo ``column_base`` (6.6.5/6.7, apoio da placa
+de base sobre bloco de concreto), NÃO para elementos mistos
+aço-concreto (Seções 7/8, fora do escopo deste pacote). A coluna "Aço
+das armaduras" (γs) continua omitida — sem verificação de armaduras
+implementada. γw2 (metal da solda em soldas de filete) da Tabela 9,
+nota i; γw1 (nota h) não é implementado nesta fase.
 """
 
 from __future__ import annotations
@@ -99,3 +101,24 @@ def weld_metal_resistance_factor(combination_class: LoadCombinationClass) -> flo
     ``docs/normative/NBR8800-RULES.md``.
     """
     return _TABELA_9_GAMMA_W2[combination_class]
+
+
+#: NBR 8800:2024, 4.9.2, Tabela 3, coluna "Concreto" (RULE-ID
+#: NBR8800-BASE-001 — ver docs/normative/NBR8800-RULES.md): γc, usado
+#: por ``column_base`` (6.6.5/6.7).
+_TABELA_3_CONCRETO: dict[LoadCombinationClass, float] = {
+    LoadCombinationClass.NORMAL: 1.40,
+    LoadCombinationClass.ESPECIAL_OU_CONSTRUCAO: 1.20,
+    LoadCombinationClass.EXCEPCIONAL: 1.20,
+}
+
+
+def concrete_resistance_factor(combination_class: LoadCombinationClass) -> float:
+    """Devolve γc para a classe de combinação dada (NBR 8800:2024,
+    4.9.2, Tabela 3, coluna "Concreto").
+
+    Usado exclusivamente pelo módulo ``column_base`` (bases de
+    pilares, 6.6.5/6.7) — NÃO implica suporte a elementos mistos de
+    aço e concreto (Seções 7/8), fora do escopo deste pacote.
+    """
+    return _TABELA_3_CONCRETO[combination_class]
