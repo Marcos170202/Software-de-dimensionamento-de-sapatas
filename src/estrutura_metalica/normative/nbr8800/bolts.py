@@ -32,7 +32,10 @@ parafusos de alta resistência protendidos. Cobre:
   (6.3.4.4, ``Ff,Rk``, furos padrão/pouco alongados transversais), com
   o coeficiente de atrito ``μ`` (6.3.4.1), o fator ``Ce`` de chapas de
   enchimento, ``γe`` (Tabela 13) e a força de protensão mínima ``FTb``
-  (Tabela 19, 6.8.4.1).
+  (Tabela 19, 6.8.4.1);
+- 6.5.7.2-a — fator de redução da força resistente dos parafusos ao
+  cisalhamento/esmagamento por chapas de enchimento espessas em
+  ligações por contato (``ts`` entre 6,3 mm e 19 mm).
 
 **ATENÇÃO — LIMITAÇÕES DE SEGURANÇA**:
 
@@ -65,10 +68,11 @@ parafusos de alta resistência protendidos. Cobre:
    F1852 e A490/F2280) como tabela de consulta EXATA por diâmetro
    nominal — não interpola nem cobre parafusos ISO 4016/898-1 ou
    diâmetros fora da Tabela 19 (levanta ``ValueError``).
-5. **Requisitos construtivos não verificados**: espaçamento mínimo/
-   máximo entre parafusos e distâncias mínimas/máximas a bordas (6.3.7,
-   não lido nesta fase) NÃO são validados por nenhuma função aqui —
-   ao contrário de :func:`~estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`,
+5. **Requisitos construtivos não verificados**: pega longa (6.3.7),
+   ligações de grande comprimento (6.3.8), espaçamento mínimo/máximo
+   entre furos (6.3.9/6.3.10) e distâncias mínima/máxima a bordas
+   (6.3.11/6.3.12) NÃO são validados por nenhuma função aqui — ao
+   contrário de :func:`~estrutura_metalica.normative.nbr8800.welds.check_fillet_weld_shear`,
    que valida o tamanho mínimo de solda (Tabela 11), não há validação
    equivalente de geometria de furos neste módulo. Os requisitos de
    acabamento de superfície (Figura 13, região mínima sem pintura) e os
@@ -76,15 +80,24 @@ parafusos de alta resistência protendidos. Cobre:
    chave calibrada, indicador direto de tração, Tabela 20) também NÃO
    são verificados — são procedimentos de execução/inspeção em obra,
    não cálculo.
+6. **6.5.7.2-a — apenas furos padrão, ``ts`` até 19 mm**:
+   :func:`filler_plate_thickness_reduction_factor` NÃO é aplicado
+   automaticamente por :func:`check_bolt_shear`/:func:`check_bolt_bearing`
+   — o chamador deve multiplicar o resultado dessas funções pelo fator,
+   quando houver chapas de enchimento. Os itens 6.5.7.2-b)/-c)
+   (alternativas geométricas para ``ts>19`` mm) NÃO estão implementados.
 
 Também NÃO implementado nesta fase (ver
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): 6.3.1
 (requisitos de montagem/aperto — remete a 6.8), 6.3.5 (parafusos
 tracionados com efeito de alavanca, "prying"), Tabela 12 (alternativa
 simplificada à equação de interação de 6.3.3.4 — implementa-se apenas
-a equação, não a tabela), pinos (6.4), elementos de ligação (6.5),
-pressão de contato de chapas (6.6), bases de pilares (6.7), 6.8 (demais
-itens — arruelas, métodos de aperto/inspeção, ver item 5 acima).
+a equação, não a tabela), 6.5.7.1 (requisito construtivo de soldagem de
+chapas de enchimento) e 6.5.7.2-b)/-c) (ver item 6 acima), pressão de
+contato de chapas (6.6), bases de pilares (6.7), 6.8 (demais itens —
+arruelas, métodos de aperto/inspeção, ver item 5 acima). Pinos (6.4) e
+elementos de ligação (6.5.3 a 6.5.6) estão em módulos separados — ver
+``pins.py``/``connection_elements.py``.
 """
 
 from __future__ import annotations
@@ -875,3 +888,49 @@ def check_slip_resistance_service(
         )
     ff_rk = slip_resistance_service(mu, ce, ftb, num_slip_planes, ft_sk)
     return BoltCheckResult(force_sd=fv_sk, force_rd=ff_rk)
+
+
+# --- Chapas de enchimento em ligações parafusadas (6.5.7.2) -------------
+
+
+def filler_plate_thickness_reduction_factor(total_filler_thickness: float) -> float:
+    """Fator de redução da força resistente de cálculo dos parafusos ao
+    cisalhamento (e ao esmagamento) em ligações por contato com chapas
+    de enchimento de furos padrão, ``[1 − 0,0154·(ts − 6,3)]`` (NBR
+    8800:2024, 6.5.7.2-a), onde ``ts`` é a soma das espessuras das
+    chapas de enchimento, em milímetros.
+
+    - ``total_filler_thickness <= 6,3 mm``: sem redução (fator ``1,0``,
+      6.5.7.2, caput);
+    - ``6,3 mm < total_filler_thickness <= 19 mm``: fator conforme a
+      fórmula acima;
+    - ``total_filler_thickness > 19 mm``: NÃO coberto por esta função —
+      a norma exige, em vez disso, um dos requisitos geométricos de
+      6.5.7.2-b) ou -c) (prolongamento da chapa de ligação com
+      parafusos adicionais, ou número de parafusos equivalente), não
+      implementados (fora do escopo — ver docstring do módulo
+      ``connection_elements``). Levanta ``ValueError``.
+
+    Multiplicar o resultado desta função por ``Fv,Rd``
+    (:func:`bolt_shear_resistance`) ou ``Fc,Rd``
+    (:func:`bolt_bearing_resistance`) — NÃO aplicado automaticamente
+    por :func:`check_bolt_shear`/:func:`check_bolt_bearing`.
+
+    ``total_filler_thickness``: soma das espessuras das chapas de
+    enchimento, ``ts`` (m).
+    """
+    if not is_positive_finite(total_filler_thickness):
+        raise ValueError(
+            f"filler_plate_thickness_reduction_factor: total_filler_thickness "
+            f"deve ser finito e positivo, recebido: {total_filler_thickness!r}"
+        )
+    ts_mm = total_filler_thickness * 1000.0
+    if ts_mm <= 6.3:
+        return 1.0
+    if ts_mm <= 19.0:
+        return 1.0 - 0.0154 * (ts_mm - 6.3)
+    raise ValueError(
+        f"filler_plate_thickness_reduction_factor: total_filler_thickness "
+        f"({total_filler_thickness!r} m = {ts_mm!r} mm) excede 19 mm — exige "
+        f"um dos requisitos geométricos de 6.5.7.2-b)/-c), não implementados"
+    )

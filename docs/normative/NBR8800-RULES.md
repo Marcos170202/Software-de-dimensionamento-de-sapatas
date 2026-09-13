@@ -456,10 +456,15 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   valores próprios da Tabela 9, não da Tabela 3). **LIMITAÇÃO DE
   SEGURANÇA**: a Tabela 9 exige adicionalmente que "o metal-base deve
   atender a 6.5" (elementos de ligação submetidos a cisalhamento,
-  incluindo colapso por rasgamento/"block shear") — 6.5 NÃO está
-  implementado nesta fase; usar apenas `Fw,Rd` (metal da solda) para
-  dimensionar uma ligação completa é NÃO CONSERVADOR quando o
-  metal-base governa.
+  incluindo colapso por rasgamento/"block shear") — usar apenas
+  `Fw,Rd` (metal da solda) para dimensionar uma ligação completa é NÃO
+  CONSERVADOR quando o metal-base governa. **STATUS ATUALIZADO**: 6.5
+  (elementos de ligação, itens 6.5.3/6.5.5/6.5.6) agora está
+  implementado no módulo `connection_elements` (ver NBR8800-CONN-016/
+  018/019) — a verificação do metal-base É POSSÍVEL, mas não é
+  automática: o chamador deve combinar `check_fillet_weld_shear` com
+  `check_connection_element_shear`/`check_block_shear` sobre a
+  geometria da parte ligada.
 - **IMPLEMENTATION:**
   `estrutura_metalica.normative.nbr8800.resistance_factors.weld_metal_resistance_factor`,
   `estrutura_metalica.normative.nbr8800.welds.fillet_weld_shear_resistance`,
@@ -788,6 +793,145 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   `estrutura_metalica.normative.nbr8800.bolts.check_slip_resistance_service`.
 - **TEST:** `tests/normative/test_nbr8800_bolts.py`.
 
+## RULE-ID: NBR8800-CONN-013
+
+- **SOURCE:** NBR 8800:2024, 6.4.2.1, página 93: "O momento fletor
+  resistente de cálculo do pino é calculado conforme a seguir:
+  `MRd = 1,2Wfy/γa1`."
+- **DESCRIPTION:** Momento fletor resistente de cálculo de um pino.
+  `fy` é o menor valor da resistência ao escoamento entre o material do
+  pino e da chapa de ligação (responsabilidade do chamador determinar
+  esse mínimo).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.pins.pin_flexural_resistance`,
+  `estrutura_metalica.normative.nbr8800.pins.check_pin_flexure`
+  (reaproveita
+  `estrutura_metalica.normative.nbr8800.flexure.FlexureCheckResult`).
+- **TEST:** `tests/normative/test_nbr8800_pins.py`.
+
+## RULE-ID: NBR8800-CONN-014
+
+- **SOURCE:** NBR 8800:2024, 6.4.2.2, página 93: "A força cortante
+  resistente de cálculo do pino é calculada conforme a seguir:
+  `Fv,Rd = 0,60AwFy/γa1` em que `Aw` é a área efetiva de cisalhamento
+  da seção do pino, igual a `0,75Ag`."
+- **DESCRIPTION:** Força cortante resistente de cálculo de um pino.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.pins.pin_effective_shear_area`,
+  `estrutura_metalica.normative.nbr8800.pins.pin_shear_resistance`,
+  `estrutura_metalica.normative.nbr8800.pins.check_pin_shear`.
+- **TEST:** `tests/normative/test_nbr8800_pins.py`.
+
+## RULE-ID: NBR8800-CONN-015
+
+- **SOURCE:** NBR 8800:2024, 6.4.2.3, página 93: "A força normal
+  resistente de cálculo do pino ao esmagamento é calculada conforme a
+  seguir: `FR,d = 1,5tdfy/γa1`."
+- **DESCRIPTION:** Força normal resistente de cálculo ao esmagamento de
+  um pino. A força normal solicitante de cálculo a considerar é a
+  máxima força de contato, para distribuição uniforme ou não (6.4.2,
+  último parágrafo — premissa que o chamador deve observar ao
+  determinar `fc_sd`). **LIMITAÇÃO**: a norma não define uma equação de
+  interação entre momento/cisalhamento/esmagamento de um pino — cada
+  verificação é isolada.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.pins.pin_bearing_resistance`,
+  `estrutura_metalica.normative.nbr8800.pins.check_pin_bearing`.
+- **TEST:** `tests/normative/test_nbr8800_pins.py`.
+
+## RULE-ID: NBR8800-CONN-016
+
+- **SOURCE:** NBR 8800:2024, 6.5.3, página 94: "a) para o estado-limite
+  último de escoamento: `F_Rd = fyAg/γa1`; b) para o estado-limite
+  último de ruptura: `F_Rd = fuAe/γa2`", onde "para chapas de emendas
+  parafusadas: `Ae = An ≤ 0,85Ag`."
+- **DESCRIPTION:** Força de tração resistente de cálculo de um elemento
+  de ligação (enrijecedor, chapa de ligação, cantoneira, consolo),
+  menor valor entre escoamento e ruptura. O limite `Ae=An≤0,85Ag`
+  (específico de chapas de emenda parafusadas) está disponível como
+  função separada e OPCIONAL, não aplicada automaticamente — ver
+  ATENÇÃO 3 no docstring do módulo `connection_elements`.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.connection_elements.axial_yield_resistance`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.tensile_rupture_resistance`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.bolted_splice_plate_effective_net_area`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.check_connection_element_tension`.
+- **TEST:** `tests/normative/test_nbr8800_connection_elements.py`.
+
+## RULE-ID: NBR8800-CONN-017
+
+- **SOURCE:** NBR 8800:2024, 6.5.4, página 94-95 (texto extraído do
+  PDF): "a) para o estado-limite último de escoamento, aplicável quando
+  `Le/r ≤ 25`: `F_Rd = fyAg/γa1`; b) para o estado-limite último de
+  instabilidade, aplicável quando `Le/r ≤ 25`, devem ser conforme 5.3
+  [...]."
+- **DESCRIPTION:** Força de compressão resistente de cálculo de um
+  elemento de ligação, menor valor entre escoamento e instabilidade
+  (reaproveitando 5.3,
+  `estrutura_metalica.normative.nbr8800.compression.check_compression_member`).
+  **DECISÃO DE PROJETO SOBRE AMBIGUIDADE DO TEXTO**: o PDF lido
+  apresenta, literalmente, "Le/r ≤ 25" em AMBOS os itens a) e b) —
+  aparente erro de digitação da norma (o padrão em todo o resto do
+  documento é faixas de esbeltez complementares). Em vez de arriscar
+  uma leitura errada do limite exato, esta implementação calcula SEMPRE
+  os dois estados-limite e toma o menor — correto e conservador em toda
+  a faixa de esbeltez, tornando irrelevante a leitura exata do limite
+  (ver ATENÇÃO 1/2 no docstring do módulo `connection_elements`).
+  Considera apenas flambagem por flexão em um eixo (sem torção).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.connection_elements.check_connection_element_compression`.
+- **TEST:** `tests/normative/test_nbr8800_connection_elements.py`.
+
+## RULE-ID: NBR8800-CONN-018
+
+- **SOURCE:** NBR 8800:2024, 6.5.5, página 95: "a) para o estado-limite
+  último de escoamento: `F_Rd = 0,60fyAg/γa1`; b) para o estado-limite
+  último de ruptura: `F_Rd = 0,60fuAnv/γa2`."
+- **DESCRIPTION:** Força cortante resistente de cálculo de um elemento
+  de ligação, menor valor entre escoamento e ruptura.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.connection_elements.shear_yield_resistance`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.shear_rupture_resistance`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.check_connection_element_shear`.
+- **TEST:** `tests/normative/test_nbr8800_connection_elements.py`.
+
+## RULE-ID: NBR8800-CONN-019
+
+- **SOURCE:** NBR 8800:2024, 6.5.6, página 95: "A força resistente de
+  cálculo ao colapso por rasgamento é calculada como a seguir:
+  `Fr,Rd = (1/γa2)(0,60fuAnv + CtsfuAnt) ≤ (1/γa2)(0,60fyAgv + CtsfuAnt)`."
+  `Cts` "é igual a 1,0 quando a tensão de tração na área líquida for
+  uniforme, e igual a 0,5 quando for não uniforme" (Figura 16).
+- **DESCRIPTION:** Força resistente de cálculo ao colapso por
+  rasgamento ("block shear") de um elemento de ligação — verificado em
+  ligações de extremidades de vigas com mesa recortada, barras
+  tracionadas e chapas de nó (6.5.6, Figura 16-a). `Cts` é parâmetro de
+  entrada (julgamento sobre a geometria — ver ATENÇÃO 4 no docstring do
+  módulo). Nota: os dois termos usam o MESMO `γa2` — assim definido
+  pela norma, não um erro de implementação.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.connection_elements.block_shear_resistance`,
+  `estrutura_metalica.normative.nbr8800.connection_elements.check_block_shear`.
+- **TEST:** `tests/normative/test_nbr8800_connection_elements.py`.
+
+## RULE-ID: NBR8800-CONN-020
+
+- **SOURCE:** NBR 8800:2024, 6.5.7.2-a, página 96: "quando `ts` for
+  igual ou inferior a 19 mm, a força resistente de cálculo dos
+  parafusos ao cisalhamento (e ao esmagamento) em ligações por contato
+  deve ser multiplicada pelo fator `[1 − 0,0154(ts − 6,3)]`, sendo `ts`
+  considerada em milímetros" — aplicável quando a soma das espessuras
+  das chapas de enchimento de furos padrão, `ts`, exceder 6,3 mm.
+- **DESCRIPTION:** Fator de redução da força resistente de cálculo dos
+  parafusos ao cisalhamento/esmagamento por chapas de enchimento
+  espessas em ligações por contato (parafusadas). NÃO aplicado
+  automaticamente por `check_bolt_shear`/`check_bolt_bearing` — o
+  chamador deve multiplicar. Fora do escopo: `ts > 19` mm (exige um dos
+  requisitos geométricos de 6.5.7.2-b)/-c), não implementados).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.filler_plate_thickness_reduction_factor`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -857,28 +1001,37 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   longos (ver NBR8800-CONN-002); grupos de filetes com resultante
   excêntrica ao centro geométrico (6.2.5.2-b/c, método do centro
   instantâneo de rotação).
-- **6.3, itens restantes** (páginas 82-88): requisitos de aperto/
+- **6.3, itens restantes** (páginas 82-92): requisitos de aperto/
   montagem (6.3.1, remete a 6.8, exceto o acabamento de superfície em
   ligações por atrito — ver NBR8800-CONN-009/012); parafusos
   tracionados com efeito de alavanca ("prying", 6.3.5); Tabela 12
   (alternativa simplificada à equação de interação, ver
-  NBR8800-CONN-008); requisitos de espaçamento/distância a bordas
-  (6.3.7, não lido nesta fase); 6.3.3.3-b) (furos muito alongados
-  perpendiculares à força, ver NBR8800-CONN-007). O núcleo de
-  6.3.2/6.3.3 (tração, cisalhamento, pressão de contato em furos
-  padrão, interação tração-cisalhamento) e de 6.3.4 (ligações por
+  NBR8800-CONN-008); pega longa (6.3.7); ligações de grande comprimento
+  (6.3.8); espaçamento mínimo/máximo entre furos (6.3.9/6.3.10) e
+  distâncias mínima/máxima a bordas (6.3.11/6.3.12); 6.3.3.3-b) (furos
+  muito alongados perpendiculares à força, ver NBR8800-CONN-007). O
+  núcleo de 6.3.2/6.3.3 (tração, cisalhamento, pressão de contato em
+  furos padrão, interação tração-cisalhamento) e de 6.3.4 (ligações por
   atrito — deslizamento nos estados-limite último e de serviço,
   coeficiente de atrito, `Ce`, `γe`/Tabela 13, `FTb`/Tabela 19) já
   estão implementados (NBR8800-CONN-004 a 012).
-- **6.4 a 6.8, itens restantes** (páginas 89-113): pinos (6.4);
-  elementos de ligação — tracionados, comprimidos, cisalhados, colapso
-  por rasgamento (6.5); pressão de contato de chapas (6.6); bases de
-  pilares (6.7); 6.8, itens restantes — arruelas (6.8.4.2), métodos de
-  aperto/inspeção (6.8.4.3 a 6.8.4.7 — rotação da porca, chave
-  calibrada, indicador direto de tração, Tabela 20, reutilização de
-  parafusos). Nenhuma dessas frentes foi aberta ainda —
-  `SteelSection`/`Connection` não expressam furos, chapas de ligação
-  nem placas de base; os métodos de aperto/inspeção são procedimentos
+- **6.4/6.5, itens restantes** (páginas 93-96): generalidades de 6.5.1
+  (sem fórmula); ligações excêntricas (6.5.2, remete a 6.1.8.2/ABNT NBR
+  16239 para perfis tubulares, sem fórmula própria); chapas de
+  enchimento em soldas (6.5.7.1, puramente construtivo) e as
+  alternativas geométricas de 6.5.7.2-b)/-c) (ver NBR8800-CONN-020). O
+  núcleo de 6.4 (momento, cisalhamento, esmagamento de pinos) e de
+  6.5.3 a 6.5.6 (tração, compressão, cisalhamento e colapso por
+  rasgamento de elementos de ligação) já estão implementados
+  (NBR8800-CONN-013 a 020, módulos `pins`/`connection_elements`).
+- **6.6/6.7/6.8, itens restantes** (páginas 97-113): pressão de
+  contato — superfícies usinadas/não usinadas, aparelhos de apoio
+  cilíndricos (6.6); bases de pilares (6.7); 6.8, itens restantes —
+  arruelas (6.8.4.2), métodos de aperto/inspeção (6.8.4.3 a 6.8.4.7 —
+  rotação da porca, chave calibrada, indicador direto de tração, Tabela
+  20, reutilização de parafusos). Nenhuma dessas frentes foi aberta
+  ainda — `SteelSection`/`Connection` não expressam placas de base nem
+  aparelhos de apoio; os métodos de aperto/inspeção são procedimentos
   de execução em obra, não cálculo (ver ATENÇÃO 5 no docstring do
   módulo `bolts`).
 - **7/8** (páginas 114+): elementos mistos de aço e concreto e

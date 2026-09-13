@@ -38,16 +38,18 @@ Fases já implementadas:
   redondas rosqueadas em ligações por contato — tração, cisalhamento,
   pressão de contato e interação tração-cisalhamento; 6.3.4, ligações
   por atrito com parafusos de alta resistência protendidos —
-  deslizamento nos estados-limite último e de serviço). Ver
-  ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa
-  e o que ainda está fora do escopo (interação com torção, metal-base
-  em soldas, efeito de alavanca em parafusos, pinos, bases de pilares).
+  deslizamento nos estados-limite último e de serviço; 6.4, pinos —
+  momento fletor, cisalhamento e esmagamento; 6.5.3 a 6.5.6, elementos
+  de ligação — tração, compressão, cisalhamento e colapso por
+  rasgamento). Ver ``docs/normative/NBR8800-RULES.md`` para a
+  rastreabilidade completa e o que ainda está fora do escopo (interação
+  com torção, efeito de alavanca em parafusos, bases de pilares).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
-lançamento em planta, restante das ligações metálicas (metal-base em
-soldas, efeito de alavanca, pinos, bases de pilares),
-detalhamento/desenho e o elo de saída (reações de apoio) com o módulo
-de sapatas/fundações deste repositório.
+lançamento em planta, restante das ligações metálicas (efeito de
+alavanca em parafusos, bases de pilares), detalhamento/desenho e o elo
+de saída (reações de apoio) com o módulo de sapatas/fundações deste
+repositório.
 """
 
 __version__ = "0.1.0"

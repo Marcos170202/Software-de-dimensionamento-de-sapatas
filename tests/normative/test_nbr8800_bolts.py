@@ -30,6 +30,7 @@ from estrutura_metalica.normative.nbr8800 import (
     check_slip_resistance_service,
     check_slip_resistance_ultimate,
     filler_plate_factor,
+    filler_plate_thickness_reduction_factor,
     friction_coefficient,
     minimum_bolt_pretension_force,
     slip_resistance_factor,
@@ -641,3 +642,27 @@ class TestFrictionConnectionWorkedExample:
             fv_sk=1.0, mu=self._MU, ce=self._CE, ftb=ftb, num_slip_planes=self._NS, ft_sk=0.0
         )
         assert result.force_rd == pytest.approx(34_080.0, rel=1e-6)
+
+
+class TestFillerPlateThicknessReductionFactor:
+    def test_no_reduction_at_or_below_6_3mm(self) -> None:
+        assert filler_plate_thickness_reduction_factor(0.0063) == pytest.approx(1.0)
+        assert filler_plate_thickness_reduction_factor(0.003) == pytest.approx(1.0)
+
+    def test_matches_formula_between_6_3_and_19mm(self) -> None:
+        ts_mm = 12.0
+        expected = 1.0 - 0.0154 * (ts_mm - 6.3)
+        result = filler_plate_thickness_reduction_factor(ts_mm / 1000.0)
+        assert result == pytest.approx(expected)
+
+    def test_at_exactly_19mm(self) -> None:
+        expected = 1.0 - 0.0154 * (19.0 - 6.3)
+        assert filler_plate_thickness_reduction_factor(0.019) == pytest.approx(expected)
+
+    def test_rejects_thickness_above_19mm(self) -> None:
+        with pytest.raises(ValueError, match="19 mm"):
+            filler_plate_thickness_reduction_factor(0.020)
+
+    def test_rejects_non_positive_thickness(self) -> None:
+        with pytest.raises(ValueError):
+            filler_plate_thickness_reduction_factor(0.0)
