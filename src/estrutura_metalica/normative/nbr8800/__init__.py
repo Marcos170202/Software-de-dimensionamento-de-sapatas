@@ -17,9 +17,12 @@ sujeitas a momento de torção, fletidas no eixo de maior momento de
 inércia, vigas de alma não esbelta), Anexo E (momento fletor
 resistente de cálculo de vigas de alma esbelta SOLDADAS, duplamente
 simétricas), 5.5.1.2 (interação entre força axial e momento fletor
-biaxial, barras sem torção) e início da Etapa 6 de ligações — 6.2.5.1
-(força resistente de cálculo do metal da solda em soldas de filete de
-pernas iguais/ângulo reto, carregadas concentricamente).
+biaxial, barras sem torção) e Etapa 6 de ligações — 6.2.5.1 (força
+resistente de cálculo do metal da solda em soldas de filete de pernas
+iguais/ângulo reto, carregadas concentricamente) e 6.3.2/6.3.3
+(parafusos comuns e de alta resistência e barras redondas rosqueadas
+em ligações por contato — tração, cisalhamento, pressão de contato em
+furos padrão e interação tração-cisalhamento).
 
 Fora do escopo desta fase (ver docstrings dos módulos e
 ``docs/normative/NBR8800-RULES.md`` para a lista completa): força
@@ -31,11 +34,28 @@ eixo de simetria, interação com momento de torção (5.5.2, seções
 tubulares), seções monossimétricas/assimétricas em compressão
 (5.3.5.2/5.3.5.3), barras compostas, verificação do metal-base em
 soldas (6.5), soldas de penetração/tampão, grupos de filetes
-excêntricos, parafusos, pinos, bases de pilares.
+excêntricos, ligações parafusadas por atrito/protensão crítica (6.3.4),
+requisitos de espaçamento/distância a bordas de parafusos (6.3.7),
+pinos (6.4), bases de pilares (6.7).
 """
 
 from __future__ import annotations
 
+from .bolts import (
+    BoltCheckResult,
+    BoltCombinedCheckResult,
+    bolt_bearing_resistance,
+    bolt_combined_tension_and_shear_ratio,
+    bolt_effective_area_tension,
+    bolt_gross_area,
+    bolt_shear_resistance,
+    bolt_tensile_resistance,
+    check_bolt_bearing,
+    check_bolt_combined_tension_and_shear,
+    check_bolt_shear,
+    check_bolt_tension,
+    threaded_rod_tensile_resistance_cap,
+)
 from .combined_forces import (
     CombinedForcesCheckResult,
     axial_bending_interaction_ratio,
@@ -107,6 +127,8 @@ from .welds import (
 __all__ = [
     "COMPRESSION_SLENDERNESS_LIMIT",
     "TENSION_SLENDERNESS_LIMIT",
+    "BoltCheckResult",
+    "BoltCombinedCheckResult",
     "CombinedForcesCheckResult",
     "CompressionCheckResult",
     "FlexureCheckResult",
@@ -117,7 +139,17 @@ __all__ = [
     "TensionCheckResult",
     "WeldCheckResult",
     "axial_bending_interaction_ratio",
+    "bolt_bearing_resistance",
+    "bolt_combined_tension_and_shear_ratio",
+    "bolt_effective_area_tension",
+    "bolt_gross_area",
+    "bolt_shear_resistance",
+    "bolt_tensile_resistance",
     "check_axial_and_bending_interaction",
+    "check_bolt_bearing",
+    "check_bolt_combined_tension_and_shear",
+    "check_bolt_shear",
+    "check_bolt_tension",
     "check_compression_member",
     "check_compression_slenderness",
     "check_fillet_weld_shear",
@@ -155,6 +187,7 @@ __all__ = [
     "slenderness_parameter",
     "slenderness_ratio",
     "steel_resistance_factors",
+    "threaded_rod_tensile_resistance_cap",
     "torsional_buckling_force",
     "warping_constant_i_section",
     "weld_metal_resistance_factor",

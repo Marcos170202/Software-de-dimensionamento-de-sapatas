@@ -612,6 +612,98 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   `estrutura_metalica.normative.nbr8800.slender_web.check_flexural_resistance_slender_web_major_axis`.
 - **TEST:** `tests/normative/test_nbr8800_slender_web.py`.
 
+## RULE-ID: NBR8800-CONN-004
+
+- **SOURCE:** NBR 8800:2024, 6.3.2.2, página 83: "A área resistente ou
+  área efetiva de um parafuso ou de uma barra redonda rosqueada
+  (`Abe`), para tração, é [...] considerada igual a `0,75Ab`, sendo
+  `Ab` a área bruta [...]. `Ab = 0,25π·db²`."
+- **DESCRIPTION:** Área bruta (`Ab`) e área efetiva para tração
+  (`Abe = 0,75·Ab`) de um parafuso ou barra redonda rosqueada, com base
+  no diâmetro nominal — grandezas de entrada para as demais regras
+  desta seção.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_gross_area`,
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_effective_area_tension`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-005
+
+- **SOURCE:** NBR 8800:2024, 6.3.3.1, página 84: "A força de tração
+  resistente de cálculo de um parafuso tracionado ou de uma barra
+  redonda rosqueada tracionada é calculada conforme a seguir [...]:
+  `Ft,Rd = Abe·fub/γa2` [...]. No caso de barras redondas rosqueadas,
+  exceto chumbadores (ver 6.7), a força resistente de cálculo não pode
+  ser superior a `Ab·fy/γa1`."
+- **DESCRIPTION:** Força de tração resistente de cálculo de um
+  parafuso ou barra redonda rosqueada. **LIMITAÇÃO DE SEGURANÇA**: o
+  limite adicional `Ab·fy/γa1` para barras redondas rosqueadas (exceto
+  chumbadores) é implementado como função SEPARADA
+  (`threaded_rod_tensile_resistance_cap`), não aplicada automaticamente
+  por `check_bolt_tension` — o chamador deve tomar o mínimo entre os
+  dois valores quando o elemento verificado for uma barra rosqueada
+  (não um parafuso), ver ATENÇÃO 2 no docstring do módulo `bolts`.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_tensile_resistance`,
+  `estrutura_metalica.normative.nbr8800.bolts.threaded_rod_tensile_resistance_cap`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_bolt_tension`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-006
+
+- **SOURCE:** NBR 8800:2024, 6.3.3.2, página 84: "a) para parafusos de
+  alta resistência e barras redondas rosqueadas, quando o plano de
+  corte passa pela rosca e para parafusos comuns em qualquer situação:
+  `Fv,Rd = 0,45·Ab·fub/γa2`; b) [...] quando o plano de corte não
+  passa pela rosca: `Fv,Rd = 0,56·Ab·fub/γa2`."
+- **DESCRIPTION:** Força de cisalhamento resistente de cálculo de um
+  parafuso ou barra redonda rosqueada, por plano de corte, nas duas
+  variantes (fator 0,45 ou 0,56 conforme o plano de corte passa ou não
+  pela rosca).
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_shear_resistance`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_bolt_shear`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-007
+
+- **SOURCE:** NBR 8800:2024, 6.3.3.3-a, página 85: "no caso de furos
+  padrão, furos alargados, furos pouco alongados em qualquer direção e
+  furos muito alongados na direção da força [...]: quando a deformação
+  no furo para forças de serviço for uma limitação de projeto,
+  `Fc,Rd = min(1,2·ℓf·t·fu/γa2; 2,4·db·t·fu/γa2)`; quando não for,
+  `Fc,Rd = min(1,5·ℓf·t·fu/γa2; 3,0·db·t·fu/γa2)`."
+- **DESCRIPTION:** Força resistente de cálculo à pressão de contato na
+  parede de um furo PADRÃO, já considerando o rasgamento entre furos
+  consecutivos ou entre um furo extremo e a borda, por parafuso, nas
+  duas variantes conforme a deformação no furo seja ou não uma
+  limitação de projeto. **LIMITAÇÃO DE SEGURANÇA**: não implementa
+  6.3.3.3-b) (furos muito alongados na direção PERPENDICULAR à força,
+  fatores 1,0/2,0 em vez de 1,2-1,5/2,4-3,0) — ver ATENÇÃO 1 no
+  docstring do módulo `bolts`.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_bearing_resistance`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_bolt_bearing`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
+## RULE-ID: NBR8800-CONN-008
+
+- **SOURCE:** NBR 8800:2024, 6.3.3.4, página 85: "Quando ocorrer a ação
+  simultânea de tração e cisalhamento, deve ser atendida a seguinte
+  equação de interação: `(Ft,Sd/Ft,Rd)² + (Fv,Sd/Fv,Rd)² ≤ 1,0`."
+  Alternativa (não implementada): "a força de tração solicitante de
+  cálculo [...] deve atender aos requisitos da Tabela 12."
+- **DESCRIPTION:** Equação de interação entre tração e cisalhamento
+  combinados em um parafuso ou barra redonda rosqueada — mesmo padrão
+  de resultado (`interaction_ratio`/`is_ok`, limite sempre `1,0`) de
+  `CombinedForcesCheckResult` (NBR8800-COMB-001/002). A Tabela 12
+  (limitação simplificada alternativa por tipo de parafuso) NÃO está
+  implementada — apenas a equação de interação em si.
+- **IMPLEMENTATION:**
+  `estrutura_metalica.normative.nbr8800.bolts.bolt_combined_tension_and_shear_ratio`,
+  `estrutura_metalica.normative.nbr8800.bolts.check_bolt_combined_tension_and_shear`.
+- **TEST:** `tests/normative/test_nbr8800_bolts.py`.
+
 ## Fora do escopo desta fase (não implementado)
 
 - **5.2.3/5.2.5** (páginas 39-42): coeficiente de redução `Ct` da área
@@ -681,13 +773,24 @@ em `ShearCheckResult` (ver docstring de `FlexureCheckResult` e teste
   longos (ver NBR8800-CONN-002); grupos de filetes com resultante
   excêntrica ao centro geométrico (6.2.5.2-b/c, método do centro
   instantâneo de rotação).
-- **6.3 a 6.8** (páginas 82-113): parafusos e barras redondas
-  rosqueadas (6.3); pinos (6.4); elementos de ligação — tracionados,
-  comprimidos, cisalhados, colapso por rasgamento (6.5); pressão de
-  contato (6.6); bases de pilares (6.7); projeto/montagem/inspeção de
-  ligações com parafusos de alta resistência (6.8). Nenhuma dessas
-  frentes foi aberta ainda — `SteelSection`/`Connection` não expressam
-  furos, parafusos, chapas de ligação nem placas de base.
+- **6.3, itens restantes** (páginas 82-88): requisitos de aperto/
+  montagem (6.3.1, remete a 6.8); ligações por atrito com parafusos de
+  alta resistência (6.3.4 — força resistente ao deslizamento, protensão
+  mínima, coeficiente de atrito, Tabela 13); parafusos tracionados com
+  efeito de alavanca ("prying", 6.3.5); Tabela 12 (alternativa
+  simplificada à equação de interação, ver NBR8800-CONN-008);
+  requisitos de espaçamento/distância a bordas (6.3.7, não lido nesta
+  fase); 6.3.3.3-b) (furos muito alongados perpendiculares à força, ver
+  NBR8800-CONN-007). O núcleo de 6.3.2/6.3.3 (tração, cisalhamento,
+  pressão de contato em furos padrão, interação tração-cisalhamento) já
+  está implementado (NBR8800-CONN-004 a 008).
+- **6.4 a 6.8** (páginas 89-113): pinos (6.4); elementos de ligação —
+  tracionados, comprimidos, cisalhados, colapso por rasgamento (6.5);
+  pressão de contato de chapas (6.6); bases de pilares (6.7); projeto/
+  montagem/inspeção de ligações com parafusos de alta resistência (6.8,
+  inclusive `FTb`, protensão mínima). Nenhuma dessas frentes foi aberta
+  ainda — `SteelSection`/`Connection` não expressam furos, chapas de
+  ligação nem placas de base.
 - **7/8** (páginas 114+): elementos mistos de aço e concreto e
   ligações mistas — fora do escopo deste pacote (`estrutura_metalica`
   trata apenas de estruturas de aço puro).

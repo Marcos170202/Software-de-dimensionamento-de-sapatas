@@ -33,17 +33,19 @@ Fases já implementadas:
   simétricas — escoamento da mesa tracionada, FLT e FLM), interação
   entre força axial e momento fletor biaxial (5.5.1.2, barras sem
   torção), a limitação recomendada do índice de esbeltez (5.2.8/5.3.7)
-  e início das ligações metálicas (6.2.5.1, força resistente do metal
-  da solda em soldas de filete concêntricas). Ver
+  e ligações metálicas (6.2.5.1, força resistente do metal da solda em
+  soldas de filete concêntricas; 6.3.2/6.3.3, parafusos e barras
+  redondas rosqueadas em ligações por contato — tração, cisalhamento,
+  pressão de contato e interação tração-cisalhamento). Ver
   ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade completa
   e o que ainda está fora do escopo (interação com torção, metal-base
-  em soldas, parafusos, bases de pilares).
+  em soldas, ligações por atrito, pinos, bases de pilares).
 
 Fases futuras (ver PROCESSO_MODELAGEM_METALICA.md): geometria 2D do
-lançamento em planta, restante das ligações metálicas (parafusos,
-metal-base em soldas, bases de pilares), detalhamento/desenho e o elo
-de saída (reações de apoio) com o módulo de sapatas/fundações deste
-repositório.
+lançamento em planta, restante das ligações metálicas (ligações por
+atrito, metal-base em soldas, pinos, bases de pilares),
+detalhamento/desenho e o elo de saída (reações de apoio) com o módulo
+de sapatas/fundações deste repositório.
 """
 
 __version__ = "0.1.0"
