@@ -15,6 +15,14 @@ from __future__ import annotations
 
 from .bolt_catalog import STRUCTURAL_BOLT_CATALOG, StructuralBolt, get_structural_bolt
 from .connection import PINNED_CONNECTION, RIGID_CONNECTION, Connection, ConnectionType
+from .legacy_profile_catalog import (
+    GERDAU_I_PROFILES,
+    GERDAU_U_PROFILES,
+    GerdauIProfile,
+    GerdauUProfile,
+    get_gerdau_i_profile,
+    get_gerdau_u_profile,
+)
 from .material import (
     ASTM_A36,
     ASTM_A572_GR50,
@@ -37,6 +45,8 @@ __all__ = [
     "ASTM_A36",
     "ASTM_A572_GR50",
     "ASTM_A992",
+    "GERDAU_I_PROFILES",
+    "GERDAU_U_PROFILES",
     "GERDAU_W_H_PROFILES",
     "STEEL_MATERIAL_CATALOG",
     "Beam",
@@ -45,6 +55,8 @@ __all__ = [
     "Column",
     "Connection",
     "ConnectionType",
+    "GerdauIProfile",
+    "GerdauUProfile",
     "IProfileSection",
     "Member",
     "Node",
@@ -56,6 +68,8 @@ __all__ = [
     "SteelMaterial",
     "SteelSection",
     "StructuralBolt",
+    "get_gerdau_i_profile",
+    "get_gerdau_u_profile",
     "get_gerdau_w_h_profile",
     "get_structural_bolt",
 ]
