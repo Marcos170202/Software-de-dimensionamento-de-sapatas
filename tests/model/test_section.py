@@ -12,6 +12,7 @@ from estrutura_metalica.model import (
     RectangularTubeSection,
     SectionShape,
     SteelSection,
+    compressed_flange_radius_of_gyration,
 )
 
 
@@ -192,3 +193,26 @@ class TestIProfileSection:
             _generic_i_profile(h=0.308, depth=0.308)
         with pytest.raises(ValueError):
             _generic_i_profile(h=0.4, depth=0.308)
+
+
+class TestCompressedFlangeRadiusOfGyration:
+    def test_matches_gerdau_w310x97_catalog_value_within_idealization_tolerance(self) -> None:
+        # Perfil real W310x97,0 (H) - Gerdau: bf=305mm, tf=15,4mm,
+        # tw=9,9mm, h=245mm. Valor de catálogo (coluna "rt"): 8,38 cm.
+        ryc = compressed_flange_radius_of_gyration(bf=0.305, tf=0.0154, tw=0.0099, h=0.245)
+        assert ryc * 1e2 == pytest.approx(8.38, rel=0.02)
+
+    def test_reduces_to_flange_only_gyration_radius_for_negligible_web(self) -> None:
+        # Quando a contribuição da alma é desprezível (tw -> 0), ryc
+        # tende ao raio de giração da própria mesa isolada,
+        # bf/sqrt(12) (retângulo bf x tf em torno do eixo fraco).
+        bf, tf, h = 0.2, 0.02, 0.4
+        ryc = compressed_flange_radius_of_gyration(bf=bf, tf=tf, tw=1e-9, h=h)
+        assert ryc == pytest.approx(bf / math.sqrt(12.0), rel=1e-6)
+
+    @pytest.mark.parametrize("field", ["bf", "tf", "tw", "h"])
+    def test_rejects_non_positive_arguments(self, field: str) -> None:
+        kwargs = dict(bf=0.2, tf=0.02, tw=0.01, h=0.3)
+        kwargs[field] = 0.0
+        with pytest.raises(ValueError):
+            compressed_flange_radius_of_gyration(**kwargs)

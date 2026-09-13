@@ -240,6 +240,48 @@ class IProfileSection(SteelSection):
             )
 
 
+def compressed_flange_radius_of_gyration(bf: float, tf: float, tw: float, h: float) -> float:
+    """Raio de giração da mesa comprimida mais 1/3 da alma comprimida,
+    ``ryc``/``rt`` — grandeza exigida por
+    :mod:`~estrutura_metalica.normative.nbr8800.slender_web` (Anexo E,
+    FLT de vigas de alma esbelta) quando não disponível como valor de
+    catálogo (ex.: perfis não tabulados, ou catálogos que não
+    publicam essa coluna — ver
+    :mod:`~estrutura_metalica.model.british_steel_catalog`).
+
+    Cálculo geométrico IDEALIZADO para uma seção I/H com dupla
+    simetria: a "parte comprimida" de uma seção fletida em torno do
+    eixo forte é a mesa comprimida inteira mais 1/3 da altura da
+    alma comprimida — que, por simetria (dupla simetria, sem força
+    axial), é 1/3 de metade da alma livre, ou seja, ``h/6``.
+    Idealiza a mesa como um retângulo ``bf × tf`` e essa fração da
+    alma como um retângulo ``tw × (h/6)``, cada um com seu próprio
+    momento de inércia em relação ao eixo fraco (paralelo à alma) —
+    aproximação usual quando a geometria exata (incluindo raios de
+    concordância) não está disponível, análoga à aproximação de
+    parede fina de :meth:`RectangularTubeSection.from_dimensions`.
+
+    ``Ayc = bf·tf + (h/6)·tw``; ``Iyc = tf·bf³/12 + (h/6)·tw³/12``;
+    ``ryc = sqrt(Iyc/Ayc)``.
+
+    Conferido contra o valor de catálogo (coluna "rt") do perfil
+    Gerdau W310x97,0 (bf=305 mm, tf=15,4 mm, tw=9,9 mm, h=245 mm):
+    esta função retorna ≈8,45 cm contra o valor de catálogo 8,38 cm
+    (≈1,2% de diferença, dentro do esperado para uma idealização que
+    ignora os raios de concordância).
+
+    ``bf``/``tf``/``tw``/``h``: ver :class:`IProfileSection` (m).
+    Retorna o raio de giração ``ryc`` (m).
+    """
+    for value, label in ((bf, "bf"), (tf, "tf"), (tw, "tw"), (h, "h")):
+        if value <= 0:
+            raise ValueError(f"{label} deve ser finito e positivo, recebido: {value!r}")
+    web_compressed_height = h / 6.0
+    area_yc = bf * tf + web_compressed_height * tw
+    iyc = (tf * bf**3) / 12.0 + (web_compressed_height * tw**3) / 12.0
+    return math.sqrt(iyc / area_yc)
+
+
 @dataclass(frozen=True, slots=True)
 class CircularTubeSection(SteelSection):
     """Tubo circular de parede fina/espessa.
