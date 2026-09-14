@@ -1,0 +1,127 @@
+"""Testes de ``estrutura_metalica.model.SteelMaterial`` e do catálogo."""
+
+from __future__ import annotations
+
+import pytest
+
+from estrutura_metalica.model import (
+    ASTM_A36,
+    ASTM_A242,
+    ASTM_A572_GR42,
+    ASTM_A572_GR50,
+    ASTM_A588,
+    ASTM_A992,
+    EN_10025_S275,
+    EN_10025_S355,
+    STEEL_MATERIAL_CATALOG,
+    SteelMaterial,
+)
+
+
+def test_shear_modulus_computed_from_e_and_poisson() -> None:
+    mat = SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, poisson_ratio=0.3)
+    expected_g = 200_000e6 / (2 * 1.3)
+    assert mat.g == pytest.approx(expected_g)
+    assert mat.shear_modulus == pytest.approx(expected_g)
+
+
+def test_explicit_g_is_kept() -> None:
+    mat = SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, g=77_000e6)
+    assert mat.g == pytest.approx(77_000e6)
+
+
+def test_rejects_non_positive_fy() -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=0.0, fu=400e6, e=200_000e6)
+
+
+def test_rejects_non_positive_fu() -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=250e6, fu=-1.0, e=200_000e6)
+
+
+def test_rejects_fu_below_fy() -> None:
+    with pytest.raises(ValueError, match="material 'teste' inconsistente"):
+        SteelMaterial(name="teste", fy=400e6, fu=250e6, e=200_000e6)
+
+
+def test_rejects_non_positive_e() -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=250e6, fu=400e6, e=0.0)
+
+
+@pytest.mark.parametrize("poisson", [-1.0, 0.5, 0.6])
+def test_rejects_implausible_poisson_ratio(poisson: float) -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, poisson_ratio=poisson)
+
+
+def test_rejects_non_positive_density() -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, density=0.0)
+
+
+def test_rejects_non_positive_explicit_g() -> None:
+    with pytest.raises(ValueError):
+        SteelMaterial(name="teste", fy=250e6, fu=400e6, e=200_000e6, g=-1.0)
+
+
+@pytest.mark.parametrize(
+    "material",
+    [
+        ASTM_A36,
+        ASTM_A572_GR50,
+        ASTM_A992,
+        EN_10025_S275,
+        EN_10025_S355,
+        ASTM_A572_GR42,
+        ASTM_A588,
+        ASTM_A242,
+    ],
+)
+def test_catalog_materials_are_valid(material: SteelMaterial) -> None:
+    assert material.fu >= material.fy > 0
+    assert material.e == pytest.approx(200_000e6)
+
+
+def test_catalog_dict_is_keyed_by_name() -> None:
+    assert STEEL_MATERIAL_CATALOG["ASTM A36"] is ASTM_A36
+    assert STEEL_MATERIAL_CATALOG["ASTM A572 Gr. 50"] is ASTM_A572_GR50
+    assert STEEL_MATERIAL_CATALOG["ASTM A992"] is ASTM_A992
+    assert STEEL_MATERIAL_CATALOG["EN 10025 S275"] is EN_10025_S275
+    assert STEEL_MATERIAL_CATALOG["EN 10025 S355"] is EN_10025_S355
+    assert STEEL_MATERIAL_CATALOG["ASTM A572 Gr. 42"] is ASTM_A572_GR42
+    assert STEEL_MATERIAL_CATALOG["ASTM A588"] is ASTM_A588
+    assert STEEL_MATERIAL_CATALOG["ASTM A242"] is ASTM_A242
+    assert len(STEEL_MATERIAL_CATALOG) == 8
+
+
+def test_en_10025_grades_match_usiminas_catalog_values() -> None:
+    # Usiminas "Tiras a Quente", tabela de propriedades mecânicas
+    # conforme EN 10025-2 - valores para E<=16mm (mais fina/comum).
+    assert EN_10025_S275.fy == pytest.approx(275e6)
+    assert EN_10025_S275.fu == pytest.approx(410e6)
+    assert EN_10025_S355.fy == pytest.approx(355e6)
+    assert EN_10025_S355.fu == pytest.approx(470e6)
+
+
+def test_plate_steel_grades_match_arcelormittal_acos_planos_catalog_values() -> None:
+    # ArcelorMittal "Acos Planos", tabela "Principais Normas" (Acos
+    # de Qualidade Estrutural / .../Resistentes a Corrosao Atmosferica).
+    assert ASTM_A572_GR42.fy == pytest.approx(290e6)
+    assert ASTM_A572_GR42.fu == pytest.approx(415e6)
+    assert ASTM_A588.fy == pytest.approx(345e6)
+    assert ASTM_A588.fu == pytest.approx(485e6)
+    assert ASTM_A242.fy == pytest.approx(345e6)
+    assert ASTM_A242.fu == pytest.approx(480e6)
+
+
+def test_arcelormittal_catalog_confirms_existing_a36_and_a572_gr50_values() -> None:
+    # A mesma tabela "Principais Normas" tambem lista A36 e A572 Gr.
+    # 50 com os MESMOS valores ja cadastrados (fonte independente
+    # adicional para os materiais existentes, nao apenas para os
+    # novos).
+    assert ASTM_A36.fy == pytest.approx(250e6)
+    assert ASTM_A36.fu == pytest.approx(400e6)
+    assert ASTM_A572_GR50.fy == pytest.approx(345e6)
+    assert ASTM_A572_GR50.fu == pytest.approx(450e6)

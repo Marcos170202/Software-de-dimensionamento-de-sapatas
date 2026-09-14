@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "estrutura-metalica"
+version = "0.1.0"
+description = "Motor de cálculo para modelagem e dimensionamento de estruturas metálicas (NBR 8800), com saída de reações de apoio para o módulo de sapatas/fundações."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    # Álgebra linear (montagem/solução do sistema de rigidez global em
+    # analysis/). Não é uma dependência de interface — mantém o motor
+    # de cálculo livre de GUI/framework, só usa a ferramenta numérica
+    # padrão do ecossistema Python em vez de reimplementar eliminação
+    # gaussiana à mão.
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+# Camada de interface desktop (ver docs/adr/ADR-001-gui-stack-e-empacotamento.md).
+# Opcional: quem só usa o motor de cálculo (estrutura_metalica.model/
+# .analysis/.normative) não precisa instalar Qt/VTK.
+gui = [
+    "PySide6>=6.7",
+    "pyvista>=0.44",
+    "pyvistaqt>=0.11",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]

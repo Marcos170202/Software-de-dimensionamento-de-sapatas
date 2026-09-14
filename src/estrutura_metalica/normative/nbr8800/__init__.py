@@ -1,0 +1,314 @@
+"""ABNT NBR 8800:2024 — Projeto de Estruturas de Aço e de Estruturas
+Mistas de Aço e Concreto de Edifícios.
+
+Ver ``docs/normative/NBR8800-RULES.md`` para a rastreabilidade
+completa (RULE-ID → seção/página da norma → implementação → teste) de
+cada regra implementada neste pacote.
+
+Fases já implementadas: 4.9.2 (coeficientes de ponderação da
+resistência), 5.2 (tração — escoamento/ruptura), 5.3 (compressão —
+flambagem por flexão e por torção para seções com dupla simetria ou
+simétricas em relação a um ponto), 5.2.8/5.3.7 (limitação recomendada
+do índice de esbeltez), 5.4.1.3/5.4.3.1 (força cortante resistente de
+cálculo de seções I/H/U fletidas no eixo perpendicular à alma),
+5.4.1.3/5.4.2/Anexo D (momento fletor resistente de cálculo — FLT, FLM
+e FLA — de seções I/H com dois eixos de simetria e seções U não
+sujeitas a momento de torção, fletidas no eixo de maior momento de
+inércia, vigas de alma não esbelta), Anexo E (momento fletor
+resistente de cálculo de vigas de alma esbelta SOLDADAS, duplamente
+simétricas), 5.5.1.2 (interação entre força axial e momento fletor
+biaxial, barras sem torção) e Etapa 6 de ligações — 6.2.5.1 (força
+resistente de cálculo do metal da solda em soldas de filete de pernas
+iguais/ângulo reto, carregadas concentricamente), 6.3.2/6.3.3
+(parafusos comuns e de alta resistência e barras redondas rosqueadas
+em ligações por contato — tração, cisalhamento, pressão de contato em
+furos padrão e interação tração-cisalhamento), 6.3.4 (ligações por
+atrito com parafusos de alta resistência protendidos — deslizamento
+nos estados-limite último e de serviço, com ``μ``/Tabela 13/Tabela 19),
+6.4 (pinos — momento fletor, cisalhamento e esmagamento), 6.5.3 a
+6.5.6 (elementos de ligação — tração, compressão, cisalhamento e
+colapso por rasgamento) e 6.6.5/6.7 (bases de pilares de perfil I/H —
+APENAS o Caso C1, compressão axial concêntrica: espessura mínima da
+placa de base, tensão de contato no concreto e cisalhamento por
+atrito).
+
+Fora do escopo desta fase (ver docstrings dos módulos e
+``docs/normative/NBR8800-RULES.md`` para a lista completa): força
+cortante para os demais tipos de seção (5.4.3.2 a 5.4.3.6), demais
+linhas da Tabela D.1 (seções monossimétricas, tubulares/caixão,
+sólidas) e flexão no eixo de menor momento de inércia, seções-caixão e
+tubulares de alma esbelta (Anexo E.6.4), vigas de alma esbelta com um
+eixo de simetria, interação com momento de torção (5.5.2, seções
+tubulares), seções monossimétricas/assimétricas em compressão
+(5.3.5.2/5.3.5.3), barras compostas, soldas de penetração/tampão e
+grupos de filetes excêntricos (6.2), efeito de alavanca em parafusos
+tracionados (6.3.5), requisitos de espaçamento/distância a bordas de
+parafusos (6.3.7 a 6.3.12), métodos de aperto/inspeção de parafusos
+protendidos (6.8.4.2 a 6.8.4.7), ligações excêntricas (6.5.2), chapas
+de enchimento em soldas (6.5.7.1), pressão de contato em superfícies
+usinadas/não usinadas e aparelhos de apoio cilíndricos (6.6.1 a 6.6.4),
+bases de pilares — Casos C2/C3/T1/T2/T3, dispositivos de cisalhamento
+e Tabela 18 (6.7, itens restantes — ver ATENÇÃO no docstring do módulo
+``column_base``). A verificação do metal-base em soldas de filete
+(Tabela 9, "o metal-base deve atender a 6.5") agora é POSSÍVEL —
+``connection_elements`` implementa 6.5.3/6.5.5/6.5.6 — mas não é
+automática: o chamador deve montar essa verificação combinando
+``check_fillet_weld_shear`` com ``check_connection_element_shear``/
+``check_block_shear`` sobre a geometria da parte ligada.
+"""
+
+from __future__ import annotations
+
+from .bolts import (
+    BoltCheckResult,
+    BoltCombinedCheckResult,
+    FrictionSurfaceClass,
+    HighStrengthBoltGrade,
+    SlipCriticalHoleType,
+    bolt_bearing_resistance,
+    bolt_combined_tension_and_shear_ratio,
+    bolt_effective_area_tension,
+    bolt_gross_area,
+    bolt_shear_resistance,
+    bolt_tensile_resistance,
+    check_bolt_bearing,
+    check_bolt_combined_tension_and_shear,
+    check_bolt_shear,
+    check_bolt_tension,
+    check_slip_resistance_service,
+    check_slip_resistance_ultimate,
+    filler_plate_factor,
+    filler_plate_thickness_reduction_factor,
+    friction_coefficient,
+    minimum_bolt_pretension_force,
+    slip_resistance_factor,
+    slip_resistance_service,
+    slip_resistance_ultimate,
+    threaded_rod_tensile_resistance_cap,
+)
+from .column_base import (
+    ColumnBaseCaseC1Result,
+    ColumnBaseCheckResult,
+    check_column_base_case_c1,
+    column_base_concrete_bearing_stress,
+    column_base_effective_length_x,
+    column_base_effective_length_y,
+    column_base_friction_shear_resistance,
+    column_base_lambda,
+    column_base_plate_effective_length_c1,
+    column_base_plate_min_thickness_case_c1,
+    column_base_x_parameter,
+    column_base_yield_line_m,
+    column_base_yield_line_n,
+    column_base_yield_line_n0,
+    concrete_bearing_resistance,
+    concrete_grout_shear_friction_limit,
+)
+from .combined_forces import (
+    CombinedForcesCheckResult,
+    axial_bending_interaction_ratio,
+    check_axial_and_bending_interaction,
+)
+from .compression import (
+    CompressionCheckResult,
+    check_compression_member,
+    effective_area_without_local_buckling,
+    flexural_buckling_force,
+    polar_radius_of_gyration,
+    reduction_factor,
+    slenderness_parameter,
+    torsional_buckling_force,
+)
+from .connection_elements import (
+    ConnectionElementCheckResult,
+    axial_yield_resistance,
+    block_shear_resistance,
+    bolted_splice_plate_effective_net_area,
+    check_block_shear,
+    check_connection_element_compression,
+    check_connection_element_shear,
+    check_connection_element_tension,
+    shear_rupture_resistance,
+    shear_yield_resistance,
+    tensile_rupture_resistance,
+)
+from .flexure import (
+    FlexureCheckResult,
+    check_flexural_resistance_major_axis,
+    check_lateral_torsional_buckling,
+    flange_local_buckling_coefficient_welded,
+    flange_local_buckling_moment_rolled,
+    flange_local_buckling_moment_welded,
+    flexural_resistance,
+    lateral_torsional_buckling_moment,
+    lateral_torsional_buckling_slenderness_limit,
+    moment_gradient_factor_doubly_symmetric,
+    warping_constant_i_section,
+)
+from .pins import (
+    PinCheckResult,
+    check_pin_bearing,
+    check_pin_flexure,
+    check_pin_shear,
+    pin_bearing_resistance,
+    pin_effective_shear_area,
+    pin_flexural_resistance,
+    pin_shear_resistance,
+)
+from .resistance_factors import (
+    LoadCombinationClass,
+    SteelResistanceFactors,
+    concrete_resistance_factor,
+    steel_resistance_factors,
+    weld_metal_resistance_factor,
+)
+from .shear import (
+    ShearCheckResult,
+    check_shear_major_axis,
+    effective_shear_area_major_axis,
+    plastic_shear_force,
+    shear_buckling_coefficient,
+    shear_resistance,
+)
+from .slender_web import (
+    check_flexural_resistance_slender_web_major_axis,
+    check_slender_web_flange_local_buckling,
+    check_slender_web_lateral_torsional_buckling,
+    check_tension_flange_yielding,
+    compression_flange_area_ratio,
+    plate_girder_bending_strength_reduction_factor,
+)
+from .slenderness import (
+    COMPRESSION_SLENDERNESS_LIMIT,
+    TENSION_SLENDERNESS_LIMIT,
+    SlendernessCheckResult,
+    check_compression_slenderness,
+    check_tension_slenderness,
+    slenderness_ratio,
+)
+from .tension import TensionCheckResult, check_tension_member, net_area_without_holes
+from .welds import (
+    WeldCheckResult,
+    check_fillet_weld_shear,
+    fillet_weld_effective_area,
+    fillet_weld_effective_throat,
+    fillet_weld_shear_resistance,
+    minimum_fillet_weld_leg_size,
+)
+
+__all__ = [
+    "COMPRESSION_SLENDERNESS_LIMIT",
+    "TENSION_SLENDERNESS_LIMIT",
+    "BoltCheckResult",
+    "BoltCombinedCheckResult",
+    "ColumnBaseCaseC1Result",
+    "ColumnBaseCheckResult",
+    "CombinedForcesCheckResult",
+    "CompressionCheckResult",
+    "ConnectionElementCheckResult",
+    "FlexureCheckResult",
+    "FrictionSurfaceClass",
+    "HighStrengthBoltGrade",
+    "LoadCombinationClass",
+    "PinCheckResult",
+    "ShearCheckResult",
+    "SlendernessCheckResult",
+    "SlipCriticalHoleType",
+    "SteelResistanceFactors",
+    "TensionCheckResult",
+    "WeldCheckResult",
+    "axial_bending_interaction_ratio",
+    "axial_yield_resistance",
+    "block_shear_resistance",
+    "bolt_bearing_resistance",
+    "bolt_combined_tension_and_shear_ratio",
+    "bolt_effective_area_tension",
+    "bolt_gross_area",
+    "bolt_shear_resistance",
+    "bolt_tensile_resistance",
+    "bolted_splice_plate_effective_net_area",
+    "check_axial_and_bending_interaction",
+    "check_block_shear",
+    "check_bolt_bearing",
+    "check_bolt_combined_tension_and_shear",
+    "check_bolt_shear",
+    "check_bolt_tension",
+    "check_column_base_case_c1",
+    "check_compression_member",
+    "check_compression_slenderness",
+    "check_connection_element_compression",
+    "check_connection_element_shear",
+    "check_connection_element_tension",
+    "check_fillet_weld_shear",
+    "check_flexural_resistance_major_axis",
+    "check_flexural_resistance_slender_web_major_axis",
+    "check_lateral_torsional_buckling",
+    "check_pin_bearing",
+    "check_pin_flexure",
+    "check_pin_shear",
+    "check_shear_major_axis",
+    "check_slender_web_flange_local_buckling",
+    "check_slender_web_lateral_torsional_buckling",
+    "check_slip_resistance_service",
+    "check_slip_resistance_ultimate",
+    "check_tension_flange_yielding",
+    "check_tension_member",
+    "check_tension_slenderness",
+    "column_base_concrete_bearing_stress",
+    "column_base_effective_length_x",
+    "column_base_effective_length_y",
+    "column_base_friction_shear_resistance",
+    "column_base_lambda",
+    "column_base_plate_effective_length_c1",
+    "column_base_plate_min_thickness_case_c1",
+    "column_base_x_parameter",
+    "column_base_yield_line_m",
+    "column_base_yield_line_n",
+    "column_base_yield_line_n0",
+    "compression_flange_area_ratio",
+    "concrete_bearing_resistance",
+    "concrete_grout_shear_friction_limit",
+    "concrete_resistance_factor",
+    "effective_area_without_local_buckling",
+    "effective_shear_area_major_axis",
+    "filler_plate_factor",
+    "filler_plate_thickness_reduction_factor",
+    "fillet_weld_effective_area",
+    "fillet_weld_effective_throat",
+    "fillet_weld_shear_resistance",
+    "flange_local_buckling_coefficient_welded",
+    "flange_local_buckling_moment_rolled",
+    "flange_local_buckling_moment_welded",
+    "flexural_buckling_force",
+    "flexural_resistance",
+    "friction_coefficient",
+    "lateral_torsional_buckling_moment",
+    "lateral_torsional_buckling_slenderness_limit",
+    "minimum_bolt_pretension_force",
+    "minimum_fillet_weld_leg_size",
+    "moment_gradient_factor_doubly_symmetric",
+    "net_area_without_holes",
+    "pin_bearing_resistance",
+    "pin_effective_shear_area",
+    "pin_flexural_resistance",
+    "pin_shear_resistance",
+    "plastic_shear_force",
+    "plate_girder_bending_strength_reduction_factor",
+    "polar_radius_of_gyration",
+    "reduction_factor",
+    "shear_buckling_coefficient",
+    "shear_resistance",
+    "shear_rupture_resistance",
+    "shear_yield_resistance",
+    "slenderness_parameter",
+    "slenderness_ratio",
+    "slip_resistance_factor",
+    "slip_resistance_service",
+    "slip_resistance_ultimate",
+    "steel_resistance_factors",
+    "tensile_rupture_resistance",
+    "threaded_rod_tensile_resistance_cap",
+    "torsional_buckling_force",
+    "warping_constant_i_section",
+    "weld_metal_resistance_factor",
+]
