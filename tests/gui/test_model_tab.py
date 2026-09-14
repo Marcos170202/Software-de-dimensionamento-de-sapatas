@@ -50,6 +50,16 @@ class TestNodesPanel:
         assert panel.row_count == 1
         assert list(panel.nodes()) == [2]
 
+    def test_next_free_id_is_one_when_table_is_empty(self, qapp: QApplication) -> None:
+        panel = NodesPanel()
+        assert panel.next_free_id() == 1
+
+    def test_next_free_id_is_max_plus_one(self, qapp: QApplication) -> None:
+        panel = NodesPanel()
+        panel.add_row(node_id=1)
+        panel.add_row(node_id=5)
+        assert panel.next_free_id() == 6
+
 
 class TestMembersPanel:
     def test_add_row_populates_profile_combo_for_default_catalog(self, qapp: QApplication) -> None:
@@ -279,3 +289,14 @@ class TestModelTabIntegration:
         model = tab.build_model()
         assert set(model.nodes) == {1, 2}
         assert len(model.members) == 1
+
+    def test_add_node_from_viewport_appends_row_with_next_free_id(self, qapp: QApplication) -> None:
+        tab = ModelTab()
+        tab.nodes_panel.add_row(node_id=5)
+
+        tab.add_node_from_viewport(1.5, 2.5, 3.5)
+
+        assert tab.nodes_panel.row_count == 2
+        nodes = tab.nodes_panel.nodes()
+        assert 6 in nodes
+        assert (nodes[6].x, nodes[6].y, nodes[6].z) == (1.5, 2.5, 3.5)

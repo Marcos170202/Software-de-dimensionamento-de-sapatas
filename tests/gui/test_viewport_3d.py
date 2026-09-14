@@ -8,8 +8,11 @@ malhas, e o cálculo de escala automática.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import numpy as np
-from PySide6.QtWidgets import QApplication
+import pytest
+from PySide6.QtWidgets import QApplication, QDialog
 
 from estrutura_metalica.analysis import (
     AnalysisResult,
@@ -19,7 +22,14 @@ from estrutura_metalica.analysis import (
     Support,
     solve,
 )
-from estrutura_metalica.gui.viewport_3d import ModelViewport, model_scale, node_coordinates
+from estrutura_metalica.gui.viewport_3d import (
+    ModelViewport,
+    _build_coordinate_dialog,
+    model_scale,
+    node_coordinates,
+    project_click_to_plane,
+    prompt_exact_coordinates,
+)
 from estrutura_metalica.model import ASTM_A992, Beam, Bracing, Column, Node
 from estrutura_metalica.model.steel_profile_catalog import GERDAU_W_H_PROFILES
 
@@ -33,6 +43,36 @@ def _cantilever() -> tuple[StructuralModel, LoadCase]:
     model = StructuralModel(nodes={1: n1, 2: n2}, members=(beam,), supports=(Support.fixed(1),))
     load_case = LoadCase(name="c", loads=(NodalLoad(node_id=2, fz=-1000.0),))
     return model, load_case
+
+
+def _configure_deterministic_camera(viewport: ModelViewport) -> tuple[float, float]:
+    """Câmera de projeção paralela olhando de cima (eixo Z), janela de
+    tamanho fixo — torna ``project_click_to_plane`` previsível o
+    bastante para testar sem depender de renderização real (ver
+    ADR-003, "Testes"). Devolve o centro de tela ``(cx, cy)``."""
+    viewport.interactor.ren_win.SetSize(800, 600)
+    viewport.interactor.camera_position = "xy"
+    viewport.interactor.camera.parallel_projection = True
+    viewport.interactor.camera.parallel_scale = 5.0
+    viewport.interactor.render()
+    size = viewport.interactor.ren_win.GetSize()
+    return size[0] / 2, size[1] / 2
+
+
+class _FakeVtkCaller:
+    """Substitui o ``vtkRenderWindowInteractor`` real nos testes dos
+    observadores de clique — só precisa responder
+    ``GetEventPosition``/``GetShiftKey`` (ver ADR-003, "Testes")."""
+
+    def __init__(self, position: tuple[float, float], shift: bool = False) -> None:
+        self._position = position
+        self._shift = shift
+
+    def GetEventPosition(self) -> tuple[float, float]:
+        return self._position
+
+    def GetShiftKey(self) -> bool:
+        return self._shift
 
 
 class TestNodeCoordinatesAndScale:
@@ -190,3 +230,197 @@ class TestShowDeformedShape:
 
         bounds = viewport.interactor.renderer.actors["deformed_shape"].mapper.dataset.bounds
         assert bounds.z_max == 1.0
+
+
+class TestProjectClickToPlane:
+    def test_center_click_hits_camera_focal_point(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        point = project_click_to_plane(viewport.interactor.renderer, cx, cy, 0.0)
+        assert point == pytest.approx((0.0, 0.0, 0.0), abs=1e-6)
+
+    def test_screen_offset_maps_to_world_offset(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        point_x = project_click_to_plane(viewport.interactor.renderer, cx + 100, cy, 0.0)
+        point_y = project_click_to_plane(viewport.interactor.renderer, cx, cy + 100, 0.0)
+        assert point_x == pytest.approx((1.6666667, 0.0, 0.0), abs=1e-5)
+        assert point_y == pytest.approx((0.0, 1.6666667, 0.0), abs=1e-5)
+
+    def test_projects_onto_the_requested_plane_z(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        point = project_click_to_plane(viewport.interactor.renderer, cx + 50, cy, 2.0)
+        assert point == pytest.approx((0.8333333, 0.0, 2.0), abs=1e-5)
+
+
+class TestPromptExactCoordinates:
+    def test_confirming_returns_prefilled_values(self, qapp: QApplication) -> None:
+        with patch.object(QDialog, "exec", return_value=QDialog.DialogCode.Accepted):
+            result = prompt_exact_coordinates(None, 1.0, 2.0, 3.0)
+        assert result == (1.0, 2.0, 3.0)
+
+    def test_cancelling_returns_none(self, qapp: QApplication) -> None:
+        with patch.object(QDialog, "exec", return_value=QDialog.DialogCode.Rejected):
+            result = prompt_exact_coordinates(None, 1.0, 2.0, 3.0)
+        assert result is None
+
+    def test_dialog_prefills_boxes_with_projected_coordinate(self, qapp: QApplication) -> None:
+        _dialog, x_box, y_box, z_box = _build_coordinate_dialog(None, 1.0, 2.0, 3.0)
+        assert (x_box.value(), y_box.value(), z_box.value()) == (1.0, 2.0, 3.0)
+
+    def test_editing_boxes_before_accept_changes_the_result(self, qapp: QApplication) -> None:
+        """Mesma lógica de :func:`prompt_exact_coordinates`, mas
+        editando os campos antes do ``accept`` — sem depender de
+        interceptar o momento exato do ``exec()`` (modal/bloqueante
+        numa sessão real com display)."""
+        dialog, x_box, y_box, z_box = _build_coordinate_dialog(None, 1.0, 2.0, 3.0)
+        x_box.setValue(9.0)
+        y_box.setValue(8.0)
+        z_box.setValue(7.0)
+        dialog.accept()
+        assert (x_box.value(), y_box.value(), z_box.value()) == (9.0, 8.0, 7.0)
+
+
+class TestInsertionToggleAndGrid:
+    def test_toggling_on_shows_reference_grid(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        viewport.insert_button.setChecked(True)
+        assert "insertion_grid" in viewport.interactor.renderer.actors
+
+    def test_toggling_off_removes_reference_grid(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        viewport.insert_button.setChecked(True)
+        viewport.insert_button.setChecked(False)
+        assert "insertion_grid" not in viewport.interactor.renderer.actors
+
+    def test_changing_plane_z_while_active_redraws_grid_at_new_height(
+        self, qapp: QApplication
+    ) -> None:
+        viewport = ModelViewport()
+        viewport.insert_button.setChecked(True)
+        viewport.plane_z_spinbox.setValue(5.0)
+        bounds = viewport.interactor.renderer.actors["insertion_grid"].mapper.dataset.bounds
+        assert bounds.z_min == pytest.approx(5.0)
+        assert bounds.z_max == pytest.approx(5.0)
+
+    def test_changing_plane_z_while_inactive_does_not_draw_grid(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        viewport.plane_z_spinbox.setValue(5.0)
+        assert "insertion_grid" not in viewport.interactor.renderer.actors
+
+    def test_show_model_updates_grid_size_reference(self, qapp: QApplication) -> None:
+        model, _ = _cantilever()
+        viewport = ModelViewport()
+        viewport.show_model(model)
+        assert viewport._last_model_scale == pytest.approx(3.0)
+
+
+class TestHandleClick:
+    def test_drag_beyond_threshold_is_ignored(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        viewport._handle_click((100.0, 100.0), (110.0, 100.0), shift_pressed=False)
+
+        assert received == []
+        assert "pending_node_markers" not in viewport.interactor.renderer.actors
+
+    def test_plain_click_adds_pending_node_and_emits_signal(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        viewport._handle_click((cx, cy), (cx, cy), shift_pressed=False)
+
+        assert received == [pytest.approx((0.0, 0.0, 0.0), abs=1e-6)]
+        assert "pending_node_markers" in viewport.interactor.renderer.actors
+
+    def test_two_clicks_accumulate_pending_markers(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+
+        viewport._handle_click((cx, cy), (cx, cy), shift_pressed=False)
+        viewport._handle_click((cx + 100, cy), (cx + 100, cy), shift_pressed=False)
+
+        assert len(viewport._pending_points) == 2
+
+    def test_shift_click_uses_dialog_result(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        with patch(
+            "estrutura_metalica.gui.viewport_3d.prompt_exact_coordinates",
+            return_value=(9.0, 8.0, 7.0),
+        ):
+            viewport._handle_click((cx, cy), (cx, cy), shift_pressed=True)
+
+        assert received == [(9.0, 8.0, 7.0)]
+
+    def test_shift_click_cancelled_dialog_adds_nothing(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        with patch(
+            "estrutura_metalica.gui.viewport_3d.prompt_exact_coordinates",
+            return_value=None,
+        ):
+            viewport._handle_click((cx, cy), (cx, cy), shift_pressed=True)
+
+        assert received == []
+        assert "pending_node_markers" not in viewport.interactor.renderer.actors
+
+    def test_show_model_clears_pending_points(self, qapp: QApplication) -> None:
+        model, _ = _cantilever()
+        viewport = ModelViewport()
+        _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        viewport._handle_click((400.0, 300.0), (400.0, 300.0), shift_pressed=False)
+        assert viewport._pending_points
+
+        viewport.show_model(model)
+
+        assert viewport._pending_points == []
+        assert "pending_node_markers" not in viewport.interactor.renderer.actors
+
+
+class TestLeftButtonObservers:
+    def test_press_outside_insert_mode_is_ignored(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        viewport._on_left_button_press(_FakeVtkCaller((10.0, 10.0)), "LeftButtonPressEvent")
+        assert viewport._press_position is None
+
+    def test_release_without_prior_press_is_ignored(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        viewport._on_left_button_release(_FakeVtkCaller((10.0, 10.0)), "LeftButtonReleaseEvent")
+
+        assert received == []
+
+    def test_full_press_release_cycle_inserts_node(self, qapp: QApplication) -> None:
+        viewport = ModelViewport()
+        cx, cy = _configure_deterministic_camera(viewport)
+        viewport.insert_button.setChecked(True)
+        received: list[tuple[float, float, float]] = []
+        viewport.node_inserted.connect(lambda x, y, z: received.append((x, y, z)))
+
+        viewport._on_left_button_press(_FakeVtkCaller((cx, cy)), "LeftButtonPressEvent")
+        viewport._on_left_button_release(_FakeVtkCaller((cx, cy)), "LeftButtonReleaseEvent")
+
+        assert received == [pytest.approx((0.0, 0.0, 0.0), abs=1e-6)]
+        assert viewport._press_position is None

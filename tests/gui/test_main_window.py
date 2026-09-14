@@ -65,6 +65,20 @@ def test_running_analysis_updates_viewport_geometry_and_deformed_shape(
     assert "deformed_shape" in actors
 
 
+def test_node_inserted_from_viewport_adds_row_and_switches_to_model_tab(
+    qapp: QApplication,
+) -> None:
+    window = MainWindow()
+    window.tabs.setCurrentWidget(window.viewport_tab)
+
+    window.viewport_tab.node_inserted.emit(1.0, 2.0, 3.0)
+
+    assert window.model_tab.nodes_panel.row_count == 1
+    nodes = window.model_tab.nodes_panel.nodes()
+    assert (nodes[1].x, nodes[1].y, nodes[1].z) == (1.0, 2.0, 3.0)
+    assert window.tabs.currentWidget() is window.model_tab
+
+
 def test_main_window_show_does_not_raise(qapp: QApplication) -> None:
     window = MainWindow()
     window.show()

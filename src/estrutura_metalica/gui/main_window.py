@@ -1,7 +1,8 @@
 """Janela principal da GUI desktop.
 
-Ver ``docs/adr/ADR-001-gui-stack-e-empacotamento.md`` e
-``docs/adr/ADR-002-viewport-3d.md``.
+Ver ``docs/adr/ADR-001-gui-stack-e-empacotamento.md``,
+``docs/adr/ADR-002-viewport-3d.md`` e
+``docs/adr/ADR-003-insercao-interativa-de-nos.md``.
 """
 
 from __future__ import annotations
@@ -43,3 +44,11 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.viewport_tab, "Viewport 3D")
         self.model_tab.model_built.connect(self.viewport_tab.show_model)
         self.model_tab.analysis_completed.connect(self.viewport_tab.show_deformed_shape)
+        self.viewport_tab.node_inserted.connect(self._on_node_inserted_from_viewport)
+
+    def _on_node_inserted_from_viewport(self, x: float, y: float, z: float) -> None:
+        """Acrescenta o nó inserido por clique à tabela da aba Modelo
+        e muda para ela, para o usuário ver a linha nova imediatamente
+        (ver ``docs/adr/ADR-003-insercao-interativa-de-nos.md``)."""
+        self.model_tab.add_node_from_viewport(x, y, z)
+        self.tabs.setCurrentWidget(self.model_tab)

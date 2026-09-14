@@ -202,6 +202,14 @@ class NodesPanel(_TablePanel):
             nodes[node_id] = Node(id=node_id, x=x, y=y, z=z)
         return nodes
 
+    def next_free_id(self) -> int:
+        """Maior id já lançado na tabela + 1 (ou 1 se estiver vazia) —
+        usado pela inserção interativa de nós no viewport (ver
+        ``docs/adr/ADR-003-insercao-interativa-de-nos.md``), que não
+        tem um id digitado pelo usuário para reaproveitar."""
+        existing_ids = [self._cell_spinbox(row, 0).value() for row in range(self.row_count)]
+        return max(existing_ids, default=0) + 1
+
     def _cell_spinbox(self, row: int, column: int) -> QSpinBox:
         widget = self.table.cellWidget(row, column)
         assert isinstance(widget, QSpinBox)
@@ -563,6 +571,14 @@ class ModelTab(QWidget):
         self.results_panel.show_result(result)
         self.status_label.setText("Análise concluída.")
         self.analysis_completed.emit(model, result)
+
+    def add_node_from_viewport(self, x: float, y: float, z: float) -> None:
+        """Acrescenta uma linha na tabela de nós com o próximo id
+        livre — chamado por ``MainWindow`` quando
+        ``ModelViewport.node_inserted`` é emitido (ver
+        ``docs/adr/ADR-003-insercao-interativa-de-nos.md``)."""
+        node_id = self.nodes_panel.next_free_id()
+        self.nodes_panel.add_row(node_id=node_id, x=x, y=y, z=z)
 
 
 __all__ = [
