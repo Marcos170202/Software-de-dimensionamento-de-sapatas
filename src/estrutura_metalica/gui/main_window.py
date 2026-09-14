@@ -7,13 +7,16 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget
 
+from .model_tab import ModelTab
+
 _WINDOW_TITLE = "Estrutura Metálica — NBR 8800"
 
 
 class MainWindow(QMainWindow):
-    """Janela principal: um ``QTabWidget`` vazio, pronto para receber
-    as abas Modelo, Verificações NBR 8800 e Viewport 3D em
-    incrementos futuros (ver ``docs/adr/``).
+    """Janela principal: aba "Modelo" (nós/elementos/apoios/cargas +
+    execução da análise) e um ``QTabWidget`` pronto para receber as
+    próximas abas (Verificações NBR 8800, Viewport 3D — ver
+    ``docs/adr/``).
     """
 
     def __init__(self) -> None:
@@ -23,3 +26,6 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget(self)
         self.setCentralWidget(self.tabs)
+
+        self.model_tab = ModelTab()
+        self.tabs.addTab(self.model_tab, "Modelo")
