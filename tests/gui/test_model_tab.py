@@ -236,6 +236,43 @@ class TestModelTabIntegration:
         assert tab.status_label.text().startswith("Erro:")
         assert tab.results_panel.displacements_table.rowCount() == 0
 
+    def test_run_analysis_does_not_emit_model_built_when_model_itself_is_invalid(
+        self, qapp: QApplication
+    ) -> None:
+        """``model_built`` só é emitido depois que ``StructuralModel``
+        é montado com sucesso — uma referência de nó inválida num
+        ELEMENTO já falha em ``build_model()``, antes disso."""
+        tab = ModelTab()
+        tab.nodes_panel.add_row(node_id=1)
+        tab.members_panel.add_row()
+        tab.members_panel._spinbox(0, 2).setValue(1)
+        tab.members_panel._spinbox(0, 3).setValue(999)  # nó inexistente
+        received: list[object] = []
+        tab.model_built.connect(lambda model, load_case: received.append(model))
+
+        tab.run_analysis()
+
+        assert received == []
+
+    def test_run_analysis_emits_model_built_even_when_solve_fails(self, qapp: QApplication) -> None:
+        """O modelo em si é válido (``StructuralModel`` aceita), mas o
+        CASO DE CARGA referencia um nó inexistente — esse erro só
+        aparece dentro de ``solve()``, depois que ``model_built`` já
+        deveria ter sido emitido (ver docstring do sinal)."""
+        tab = ModelTab()
+        self._build_cantilever(tab)
+        load_node_widget = tab.loads_panel.table.cellWidget(0, 0)
+        assert isinstance(load_node_widget, QSpinBox)
+        load_node_widget.setValue(999)  # nó inexistente, só no caso de carga
+        received: list[object] = []
+        tab.model_built.connect(lambda model, load_case: received.append(model))
+
+        tab.run_analysis()
+
+        assert len(received) == 1
+        assert tab.last_result is None
+        assert tab.status_label.text().startswith("Erro:")
+
     def test_build_model_exposes_structural_model(self, qapp: QApplication) -> None:
         tab = ModelTab()
         self._build_cantilever(tab)

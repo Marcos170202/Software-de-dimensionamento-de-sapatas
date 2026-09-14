@@ -479,6 +479,15 @@ class ModelTab(QWidget):
     sem que ``ModelTab`` precise conhecer a existência dela (mantém a
     dependência de uma via só: verificações → modelo/análise)."""
 
+    model_built = Signal(object, object)
+    """Emitido com ``(StructuralModel, LoadCase)`` assim que o modelo e
+    o caso de carga são montados com sucesso — ANTES de chamar
+    ``solve()`` (ver ``docs/adr/ADR-002-viewport-3d.md``, "Estratégia
+    de atualização"). A aba de viewport 3D se conecta a este sinal
+    para desenhar a geometria mesmo quando a análise falha depois
+    (mecanismo, apoio insuficiente etc.) — ajuda a localizar
+    visualmente o problema de modelagem."""
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
@@ -526,10 +535,23 @@ class ModelTab(QWidget):
     def run_analysis(self) -> None:
         """Monta o modelo, resolve o caso de carga único e mostra o
         resultado — ou a mensagem de erro, sem interromper a
-        aplicação, se o modelo for inválido ou tiver mecanismo."""
+        aplicação, se o modelo for inválido ou tiver mecanismo.
+
+        Emite ``model_built`` assim que o modelo é montado (mesmo que
+        a análise falhe logo em seguida) — ver docstring do sinal.
+        """
         try:
             model = self.build_model()
             load_case = self.loads_panel.load_case()
+        except ValueError as error:
+            self.last_result = None
+            self.results_panel.clear()
+            self.status_label.setText(f"Erro: {error}")
+            return
+
+        self.model_built.emit(model, load_case)
+
+        try:
             result = solve(model, load_case)
         except (ValueError, AnalysisError) as error:
             self.last_result = None

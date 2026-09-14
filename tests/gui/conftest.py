@@ -8,9 +8,11 @@ from __future__ import annotations
 import os
 
 import pytest
+import pyvista
 from PySide6.QtWidgets import QApplication
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+pyvista.OFF_SCREEN = True
 
 
 @pytest.fixture(scope="session")
