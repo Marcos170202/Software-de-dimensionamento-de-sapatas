@@ -29,6 +29,7 @@ restringir.
 from __future__ import annotations
 
 from .dof import ALL_DOFS, DOF, NUM_DOF_PER_NODE
+from .internal_forces import MemberInternalForces, member_internal_forces, member_local_end_forces
 from .load import LoadCase, NodalLoad
 from .model import StructuralModel
 from .result import AnalysisResult
@@ -42,10 +43,13 @@ __all__ = [
     "AnalysisError",
     "AnalysisResult",
     "LoadCase",
+    "MemberInternalForces",
     "NodalLoad",
     "StructuralModel",
     "Support",
     "assemble_global_stiffness",
     "assemble_load_vector",
+    "member_internal_forces",
+    "member_local_end_forces",
     "solve",
 ]

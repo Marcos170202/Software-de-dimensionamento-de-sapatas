@@ -42,6 +42,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -471,6 +472,13 @@ class ModelTab(QWidget):
     """Aba "Modelo": sub-abas Nós/Elementos/Apoios/Cargas, botão
     "Rodar análise" e o painel de resultados."""
 
+    analysis_completed = Signal(object, object)
+    """Emitido com ``(StructuralModel, AnalysisResult)`` após uma
+    análise bem-sucedida — a aba Verificações NBR 8800 se conecta a
+    este sinal (ver ``MainWindow``) para recalcular as verificações
+    sem que ``ModelTab`` precise conhecer a existência dela (mantém a
+    dependência de uma via só: verificações → modelo/análise)."""
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
@@ -532,6 +540,7 @@ class ModelTab(QWidget):
         self.last_result = result
         self.results_panel.show_result(result)
         self.status_label.setText("Análise concluída.")
+        self.analysis_completed.emit(model, result)
 
 
 __all__ = [
