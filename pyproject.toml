@@ -25,6 +25,14 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.10",
 ]
+# Camada de interface desktop (ver docs/adr/ADR-001-gui-stack-e-empacotamento.md).
+# Opcional: quem só usa o motor de cálculo (estrutura_metalica.model/
+# .analysis/.normative) não precisa instalar Qt/VTK.
+gui = [
+    "PySide6>=6.7",
+    "pyvista>=0.44",
+    "pyvistaqt>=0.11",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
