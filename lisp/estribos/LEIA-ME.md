@@ -131,8 +131,11 @@ evita o empuxo ao vazio.
 
   Com isso a rotina mede as espessuras e o ângulo. Em **Genérico** você digita
   espessuras e ângulo e sai só o detalhe.
-- *Barras* (cm, medidas externas): perna e ancoragem de cada barra, e gancho
-  (automático = 10φ, mínimo 5 cm).
+- *Barras* (cm, medidas externas): perna e ancoragem de cada barra, gancho
+  (automático = 10φ, mínimo 5 cm) e **acréscimo por dobra**, somado ao C uma
+  vez por dobra: 3 dobras com ganchos (os dois ganchos e o canto) ou 1 sem
+  ganchos. O padrão é 0. Com 3 cm, uma barra 59 + 50 com ganchos de 8 dá
+  C = 125 + 9 = **134**, como na prancha do encontro PAR101 x PAR104.
 - *Resultado*: C de cada barra, peso e avisos. Um dos avisos aparece se a perna
   não for longa o suficiente para atravessar o encontro; a rotina calcula essa
   largura e mostra o mínimo.
@@ -145,7 +148,7 @@ evita o empuxo ao vazio.
   embaixo.
 - Cota de distribuição no corte: `6 N.1 N.2 Ø 8.0 c/15` e `(100)`.
 
-`C = perna + ancoragem + 2 x gancho`, arredondado para cima.
+`C = perna + ancoragem + 2 x gancho + nº de dobras x acréscimo`, arredondado para cima.
 
 Exemplo com paredes de 14 cm a 105°:
 

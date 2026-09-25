@@ -59,7 +59,7 @@
         '("e_qtd" . "1") '("e_trecho" . "0") '("e_mais1" . "0") '("e_t1" . "14")
         '("e_t2" . "14") '("e_ang" . "90") '("e_cob" . "2,5") '("e_la1" . "60")
         '("e_lb1" . "50") '("e_la2" . "60") '("e_lb2" . "50") '("e_g" . "8")
-        '("e_gauto" . "1") '("e_dpl" . "1") '("e_ddet" . "1") '("e_ddist" . "1")))
+        '("e_gauto" . "1") '("e_acr" . "0") '("e_dpl" . "1") '("e_ddet" . "1") '("e_ddist" . "1")))
 
 (defun est:g (k) (cdr (assoc k *est:st*)))
 
@@ -487,6 +487,7 @@
       "          : edit_box { key = \"e_g\"; label = \"Gancho nas pontas\"; edit_width = 5; }"
       "          : toggle { key = \"e_gauto\"; label = \"Automatico (10 fi, min. 5)\"; }"
       "        }"
+      "        : edit_box { key = \"e_acr\"; label = \"Acrescimo por dobra (cm)\"; edit_width = 5; }"
       "      }"
       "      : boxed_column {"
       "        label = \"Desenho\";"
@@ -836,13 +837,14 @@
 ;;;   Barra 1: face interna da parede 1 -> face externa da parede 2
 ;;;   Barra 2: face interna da parede 2 -> face externa da parede 1
 ;;; Ganchos a 90 graus nas pontas, voltados para a face oposta da parede.
-;;; C = perna + ancoragem + 2 x gancho (medidas externas, arredondado p/ cima)
+;;; C = perna + ancoragem + 2 x gancho + dobras x acrescimo por dobra
+;;;     (3 dobras com ganchos, 1 sem; medidas externas, arredondado p/ cima)
 ;;; ==========================================================================
 
 (setq *enc:keys*
   '("prefixo" "e_pos1" "e_pos2" "e_bit" "e_esp" "e_qtd" "e_trecho" "e_mais1"
     "incc" "e_t1" "e_t2" "e_ang" "e_cob" "e_la1" "e_lb1" "e_la2" "e_lb2" "e_g"
-    "e_gauto" "unid" "escala" "txt" "e_dpl" "e_ddet" "e_ddist"))
+    "e_gauto" "e_acr" "unid" "escala" "txt" "e_dpl" "e_ddet" "e_ddist"))
 
 (defun enc:bit () (nth (atoi (est:g "e_bit")) *est:bitolas*))
 (defun enc:fi ()  (/ (atof (enc:bit)) 10.0))
@@ -908,8 +910,11 @@
     (/ (distance v1 x1) uf)
     (/ (distance v2 x2) uf)))
 
+(defun enc:ndobras () (if (> (est:n "e_g") 0) 3 1))
+
 (defun enc:C (ka kb)
-  (est:ceil (+ (est:n ka) (est:n kb) (* 2.0 (est:n "e_g")))))
+  (est:ceil (+ (est:n ka) (est:n kb) (* 2.0 (est:n "e_g"))
+               (* (enc:ndobras) (est:n "e_acr")))))
 
 (defun enc:lbl-esp ()
   (if (> (est:n "e_esp") 0) (strcat " c/" (est:g "e_esp")) ""))
@@ -951,6 +956,7 @@
          (<= (est:n "e_la2") 0) (<= (est:n "e_lb2") 0))
      "Informe pernas e ancoragens maiores que zero.")
     ((< (est:n "e_g") 0) "Gancho invalido.")
+    ((< (est:n "e_acr") 0) "Acrescimo por dobra invalido.")
     ((<= (est:n "escala") 0) "Escala invalida.")
     ((<= (est:n "txt") 0) "Altura de texto invalida.")
     ((< (atoi (est:g "e_qtd")) 1) "Quantidade deve ser >= 1.")))
@@ -981,7 +987,11 @@
                 "   |   " (est:g "prefixo") (est:g "e_pos2") " C=" (itoa C2)
                 "   |   Peso total = "
                 (rtos (* (atof (est:g "e_qtd")) (/ (+ C1 C2) 100.0) 0.006165 (* 100.0 fi fi)) 2 2)
-                " kg"))
+                " kg"
+                (if (> (est:n "e_acr") 0)
+                  (strcat "   (inclui " (itoa (enc:ndobras)) (if (= (enc:ndobras) 1) " dobra" " dobras")
+                          " x " (est:g "e_acr") " cm)")
+                  "")))
       (set_tile "res2"
         (strcat (est:nodcl (enc:lbl-det (est:g "e_pos1") C1)) "   /   "
                 (est:nodcl (enc:lbl-det (est:g "e_pos2") C2)) "   |   Distribuicao: "
