@@ -76,8 +76,8 @@ linha de cota (Enter = sobre os pontos clicados).
 - Marque o que desenhar: estribo na seção, detalhe cotado, distribuição.
   Se a distribuição estiver marcada e o trecho ainda não tiver sido medido, os
   pontos do trecho são pedidos antes dos detalhes (a quantidade depende dele).
-- *Cotas como dimensão*: em vez de texto, cria `DIMALIGNED` com o valor em cm
-  (usa o estilo de cota corrente).
+- *Cotas como dimensão*: as cotas do detalhe viram `DIMALIGNED` no estilo
+  `EST_Cota` (por padrão são textos no layer `EST_Cota`, como nas pranchas).
 
 A caixa **Resultado** mostra, em tempo real, B x H, o comprimento C, o peso e
 como a identificação vai sair.
