@@ -2,7 +2,8 @@
 ;;; ESTRIBO.LSP - Detalhamento automatico de estribos (AutoCAD / AutoLISP)
 ;;; --------------------------------------------------------------------------
 ;;; Comandos:
-;;;   ESTRIBO  (ou EST)  -> abre a janela de detalhamento
+;;;   ESTRIBO  (ou EST)  -> abre a janela de detalhamento de estribos
+;;;   ENCONTRO           -> armadura de encontro de paredes (L cruzados)
 ;;;
 ;;; Origem da geometria:
 ;;;   - Generico ........ digita B x H (medidas externas do estribo, em cm)
@@ -19,8 +20,9 @@
 ;;;
 ;;; Layers (padrao das pranchas):
 ;;;   EST_ArmPos   -> desenho do estribo (secao e detalhe)
-;;;   EST_Cota     -> cotas do detalhe e linha de distribuicao
+;;;   EST_Cota     -> cotas do detalhe e distribuicao (cota real, estilo EST_Cota)
 ;;;   EST_ArmTexto -> identificacao (N.16 6 %%c 5.0 c/17 C=125)
+;;;   Todos os textos em Arial (estilo "Arial", criado se nao existir)
 ;;;
 ;;; Comprimento:
 ;;;   Fechado : C = perimetro externo + 2 x (perna + acrescimo de dobra)
@@ -51,7 +53,13 @@
         '("tipo" . "t0") '("b" . "14") '("h" . "35") '("perna" . "5")
         '("acr" . "2,5") '("auto" . "1") '("cob" . "2,5") '("unid" . "0")
         '("escala" . "25") '("txt" . "2,5") '("dsec" . "1") '("ddet" . "1")
-        '("ddist" . "0") '("cotadim" . "0")))
+        '("ddist" . "0") '("cotadim" . "0")
+        ;; ENCONTRO
+        '("e_pos1" . "1") '("e_pos2" . "2") '("e_bit" . "3") '("e_esp" . "15")
+        '("e_qtd" . "1") '("e_trecho" . "0") '("e_mais1" . "0") '("e_t1" . "14")
+        '("e_t2" . "14") '("e_ang" . "90") '("e_cob" . "2,5") '("e_la1" . "60")
+        '("e_lb1" . "50") '("e_la2" . "60") '("e_lb2" . "50") '("e_g" . "8")
+        '("e_gauto" . "1") '("e_dpl" . "1") '("e_ddet" . "1") '("e_ddist" . "1")))
 
 (defun est:g (k) (cdr (assoc k *est:st*)))
 
@@ -421,6 +429,89 @@
       "    : button { key = \"accept\"; label = \"Desenhar\"; is_default = true; width = 14; }"
       "    : button { key = \"cancel\"; label = \"Cancelar\"; is_cancel = true; width = 14; }"
       "  }"
+      "}"
+      "encontro : dialog {"
+      "  label = \"ENCONTRO - Armadura de encontro de paredes (L cruzados)\";"
+      "  : row {"
+      "    : column {"
+      "      : boxed_column {"
+      "        label = \"Identificacao\";"
+      "        : row {"
+      "          : edit_box { key = \"prefixo\"; label = \"Prefixo\"; edit_width = 4; }"
+      "          : edit_box { key = \"e_pos1\"; label = \"Barra 1\"; edit_width = 4; }"
+      "          : edit_box { key = \"e_pos2\"; label = \"Barra 2\"; edit_width = 4; }"
+      "        }"
+      "        : popup_list { key = \"e_bit\"; label = \"Bitola (mm)\"; edit_width = 8; }"
+      "        : row {"
+      "          : edit_box { key = \"e_esp\"; label = \"Espac. c/ (cm)\"; edit_width = 6; }"
+      "          : edit_box { key = \"e_qtd\"; label = \"Quantidade\"; edit_width = 6; }"
+      "        }"
+      "        : row {"
+      "          : edit_box { key = \"e_trecho\"; label = \"Trecho (cm)\"; edit_width = 7; }"
+      "          : button { key = \"btn_trecho\"; label = \"Medir <\"; fixed_width = true; }"
+      "        }"
+      "        : toggle { key = \"e_mais1\"; label = \"Quantidade = L/s + 1\"; }"
+      "        : toggle { key = \"incc\"; label = \"Incluir C= na identificacao\"; }"
+      "      }"
+      "      : boxed_column {"
+      "        label = \"Paredes (cm)\";"
+      "        : text { key = \"e_origem\"; label = \"\"; width = 46; }"
+      "        : row {"
+      "          : edit_box { key = \"e_t1\"; label = \"Espessura 1\"; edit_width = 5; }"
+      "          : edit_box { key = \"e_t2\"; label = \"Espessura 2\"; edit_width = 5; }"
+      "        }"
+      "        : row {"
+      "          : edit_box { key = \"e_ang\"; label = \"Angulo (graus)\"; edit_width = 5; }"
+      "          : edit_box { key = \"e_cob\"; label = \"Cobrimento\"; edit_width = 5; }"
+      "        }"
+      "        : row {"
+      "          : button { key = \"btn_enc\"; label = \"Selecionar encontro <\"; }"
+      "          : button { key = \"btn_gen\"; label = \"Generico\"; }"
+      "        }"
+      "      }"
+      "    }"
+      "    : column {"
+      "      : boxed_column {"
+      "        label = \"Barras (cm) - medidas externas\";"
+      "        : text { label = \"Barra 1: face interna da parede 1 -> face externa da parede 2\"; }"
+      "        : row {"
+      "          : edit_box { key = \"e_la1\"; label = \"Perna na parede 1\"; edit_width = 5; }"
+      "          : edit_box { key = \"e_lb1\"; label = \"Ancoragem na parede 2\"; edit_width = 5; }"
+      "        }"
+      "        : text { label = \"Barra 2: face interna da parede 2 -> face externa da parede 1\"; }"
+      "        : row {"
+      "          : edit_box { key = \"e_la2\"; label = \"Perna na parede 2\"; edit_width = 5; }"
+      "          : edit_box { key = \"e_lb2\"; label = \"Ancoragem na parede 1\"; edit_width = 5; }"
+      "        }"
+      "        : row {"
+      "          : edit_box { key = \"e_g\"; label = \"Gancho nas pontas\"; edit_width = 5; }"
+      "          : toggle { key = \"e_gauto\"; label = \"Automatico (10 fi, min. 5)\"; }"
+      "        }"
+      "      }"
+      "      : boxed_column {"
+      "        label = \"Desenho\";"
+      "        : row {"
+      "          : popup_list { key = \"unid\"; label = \"Unidade\"; edit_width = 5; }"
+      "          : edit_box { key = \"escala\"; label = \"Escala 1:\"; edit_width = 5; }"
+      "          : edit_box { key = \"txt\"; label = \"Texto (mm)\"; edit_width = 4; }"
+      "        }"
+      "        : toggle { key = \"e_dpl\"; label = \"Desenhar barras na planta\"; }"
+      "        : toggle { key = \"e_ddet\"; label = \"Desenhar detalhes cotados ao lado\"; }"
+      "        : toggle { key = \"e_ddist\"; label = \"Desenhar distribuicao (cota no corte)\"; }"
+      "      }"
+      "    }"
+      "  }"
+      "  : boxed_column {"
+      "    label = \"Resultado\";"
+      "    : text { key = \"res1\"; label = \"\"; width = 96; }"
+      "    : text { key = \"res2\"; label = \"\"; width = 96; }"
+      "    : text { key = \"res3\"; label = \"\"; width = 96; }"
+      "  }"
+      "  : row {"
+      "    fixed_width = true; alignment = centered;"
+      "    : button { key = \"accept\"; label = \"Desenhar\"; is_default = true; width = 14; }"
+      "    : button { key = \"cancel\"; label = \"Cancelar\"; is_cancel = true; width = 14; }"
+      "  }"
       "}")
     (write-line l f))
   (close f)
@@ -603,7 +694,7 @@
 
 ;;; Texto centralizado (meio-centro)
 (defun est:text (pt str h ang lay)
-  (entmakex (list '(0 . "TEXT") (cons 8 lay) (cons 7 (getvar "TEXTSTYLE"))
+  (entmakex (list '(0 . "TEXT") (cons 8 lay) (cons 7 "Arial")
                   (cons 10 (est:3d pt)) (cons 11 (est:3d pt)) (cons 40 h)
                   (cons 1 str) (cons 50 ang) '(72 . 1) '(73 . 2))))
 
@@ -617,15 +708,69 @@
   (vla-get-ModelSpace (vla-get-ActiveDocument (vlax-get-acad-object))))
 
 ;;; Cota de um lado do detalhe (texto do lado de fora ou DIMALIGNED)
-(defun est:dimtext (p1 p2 v th / nr mid str o)
+(defun est:dimtext (p1 p2 v th / nr mid str)
   (setq nr (est:rnorm p1 p2) mid (est:mid p1 p2) str (est:fmt v))
   (if (= (est:g "cotadim") "1")
-    (progn
-      (setq o (vla-AddDimAligned (est:ms) (vlax-3d-point (est:3d p1)) (vlax-3d-point (est:3d p2))
-                                 (vlax-3d-point (est:3d (est:add mid (est:mul nr (* 1.5 th)))))))
-      (vla-put-Layer o "EST_Cota")
-      (vla-put-TextOverride o str))
+    (est:dim p1 p2 (est:add mid (est:mul nr (* 1.2 th)))
+             (if (equal (/ (distance p1 p2) (est:uf)) v 0.05) nil str))
     (est:text (est:add mid (est:mul nr (* 0.9 th))) str th (est:readang (angle p1 p2)) "EST_Cota")))
+
+;;; Layers, estilo de texto e estilo de cota
+(defun est:setup ( / l)
+  (foreach l *est:layers* (est:layer (car l) (cadr l)))
+  (est:textstyle)
+  (est:dimstyle))
+
+;;; Estilo de texto Arial (criado se nao existir)
+(defun est:textstyle ()
+  (if (not (tblsearch "STYLE" "Arial"))
+    (entmake '((0 . "STYLE") (100 . "AcDbSymbolTableRecord")
+               (100 . "AcDbTextStyleTableRecord") (2 . "Arial") (70 . 0)
+               (40 . 0.0) (41 . 1.0) (50 . 0.0) (71 . 0) (42 . 2.5)
+               (3 . "arial.ttf") (4 . "")))))
+
+;;; Estilo de cota EST_Cota (criado se nao existir): traco obliquo, texto
+;;; Arial acima da linha e alinhado, 1 casa decimal com virgula, cores ByLayer.
+;;; Tamanhos em mm de papel; a escala vai em cada cota (ScaleFactor).
+(defun est:dimstyle ( / vars old doc ds)
+  (if (not (tblsearch "DIMSTYLE" "EST_Cota"))
+    (progn
+      (setq vars (list '("DIMBLK" . "_OBLIQUE") '("DIMASZ" . 1.5)
+                       (cons "DIMTXT" (est:n "txt")) '("DIMEXE" . 1.5)
+                       '("DIMEXO" . 1.5) '("DIMGAP" . 0.8) '("DIMTAD" . 1)
+                       '("DIMTIH" . 0) '("DIMTOH" . 0) '("DIMTIX" . 1)
+                       '("DIMLUNIT" . 2) '("DIMDEC" . 1) '("DIMZIN" . 8)
+                       '("DIMDSEP" . ",") '("DIMSCALE" . 1.0) '("DIMLFAC" . 1.0)
+                       '("DIMCLRD" . 256) '("DIMCLRE" . 256) '("DIMCLRT" . 256)
+                       '("DIMTXSTY" . "Arial"))
+            old (mapcar '(lambda (v) (cons (car v) (getvar (car v)))) vars))
+      (foreach v vars (vl-catch-all-apply 'setvar (list (car v) (cdr v))))
+      (setq doc (vla-get-ActiveDocument (vlax-get-acad-object))
+            ds (vla-add (vla-get-DimStyles doc) "EST_Cota"))
+      (vla-CopyFrom ds doc)
+      (foreach v old
+        (vl-catch-all-apply 'setvar
+          (list (car v) (if (and (= (car v) "DIMBLK") (= (cdr v) "")) "." (cdr v))))))))
+
+;;; Cota real (DIMALIGNED) no estilo e layer EST_Cota.
+;;; O valor medido sai em cm em qualquer unidade de desenho.
+(defun est:dim (p1 p2 loc ovr / o)
+  (setq o (vla-AddDimAligned (est:ms) (vlax-3d-point (est:3d p1)) (vlax-3d-point (est:3d p2))
+                             (vlax-3d-point (est:3d loc))))
+  (vla-put-StyleName o "EST_Cota")
+  (vla-put-Layer o "EST_Cota")
+  (vla-put-ScaleFactor o (* (est:n "escala") (est:uf) 0.1))
+  (vla-put-LinearScaleFactor o (/ 1.0 (est:uf)))
+  (vla-put-TextStyle o "Arial")
+  (if ovr (vla-put-TextOverride o ovr))
+  o)
+
+;;; Linha de distribuicao como cota real:
+;;;   "6 N.16 %%c 5.0 c/17" acima da linha e "(111)" (medido) abaixo
+(defun est:dist-dim (p1 p2 lbl / loc)
+  (setq loc (getpoint (est:3d p1) "\nPosicao da linha de cota <sobre os pontos>: "))
+  (setq loc (if loc (est:2d (trans loc 1 0)) p1))
+  (est:dim p1 p2 loc (strcat lbl "\\X(<>)")))
 
 ;;; Estribo na secao / no local desenhado
 (defun est:draw-stirrup (P)
@@ -644,26 +789,22 @@
   (est:text (list (/ (+ (car (car bb)) (car (cadr bb))) 2.0) (- (cadr (car bb)) (* 3.0 th)))
             (est:lbl-det C) th 0.0 "EST_ArmTexto"))
 
-;;; Linha de distribuicao: "6 N.16 %%c 5.0 c/17" em cima e "(111)" embaixo
-(defun est:draw-dist (p1 p2 th / a tmp dir up w mid tk)
-  (setq a (angle p1 p2))
-  (if (/= (est:readang a) a) (setq tmp p1 p1 p2 p2 tmp a (angle p1 p2)))
-  (setq dir (est:unit (est:sub p2 p1)) up (list (- (cadr dir)) (car dir))
-        w (est:unit (est:add dir up)) mid (est:mid p1 p2) tk (* 0.5 th))
-  (est:line p1 p2 "EST_Cota")
-  (foreach pt (list p1 p2)
-    (est:line (est:sub pt (est:mul w tk)) (est:add pt (est:mul w tk)) "EST_Cota")
-    (est:line (est:sub pt (est:mul up th)) (est:add pt (est:mul up th)) "EST_Cota"))
-  (est:text (est:add mid (est:mul up (* 0.9 th))) (est:lbl-dist) th a "EST_ArmTexto")
-  (est:text (est:sub mid (est:mul up (* 0.9 th)))
-            (strcat "(" (est:fmt (/ (distance p1 p2) (est:uf))) ")") th a "EST_ArmTexto"))
-
 ;;; --------------------------------------------------------------------------
 ;;; Execucao apos o OK
 ;;; --------------------------------------------------------------------------
 
 (defun est:run ( / P C th ip def bb p1 p2 l)
-  (foreach l *est:layers* (est:layer (car l) (cadr l)))
+  (est:setup)
+  ;; 0) trecho da distribuicao antes dos detalhes (a quantidade depende dele)
+  (if (and (= (est:g "ddist") "1") (not *est:distpts*))
+    (if (and (setq p1 (getpoint "\nInicio do trecho de distribuicao <Enter pula>: "))
+             (setq p2 (getpoint p1 "\nFim do trecho: ")))
+      (progn
+        (setq *est:distpts* (list (est:2d (trans p1 1 0)) (est:2d (trans p2 1 0))))
+        (if (<= (est:n "trecho") 0)
+          (progn
+            (est:s "trecho" (est:fmt (/ (apply 'distance *est:distpts*) (est:uf))))
+            (est:auto-qtd))))))
   (setq P (est:cur-poly) C (est:calcC P (est:g "tipo")) th (est:th))
   ;; 1) estribo dentro da secao (ou no contorno desenhado)
   (if (and (= (est:g "dsec") "1") (member *est:src* '(SEC DES)))
@@ -682,18 +823,315 @@
   ;; 3) distribuicao em planta / elevacao
   (if (= (est:g "ddist") "1")
     (progn
-      (if (not *est:distpts*)
-        (if (and (setq p1 (getpoint "\nInicio do trecho de distribuicao <Enter pula>: "))
-                 (setq p2 (getpoint p1 "\nFim do trecho: ")))
-          (progn
-            (setq *est:distpts* (list (est:2d (trans p1 1 0)) (est:2d (trans p2 1 0))))
-            (if (<= (est:n "trecho") 0)
-              (progn
-                (est:s "trecho" (est:fmt (/ (apply 'distance *est:distpts*) (est:uf))))
-                (est:auto-qtd))))))
       (if *est:distpts*
-        (est:draw-dist (car *est:distpts*) (cadr *est:distpts*) th))))
+        (est:dist-dim (car *est:distpts*) (cadr *est:distpts*) (est:lbl-dist)))))
   (princ (strcat "\n" (est:lbl-det C) "  ->  estribo " (est:g "b") " x " (est:g "h") " cm")))
+
+;;; ==========================================================================
+;;; ENCONTRO - armadura de encontro de paredes em L cruzados
+;;; --------------------------------------------------------------------------
+;;; Cada barra vem pela face INTERNA da sua parede, atravessa o encontro ate
+;;; a face EXTERNA da outra parede e dobra ao longo dela (ancoragem). Assim
+;;; nenhuma barra dobra no canto interno (evita o empuxo ao vazio).
+;;;   Barra 1: face interna da parede 1 -> face externa da parede 2
+;;;   Barra 2: face interna da parede 2 -> face externa da parede 1
+;;; Ganchos a 90 graus nas pontas, voltados para a face oposta da parede.
+;;; C = perna + ancoragem + 2 x gancho (medidas externas, arredondado p/ cima)
+;;; ==========================================================================
+
+(setq *enc:keys*
+  '("prefixo" "e_pos1" "e_pos2" "e_bit" "e_esp" "e_qtd" "e_trecho" "e_mais1"
+    "incc" "e_t1" "e_t2" "e_ang" "e_cob" "e_la1" "e_lb1" "e_la2" "e_lb2" "e_g"
+    "e_gauto" "unid" "escala" "txt" "e_dpl" "e_ddet" "e_ddist"))
+
+(defun enc:bit () (nth (atoi (est:g "e_bit")) *est:bitolas*))
+(defun enc:fi ()  (/ (atof (enc:bit)) 10.0))
+
+;;; Geometria do encontro: (canto_ext d1 d2 n1 n2 t1 t2), unidades de desenho.
+;;; d1/d2 = direcao das faces externas; n1/n2 = normal da face externa para a
+;;; interna de cada parede; t1/t2 = espessuras.
+(defun enc:geo-from (po d1 d2 pin / v)
+  (setq v (est:sub pin po))
+  (list po d1 d2
+        (est:unit (est:sub v (est:mul d1 (est:dot v d1))))
+        (est:unit (est:sub v (est:mul d2 (est:dot v d2))))
+        (abs (est:cross d1 v)) (abs (est:cross d2 v))))
+
+(defun enc:geo ( / uf a d1 d2)
+  (setq uf (est:uf))
+  (cond
+    ((= *enc:src* 'SEL) *enc:pick*)
+    ((and (> (est:n "e_ang") 5.0) (< (est:n "e_ang") 175.0))
+     (setq a (* (est:n "e_ang") (/ pi 180.0))
+           d1 '(1.0 0.0) d2 (list (cos a) (- (sin a))))
+     (list '(0.0 0.0) d1 d2
+           (est:unit (est:sub d2 (est:mul d1 (est:dot d2 d1))))
+           (est:unit (est:sub d1 (est:mul d2 (est:dot d1 d2))))
+           (* (est:n "e_t1") uf) (* (est:n "e_t2") uf)))))
+
+(defun enc:angle (geo)
+  (* (atan (abs (est:cross (nth 1 geo) (nth 2 geo))) (est:dot (nth 1 geo) (nth 2 geo)))
+     (/ 180.0 pi)))
+
+;;; Interseccao de duas retas (ponto + direcao)
+(defun enc:xl (p d q e / x)
+  (setq x (inters p (est:add p d) q (est:add q e) nil))
+  (if x (est:2d x)))
+
+;;; Barra em L: vertice vx, perna (da, la), ancoragem (db, lb), ganchos
+(defun enc:lbar (vx da la db lb ha ga hb gb / pa pb)
+  (setq pa (est:add vx (est:mul da la)) pb (est:add vx (est:mul db lb)))
+  (list (est:add pa (est:mul ha ga)) pa vx pb (est:add pb (est:mul hb gb))))
+
+;;; Retorna (barra1 barra2 travessia1_cm travessia2_cm).
+;;; real = T: ganchos com o comprimento informado (detalhe);
+;;; real = nil: ganchos limitados a espessura livre (planta).
+(defun enc:bars (geo real / uf po d1 d2 n1 n2 t1 t2 cb g ga1 gb1 ga2 gb2 v1 v2 x1 x2)
+  (setq uf (est:uf) po (nth 0 geo) d1 (nth 1 geo) d2 (nth 2 geo)
+        n1 (nth 3 geo) n2 (nth 4 geo) t1 (nth 5 geo) t2 (nth 6 geo)
+        cb (* (est:n "e_cob") uf) g (* (est:n "e_g") uf))
+  (if real
+    (setq ga1 g gb1 g ga2 g gb2 g)
+    (setq ga1 (min g (- t1 cb cb)) gb1 (min g (- t2 cb cb))
+          ga2 (min g (- t2 cb cb)) gb2 (min g (- t1 cb cb))))
+  ;; vertices: face interna de uma parede x face externa da outra
+  (setq v1 (enc:xl (est:add po (est:mul n1 (- t1 cb))) d1 (est:add po (est:mul n2 cb)) d2)
+        v2 (enc:xl (est:add po (est:mul n2 (- t2 cb))) d2 (est:add po (est:mul n1 cb)) d1))
+  ;; saida do encontro: onde a perna cruza a face interna da outra parede
+  (setq x1 (enc:xl v1 d1 (est:add po (est:mul n2 t2)) d2)
+        x2 (enc:xl v2 d2 (est:add po (est:mul n1 t1)) d1))
+  (list
+    (enc:lbar v1 d1 (* (est:n "e_la1") uf) d2 (* (est:n "e_lb1") uf)
+              (est:mul n1 -1.0) ga1 n2 gb1)
+    (enc:lbar v2 d2 (* (est:n "e_la2") uf) d1 (* (est:n "e_lb2") uf)
+              (est:mul n2 -1.0) ga2 n1 gb2)
+    (/ (distance v1 x1) uf)
+    (/ (distance v2 x2) uf)))
+
+(defun enc:C (ka kb)
+  (est:ceil (+ (est:n ka) (est:n kb) (* 2.0 (est:n "e_g")))))
+
+(defun enc:lbl-esp ()
+  (if (> (est:n "e_esp") 0) (strcat " c/" (est:g "e_esp")) ""))
+
+;;; Detalhe: N.1 6 %%c 8.0 c/15 C=134
+(defun enc:lbl-det (pos C)
+  (strcat (est:g "prefixo") pos " " (est:g "e_qtd") " %%c " (enc:bit) (enc:lbl-esp)
+          (if (= (est:g "incc") "1") (strcat " C=" (itoa C)) "")))
+
+;;; Distribuicao: 6 N.1 N.2 %%c 8.0 c/15
+(defun enc:lbl-dist ()
+  (strcat (est:g "e_qtd") " " (est:g "prefixo") (est:g "e_pos1") " "
+          (est:g "prefixo") (est:g "e_pos2") " %%c " (enc:bit) (enc:lbl-esp)))
+
+;;; --------------------------------------------------------------------------
+;;; Janela
+;;; --------------------------------------------------------------------------
+
+(defun enc:auto-g ()
+  (if (= (est:g "e_gauto") "1")
+    (est:s "e_g" (est:fmt (max 5.0 (* 10.0 (enc:fi)))))))
+
+(defun enc:auto-qtd ( / l s)
+  (setq l (est:n "e_trecho") s (est:n "e_esp"))
+  (if (and (> l 0) (> s 0))
+    (est:s "e_qtd"
+      (itoa (max 1 (+ (fix (+ (/ l s) 1e-6)) (if (= (est:g "e_mais1") "1") 1 0)))))))
+
+(defun enc:check (geo / c2)
+  (setq c2 (* 2.0 (est:n "e_cob")))
+  (cond
+    ((not geo) "Angulo invalido: use entre 5 e 175 graus.")
+    ((or (= (vl-string-trim " " (est:g "e_pos1")) "")
+         (= (vl-string-trim " " (est:g "e_pos2")) ""))
+     "Informe as posicoes das duas barras.")
+    ((or (<= (/ (nth 5 geo) (est:uf)) c2) (<= (/ (nth 6 geo) (est:uf)) c2))
+     "Espessura da parede menor que 2 x cobrimento.")
+    ((or (<= (est:n "e_la1") 0) (<= (est:n "e_lb1") 0)
+         (<= (est:n "e_la2") 0) (<= (est:n "e_lb2") 0))
+     "Informe pernas e ancoragens maiores que zero.")
+    ((< (est:n "e_g") 0) "Gancho invalido.")
+    ((<= (est:n "escala") 0) "Escala invalida.")
+    ((<= (est:n "txt") 0) "Altura de texto invalida.")
+    ((< (atoi (est:g "e_qtd")) 1) "Quantidade deve ser >= 1.")))
+
+(defun enc:refresh ( / geo uf err br C1 C2 fi msg)
+  (setq geo (enc:geo) uf (est:uf))
+  (if (and geo (= *enc:src* 'SEL))
+    (progn
+      (est:s "e_t1" (est:fmt (/ (nth 5 geo) uf)))
+      (est:s "e_t2" (est:fmt (/ (nth 6 geo) uf)))
+      (est:s "e_ang" (est:fmt (enc:angle geo)))))
+  (foreach k '("e_t1" "e_t2" "e_ang" "e_g" "e_qtd" "e_trecho") (set_tile k (est:g k)))
+  (foreach k '("e_t1" "e_t2" "e_ang") (mode_tile k (if (= *enc:src* 'SEL) 1 0)))
+  (mode_tile "e_g" (if (= (est:g "e_gauto") "1") 1 0))
+  (set_tile "e_origem"
+    (if (= *enc:src* 'SEL)
+      "Origem: encontro selecionado no desenho"
+      "Origem: generico (espessuras e angulo digitados)"))
+  (setq err (enc:check geo))
+  (if err
+    (progn (set_tile "res1" (strcat "ERRO: " err)) (set_tile "res2" "") (set_tile "res3" ""))
+    (progn
+      (setq br (enc:bars geo T) fi (enc:fi)
+            C1 (enc:C "e_la1" "e_lb1") C2 (enc:C "e_la2" "e_lb2"))
+      (set_tile "res1"
+        (strcat "Paredes " (est:g "e_t1") " / " (est:g "e_t2") " cm a " (est:g "e_ang") " graus"
+                "   |   " (est:g "prefixo") (est:g "e_pos1") " C=" (itoa C1)
+                "   |   " (est:g "prefixo") (est:g "e_pos2") " C=" (itoa C2)
+                "   |   Peso total = "
+                (rtos (* (atof (est:g "e_qtd")) (/ (+ C1 C2) 100.0) 0.006165 (* 100.0 fi fi)) 2 2)
+                " kg"))
+      (set_tile "res2"
+        (strcat (est:nodcl (enc:lbl-det (est:g "e_pos1") C1)) "   /   "
+                (est:nodcl (enc:lbl-det (est:g "e_pos2") C2)) "   |   Distribuicao: "
+                (est:nodcl (enc:lbl-dist))
+                (if (> (est:n "e_trecho") 0) (strcat " (" (est:g "e_trecho") ")") "")))
+      (setq msg
+        (cond
+          ((<= (est:n "e_la1") (nth 2 br))
+           (strcat "Atencao: a perna da barra 1 precisa passar de " (est:fmt (nth 2 br))
+                   " cm para atravessar o encontro."))
+          ((<= (est:n "e_la2") (nth 3 br))
+           (strcat "Atencao: a perna da barra 2 precisa passar de " (est:fmt (nth 3 br))
+                   " cm para atravessar o encontro."))
+          ((> (* (est:n "e_g") uf) (- (min (nth 5 geo) (nth 6 geo)) (* 2.0 (est:n "e_cob") uf)))
+           "Atencao: gancho maior que a espessura livre; na planta ele sera limitado.")
+          (T "OK: as barras atravessam o encontro e ancoram na face externa (sem empuxo ao vazio).")))
+      (set_tile "res3" msg))))
+
+(defun enc:read-all ()
+  (foreach k *enc:keys* (est:s k (get_tile k))))
+
+(defun enc:changed (k)
+  (est:s k (get_tile k))
+  (cond
+    ((member k '("e_bit" "e_gauto")) (enc:auto-g))
+    ((member k '("e_esp" "e_trecho" "e_mais1")) (enc:auto-qtd)))
+  (enc:refresh))
+
+(defun enc:validate ( / err)
+  (setq err (enc:check (enc:geo)))
+  (if err (progn (alert err) nil) T))
+
+(defun enc:dlg-init ()
+  (start_list "e_bit") (mapcar 'add_list *est:bitolas*) (end_list)
+  (start_list "unid") (mapcar 'add_list *est:unids*) (end_list)
+  (foreach k *enc:keys* (set_tile k (est:g k)))
+  (foreach k *enc:keys* (action_tile k "(enc:changed $key)"))
+  (action_tile "btn_enc" "(enc:read-all)(done_dialog 2)")
+  (action_tile "btn_trecho" "(enc:read-all)(done_dialog 4)")
+  (action_tile "btn_gen" "(setq *enc:src* 'GEN)(enc:refresh)")
+  (action_tile "accept" "(enc:read-all)(if (enc:validate) (done_dialog 1))")
+  (enc:auto-g)
+  (enc:refresh))
+
+;;; --------------------------------------------------------------------------
+;;; Selecoes
+;;; --------------------------------------------------------------------------
+
+(defun enc:pick ( / po p1 p2 pin w d1 d2 geo)
+  (if (and (setq po (getpoint "\nCanto EXTERNO do encontro: "))
+           (setq p1 (getpoint po "\nPonto na face externa da parede 1: "))
+           (setq p2 (getpoint po "\nPonto na face externa da parede 2: "))
+           (setq pin (getpoint po "\nCanto INTERNO do encontro: ")))
+    (progn
+      (setq w (mapcar '(lambda (q) (est:2d (trans q 1 0))) (list po p1 p2 pin))
+            d1 (est:unit (est:sub (nth 1 w) (nth 0 w)))
+            d2 (est:unit (est:sub (nth 2 w) (nth 0 w))))
+      (setq geo (enc:geo-from (nth 0 w) d1 d2 (nth 3 w)))
+      (if (and (> (abs (est:cross d1 d2)) 0.05)
+               (> (nth 5 geo) 1e-6) (> (nth 6 geo) 1e-6)
+               (> (est:dot (nth 3 geo) d2) 0.0) (> (est:dot (nth 4 geo) d1) 0.0))
+        (setq *enc:pick* geo *enc:src* 'SEL)
+        (alert "Pontos invalidos: confira o canto externo, as faces externas e o canto interno.")))))
+
+(defun enc:pick-trecho ( / p1 p2)
+  (if (and (setq p1 (getpoint "\nInicio do trecho de distribuicao (no corte): "))
+           (setq p2 (getpoint p1 "\nFim do trecho: ")))
+    (progn
+      (setq *enc:distpts* (list (est:2d (trans p1 1 0)) (est:2d (trans p2 1 0))))
+      (est:s "e_trecho" (est:fmt (/ (apply 'distance *enc:distpts*) (est:uf))))
+      (enc:auto-qtd))))
+
+;;; --------------------------------------------------------------------------
+;;; Desenho
+;;; --------------------------------------------------------------------------
+
+;;; Cota de um trecho, sempre do lado de fora da barra (longe do centro)
+(defun enc:segdim (p1 p2 v th cen / tmp)
+  (if (< (est:dot (est:rnorm p1 p2) (est:sub (est:mid p1 p2) cen)) 0.0)
+    (setq tmp p1 p1 p2 p2 tmp))
+  (est:dimtext p1 p2 v th))
+
+;;; Detalhe cotado de uma barra; retorna a largura ocupada
+(defun enc:detail (pts ip vals lbl th / bb d q cen i)
+  (setq bb (est:bbox pts) d (est:sub ip (car bb))
+        q (mapcar '(lambda (pt) (est:add pt d)) pts)
+        cen (est:mul (est:add (est:add (nth 1 q) (nth 2 q)) (nth 3 q)) (/ 1.0 3.0)))
+  (est:pline q nil "EST_ArmPos")
+  (setq i 0)
+  (repeat 4
+    (if (> (nth i vals) 0) (enc:segdim (nth i q) (nth (1+ i) q) (nth i vals) th cen))
+    (setq i (1+ i)))
+  (setq bb (est:bbox q))
+  (est:text (list (/ (+ (car (car bb)) (car (cadr bb))) 2.0) (- (cadr (car bb)) (* 3.0 th)))
+            lbl th 0.0 "EST_ArmTexto")
+  (max (- (car (cadr bb)) (car (car bb))) (* 0.6 th (strlen lbl))))
+
+;;; Nome da barra na planta, do lado de dentro da parede, ao longo da perna
+(defun enc:tag (bar nrm pos th / p a)
+  (setq p (est:add (est:mid (nth 1 bar) (nth 2 bar))
+                   (est:mul nrm (+ (* (est:n "e_cob") (est:uf)) (* 1.2 th))))
+        a (est:readang (angle (nth 2 bar) (nth 1 bar))))
+  (est:text p (strcat (est:g "prefixo") pos) th a "EST_ArmTexto"))
+
+(defun enc:run ( / geo th pl rl C1 C2 bb def ip w1 p1 p2)
+  (est:setup)
+  ;; 0) trecho da distribuicao antes dos detalhes (a quantidade depende dele)
+  (if (and (= (est:g "e_ddist") "1") (not *enc:distpts*))
+    (if (and (setq p1 (getpoint "\nInicio do trecho de distribuicao <Enter pula>: "))
+             (setq p2 (getpoint p1 "\nFim do trecho: ")))
+      (progn
+        (setq *enc:distpts* (list (est:2d (trans p1 1 0)) (est:2d (trans p2 1 0))))
+        (if (<= (est:n "e_trecho") 0)
+          (progn
+            (est:s "e_trecho" (est:fmt (/ (apply 'distance *enc:distpts*) (est:uf))))
+            (enc:auto-qtd))))))
+  (setq geo (enc:geo) th (est:th)
+        pl (enc:bars geo nil) rl (enc:bars geo T)
+        C1 (enc:C "e_la1" "e_lb1") C2 (enc:C "e_la2" "e_lb2"))
+  ;; 1) barras na planta (so quando o encontro foi selecionado)
+  (if (and (= (est:g "e_dpl") "1") (= *enc:src* 'SEL))
+    (progn
+      (est:pline (nth 0 pl) nil "EST_ArmPos")
+      (est:pline (nth 1 pl) nil "EST_ArmPos")
+      (enc:tag (nth 0 pl) (nth 3 geo) (est:g "e_pos1") th)
+      (enc:tag (nth 1 pl) (nth 4 geo) (est:g "e_pos2") th)))
+  ;; 2) detalhes cotados
+  (if (= (est:g "e_ddet") "1")
+    (progn
+      (if (= *enc:src* 'SEL)
+        (setq bb (est:bbox (append (nth 0 pl) (nth 1 pl)))
+              def (list (+ (car (cadr bb)) (* 8.0 th)) (cadr (car bb)))))
+      (setq ip (getpoint (if def
+                           "\nPonto dos detalhes (canto inferior esquerdo) <ao lado>: "
+                           "\nPonto dos detalhes (canto inferior esquerdo) <Enter pula>: ")))
+      (setq ip (if ip (est:2d (trans ip 1 0)) def))
+      (if ip
+        (progn
+          (setq w1 (enc:detail (nth 0 rl) ip
+                     (list (est:n "e_g") (est:n "e_la1") (est:n "e_lb1") (est:n "e_g"))
+                     (enc:lbl-det (est:g "e_pos1") C1) th))
+          (enc:detail (nth 1 rl) (list (+ (car ip) w1 (* 6.0 th)) (cadr ip))
+                      (list (est:n "e_g") (est:n "e_la2") (est:n "e_lb2") (est:n "e_g"))
+                      (enc:lbl-det (est:g "e_pos2") C2) th)))))
+  ;; 3) distribuicao (cota real no corte / elevacao)
+  (if (= (est:g "e_ddist") "1")
+    (progn
+      (if *enc:distpts*
+        (est:dist-dim (car *enc:distpts*) (cadr *enc:distpts*) (enc:lbl-dist)))))
+  (princ (strcat "\n" (enc:lbl-det (est:g "e_pos1") C1) "  /  " (enc:lbl-det (est:g "e_pos2") C2))))
 
 ;;; --------------------------------------------------------------------------
 ;;; Comando
@@ -734,5 +1172,37 @@
 
 (defun c:EST () (c:ESTRIBO))
 
-(princ "\nESTRIBO.LSP carregado. Digite ESTRIBO (ou EST) para detalhar estribos.")
+(defun c:ENCONTRO ( / *error* doc dcl id act)
+  (defun *error* (m)
+    (if id (unload_dialog id))
+    (if (and dcl (findfile dcl)) (vl-file-delete dcl))
+    (if doc (vla-EndUndoMark doc))
+    (if (not (wcmatch (strcase m) "*CANCEL*,*QUIT*,*EXIT*"))
+      (princ (strcat "\nErro: " m)))
+    (princ))
+  (est:load-cfg)
+  (setq *enc:src* 'GEN *enc:pick* nil *enc:distpts* nil)
+  (setq dcl (est:write-dcl) id (load_dialog dcl) act 2)
+  (if (< id 0) (progn (alert "Nao foi possivel carregar a janela (DCL).") (exit)))
+  (while (> act 1)
+    (if (not (new_dialog "encontro" id)) (exit))
+    (enc:dlg-init)
+    (setq act (start_dialog))
+    (cond
+      ((= act 2) (enc:pick))
+      ((= act 4) (enc:pick-trecho))))
+  (unload_dialog id)
+  (setq id nil)
+  (vl-file-delete dcl)
+  (if (= act 1)
+    (progn
+      (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)))
+      (vla-StartUndoMark doc)
+      (est:save-cfg)
+      (enc:run)
+      (vla-EndUndoMark doc)
+      (setq doc nil)))
+  (princ))
+
+(princ "\nESTRIBO.LSP carregado. Comandos: ESTRIBO (ou EST) e ENCONTRO.")
 (princ)
