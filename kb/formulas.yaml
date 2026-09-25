@@ -1,0 +1,470 @@
+meta:
+  gerado_por: a1-bibliotecario
+  escopo: NBR 6122:2022, sapata isolada, carga centrada, solo homogeneo (primeira extracao)
+  aviso: Nenhum registro aqui esta aprovado. Aprovacao e exclusiva do a2-verificador (ruleset.yaml).
+  hash_metodo: sha256 de trecho_literal apos NFC + colapso de espacos
+  status_possiveis: EXTRAIDA | ILEGIVEL | DIVERGENCIA
+  lacuna_central: A NBR 6122:2022 (itens 7.1-7.8) NAO contem nenhuma equacao de capacidade de carga (Terzaghi, Vesic, Hansen)
+    nem correlacao SPT. 7.3.2/7.3.3 apenas autorizam metodos teoricos e semiempiricos "nos dominios de validade". Nenhuma
+    formula dessas foi registrada como normativa.
+formulas:
+- id: F-NBR6122-3.30
+  tipo: formula_explicita
+  norma: ABNT NBR 6122:2022
+  item: '3.30'
+  clausula_id: NBR6122-2022-3.30
+  pagina:
+  - 6
+  pagina_pdf:
+  - 18
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Padm = Rk/FSg e Padm ≥ Sk
+  hash_trecho: sha256:dc696e2a407957859163a8679f4edc3af22e127bc6df7e75e449bd81ecb8030b
+  titulo: método de valores admissíveis
+  leituras:
+    camada_texto_pdf: Padm = Rk/FSg e Padm ≥ Sk
+    visao_passada_1: P_adm = R_k/FS_g e P_adm ≥ S_k  (pagina inteira, 300 dpi)
+    visao_passada_2: P_adm = R_k/FS_g e P_adm ≥ S_k  (recorte da linha, 500 dpi)
+  status: EXTRAIDA
+  divergencia: null
+  latex: P_{\mathrm{adm}} = R_{\mathrm{k}} / FS_{\mathrm{g}} \quad \text{e} \quad P_{\mathrm{adm}} \geq S_{\mathrm{k}}
+  sympy:
+  - Eq(P_adm, R_k/FS_g)
+  - P_adm >= S_k
+  variaveis:
+    P_adm:
+      definicao_literal: é a tensão admissível de sapatas e tubulões e carga admissível de estacas
+      unidade: NAO_DECLARADO_NA_FONTE
+    R_k:
+      definicao_literal: representa as forças ou tensões características de ruptura (últimas)
+      unidade: NAO_DECLARADO_NA_FONTE
+    S_k:
+      definicao_literal: representa as solicitações características
+      unidade: NAO_DECLARADO_NA_FONTE
+    FS_g:
+      definicao_literal: é o fator de segurança global
+      unidade: 'adimensional (inferido: divisor de grandezas de mesma natureza; nao declarado)'
+  unidades_nota: A fonte nao declara unidades. P_adm, R_k e S_k tem a mesma dimensao entre si (tensao para sapatas/tubuloes,
+    forca para estacas) -- isso decorre das definicoes literais, nao de declaracao de unidade.
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - método em que as forças ou tensões de ruptura são divididas por um fator de segurança global (3.30)
+    - Esta grandeza é utilizada no projeto quando se trabalha com valores característicos das ações. (3.45, NOTA)
+    metodo_de_seguranca_declarado: valores admissíveis (valores característicos + fator de segurança global)
+    valores_de_FSg: ver C-NBR6122-T1 (Tabela 1, fundações rasas, compressão)
+- id: F-NBR6122-3.31
+  tipo: formula_explicita
+  norma: ABNT NBR 6122:2022
+  item: '3.31'
+  clausula_id: NBR6122-2022-3.31
+  pagina:
+  - 6
+  pagina_pdf:
+  - 18
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Rd = Rk/γm e Sd = Sk ∙ γf e Rd ≥ Sd
+  hash_trecho: sha256:6158acd0b25a53383accbb24065e5eff71e60a1cd79bb36cf20fe534c5145d34
+  titulo: método de valores de cálculo
+  leituras:
+    camada_texto_pdf: Rd = Rk/γm e Sd = Sk ∙ γf e Rd ≥ Sd
+    visao_passada_1: R_d = R_k/γ_m e S_d = S_k · γ_f e R_d ≥ S_d  (pagina inteira, 300 dpi)
+    visao_passada_2: R_d = R_k/γ_m e S_d = S_k · γ_f e R_d ≥ S_d  (recorte da linha, 500 dpi)
+  status: EXTRAIDA
+  divergencia: null
+  latex: R_{\mathrm{d}} = R_{\mathrm{k}}/\gamma_{\mathrm{m}} \quad \text{e} \quad S_{\mathrm{d}} = S_{\mathrm{k}} \cdot \gamma_{\mathrm{f}}
+    \quad \text{e} \quad R_{\mathrm{d}} \geq S_{\mathrm{d}}
+  sympy:
+  - Eq(R_d, R_k/gamma_m)
+  - Eq(S_d, S_k*gamma_f)
+  - R_d >= S_d
+  variaveis:
+    R_d:
+      definicao_literal: representa a tensão resistente de cálculo para sapatas ou tubulões ou a força resistente de cálculo
+        para estacas
+      unidade: NAO_DECLARADO_NA_FONTE
+    S_d:
+      definicao_literal: representa as solicitações de cálculo
+      unidade: NAO_DECLARADO_NA_FONTE
+    R_k:
+      definicao_literal: (3.31, texto corrido) forças ou tensões características de ruptura
+      unidade: NAO_DECLARADO_NA_FONTE
+    S_k:
+      definicao_literal: (3.31, texto corrido) solicitações características
+      unidade: NAO_DECLARADO_NA_FONTE
+    gamma_f:
+      definicao_literal: coeficiente de ponderação dos valores característicos das solicitações
+      unidade: adimensional (inferido; nao declarado)
+    gamma_m:
+      definicao_literal: 'coeficiente de ponderação dos valores característicos das resistências: tensão de ruptura sob sapatas
+        ou bases de tubulões, ou carga de ruptura de estacas'
+      unidade: adimensional (inferido; nao declarado)
+  unidades_nota: A fonte nao declara unidades.
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - método em que as forças ou tensões características de ruptura são divididas pelo coeficiente de ponderação das resistências,
+      as solicitações características são multiplicadas pelos coeficientes de ponderação (3.31)
+    - Esta grandeza é utilizada no projeto quando se trabalha com valores de cálculo das ações. (3.48, NOTA)
+    metodo_de_seguranca_declarado: valores de cálculo (coeficientes de ponderação)
+    valores_de_gamma: 'ver C-NBR6122-T1 (γm por método; nota c: γf = 1,4 se só houver valor característico)'
+- id: F-NBR6122-6.2.2.1
+  tipo: formula_explicita
+  norma: ABNT NBR 6122:2022
+  item: 6.2.2.1
+  clausula_id: NBR6122-2022-6.2.2.1
+  pagina:
+  - 20
+  pagina_pdf:
+  - 32
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Ek ≤ C
+  hash_trecho: sha256:a1e9c6b380a8bc3d46a048944c9319e775de8e99bc9e424db9c2fe068b57fdb5
+  titulo: verificação dos estados limites de serviço
+  leituras:
+    camada_texto_pdf: Ek ≤ C
+    visao_passada_1: E_k ≤ C  (texto corrido da pagina)
+    visao_passada_2: E_k ≤ C  (recorte da linha, 500 dpi)
+  status: EXTRAIDA
+  divergencia: null
+  latex: E_{\mathrm{k}} \leq C
+  sympy:
+  - E_k <= C
+  variaveis:
+    E_k:
+      definicao_literal: é o valor característico do efeito das ações (por exemplo, o recalque estimado), calculado considerando-se
+        parâmetros geotécnicos característicos e ações características
+      unidade: NAO_DECLARADO_NA_FONTE
+    C:
+      definicao_literal: é o valor limite de serviço (admissível) do efeito das ações (por exemplo, recalque aceitável)
+      unidade: NAO_DECLARADO_NA_FONTE
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - A verificação dos estados limites de serviço em relação ao solo de fundação ou ao elemento estrutural de fundação
+    observacao: 'Valores de C nao sao fixados neste item; 6.2.2.2.2 lista fatores a considerar, sem valores numericos. Valor
+      numerico de C: null.'
+- id: C-NBR6122-T1
+  tipo: constantes_tabela
+  norma: ABNT NBR 6122:2022
+  item: 6.2.1.1.1
+  clausula_id: NBR6122-2022-6.2.1.1.1
+  pagina:
+  - 17
+  pagina_pdf:
+  - 29
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Tabela 1 – Fundações rasas – Fatores de segurança e coeficientes de ponderação para solicitações de compressão
+  hash_trecho: sha256:9ec314d4c961c9f1c633d30b94d9582ecdece2d22ea74df705559591ec6896e8
+  titulo: Tabela 1 – fatores de segurança e coeficientes de ponderação, fundações rasas, compressão
+  leituras:
+    camada_texto_pdf: ver clausula NBR6122-2022-6.2.1.1.1 (campo tabelas)
+    visao_passada_1: celulas conferem com a camada de texto (PDF p.29, 300 dpi)
+    visao_passada_2: nao aplicavel (texto, nao vetor)
+  status: EXTRAIDA
+  divergencia: null
+  valores:
+  - metodo_resistencia_ultima: semiempirico
+    gamma_m:
+      minimo: 2.15
+      literal: Valores propostos no próprio processo e no mínimo 2,15
+    FS_g:
+      minimo: 3.0
+      literal: Valores propostos no próprio processo e no mínimo 3,00
+    nota: a
+  - metodo_resistencia_ultima: analitico
+    gamma_m:
+      valor: 2.15
+      literal: 2,15
+    FS_g:
+      valor: 3.0
+      literal: 3,00
+    nota: b
+  - metodo_resistencia_ultima: semiempirico_ou_analitico_com_2_ou_mais_provas_de_carga_na_fase_de_projeto
+    gamma_m:
+      valor: 1.4
+      literal: 1,40
+    FS_g:
+      valor: 2.0
+      literal: 2,00
+    condicao_literal: acrescidos de duas ou mais provas de carga, necessariamente executadas na fase de projeto, conforme
+      7.3.1
+  gamma_f:
+    valor: 1.4
+    literal: Em todas as situações de γm, γf = 1,4 (majoração) para o esforço atuante, se disponível apenas o seu valor característico;
+      se já fornecido o valor de cálculo, nenhum coeficiente de ponderação deve ser aplicado a ele.
+    nota: c
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Fundações rasas
+    - solicitações de compressão
+    - 'a: Atendendo ao domínio de validade para o terreno local.'
+    - 'b: Sem aplicação de coeficientes de ponderação aos parâmetros de resistência do terreno.'
+    fora_do_dominio: tração, deslizamento e tombamento (6.2.1.1.2) e flutuação (6.2.1.1.3) -- NAO extraidos
+- id: R-NBR6122-5.6-peso-proprio
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: '5.6'
+  clausula_id: NBR6122-2022-5.6
+  pagina:
+  - 15
+  pagina_pdf:
+  - 27
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Deve ser considerado o peso próprio de blocos de coroamento ou sapatas, ou no mínimo 5 % da carga vertical
+    permanente.
+  hash_trecho: sha256:df73ee21436cca0a95c8bf22b247044203b2c8a9367aba4370e7773f3cadcd45
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  ambiguidade: true
+  sympy: null
+  latex: null
+  valores:
+    fracao_minima_da_carga_vertical_permanente: 0.05
+  leituras_possiveis_INTERPRETACAO_A1:
+  - (i) PP_considerado = PP_real  OU  PP_considerado = 0,05*G_k (alternativas)
+  - (ii) PP_considerado = max(PP_real, 0,05*G_k)
+  observacao: Nao resolvido pelo A1 -- decisao do A2/humano. O texto nao menciona o peso do solo sobre a sapata. G_k = carga
+    vertical permanente (simbolo do A1, nao da norma).
+  dominio_validade:
+    declarado_na_fonte: false
+    valor: NAO_DECLARADO_NA_FONTE
+- id: R-NBR6122-7.6.2-area-comprimida
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 7.6.2
+  clausula_id: NBR6122-2022-7.6.2
+  pagina:
+  - 23
+  - 24
+  pagina_pdf:
+  - 35
+  - 36
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: No dimensionamento da fundação superficial, a área comprimida deve ser de no mínimo 2/3 da área total, se
+    consideradas as solicitações características, ou 50 % da área total, se consideradas as solicitações de cálculo.
+  hash_trecho: sha256:239c4088581633ac61ab5344947b2cb4263003bede00046f19231462ebc1eb55
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  escopo_minimo: false
+  latex: A_{\mathrm{comp}} \geq \tfrac{2}{3} A_{\mathrm{total}} \;(\text{solicitações características}); \quad A_{\mathrm{comp}}
+    \geq 0{,}50\, A_{\mathrm{total}} \;(\text{solicitações de cálculo})
+  sympy:
+  - A_comp >= Rational(2,3)*A_total
+  - A_comp >= Rational(1,2)*A_total
+  sympy_condicao:
+  - metodo == admissivel (solicitacoes caracteristicas)
+  - metodo == calculo (solicitacoes de calculo)
+  variaveis:
+    A_comp:
+      definicao_literal: área comprimida
+      unidade: NAO_DECLARADO_NA_FONTE
+    A_total:
+      definicao_literal: área total
+      unidade: NAO_DECLARADO_NA_FONTE
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - fundação rasa solicitada por carregamento excêntrico
+    - considerando-se que o solo é um elemento não resistente à tração
+    exigencia_adicional_literal: Deve-se assegurar, ainda, que a tensão máxima de borda satisfaça os requisitos de segurança,
+      conforme a Seção 6.
+- id: R-NBR6122-7.7.1-dimensao-minima
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 7.7.1
+  clausula_id: NBR6122-2022-7.7.1
+  pagina:
+  - 24
+  pagina_pdf:
+  - 36
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Em planta, as sapatas isoladas ou os blocos não podem ter dimensões inferiores a 60 cm.
+  hash_trecho: sha256:ad140cac8d6fb9c1c7ea8814f0a4c22fceb463db4e49fade7d14782df457b1ca
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  latex: B \geq 60\ \mathrm{cm}, \quad L \geq 60\ \mathrm{cm}
+  sympy:
+  - B >= 60
+  - L >= 60
+  variaveis:
+    B:
+      definicao_literal: dimensões [em planta] (simbolo B atribuido pelo A1; a fonte nao usa simbolo)
+      unidade: cm
+    L:
+      definicao_literal: idem
+      unidade: cm
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Em planta
+    - sapatas isoladas ou os blocos
+- id: R-NBR6122-7.7.2-profundidade-minima-divisa
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 7.7.2
+  clausula_id: NBR6122-2022-7.7.2
+  pagina:
+  - 24
+  pagina_pdf:
+  - 36
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: Nas divisas com terrenos vizinhos, salvo quando a fundação for assente sobre rocha, a profundidade de apoio
+    não pode ser inferior a 1,5 m. Em casos de obras cujas sapatas ou blocos tenham, em sua maioria, dimensões inferiores
+    a 1,0 m, essa profundidade mínima pode ser reduzida.
+  hash_trecho: sha256:3aec196e01d11570add5c59616ff382e2ff60257a65c19d1913a33aa45b7ecd3
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  latex: D_{\mathrm{apoio}} \geq 1{,}5\ \mathrm{m}
+  sympy:
+  - D_apoio >= 1.5
+  variaveis:
+    D_apoio:
+      definicao_literal: profundidade de apoio
+      unidade: m
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Nas divisas com terrenos vizinhos
+    excecoes_literais:
+    - salvo quando a fundação for assente sobre rocha
+    - Em casos de obras cujas sapatas ou blocos tenham, em sua maioria, dimensões inferiores a 1,0 m, essa profundidade mínima
+      pode ser reduzida.
+    valor_reduzido: null
+    observacao: a norma nao fixa o valor reduzido (null). Segundo paragrafo do item (variacoes sazonais/umidade) e requisito
+      qualitativo, sem numero.
+- id: R-NBR6122-7.7.3-lastro
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 7.7.3
+  clausula_id: NBR6122-2022-7.7.3
+  pagina:
+  - 24
+  pagina_pdf:
+  - 36
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: devem ser concretadas sobre um lastro de concreto não estrutural com no mínimo 5 cm de espessura, a ser
+    lançado sobre toda a superfície de contato solo-fundação.
+  hash_trecho: sha256:8f24cee35ac2d5efebb38e4263186f3a4529555e4f8d9aa73350135c6371647f
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  latex: e_{\mathrm{lastro}} \geq 5\ \mathrm{cm}
+  sympy:
+  - e_lastro >= 5
+  variaveis:
+    e_lastro:
+      definicao_literal: espessura [do lastro de concreto não estrutural]
+      unidade: cm
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Todas as partes da fundação rasa (direta ou superficial) em contato com o solo (sapatas, vigas de equilíbrio etc.)
+    - No caso de rocha, esse lastro deve servir para regularização da superfície e, portanto, pode ter espessura variável,
+      observado, no entanto o mínimo de 5 cm.
+- id: R-NBR6122-7.7.4-cotas-diferentes
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 7.7.4
+  clausula_id: NBR6122-2022-7.7.4
+  pagina:
+  - 24
+  - 25
+  pagina_pdf:
+  - 36
+  - 37
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: 'a) solos pouco resistentes: α ≥ 60°; b) solos resistentes: α ≥ 45°; e c) rochas: α ≥ 30°.'
+  hash_trecho: sha256:225d0e80d17f21a6b72803a9f2920ff90c4ad44c98af789a165dab4c5cef142e
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  escopo_minimo: false
+  latex: \alpha \geq 60^\circ\ (\text{solos pouco resistentes});\ \alpha \geq 45^\circ\ (\text{solos resistentes});\ \alpha
+    \geq 30^\circ\ (\text{rochas})
+  sympy:
+  - alpha_deg >= 60
+  - alpha_deg >= 45
+  - alpha_deg >= 30
+  sympy_condicao:
+  - solos pouco resistentes
+  - solos resistentes
+  - rochas
+  variaveis:
+    alpha_deg:
+      definicao_literal: ângulo α ... com a vertical [da reta de maior declive que passa pelos bordos das fundações]
+      unidade: grau
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - fundações próximas, porém situadas em cotas diferentes
+    lacuna: 'a fonte nao define criterio (ex.: N_SPT) para distinguir "solos pouco resistentes" de "solos resistentes": NAO_DECLARADO_NA_FONTE'
+- id: R-NBR6122-6.3.2-vento-admissivel
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 6.3.2
+  clausula_id: NBR6122-2022-6.3.2
+  pagina:
+  - 21
+  pagina_pdf:
+  - 33
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: os valores de tensão admissível de sapatas e tubulões e as cargas admissíveis em estacas podem ser majorados
+    em até 15 %. Quando esta majoração for utilizada, o fator de segurança global não pode ser inferior a 1,6.
+  hash_trecho: sha256:ac36ccfc0ef59aaa63f0f7b8c6980b6bc6edebe2f838239779257ea1f75ecd34
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  escopo_minimo: false
+  latex: \sigma_{\mathrm{adm,vento}} \leq 1{,}15\,\sigma_{\mathrm{adm}}\ (\text{geral});\ \leq 1{,}30\,\sigma_{\mathrm{adm}}\
+    (\text{obras listadas});\ FS_g \geq 1{,}6 \text{ se majorado}
+  sympy:
+  - sigma_adm_vento <= 1.15*sigma_adm
+  - sigma_adm_vento <= 1.30*sigma_adm
+  - FS_g >= 1.6
+  sympy_condicao:
+  - vento e a acao variavel principal
+  - vento e a acao variavel principal E obra em {galpões industriais, torres de linhas de transmissão, reservatórios elevados,
+    silos graneleiros, torres eólicas, torres de telecomunicações, tanques de produtos químicos}
+  - quando a majoracao for utilizada
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Quando se tratar de solicitações obtidas de combinações de ações nas quais o vento é a ação variável principal
+    - Quando se tratar de solicitações obtidas de combinações de ações nas quais o vento não é a ação variável principal,
+      não é permitida a majoração dos valores de tensão admissível de sapatas e tubulões, nem de cargas admissíveis em estacas.
+    - Em qualquer caso, deve ser feita a verificação estrutural do elemento de fundação.
+    nota_A1: trecho_literal/hash cobre apenas a regra de 15 %; a regra de 30 % e a lista de obras estao no enunciado integral
+      da clausula NBR6122-2022-6.3.2.
+- id: R-NBR6122-6.3.3-vento-calculo
+  tipo: requisito_textual
+  norma: ABNT NBR 6122:2022
+  item: 6.3.3
+  clausula_id: NBR6122-2022-6.3.3
+  pagina:
+  - 21
+  pagina_pdf:
+  - 33
+  arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+  trecho_literal: os valores de tensão resistente de cálculo de sapatas e tubulões e de forças resistentes de cálculo de estacas
+    podem ser majorados em até 10 %.
+  hash_trecho: sha256:7a3383addfb50a4f4d28fde1ee4cd16f710ebe76641c52b01f85b662e555a34c
+  origem_simbolica: TRANSCRICAO_A1_DE_REQUISITO_TEXTUAL (a fonte nao traz equacao; numeros e condicoes sao literais; forma
+    simbolica sujeita a A2)
+  status: EXTRAIDA
+  escopo_minimo: false
+  latex: \sigma_{\mathrm{Rd,vento}} \leq 1{,}10\,\sigma_{\mathrm{Rd}}
+  sympy:
+  - sigma_Rd_vento <= 1.10*sigma_Rd
+  sympy_condicao:
+  - combinacoes nas quais o vento e a acao variavel principal
+  dominio_validade:
+    declarado_na_fonte: true
+    literal:
+    - Quando a verificação das solicitações for feita considerando-se as combinações nas quais o vento é a ação variável principal
+    - Deve ser feita a verificação estrutural do elemento de fundação.
