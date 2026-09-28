@@ -129,7 +129,8 @@
 ;;;    2 .................... comprimentos dos trechos e textos das tabelas
 ;;;    EST_Cota ............. COTAS (entidades DIMENSION, com tiques): linha
 ;;;                           de distribuicao "87 (2X) N.1 %%c 8 C/15" /
-;;;                           "(1300)" e cota do traspasse.  Se o CAD nao
+;;;                           "(1300)" e cota do traspasse, com o TEXTO na
+;;;                           cor 7 (white).  Se o CAD nao
 ;;;                           aceitar ActiveX, sao desenhadas com linhas.
 ;;;    EST_Indicacao ........ chamada tracejada e circulos (ferro x faixa)
 ;;;    T_LINHAS_GREEN ....... molduras das tabelas
@@ -154,6 +155,7 @@
       AV:STY       "TQS_ARIAL"
       AV:LT-NOME   "AV_TRACEJADO"
       AV:TOL       0.001            ; tolerancia para fechar o contorno
+      AV:COR-TXT-COTA 7             ; cor do texto das cotas (7 = white)
 )
 
 (setq AV:BITOLAS '("5" "6.3" "8" "10" "12.5" "16" "20" "22" "25" "32")
@@ -375,6 +377,15 @@
              (if cen
                (list '(72 . 1) (cons 11 (list (car p) (cadr p) 0.0)) '(73 . 0))
              )))
+)
+
+;;; muda a cor da ultima entidade criada (textos das cotas desenhadas a mao)
+(defun av:cor-ultimo (cor / ed)
+  (if (setq ed (entget (entlast)))
+    (entmod (if (assoc 62 ed)
+              (subst (cons 62 cor) (assoc 62 ed) ed)
+              (append ed (list (cons 62 cor)))))
+  )
 )
 
 ;;; tique de cota (traco inclinado a 45 graus, cheio) com centro em "p";
@@ -967,6 +978,7 @@
   (av:tique (av:tu th ka ul) d h AV:LAY-COTA)
   (av:tique (av:tu th kb ul) d h AV:LAY-COTA)
   (av:rotulo txt (av:tu th (/ (+ ka kb) 2.0) ul) th fora (* 0.9 h) AV:LAY-COTA)
+  (av:cor-ultimo AV:COR-TXT-COTA)
 )
 
 ;;; cota linear REAL (entidade DIMENSION, rotacionada), layer EST_Cota,
@@ -1008,7 +1020,7 @@
                         (list 'vla-put-ForceLineInside :vlax-true)
                         (list 'vla-put-DimensionLineColor 256)  ; PorLayer
                         (list 'vla-put-ExtensionLineColor 256)
-                        (list 'vla-put-TextColor 256)
+                        (list 'vla-put-TextColor AV:COR-TXT-COTA) ; texto white
                         (list 'vla-put-ExtLine1Suppress (if sup :vlax-true :vlax-false))
                         (list 'vla-put-ExtLine2Suppress (if sup :vlax-true :vlax-false))
                         (list 'vla-put-TextOverride txt))
@@ -1190,7 +1202,9 @@
             up  (list (- (sin rot)) (cos rot))
             mid (av:tu th tdim (/ (+ lo hi) 2.0)))
       (av:mk-text faixa (av:mad mid up (* 0.7 h)) (* 0.9 h) rot AV:LAY-COTA T)
+      (av:cor-ultimo AV:COR-TXT-COTA)
       (av:mk-text wtxt  (av:mad mid up (* -1.6 h)) (* 0.9 h) rot AV:LAY-COTA T)
+      (av:cor-ultimo AV:COR-TXT-COTA)
     )
   )
 
