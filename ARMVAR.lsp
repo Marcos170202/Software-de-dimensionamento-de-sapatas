@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.2
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.3
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -16,7 +16,21 @@
 ;;;    ARMVAR ....... cria um detalhamento
 ;;;    ARMVAREDIT ... edita um detalhamento existente (clique em qualquer parte
 ;;;                   dele): a janela abre com os dados dele e tudo e refeito
+;;;    ARMVARATU .... refaz todos os detalhamentos (se os reatores estiverem
+;;;                   desligados, ex.: desenho aberto sem a Lisp carregada)
 ;;;    ARMVARLISTA .. LISTA DE FERROS + RESUMO DE ACO de todo o desenho
+;;;
+;;;  ELEMENTO PARAMETRIZADO (reatores)
+;;;  --------------------------------------------------------------------
+;;;  Com a Lisp carregada, cada detalhamento acompanha o desenho:
+;;;   - altere o CONTORNO da laje (STRETCH, grips, ...): ao fim do comando,
+;;;     ferro, cotas, textos, tabelas e LISTA sao refeitos;
+;;;   - edite o TEXTO do ferro (duplo clique): "(2X) N.1 9 %%c 10 C/20" ->
+;;;     repeticoes, bitola, espacamento (e posicao) passam a valer;
+;;;   - MOVA o ferro: a nova posicao e mantida nas proximas atualizacoes;
+;;;   - mova as tabelas a vontade: elas sao refeitas onde estiverem.
+;;;  Para ter isso ao abrir qualquer desenho, carregue a Lisp sempre
+;;;  (APPLOAD > Startup Suite, ou acaddoc.lsp).
 ;;;
 ;;;  --------------------------------------------------------------------
 ;;;  NUMERACAO AUTOMATICA
@@ -1083,6 +1097,7 @@
     )
     (av:mk-pl (mapcar '(lambda (q) (av:tu th (car q) (cadr q))) pts)
               lay nil lt lts nil)
+    (setq AV:TAG nil)          ; "FP" so no 1.o pedaco
     (setq a (- b lap) k (1+ k))
   )
 )
@@ -1252,8 +1267,10 @@
         lts (av:ltscale))
 
   ;; --- ferro positivo (continuo) ----------------------------------------
+  (setq AV:TAG "FP")
   (av:ferro th ud ta tb hooks sg uc pcs lap 0.0 (* -0.3 h sg)
             AV:LAY-BAR nil nil)
+  (setq AV:TAG nil)
 
   ;; --- barra simetrica invertida (negativa, tracejada) -------------------
   ;;     espelhada: pernas voltadas para o ferro positivo, ao lado dele.
@@ -1319,12 +1336,14 @@
 
   ;; --- texto do ferro: centrado, do lado oposto aos ganchos --------------
   (setq ues (- ud (* sg (if emd (* 0.3 h) 0.0))))
+  (setq AV:TAG "ESP")
   (if espl
     ;; posicoes separadas: um texto centrado em cada pedaco
     (av:rot-espec th ues ta tb pcs ini uc lap (list (- (car hk)) (- (cadr hk))) h espl)
     (av:rotulo espec (av:tu th tc ues) th (list (- (car hk)) (- (cadr hk)))
                h AV:LAY-ESPEC)
   )
+  (setq AV:TAG nil)
 
   ;; --- cotas dos traspasses (do lado oposto aos ganchos) -----------------
   (if emd (av:cotas-trasp th ud ta pcs ini uc lap sg h))
@@ -1436,22 +1455,36 @@
 ;;;  ("ARMVAR" (1000 . id)).  ARMVAREDIT reabre a janela com esses dados e
 ;;;  redesenha tudo; ARMVARLISTA soma todos os detalhamentos.
 
-;;; valor -> texto que o (read) devolve igual (reais com 12 casas)
-(defun av:ser (x / s r)
+;;; valor -> grupos DXF tipados (sem converter numeros em texto):
+;;;   (300 . texto)  (40 . real)  (90 . inteiro)  (281 . 0/1) nil/T
+;;;   (282 . 1) ... (282 . 0)  = lista
+(defun av:enc (x)
   (cond
-    ((null x) "nil")
-    ((= (type x) 'STR) (vl-prin1-to-string x))
-    ((= (type x) 'INT) (itoa x))
-    ((= (type x) 'REAL)
-     (setq s (rtos x 2 12))
-     (if (or (vl-string-search "." s) (vl-string-search "E" s)) s (strcat s ".0")))
+    ((null x) (list (cons 281 0)))
+    ((eq x T) (list (cons 281 1)))
+    ((= (type x) 'STR) (list (cons 300 x)))
+    ((= (type x) 'INT) (list (cons 90 x)))
+    ((= (type x) 'REAL) (list (cons 40 x)))
     ((= (type x) 'LIST)
-     (setq r "(")
-     (foreach v x (setq r (strcat r (if (= r "(") "" " ") (av:ser v))))
-     (strcat r ")"))
-    ((eq x T) "T")
-    (t "nil")
+     (append (list (cons 282 1)) (apply 'append (mapcar 'av:enc x)) (list (cons 282 0))))
+    (t (list (cons 281 0)))
   )
+)
+
+;;; grupos -> valor (inverso de av:enc)
+(defun av:dec (gs / stk cur g)
+  (setq stk nil cur nil)
+  (foreach g gs
+    (cond
+      ((= (car g) 282)
+       (if (= (cdr g) 1)
+         (setq stk (cons cur stk) cur nil)
+         (setq cur (cons (reverse cur) (car stk)) stk (cdr stk))))
+      ((= (car g) 281) (setq cur (cons (if (= (cdr g) 1) T nil) cur)))
+      ((member (car g) '(300 40 90)) (setq cur (cons (cdr g) cur)))
+    )
+  )
+  (car cur)
 )
 
 ;;; dicionario dos dados (cria se nao existir)
@@ -1486,26 +1519,21 @@
 )
 
 ;;; grava a lista "dados" no id
-(defun av:reg-grava (id dados / d s pcs x)
-  (setq d (av:dic) s (av:ser dados) pcs nil)
-  (while (> (strlen s) 200)
-    (setq pcs (cons (substr s 1 200) pcs) s (substr s 201))
-  )
-  (setq pcs (reverse (cons s pcs)))
+(defun av:reg-grava (id dados / d x)
+  (setq d (av:dic))
   (if (dictsearch d id) (dictremove d id))
   (setq x (entmakex (append (list '(0 . "XRECORD") '(100 . "AcDbXrecord"))
-                            (mapcar '(lambda (c) (cons 1 c)) pcs))))
+                            (av:enc dados))))
   (if x (dictadd d id x))
+  x
 )
 
 ;;; le os dados do id (ou nil)
-(defun av:reg-le (id / r s v)
+(defun av:reg-le (id / r gs)
   (if (setq r (dictsearch (av:dic) id))
     (progn
-      (setq s "")
-      (foreach g r (if (= (car g) 1) (setq s (strcat s (cdr g)))))
-      (setq v (vl-catch-all-apply 'read (list s)))
-      (if (vl-catch-all-error-p v) nil v)
+      (foreach g r (if (member (car g) '(300 40 90 281 282)) (setq gs (cons g gs))))
+      (av:dec (reverse gs))
     )
   )
 )
@@ -1901,6 +1929,34 @@
   )
 )
 
+;;; como av:corda, mas se o ponto ficou fora do contorno (laje alterada)
+;;; usa a barra mais proxima dele.  Devolve (u tA tB sA sB) ou nil
+(defun av:corda-perto (edges th cov esp pt / r ex tt uu best d dbest c)
+  (setq r (av:corda edges th cov pt))
+  (if (listp r)
+    r
+    (progn
+      (setq ex (av:extensao edges)
+            tt (+ (* (car pt) (cos th)) (* (cadr pt) (sin th)))
+            uu (+ (* (- (car pt)) (sin th)) (* (cadr pt) (cos th)))
+            best nil)
+      (foreach u (av:posicoes (nth 0 ex) (nth 1 ex) cov esp)
+        (foreach c (av:cortes edges u cov)
+          (if (> (- (- (cadr c) (cadddr c)) (+ (car c) (caddr c))) 1e-9)
+            (progn
+              (setq d (+ (abs (- u uu))
+                         (max 0.0 (- (car c) tt)) (max 0.0 (- tt (cadr c)))))
+              (if (or (null best) (< d dbest))
+                (setq best (list u (car c) (cadr c) (caddr c) (cadddr c)) dbest d))
+            )
+          )
+        )
+      )
+      best
+    )
+  )
+)
+
 ;;; ponto dentro do contorno -> (u tA tB sA sB) da corda que o contem, ou nil
 ;;; (o ponto clicado fica em AV:PKPT, para a edicao futura)
 (defun av:pede-ponto (edges th cov / pt r)
@@ -2044,7 +2100,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.2      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.3      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2355,14 +2411,14 @@
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
     (if marcou (vl-catch-all-apply 'vla-EndUndoMark (list doc)))
-    (setq AV:ID nil AV:TAG nil)
+    (setq AV:ID nil AV:TAG nil AV:OCUP nil)
     (vl-catch-all-apply 'redraw nil)
     (princ)
   )
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)) marcou nil
         AV:REC nil AV:ID nil AV:TAG nil)
 
-  (if (not (av:dialog))
+  (if (not (if AV:SEMDLG T (av:dialog)))
     (progn (princ "\nCancelado.") (princ))
     (progn
       ;; numeracao automatica (so na criacao)
@@ -2513,11 +2569,9 @@
                   (if (av:rp-p)
                     (progn
                       (setq AV:PKPT (av:rp "pk")
-                            pk (av:corda edges th cov AV:PKPT))
-                      (if (not (listp pk))
-                        (progn
-                          (princ "\n*** O ponto do ferro ficou fora do contorno alterado: edicao cancelada.")
-                          (setq pk nil))))
+                            pk (if AV:PKPT (av:corda-perto edges th cov esp AV:PKPT)))
+                      (if (null pk)
+                        (princ "\n*** Nenhuma barra cabe no contorno alterado: nada foi refeito.")))
                     (setq pk (av:pede-ponto edges th cov))
                   )
                   (av:gr "pk" AV:PKPT)
@@ -2592,7 +2646,8 @@
                                 pcsr (if emd (av:divide tr ini fim lcom lap afs pini dfs) (list tr))
                                 pcsa (if (and dfs (cdr pcsr)) (av:inverte pcsr ini fim)))
                           ;; ---- 7) desenha o ferro e a faixa --------------
-                          (vla-StartUndoMark doc) (setq marcou T)
+                          (if (not AV:SEMDLG) (progn (vla-StartUndoMark doc) (setq marcou T)))
+                          (setq AV:OCUP T)      ; reatores ignoram as nossas alteracoes
                           (av:prepara)
                           ;; edicao: apaga o detalhamento antigo e reusa o id
                           (if (av:rp-p) (av:apaga-id AV:ED-ID))
@@ -2653,6 +2708,7 @@
                               (list (list "ver" 12)
                                     (list "p" (mapcar 'eval AV:PARAMS))
                                     (list "h" h)
+                                    (list "fp0" (av:ancora AV:ID "FP"))
                                     (list "res" (mapcar '(lambda (ln)
                                                            (list (car ln) bit (cadr ln) (caddr ln)
                                                                  (nth AV:P-ACO AV:ACOS) kgm
@@ -2663,7 +2719,9 @@
                                          " guardado (ARMVAREDIT para editar)."))
                           (setq AV:ID nil)
                           (av:lista-auto h)
-                          (vla-EndUndoMark doc) (setq marcou nil)
+                          (if marcou (progn (vla-EndUndoMark doc) (setq marcou nil)))
+                          (setq AV:OCUP nil)
+                          (if (not AV:SEMDLG) (av:reat-liga))
                           ;; a janela ja abre na proxima posicao livre
                           (if (not (av:rp-p))
                             (setq AV:P-POS (itoa (+ pos (if sep (length posl) 1)))))
@@ -2689,6 +2747,98 @@
 ;;; ==========================================================================
 ;;;  12.  EDICAO E LISTA
 ;;; ==========================================================================
+
+;;; ---- texto do ferro editado a mao -> parametros --------------------------
+;;;  "(2X) N.1 87 %%c 8 C/15 C=VAR":  (2X) -> repeticoes, %%c 8 -> bitola,
+;;;  C/15 -> espacamento, N.1 -> posicao (so com uma posicao).
+(defun av:num-apos (s i / j d c)
+  ;; numero (com . ou ,) a partir da posicao i (pula espacos)
+  (setq j i d "")
+  (while (and (<= j (strlen s)) (= (substr s j 1) " ")) (setq j (1+ j)))
+  (while (and (<= j (strlen s)) (wcmatch (setq c (substr s j 1)) "#,`.,`,"))
+    (setq d (strcat d (if (= c ",") "." c)) j (1+ j))
+  )
+  (if (/= d "") d)
+)
+
+(defun av:acha (s pad / i)
+  ;; posicao (1..) da 1.a ocorrencia de pad em s (sem distinguir maiusculas)
+  (if (setq i (vl-string-search (strcase pad) (strcase s))) (1+ i))
+)
+
+(defun av:parse-espec (s unica / i v k r)
+  (setq r nil)
+  ;; repeticoes
+  (if (and (setq i (av:acha s "(")) (setq v (av:num-apos s (1+ i)))
+           (wcmatch (strcase (substr s (+ i 1 (strlen v)) 2)) "X)*"))
+    (setq r (cons (list 'AV:P-REP (itoa (fix (atof v)))) r))
+    (if (not (av:acha s "X)")) (setq r (cons (list 'AV:P-REP "1") r)))
+  )
+  ;; espacamento
+  (if (and (setq i (av:acha s "C/")) (setq v (av:num-apos s (+ i 2))))
+    (setq r (cons (list 'AV:P-ESP v) r)))
+  ;; bitola
+  (setq i (cond ((av:acha s "%%C") (+ (av:acha s "%%C") 3))
+                ((av:acha s "\\U+2205") (+ (av:acha s "\\U+2205") 7))
+                ((av:acha s "\\U+00D8") (+ (av:acha s "\\U+00D8") 7))
+                ((av:acha s (chr 216)) (+ (av:acha s (chr 216)) 1))))
+  (if (and i (setq v (av:num-apos s i)))
+    (progn
+      (setq k 0)
+      (foreach b AV:BITOLAS
+        (if (equal (atof b) (atof v) 1e-6) (setq r (cons (list 'AV:P-BIT k) r)))
+        (setq k (1+ k))
+      )
+    )
+  )
+  ;; posicao
+  (if (and unica (setq i (av:acha s "N.")) (setq v (av:num-apos s (+ i 2))))
+    (setq r (cons (list 'AV:P-POS (itoa (fix (atof v)))) r)))
+  r
+)
+
+;;; refaz um detalhamento sem perguntar nada (contorno relido, texto do
+;;; ferro editado, ferro movido).  txt = texto editado do ferro, ou nil
+(defun av:regenera (id txt / rec salvo p esp fp fp0 d pk pd n)
+  (if (setq rec (av:reg-le id))
+    (progn
+      (setq salvo (mapcar 'eval AV:PARAMS))
+      (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
+      ;; texto do ferro editado: novos parametros
+      (if txt
+        (progn
+          (setq n (length (vl-remove-if-not
+                            '(lambda (e) (= (cadr (av:id-ent e)) "ESP")) (av:ents-id id))))
+          (foreach pr (av:parse-espec txt (<= n 1)) (set (car pr) (cadr pr)))
+        )
+      )
+      ;; tabelas movidas: redesenha onde estao agora
+      (foreach tg '(("T1" "t1") ("T2" "t2"))
+        (if (and (cadr (assoc (cadr tg) rec)) (setq p (av:ancora id (car tg))))
+          (setq rec (cons (list (cadr tg) p) rec)))
+      )
+      ;; ferro movido: desloca a posicao do desenho do ferro
+      (setq fp (av:ancora id "FP") fp0 (cadr (assoc "fp0" rec)))
+      (if (and fp fp0 (> (distance fp fp0) 1e-6))
+        (progn
+          (setq d  (list (- (car fp) (car fp0)) (- (cadr fp) (cadr fp0)))
+                pd (cadr (assoc "pd" rec))
+                pk (cadr (assoc "pk" rec))
+                pd (if pd pd pk)
+                rec (cons (list "pd" (list (+ (car pd) (car d)) (+ (cadr pd) (cadr d)))) rec))
+          ;; faixa e chamada acompanham o ferro
+          (foreach k '("pf" "pc")
+            (if (setq p (cadr (assoc k rec)))
+              (setq rec (cons (list k (list (+ (car p) (car d)) (+ (cadr p) (cadr d)))) rec))))
+        )
+      )
+      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id AV:SEMDLG T)
+      (vl-catch-all-apply 'c:ARMVAR nil)
+      (mapcar 'set AV:PARAMS salvo)
+      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:SEMDLG nil)
+    )
+  )
+)
 
 ;;; ARMVAREDIT: clique em qualquer entidade de um detalhamento; a janela abre
 ;;; com os dados dele, e tudo (ferro, cotas, tabelas) e redesenhado.  As
@@ -2718,9 +2868,106 @@
      (vl-catch-all-apply 'c:ARMVAR nil)
      (mapcar 'set AV:PARAMS salvo)
      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil)
+     (av:reat-liga)
     )
   )
   (princ)
+)
+
+;;; ARMVARATU: refaz TODOS os detalhamentos (contornos relidos) e a lista
+(defun c:ARMVARATU ( / n)
+  (setq n 0 AV:OCUP T)
+  (foreach id (av:reg-ids)
+    (if (and (/= id "LISTA") (av:ents-id id))
+      (progn (av:regenera id nil) (setq n (1+ n))))
+  )
+  (setq AV:OCUP nil)
+  (av:reat-liga)
+  (princ (strcat "\n  " (itoa n) " detalhamento(s) atualizado(s)."))
+  (princ)
+)
+
+;;; ---- reatores: o detalhamento acompanha o desenho ---------------------------
+;;;  Observa o CONTORNO (handles guardados), o TEXTO do ferro e o 1.o pedaco
+;;;  do ferro.  A alteracao e so anotada durante o comando do usuario; quando
+;;;  o comando termina, o detalhamento e refeito (reator de comando).
+(defun av:vla (e / o)
+  (if (and e (entget e))
+    (progn (setq o (vl-catch-all-apply 'vlax-ename->vla-object (list e)))
+           (if (vl-catch-all-error-p o) nil o))
+  )
+)
+
+(defun av:reat-liga ( / rec objs e o r)
+  (foreach r AV:REATORES (vl-catch-all-apply 'vlr-remove (list r)))
+  (setq AV:REATORES nil)
+  (foreach id (av:reg-ids)
+    (if (and (/= id "LISTA") (setq rec (av:reg-le id)))
+      (progn
+        (setq objs nil)
+        ;; contorno
+        (foreach hd (cadr (assoc "hnd" rec))
+          (if (setq o (av:vla (handent hd))) (setq objs (cons o objs))))
+        ;; texto do ferro e 1.o pedaco do ferro
+        (foreach e (av:ents-id id)
+          (if (member (cadr (av:id-ent e)) '("ESP" "FP"))
+            (if (setq o (av:vla e)) (setq objs (cons o objs))))
+        )
+        (if objs
+          (progn
+            (setq r (vl-catch-all-apply 'vlr-object-reactor
+                      (list objs id '((:vlr-modified . av:cb-mod)))))
+            (if (not (vl-catch-all-error-p r)) (setq AV:REATORES (cons r AV:REATORES)))
+          )
+        )
+      )
+    )
+  )
+  (if (and AV:REATORES (null AV:REAT-CMD))
+    (progn
+      (setq r (vl-catch-all-apply 'vlr-command-reactor
+                (list "ARMVAR" '((:vlr-commandEnded . av:cb-cmd)
+                                 (:vlr-commandCancelled . av:cb-cmd)
+                                 (:vlr-commandFailed . av:cb-cmd)))))
+      (if (not (vl-catch-all-error-p r)) (setq AV:REAT-CMD r))
+    )
+  )
+  (length AV:REATORES)
+)
+
+;;; objeto alterado: so anota (nao pode alterar o desenho aqui)
+(defun av:cb-mod (obj rea args / id hd)
+  (if (and (not AV:OCUP) (not (vlax-erased-p obj)))
+    (progn
+      (setq id (vlr-data rea))
+      (if (not (assoc id AV:PEND)) (setq AV:PEND (cons (list id nil) AV:PEND)))
+      ;; texto do ferro: guarda o handle para ler o texto novo depois
+      (if (= (vla-get-ObjectName obj) "AcDbText")
+        (setq AV:PEND (subst (list id (vla-get-Handle obj)) (assoc id AV:PEND) AV:PEND)))
+    )
+  )
+)
+
+;;; fim do comando do usuario: refaz os detalhamentos anotados
+(defun av:cb-cmd (rea args / pend cmd e txt)
+  (setq cmd (strcase (if (car args) (car args) "")))
+  (cond
+    ((or AV:OCUP (null AV:PEND)) nil)
+    ((wcmatch cmd "U,UNDO,REDO,MREDO,ARMVAR*")
+     (setq AV:PEND nil))
+    (t
+     (setq pend AV:PEND AV:PEND nil AV:OCUP T)
+     (foreach it pend
+       (setq txt nil)
+       (if (and (cadr it) (setq e (handent (cadr it))) (entget e))
+         (setq txt (cdr (assoc 1 (entget e)))))
+       (princ (strcat "\nARMVAR: atualizando o detalhamento " (car it) "..."))
+       (vl-catch-all-apply 'av:regenera (list (car it) txt))
+     )
+     (setq AV:OCUP nil)
+     (av:reat-liga)
+    )
+  )
 )
 
 ;;; ARMVARLISTA: LISTA DE FERROS + RESUMO DE ACO de todos os detalhamentos do
@@ -2740,5 +2987,9 @@
   (princ)
 )
 
-(princ "\nARMVAR v1.2 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARLISTA.")
+(setq AV:OCUP nil AV:PEND nil)
+;;; reatores dos detalhamentos que ja existem no desenho aberto
+(if (vl-catch-all-error-p (vl-catch-all-apply 'av:reat-liga nil))
+  (princ "\nARMVAR: reatores indisponiveis neste CAD (use ARMVARATU para atualizar)."))
+(princ "\nARMVAR v1.3 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA.")
 (princ)
