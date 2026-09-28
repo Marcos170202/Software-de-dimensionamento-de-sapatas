@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.3
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.4
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -20,17 +20,22 @@
 ;;;                   desligados, ex.: desenho aberto sem a Lisp carregada)
 ;;;    ARMVARLISTA .. LISTA DE FERROS + RESUMO DE ACO de todo o desenho
 ;;;
-;;;  ELEMENTO PARAMETRIZADO (reatores)
+;;;  ELEMENTO PARAMETRIZADO  (bloco com atributos + reatores)
 ;;;  --------------------------------------------------------------------
-;;;  Com a Lisp carregada, cada detalhamento acompanha o desenho:
-;;;   - altere o CONTORNO da laje (STRETCH, grips, ...): ao fim do comando,
-;;;     ferro, cotas, textos, tabelas e LISTA sao refeitos;
-;;;   - edite o TEXTO do ferro (duplo clique): "(2X) N.1 9 %%c 10 C/20" ->
-;;;     repeticoes, bitola, espacamento (e posicao) passam a valer;
-;;;   - MOVA o ferro: a nova posicao e mantida nas proximas atualizacoes;
-;;;   - mova as tabelas a vontade: elas sao refeitas onde estiverem.
-;;;  Para ter isso ao abrir qualquer desenho, carregue a Lisp sempre
-;;;  (APPLOAD > Startup Suite, ou acaddoc.lsp).
+;;;  Cada detalhamento e UM objeto: o bloco "ARMVAR$AVn$DET" (ferro, cotas,
+;;;  textos), com os parametros em ATRIBUTOS: POSICAO, BITOLA, ESPACAMENTO,
+;;;  COBRIMENTO, REPETICOES, PERNA/PONTA INICIAL/FINAL, GANCHOS_LADO, ACO,
+;;;  SIMETRIA, EMENDAS, COMPR_COMERCIAL, TRASPASSE, PRIMEIRO_PEDACO,
+;;;  ALTERNAR, AFASTAMENTO, TABELA_EQUIV, ELEMENTO.
+;;;   - Selecione o bloco e altere um atributo na janela PROPRIEDADES (depois
+;;;     tecle ESC) ou com DUPLO CLIQUE: o detalhamento e refeito, e tambem a
+;;;     tabela, o resumo e a LISTA DE FERROS.
+;;;   - Altere o CONTORNO da laje (STRETCH, grips): tudo e recalculado.
+;;;   - MOVA o bloco ou as tabelas (tambem blocos) a vontade.
+;;;   - Valor invalido num atributo e ignorado (o atributo volta ao valor
+;;;     valido).
+;;;  Os reatores so funcionam com a Lisp carregada: carregue-a sempre
+;;;  (APPLOAD > Startup Suite, ou acaddoc.lsp).  Sem reatores, use ARMVARATU.
 ;;;
 ;;;  --------------------------------------------------------------------
 ;;;  NUMERACAO AUTOMATICA
@@ -407,14 +412,17 @@
 )
 
 ;;; XDATA que marca as entidades de um detalhamento:
-;;;   ("ARMVAR" (1000 . id) [(1000 . etiqueta)])
-;;; AV:ID = id do detalhamento em construcao (nil = sem marca);
-;;; AV:TAG = etiqueta opcional (ex.: "T1" moldura da tabela de ferros)
+;;;   ("ARMVAR" (1000 . id) (1000 . etiqueta) (1000 . grupo))
+;;; AV:ID  = id do detalhamento em construcao (nil = sem marca)
+;;; AV:TAG = etiqueta ("ESP" texto do ferro, "FP" 1.o pedaco...) ou ""
+;;; AV:GRP = bloco a que a entidade vai: "DET" (ferro), "T1" (tabela de
+;;;          ferros), "T2" (resumo de aco), "LST" (lista geral)
 (defun av:xd ()
-  (if AV:ID
-    (list (list -3 (append (list AV:APP (cons 1000 AV:ID))
-                           (if AV:TAG (list (cons 1000 AV:TAG))))))
-  )
+  (if AV:ID (list (av:xd-lista AV:ID (if AV:TAG AV:TAG "") (if AV:GRP AV:GRP ""))))
+)
+
+(defun av:xd-lista (id tag grp)
+  (list -3 (list AV:APP (cons 1000 id) (cons 1000 tag) (cons 1000 grp)))
 )
 
 ;;; marca uma entidade ja criada (ex.: cotas feitas por ActiveX)
@@ -1582,6 +1590,193 @@
   r
 )
 
+;;; ---- ELEMENTO PARAMETRIZADO = BLOCO COM ATRIBUTOS ---------------------------
+;;;  Cada detalhamento vira o bloco "ARMVAR$<id>$DET" (ferro, cotas, textos),
+;;;  com os parametros em ATRIBUTOS invisiveis (editaveis na janela
+;;;  Propriedades ou com duplo clique).  As tabelas viram "ARMVAR$<id>$T1" e
+;;;  "$T2", e a lista geral "ARMVAR$LISTA$LST".  Os blocos tem ponto base
+;;;  0,0,0 e sao inseridos em 0,0,0: mover o bloco move o desenho; ao
+;;;  atualizar, a definicao e refeita e a insercao continua onde estiver.
+
+;;; atributos: (tag  prompt  variavel  tipo)
+(setq AV:ATRIBS
+  '(("POSICAO"         "Posicao N"                          AV:P-POS  int)
+    ("BITOLA"          "Bitola (mm)"                        AV:P-BIT  bit)
+    ("ESPACAMENTO"     "Espacamento (cm)"                   AV:P-ESP  pos)
+    ("COBRIMENTO"      "Cobrimento (cm)"                    AV:P-COB  num)
+    ("REPETICOES"      "Repeticoes (2 = simetria)"          AV:P-REP  int)
+    ("PERNA_INICIAL"   "Perna inicial (cm)"                 AV:P-PL1  num)
+    ("PONTA_INICIAL"   "Ponta inicial (cm)"                 AV:P-PT1  num)
+    ("PERNA_FINAL"     "Perna final (cm)"                   AV:P-PL2  num)
+    ("PONTA_FINAL"     "Ponta final (cm)"                   AV:P-PT2  num)
+    ("GANCHOS_LADO"    "Ganchos para o lado (DIREITA/ESQUERDA)" AV:P-LADO lado)
+    ("ACO"             "Aco (CA-50/CA-60/CA-25)"            AV:P-ACO  aco)
+    ("SIMETRIA"        "Barra simetrica invertida (SIM/NAO)" AV:P-SIM sn)
+    ("EMENDAS"         "Emendar barras longas (SIM/NAO)"    AV:P-EMD  sn)
+    ("COMPR_COMERCIAL" "Comprimento comercial (cm)"         AV:P-LCM  pos)
+    ("TRASPASSE"       "Traspasse L (cm)"                   AV:P-TRA  num)
+    ("PRIMEIRO_PEDACO" "1.o pedaco (cm, vazio = comercial)" AV:P-PIN  vaz)
+    ("ALTERNAR"        "Alternar barras vizinhas (SIM/NAO)" AV:P-DFS  sn)
+    ("AFASTAMENTO"     "Afastamento entre emendas (cm)"     AV:P-AFS  num)
+    ("TABELA_EQUIV"    "Tabela c/ compr. equivalente (SIM/NAO)" AV:P-EQU sn)
+    ("ELEMENTO"        "Elemento (lista)"                   AV:P-ELE  txt))
+)
+
+;;; parametros atuais -> ((tag valor) ...)
+(defun av:params->atrs ( / r v)
+  (foreach a AV:ATRIBS
+    (setq v (eval (caddr a)))
+    (setq v (cond
+              ((= (cadddr a) 'bit)  (nth v AV:BITOLAS))
+              ((= (cadddr a) 'aco)  (nth v AV:ACOS))
+              ((= (cadddr a) 'lado) (if (= v 1) "ESQUERDA" "DIREITA"))
+              ((= (cadddr a) 'sn)   (if (= v "1") "SIM" "NAO"))
+              (t (if v v ""))))
+    (setq r (cons (list (car a) (if v v "")) r))
+  )
+  (reverse r)
+)
+
+;;; ((tag valor) ...) -> parametros (valores invalidos sao ignorados)
+(defun av:atrs->params (pares / a v n k)
+  (foreach pv pares
+    (if (setq a (assoc (strcase (car pv)) AV:ATRIBS))
+      (progn
+        (setq v (vl-string-trim " " (cadr pv)) n (av:num v))
+        (cond
+          ((= (cadddr a) 'int)  (if (and n (>= n 1)) (set (caddr a) (itoa (fix n)))))
+          ((= (cadddr a) 'num)  (if (and n (>= n 0)) (set (caddr a) (av:fmt n))))
+          ((= (cadddr a) 'pos)  (if (and n (> n 0)) (set (caddr a) (av:fmt n))))
+          ((= (cadddr a) 'vaz)  (if (or (= v "") (and n (> n 0))) (set (caddr a) v)))
+          ((= (cadddr a) 'txt)  (set (caddr a) v))
+          ((= (cadddr a) 'sn)   (set (caddr a) (if (wcmatch (strcase v) "S*,1,Y*,T*") "1" "0")))
+          ((= (cadddr a) 'lado) (set (caddr a) (if (wcmatch (strcase v) "E*,L*,1") 1 0)))
+          ((= (cadddr a) 'bit)
+           (setq k 0)
+           (foreach b AV:BITOLAS
+             (if (and n (equal (atof b) n 1e-6)) (set (caddr a) k))
+             (setq k (1+ k))))
+          ((= (cadddr a) 'aco)
+           (setq k 0)
+           (foreach b AV:ACOS
+             (if (= (strcase b) (strcase v)) (set (caddr a) k))
+             (setq k (1+ k))))
+        )
+      )
+    )
+  )
+)
+
+;;; atributos de uma insercao: ((tag valor) ...)
+(defun av:atr-le (ins / e ed r)
+  (setq e (entnext ins) r nil)
+  (while (and e (setq ed (entget e)) (= (cdr (assoc 0 ed)) "ATTRIB"))
+    (setq r (cons (list (cdr (assoc 2 ed)) (cdr (assoc 1 ed))) r) e (entnext e))
+  )
+  (reverse r)
+)
+
+;;; grava valores nos atributos de uma insercao
+(defun av:atr-grava (ins pares / e ed p)
+  (setq e (entnext ins))
+  (while (and e (setq ed (entget e)) (= (cdr (assoc 0 ed)) "ATTRIB"))
+    (if (and (setq p (assoc (cdr (assoc 2 ed)) pares))
+             (/= (cadr p) (cdr (assoc 1 ed))))
+      (entmod (subst (cons 1 (cadr p)) (assoc 1 ed) ed)))
+    (setq e (entnext e))
+  )
+  (entupd ins)
+)
+
+;;; entidades SOLTAS (nao blocos) de um detalhamento e grupo
+(defun av:soltos (id grp / r x)
+  (foreach e (av:ents-id id)
+    (setq x (av:id-ent e))
+    (if (and (/= (cdr (assoc 0 (entget e))) "INSERT") (= (caddr x) grp))
+      (setq r (cons e r)))
+  )
+  r
+)
+
+;;; insercao do bloco de um detalhamento e grupo (ou nil)
+(defun av:insert-de (id grp / r x)
+  (foreach e (av:ents-id id)
+    (setq x (av:id-ent e))
+    (if (and (null r) (= (cdr (assoc 0 (entget e))) "INSERT") (= (caddr x) grp))
+      (setq r e))
+  )
+  r
+)
+
+(defun av:nome-bloco (id grp) (strcat "ARMVAR$" id "$" grp))
+
+;;; junta as entidades soltas do grupo num bloco (cria ou REDEFINE) e garante
+;;; uma insercao; atrs = ((tag valor) ...) dos atributos (ou nil)
+(defun av:empacota (id grp atrs h / ents nome ins e ed n ok)
+  (setq ents (av:soltos id grp) nome (av:nome-bloco id grp)
+        ins  (av:insert-de id grp))
+  ;; bloco em uso por esta insercao (pode ter sufixo $n)
+  (if ins (setq nome (cdr (assoc 2 (entget ins)))))
+  (if (null ents)
+    ;; nada a desenhar (ex.: tabela desligada): tira a insercao antiga
+    (if ins (entdel ins))
+    (progn
+      ;; redefine o bloco; se o CAD nao aceitar redefinir, usa um nome novo
+      (setq ok (entmake (list '(0 . "BLOCK") (cons 2 nome) (cons 70 (if atrs 2 0))
+                              '(10 0.0 0.0 0.0))))
+      (if (not ok)
+        (progn
+          (setq n 1)
+          (while (tblsearch "BLOCK" (strcat (av:nome-bloco id grp) "$" (itoa n)))
+            (setq n (1+ n)))
+          (setq nome (strcat (av:nome-bloco id grp) "$" (itoa n)))
+          (entmake (list '(0 . "BLOCK") (cons 2 nome) (cons 70 (if atrs 2 0))
+                         '(10 0.0 0.0 0.0)))
+        )
+      )
+      (foreach e (reverse ents)
+        (setq ed (vl-remove-if '(lambda (g) (member (car g) '(-1 5 67 102 330 360 410)))
+                               (entget e (list "*"))))
+        (entmake ed)
+      )
+      (foreach a atrs
+        (entmake (list '(0 . "ATTDEF") '(8 . "0") '(10 0.0 0.0 0.0) (cons 40 h)
+                       (cons 1 (cadr a)) (cons 3 (cadr (assoc (car a) AV:ATRIBS)))
+                       (cons 2 (car a)) '(70 . 1) (cons 7 AV:STY)))
+      )
+      (entmake '((0 . "ENDBLK")))
+      (foreach e ents (entdel e))
+      (if ins
+        (progn
+          ;; bloco com nome novo: a insercao passa a usa-lo
+          (if (/= (cdr (assoc 2 (entget ins))) nome)
+            (entmod (subst (cons 2 nome) (assoc 2 (entget ins)) (entget ins))))
+          (if atrs (av:atr-grava ins atrs))
+          (entupd ins)
+        )
+        (progn
+          (entmake (list '(0 . "INSERT") '(8 . "0")
+                         (cons 2 nome) '(10 0.0 0.0 0.0)
+                         (cons 66 (if atrs 1 0))
+                         (av:xd-lista id "" grp)))
+          (if atrs
+            (progn
+              (foreach a atrs
+                (entmake (list '(0 . "ATTRIB") '(8 . "0") '(10 0.0 0.0 0.0)
+                               (cons 40 h) (cons 1 (cadr a)) (cons 2 (car a))
+                               '(70 . 1) (cons 7 AV:STY)))
+              )
+              (entmake '((0 . "SEQEND")))
+            )
+          )
+          (setq ins (entlast))
+        )
+      )
+    )
+  )
+  ins
+)
+
 ;;; ---- respostas: gravacao (criacao) e repeticao (edicao) -------------------
 ;;; AV:MODO = 'replay durante ARMVAREDIT; AV:RESP = dados guardados
 (defun av:rp-p () (eq AV:MODO 'replay))
@@ -1631,13 +1826,18 @@
   r
 )
 
-;;; maior posicao nos textos (TEXT, MTEXT, cotas) de uma selecao
-(defun av:pos-max (ss / i ed s mx)
+;;; maior posicao nos textos (TEXT, MTEXT, cotas) de uma selecao e nos
+;;; blocos ARMVAR selecionados (posicoes guardadas nos dados)
+(defun av:pos-max (ss / i e ed s mx x d)
   (setq mx 0 i 0)
   (if ss
     (while (< i (sslength ss))
-      (setq ed (entget (ssname ss i)) s "" i (1+ i))
-      (foreach g ed (if (member (car g) '(1 3)) (setq s (strcat s " " (cdr g)))))
+      (setq e (ssname ss i) ed (entget e) s "" i (1+ i))
+      (if (= (cdr (assoc 0 ed)) "INSERT")
+        (if (and (setq x (av:id-ent e)) (setq d (av:reg-le (car x))))
+          (foreach ln (cadr (assoc "res" d)) (setq s (strcat s " " (car ln)))))
+        (foreach g ed (if (member (car g) '(1 3)) (setq s (strcat s " " (cdr g)))))
+      )
       (foreach v (av:pos-texto s) (if (> v mx) (setq mx v)))
     )
   )
@@ -1649,10 +1849,10 @@
 (defun av:numera ( / ss mx)
   (cond
     ((= AV:P-NUM 1)
-     (setq ss (ssget "_X" '((0 . "TEXT,MTEXT,DIMENSION")))))
+     (setq ss (ssget "_X" '((0 . "TEXT,MTEXT,DIMENSION,INSERT")))))
     ((= AV:P-NUM 2)
      (princ "\nSelecione a AREA com os ferros ja detalhados (janela/crossing): ")
-     (setq ss (vl-catch-all-apply 'ssget (list '((0 . "TEXT,MTEXT,DIMENSION")))))
+     (setq ss (vl-catch-all-apply 'ssget (list '((0 . "TEXT,MTEXT,DIMENSION,INSERT")))))
      (if (vl-catch-all-error-p ss) (setq ss nil)))
   )
   (if (member AV:P-NUM '(1 2))
@@ -1691,8 +1891,8 @@
                                  ch k mt pt c xg ln lst)
   (setq lns (vl-sort (av:lista-linhas)
                      '(lambda (a b) (< (av:num-rot (car a)) (av:num-rot (car b)))))
-        AV:ID "LISTA")
-  (av:apaga-id "LISTA")
+        AV:ID "LISTA" AV:GRP "LST")
+  (foreach e (av:soltos "LISTA" "LST") (entdel e))
   (av:prepara)
   (setq x0 (car p0) y0 (cadr p0) wd (* 34.0 h))
   ;; elementos na ordem da 1.a posicao
@@ -1775,15 +1975,17 @@
   (av:mk-line (list x0 y) (list (+ x0 wd) y) AV:LAY-TAB nil nil)
   (av:mk-text "PESO TOTAL" (list (+ x0 (* 1.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
   (av:mk-text (rtos tot 2 1) (list (+ x0 (* 25.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
-  (setq AV:ID nil)
+  (setq AV:ID nil AV:GRP nil)
+  (av:empacota "LISTA" "LST" nil h)
+  (av:reg-grava "LISTA" (list (list "p0" p0) (list "h" h)))
   (princ (strcat "\n  LISTA DE FERROS: " (itoa (length lns)) " posicao(oes), "
                  (rtos tot 2 1) " kg."))
 )
 
-;;; se ja existe uma LISTA no desenho, atualiza no mesmo lugar
-(defun av:lista-auto (h / p)
-  (if (setq p (av:ancora "LISTA" "LST"))
-    (av:lista-desenha p h)
+;;; se ja existe uma LISTA no desenho, atualiza (a insercao fica onde estiver)
+(defun av:lista-auto (h / d)
+  (if (and (av:insert-de "LISTA" "LST") (setq d (av:reg-le "LISTA")))
+    (av:lista-desenha (cadr (assoc "p0" d)) h)
   )
 )
 
@@ -2100,7 +2302,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.3      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.4      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2406,12 +2608,12 @@
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
                     ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k
-                    posl sep ptx espl linhas pvs pvg)
+                    posl sep ptx espl linhas pvs pvg ocup0)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
     (if marcou (vl-catch-all-apply 'vla-EndUndoMark (list doc)))
-    (setq AV:ID nil AV:TAG nil AV:OCUP nil)
+    (setq AV:ID nil AV:TAG nil AV:GRP nil AV:OCUP nil)
     (vl-catch-all-apply 'redraw nil)
     (princ)
   )
@@ -2647,11 +2849,13 @@
                                 pcsa (if (and dfs (cdr pcsr)) (av:inverte pcsr ini fim)))
                           ;; ---- 7) desenha o ferro e a faixa --------------
                           (if (not AV:SEMDLG) (progn (vla-StartUndoMark doc) (setq marcou T)))
-                          (setq AV:OCUP T)      ; reatores ignoram as nossas alteracoes
+                          (setq ocup0 AV:OCUP AV:OCUP T)  ; reatores ignoram as nossas alteracoes
                           (av:prepara)
-                          ;; edicao: apaga o detalhamento antigo e reusa o id
-                          (if (av:rp-p) (av:apaga-id AV:ED-ID))
-                          (setq AV:ID (if (av:rp-p) AV:ED-ID (av:novo-id)))
+                          ;; edicao: reusa o id (o bloco sera redefinido)
+                          (setq AV:ID (if (av:rp-p) AV:ED-ID (av:novo-id)) AV:GRP "DET")
+                          ;; restos soltos de uma tentativa anterior
+                          (foreach g '("DET" "T1" "T2")
+                            (foreach e (av:soltos AV:ID g) (entdel e)))
                           ;; posicoes separadas: "N.1 N.2" e um texto por pedaco
                           (setq ptx (if sep (av:ptxt-lista posl) pos)
                                 espl (if sep
@@ -2670,6 +2874,7 @@
                                               " C/" (av:fmt espcm) " ALTER.")
                                       chama anc espl)
                           ;; ---- 8) tabelas --------------------------------
+                          (setq AV:GRP "T1")
                           (setq nota (if (> nemd 0)
                                        (strcat "EMENDAS POR TRASPASSE: L = " (itoa lap)
                                                " cm  (BARRAS > " (itoa lcom) " cm)"
@@ -2697,18 +2902,23 @@
                               )
                             )
                           )
+                          (setq AV:GRP "T2")
                           (setq pt2 (av:gr "t2" (if (av:rp-p) (av:rp "t2")
                                       (av:pede-canto "\nClique no canto superior esquerdo do RESUMO DE ACO (ENTER = nao gerar): "))))
                           (if pt2
                             (av:tab-aco pt2 h linhas bit (nth AV:P-ACO AV:ACOS) kgm)
                           )
-                          ;; ---- 9) dados para edicao futura e lista geral ---
+                          ;; ---- 9) elemento parametrizado: blocos -------------
+                          (setq AV:GRP nil)
+                          (av:empacota AV:ID "DET" (av:params->atrs) h)
+                          (av:empacota AV:ID "T1" nil h)
+                          (av:empacota AV:ID "T2" nil h)
+                          ;; ---- 10) dados para edicao futura e lista geral --
                           (av:reg-grava AV:ID
                             (append
                               (list (list "ver" 12)
                                     (list "p" (mapcar 'eval AV:PARAMS))
                                     (list "h" h)
-                                    (list "fp0" (av:ancora AV:ID "FP"))
                                     (list "res" (mapcar '(lambda (ln)
                                                            (list (car ln) bit (cadr ln) (caddr ln)
                                                                  (nth AV:P-ACO AV:ACOS) kgm
@@ -2716,11 +2926,14 @@
                                                         linhas)))
                               AV:REC))
                           (princ (strcat "\n  Detalhamento " AV:ID
-                                         " guardado (ARMVAREDIT para editar)."))
+                                         (if (av:rp-p) " atualizado (bloco " " criado como bloco (")
+                                         (av:nome-bloco AV:ID "DET")
+                                         "). Edite os atributos na janela Propriedades,"
+                                         " com duplo clique ou com ARMVAREDIT."))
                           (setq AV:ID nil)
                           (av:lista-auto h)
                           (if marcou (progn (vla-EndUndoMark doc) (setq marcou nil)))
-                          (setq AV:OCUP nil)
+                          (setq AV:OCUP ocup0)
                           (if (not AV:SEMDLG) (av:reat-liga))
                           ;; a janela ja abre na proxima posicao livre
                           (if (not (av:rp-p))
@@ -2748,126 +2961,72 @@
 ;;;  12.  EDICAO E LISTA
 ;;; ==========================================================================
 
-;;; ---- texto do ferro editado a mao -> parametros --------------------------
-;;;  "(2X) N.1 87 %%c 8 C/15 C=VAR":  (2X) -> repeticoes, %%c 8 -> bitola,
-;;;  C/15 -> espacamento, N.1 -> posicao (so com uma posicao).
-(defun av:num-apos (s i / j d c)
-  ;; numero (com . ou ,) a partir da posicao i (pula espacos)
-  (setq j i d "")
-  (while (and (<= j (strlen s)) (= (substr s j 1) " ")) (setq j (1+ j)))
-  (while (and (<= j (strlen s)) (wcmatch (setq c (substr s j 1)) "#,`.,`,"))
-    (setq d (strcat d (if (= c ",") "." c)) j (1+ j))
-  )
-  (if (/= d "") d)
+;;; parametros de um detalhamento: os guardados, corrigidos pelos ATRIBUTOS
+;;; do bloco (que o usuario pode ter editado)
+(defun av:params-de (id rec / ins)
+  (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
+  (if (setq ins (av:insert-de id "DET"))
+    (av:atrs->params (av:atr-le ins)))
 )
 
-(defun av:acha (s pad / i)
-  ;; posicao (1..) da 1.a ocorrencia de pad em s (sem distinguir maiusculas)
-  (if (setq i (vl-string-search (strcase pad) (strcase s))) (1+ i))
-)
-
-(defun av:parse-espec (s unica / i v k r)
-  (setq r nil)
-  ;; repeticoes
-  (if (and (setq i (av:acha s "(")) (setq v (av:num-apos s (1+ i)))
-           (wcmatch (strcase (substr s (+ i 1 (strlen v)) 2)) "X)*"))
-    (setq r (cons (list 'AV:P-REP (itoa (fix (atof v)))) r))
-    (if (not (av:acha s "X)")) (setq r (cons (list 'AV:P-REP "1") r)))
-  )
-  ;; espacamento
-  (if (and (setq i (av:acha s "C/")) (setq v (av:num-apos s (+ i 2))))
-    (setq r (cons (list 'AV:P-ESP v) r)))
-  ;; bitola
-  (setq i (cond ((av:acha s "%%C") (+ (av:acha s "%%C") 3))
-                ((av:acha s "\\U+2205") (+ (av:acha s "\\U+2205") 7))
-                ((av:acha s "\\U+00D8") (+ (av:acha s "\\U+00D8") 7))
-                ((av:acha s (chr 216)) (+ (av:acha s (chr 216)) 1))))
-  (if (and i (setq v (av:num-apos s i)))
-    (progn
-      (setq k 0)
-      (foreach b AV:BITOLAS
-        (if (equal (atof b) (atof v) 1e-6) (setq r (cons (list 'AV:P-BIT k) r)))
-        (setq k (1+ k))
-      )
-    )
-  )
-  ;; posicao
-  (if (and unica (setq i (av:acha s "N.")) (setq v (av:num-apos s (+ i 2))))
-    (setq r (cons (list 'AV:P-POS (itoa (fix (atof v)))) r)))
+;;; os atributos do bloco diferem dos dados guardados?
+(defun av:atrs-mudaram-p (id rec / salvo r)
+  (setq salvo (mapcar 'eval AV:PARAMS))
+  (av:params-de id rec)
+  (setq r (not (equal (mapcar 'eval AV:PARAMS) (cadr (assoc "p" rec)))))
+  (mapcar 'set AV:PARAMS salvo)
   r
 )
 
-;;; refaz um detalhamento sem perguntar nada (contorno relido, texto do
-;;; ferro editado, ferro movido).  txt = texto editado do ferro, ou nil
-(defun av:regenera (id txt / rec salvo p esp fp fp0 d pk pd n)
-  (if (setq rec (av:reg-le id))
+;;; escreve nos atributos do bloco os parametros guardados
+(defun av:atrs-restaura (id rec / salvo ins)
+  (if (setq ins (av:insert-de id "DET"))
     (progn
       (setq salvo (mapcar 'eval AV:PARAMS))
       (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
-      ;; texto do ferro editado: novos parametros
-      (if txt
-        (progn
-          (setq n (length (vl-remove-if-not
-                            '(lambda (e) (= (cadr (av:id-ent e)) "ESP")) (av:ents-id id))))
-          (foreach pr (av:parse-espec txt (<= n 1)) (set (car pr) (cadr pr)))
-        )
-      )
-      ;; tabelas movidas: redesenha onde estao agora
-      (foreach tg '(("T1" "t1") ("T2" "t2"))
-        (if (and (cadr (assoc (cadr tg) rec)) (setq p (av:ancora id (car tg))))
-          (setq rec (cons (list (cadr tg) p) rec)))
-      )
-      ;; ferro movido: desloca a posicao do desenho do ferro
-      (setq fp (av:ancora id "FP") fp0 (cadr (assoc "fp0" rec)))
-      (if (and fp fp0 (> (distance fp fp0) 1e-6))
-        (progn
-          (setq d  (list (- (car fp) (car fp0)) (- (cadr fp) (cadr fp0)))
-                pd (cadr (assoc "pd" rec))
-                pk (cadr (assoc "pk" rec))
-                pd (if pd pd pk)
-                rec (cons (list "pd" (list (+ (car pd) (car d)) (+ (cadr pd) (cadr d)))) rec))
-          ;; faixa e chamada acompanham o ferro
-          (foreach k '("pf" "pc")
-            (if (setq p (cadr (assoc k rec)))
-              (setq rec (cons (list k (list (+ (car p) (car d)) (+ (cadr p) (cadr d)))) rec))))
-        )
-      )
-      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id AV:SEMDLG T)
-      (vl-catch-all-apply 'c:ARMVAR nil)
+      (av:atr-grava ins (av:params->atrs))
       (mapcar 'set AV:PARAMS salvo)
-      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:SEMDLG nil)
     )
   )
 )
 
-;;; ARMVAREDIT: clique em qualquer entidade de um detalhamento; a janela abre
-;;; com os dados dele, e tudo (ferro, cotas, tabelas) e redesenhado.  As
-;;; tabelas ficam onde estiverem (se foram movidas), e a LISTA DE FERROS geral
-;;; e atualizada.
-(defun c:ARMVAREDIT ( / sel id rec salvo p)
+;;; refaz um detalhamento sem perguntar nada (contorno relido, atributos)
+(defun av:regenera (id / rec salvo)
+  (if (setq rec (av:reg-le id))
+    (progn
+      (setq salvo (mapcar 'eval AV:PARAMS))
+      (av:params-de id rec)
+      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id AV:SEMDLG T)
+      (vl-catch-all-apply 'c:ARMVAR nil)
+      (mapcar 'set AV:PARAMS salvo)
+      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:SEMDLG nil AV:GRP nil)
+    )
+  )
+)
+
+;;; ARMVAREDIT: clique no detalhamento (bloco); a janela abre com os dados
+;;; dele, e ferro, cotas, tabelas e LISTA sao refeitos.
+(defun c:ARMVAREDIT ( / sel id rec salvo)
   (setq sel (vl-catch-all-apply 'entsel
-              (list "\nSelecione um elemento do detalhamento ARMVAR: ")))
+              (list "\nSelecione o detalhamento ARMVAR: ")))
   (if (and sel (not (vl-catch-all-error-p sel)))
     (setq id (car (av:id-ent (car sel))))
   )
   (cond
     ((or (null id) (= id "LISTA"))
-     (princ "\nEsse objeto nao pertence a um detalhamento ARMVAR."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.4)."))
     ((null (setq rec (av:reg-le id)))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
      (setq salvo (mapcar 'eval AV:PARAMS))
-     (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
-     ;; tabelas movidas: redesenha onde estao agora
-     (foreach tg '(("T1" "t1") ("T2" "t2"))
-       (if (and (cadr (assoc (cadr tg) rec)) (setq p (av:ancora id (car tg))))
-         (setq rec (cons (list (cadr tg) p) rec)))
-     )
+     (av:params-de id rec)
      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id)
      (princ (strcat "\nEditando o detalhamento " id "..."))
+     (setq AV:OCUP T)
      (vl-catch-all-apply 'c:ARMVAR nil)
+     (setq AV:OCUP nil)
      (mapcar 'set AV:PARAMS salvo)
-     (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil)
+     (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:GRP nil)
      (av:reat-liga)
     )
   )
@@ -2878,8 +3037,8 @@
 (defun c:ARMVARATU ( / n)
   (setq n 0 AV:OCUP T)
   (foreach id (av:reg-ids)
-    (if (and (/= id "LISTA") (av:ents-id id))
-      (progn (av:regenera id nil) (setq n (1+ n))))
+    (if (and (/= id "LISTA") (av:insert-de id "DET"))
+      (progn (av:regenera id) (setq n (1+ n))))
   )
   (setq AV:OCUP nil)
   (av:reat-liga)
@@ -2887,10 +3046,11 @@
   (princ)
 )
 
-;;; ---- reatores: o detalhamento acompanha o desenho ---------------------------
-;;;  Observa o CONTORNO (handles guardados), o TEXTO do ferro e o 1.o pedaco
-;;;  do ferro.  A alteracao e so anotada durante o comando do usuario; quando
-;;;  o comando termina, o detalhamento e refeito (reator de comando).
+;;; ---- reatores: o bloco acompanha o desenho ---------------------------------
+;;;  Observa o CONTORNO (handles guardados), o BLOCO e os seus ATRIBUTOS.
+;;;  A alteracao so e anotada; o detalhamento e refeito quando o comando
+;;;  termina (reator de comando) ou quando a selecao muda depois de editar
+;;;  na janela Propriedades (reator de selecao).
 (defun av:vla (e / o)
   (if (and e (entget e))
     (progn (setq o (vl-catch-all-apply 'vlax-ename->vla-object (list e)))
@@ -2898,32 +3058,31 @@
   )
 )
 
-(defun av:reat-liga ( / rec objs e o r)
+(defun av:reat-liga ( / rec objs e o r ins)
   (foreach r AV:REATORES (vl-catch-all-apply 'vlr-remove (list r)))
-  (setq AV:REATORES nil)
+  (setq AV:REATORES nil AV:CONTORNOS nil)
   (foreach id (av:reg-ids)
-    (if (and (/= id "LISTA") (setq rec (av:reg-le id)))
+    (if (and (/= id "LISTA") (setq ins (av:insert-de id "DET")) (setq rec (av:reg-le id)))
       (progn
         (setq objs nil)
         ;; contorno
         (foreach hd (cadr (assoc "hnd" rec))
-          (if (setq o (av:vla (handent hd))) (setq objs (cons o objs))))
-        ;; texto do ferro e 1.o pedaco do ferro
-        (foreach e (av:ents-id id)
-          (if (member (cadr (av:id-ent e)) '("ESP" "FP"))
-            (if (setq o (av:vla e)) (setq objs (cons o objs))))
+          (if (setq o (av:vla (handent hd)))
+            (setq objs (cons o objs) AV:CONTORNOS (cons hd AV:CONTORNOS))))
+        ;; bloco e atributos
+        (if (setq o (av:vla ins)) (setq objs (cons o objs)))
+        (setq e (entnext ins))
+        (while (and e (= (cdr (assoc 0 (entget e))) "ATTRIB"))
+          (if (setq o (av:vla e)) (setq objs (cons o objs)))
+          (setq e (entnext e))
         )
-        (if objs
-          (progn
-            (setq r (vl-catch-all-apply 'vlr-object-reactor
-                      (list objs id '((:vlr-modified . av:cb-mod)))))
-            (if (not (vl-catch-all-error-p r)) (setq AV:REATORES (cons r AV:REATORES)))
-          )
-        )
+        (setq r (vl-catch-all-apply 'vlr-object-reactor
+                  (list objs id '((:vlr-modified . av:cb-mod)))))
+        (if (not (vl-catch-all-error-p r)) (setq AV:REATORES (cons r AV:REATORES)))
       )
     )
   )
-  (if (and AV:REATORES (null AV:REAT-CMD))
+  (if (null AV:REAT-CMD)
     (progn
       (setq r (vl-catch-all-apply 'vlr-command-reactor
                 (list "ARMVAR" '((:vlr-commandEnded . av:cb-cmd)
@@ -2932,42 +3091,69 @@
       (if (not (vl-catch-all-error-p r)) (setq AV:REAT-CMD r))
     )
   )
+  (if (null AV:REAT-SEL)
+    (progn
+      (setq r (vl-catch-all-apply 'vlr-miscellaneous-reactor
+                (list "ARMVAR" '((:vlr-pickfirstModified . av:cb-sel)))))
+      (if (not (vl-catch-all-error-p r)) (setq AV:REAT-SEL r))
+    )
+  )
   (length AV:REATORES)
 )
 
 ;;; objeto alterado: so anota (nao pode alterar o desenho aqui)
-(defun av:cb-mod (obj rea args / id hd)
+;;;   AV:PEND = ((id contorno-alterado?) ...)
+(defun av:cb-mod (obj rea args / id c)
   (if (and (not AV:OCUP) (not (vlax-erased-p obj)))
     (progn
-      (setq id (vlr-data rea))
-      (if (not (assoc id AV:PEND)) (setq AV:PEND (cons (list id nil) AV:PEND)))
-      ;; texto do ferro: guarda o handle para ler o texto novo depois
-      (if (= (vla-get-ObjectName obj) "AcDbText")
-        (setq AV:PEND (subst (list id (vla-get-Handle obj)) (assoc id AV:PEND) AV:PEND)))
+      (setq id (vlr-data rea)
+            c  (member (vla-get-Handle obj) AV:CONTORNOS))
+      (if (assoc id AV:PEND)
+        (if c (setq AV:PEND (subst (list id T) (assoc id AV:PEND) AV:PEND)))
+        (setq AV:PEND (cons (list id (if c T nil)) AV:PEND))
+      )
     )
   )
 )
 
-;;; fim do comando do usuario: refaz os detalhamentos anotados
-(defun av:cb-cmd (rea args / pend cmd e txt)
-  (setq cmd (strcase (if (car args) (car args) "")))
-  (cond
-    ((or AV:OCUP (null AV:PEND)) nil)
-    ((wcmatch cmd "U,UNDO,REDO,MREDO,ARMVAR*")
-     (setq AV:PEND nil))
-    (t
-     (setq pend AV:PEND AV:PEND nil AV:OCUP T)
-     (foreach it pend
-       (setq txt nil)
-       (if (and (cadr it) (setq e (handent (cadr it))) (entget e))
-         (setq txt (cdr (assoc 1 (entget e)))))
-       (princ (strcat "\nARMVAR: atualizando o detalhamento " (car it) "..."))
-       (vl-catch-all-apply 'av:regenera (list (car it) txt))
-     )
-     (setq AV:OCUP nil)
-     (av:reat-liga)
+;;; processa as alteracoes anotadas
+(defun av:processa ( / pend rec n)
+  (if (and AV:PEND (not AV:OCUP))
+    (progn
+      (setq pend AV:PEND AV:PEND nil AV:OCUP T n 0)
+      (foreach it pend
+        (if (setq rec (av:reg-le (car it)))
+          (if (or (cadr it) (av:atrs-mudaram-p (car it) rec))
+            (progn
+              (princ (strcat "\nARMVAR: atualizando o detalhamento " (car it) "..."))
+              (vl-catch-all-apply 'av:regenera (list (car it)))
+              (setq n (1+ n))
+            )
+            ;; nada mudou de fato (ex.: valor invalido): atributos voltam
+            ;; aos valores validos guardados
+            (vl-catch-all-apply 'av:atrs-restaura (list (car it) rec))
+          )
+        )
+      )
+      (setq AV:OCUP nil)
+      (if (> n 0) (av:reat-liga))
     )
   )
+)
+
+;;; fim de comando do usuario (MOVE, STRETCH, EATTEDIT, grips...)
+(defun av:cb-cmd (rea args / cmd)
+  (setq cmd (strcase (if (car args) (car args) "")))
+  (if (wcmatch cmd "U,UNDO,REDO,MREDO")
+    (setq AV:PEND nil)
+    (vl-catch-all-apply 'av:processa nil)
+  )
+)
+
+;;; selecao mudou (ex.: ESC depois de editar na janela Propriedades)
+(defun av:cb-sel (rea args)
+  (if (and AV:PEND (= (getvar "CMDACTIVE") 0))
+    (vl-catch-all-apply 'av:processa nil))
 )
 
 ;;; ARMVARLISTA: LISTA DE FERROS + RESUMO DE ACO de todos os detalhamentos do
@@ -2978,12 +3164,14 @@
         uc  (cond ((or (null AV:P-UNI) (= AV:P-UNI 0)) esc) ((= AV:P-UNI 1) 100.0)
                   ((= AV:P-UNI 2) 1.0) (t 0.1))
         h   (/ (* (/ (av:num (if AV:P-ALT AV:P-ALT "2")) 10.0) esc) uc))
-  (if (setq p (av:ancora "LISTA" "LST"))
-    (progn (av:lista-desenha p h) (princ "\n  Lista atualizada."))
+  (setq AV:OCUP T)
+  (if (and (av:insert-de "LISTA" "LST") (setq p (av:reg-le "LISTA")))
+    (progn (av:lista-desenha (cadr (assoc "p0" p)) h) (princ "\n  Lista atualizada."))
     (if (setq p (av:pede-canto "\nClique no canto superior esquerdo da LISTA DE FERROS: "))
       (av:lista-desenha p h)
     )
   )
+  (setq AV:OCUP nil)
   (princ)
 )
 
@@ -2991,5 +3179,6 @@
 ;;; reatores dos detalhamentos que ja existem no desenho aberto
 (if (vl-catch-all-error-p (vl-catch-all-apply 'av:reat-liga nil))
   (princ "\nARMVAR: reatores indisponiveis neste CAD (use ARMVARATU para atualizar)."))
-(princ "\nARMVAR v1.3 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA.")
+(princ "\nARMVAR v1.4 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA.")
+(princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ)
