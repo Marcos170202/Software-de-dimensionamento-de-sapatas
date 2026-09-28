@@ -76,7 +76,9 @@
 ;;;    tem o comprimento comercial e o restante e repartido 2/3 no 1.o
 ;;;    pedaco e 1/3 no ultimo.  Cada emenda acrescenta L ao consumo.
 ;;;  - ALTERNANCIA (opcao "Alternar barras vizinhas"): a barra vizinha usa
-;;;    os MESMOS pedacos em ordem inversa (desenho "ALTER."), assim as
+;;;    os MESMOS pedacos em ordem inversa.  No desenho, a barra simetrica
+;;;    (tracejada) ja aparece com os pedacos invertidos; sem simetria, e
+;;;    desenhada ao lado a barra "ALTER.".  Assim as
 ;;;    emendas de barras vizinhas nao ficam na mesma secao e a tabela tem
 ;;;    poucos comprimentos.  As zonas de traspasse de barras vizinhas ficam
 ;;;    afastadas de pelo menos o "afastamento entre emendas" (padrao 20 cm);
@@ -123,8 +125,10 @@
 ;;;    EST_ArmNegInt ........ barra simetrica invertida (negativa, tracejada)
 ;;;    EST_ArmTexto ......... texto do ferro  "(2X) N.1 87 %%c 8 C/15 C=VAR"
 ;;;    2 .................... comprimentos dos trechos e textos das tabelas
-;;;    EST_Cota ............. linha de distribuicao, tiques, textos da faixa
-;;;                           e cota do traspasse
+;;;    EST_Cota ............. COTAS (entidades DIMENSION, com tiques): linha
+;;;                           de distribuicao "87 (2X) N.1 %%c 8 C/15" /
+;;;                           "(1300)" e cota do traspasse.  Se o CAD nao
+;;;                           aceitar ActiveX, sao desenhadas com linhas.
 ;;;    EST_Indicacao ........ chamada tracejada e circulos (ferro x faixa)
 ;;;    T_LINHAS_GREEN ....... molduras das tabelas
 ;;;    TAB-ESTACAS-GRADE .... grade das colunas da tabela de ferros
@@ -949,6 +953,12 @@
 ;;; chamada.  ka,kb = extremos (t); ul = posicao da linha (u);
 ;;; ub = inicio das linhas de chamada (u); sd = +1/-1 lado de fora (u)
 (defun av:cota (th ka kb ul ub sd h txt / d nrm fora)
+  (if (not (av:mk-dim (av:tu th ka ub) (av:tu th kb ub) (av:tu th ka ul) th txt h 2 nil))
+    (av:cota-manual th ka kb ul ub sd h txt))
+)
+
+;;; a mesma cota desenhada com linhas, tiques e texto (CAD sem ActiveX)
+(defun av:cota-manual (th ka kb ul ub sd h txt / d nrm fora)
   (setq d    (list (cos th) (sin th))
         nrm  (list (- (sin th)) (cos th))
         fora (list (* sd (car nrm)) (* sd (cadr nrm))))
@@ -959,6 +969,56 @@
   (av:tique (av:tu th ka ul) d h AV:LAY-COTA)
   (av:tique (av:tu th kb ul) d h AV:LAY-COTA)
   (av:rotulo txt (av:tu th (/ (+ ka kb) 2.0) ul) th fora (* 0.9 h) AV:LAY-COTA)
+)
+
+;;; cota linear REAL (entidade DIMENSION, rotacionada), layer EST_Cota,
+;;; com tiques (arch tick) e o texto "txt" no lugar do valor medido.
+;;;   p1,p2 = pontos de definicao;  ploc = ponto da linha de cota
+;;;   ang   = angulo da linha de cota;  vpos = 1 texto acima / 2 do lado de
+;;;           fora (longe dos pontos);  sup = T suprime as linhas de chamada
+;;;   Na string "txt", "\X" separa o texto de cima e o de baixo da linha.
+;;; devolve o objeto, ou nil se o CAD nao aceitar (usa-se o desenho manual)
+(defun av:mk-dim (p1 p2 ploc ang txt h vpos sup / spc d)
+  (setq spc (vl-catch-all-apply
+              '(lambda ()
+                 (vla-get-Block (vla-get-ActiveLayout
+                                  (vla-get-ActiveDocument (vlax-get-acad-object)))))
+              nil))
+  (if (not (vl-catch-all-error-p spc))
+    (setq d (vl-catch-all-apply 'vla-AddDimRotated
+              (list spc
+                    (vlax-3d-point (list (car p1) (cadr p1) 0.0))
+                    (vlax-3d-point (list (car p2) (cadr p2) 0.0))
+                    (vlax-3d-point (list (car ploc) (cadr ploc) 0.0))
+                    ang)))
+  )
+  (if (or (null d) (vl-catch-all-error-p d))
+    nil
+    (progn
+      (foreach pr (list (list 'vla-put-Layer AV:LAY-COTA)
+                        (list 'vla-put-ScaleFactor 1.0)
+                        (list 'vla-put-TextStyle AV:STY)
+                        (list 'vla-put-TextHeight (* 0.9 h))
+                        (list 'vla-put-TextGap (* 0.3 h))
+                        (list 'vla-put-Arrowhead1Type 4)        ; arch tick
+                        (list 'vla-put-Arrowhead2Type 4)
+                        (list 'vla-put-ArrowheadSize (* 0.6 h))
+                        (list 'vla-put-DimensionLineExtend (* 0.75 h))
+                        (list 'vla-put-ExtensionLineExtend (* 0.75 h))
+                        (list 'vla-put-ExtensionLineOffset (* 0.2 h))
+                        (list 'vla-put-VerticalTextPosition vpos)
+                        (list 'vla-put-ForceLineInside :vlax-true)
+                        (list 'vla-put-DimensionLineColor 256)  ; PorLayer
+                        (list 'vla-put-ExtensionLineColor 256)
+                        (list 'vla-put-TextColor 256)
+                        (list 'vla-put-ExtLine1Suppress (if sup :vlax-true :vlax-false))
+                        (list 'vla-put-ExtLine2Suppress (if sup :vlax-true :vlax-false))
+                        (list 'vla-put-TextOverride txt))
+        (vl-catch-all-apply (car pr) (list d (cadr pr)))
+      )
+      d
+    )
+  )
 )
 
 ;;; cotas dos traspasses de um ferro desenhado em "uu" (lado oposto aos
@@ -1018,9 +1078,12 @@
             AV:LAY-BAR nil nil)
 
   ;; --- barra simetrica invertida (negativa, tracejada) -------------------
-  ;;     espelhada: pernas voltadas para o ferro positivo, ao lado dele
+  ;;     espelhada: pernas voltadas para o ferro positivo, ao lado dele.
+  ;;     Com emendas alternadas ela mostra os pedacos na ordem INVERSA
+  ;;     (emendas desencontradas entre as duas barras).
   (if neg
-    (av:ferro th (+ ud (* sg dneg)) ta tb hooks (- sg) uc pcs lap
+    (av:ferro th (+ ud (* sg dneg)) ta tb hooks (- sg) uc
+              (if (and emd pcsa) pcsa pcs) lap
               (* 0.2 h) (* 0.3 h sg)
               AV:LAY-NEG AV:LT-NOME (/ (* 0.5 h) lts))
   )
@@ -1084,9 +1147,9 @@
   ;; --- cotas dos traspasses (do lado oposto aos ganchos) -----------------
   (if emd (av:cotas-trasp th ud ta pcs ini uc lap sg h))
 
-  ;; --- barra vizinha ALTERNADA (pedacos em ordem inversa) ----------------
-  ;;     desenhada ao lado, como o "(2X) N.1 ... ALTER." da prancha modelo
-  (if (and emd pcsa)
+  ;; --- sem simetria: barra vizinha ALTERNADA desenhada ao lado ------------
+  ;;     (com simetria a alternancia ja aparece na barra tracejada)
+  (if (and emd pcsa (not neg))
     (progn
       (setq ualt (- ud (* sg 8.0 h)))
       (av:ferro th ualt ta tb hooks sg uc pcsa lap 0.0 (* -0.3 h sg)
@@ -1100,17 +1163,22 @@
     )
   )
 
-  ;; --- linha de distribuicao (EST_Cota) ----------------------------------
-  (av:mk-line (av:tu th tdim (- lo (* 0.75 h))) (av:tu th tdim (+ hi (* 0.75 h)))
-              AV:LAY-COTA nil nil)
-  (av:tique (av:tu th tdim lo) nrm h AV:LAY-COTA)
-  (av:tique (av:tu th tdim hi) nrm h AV:LAY-COTA)
-  (setq rot (av:leitura (+ th (/ pi 2.0)))
-        up  (list (- (sin rot)) (cos rot))
-        mid (av:tu th tdim (/ (+ lo hi) 2.0)))
-  ;; "87 (2X) N.1 %%c 8 C/15" acima  e  "(1300)" abaixo da linha
-  (av:mk-text faixa (av:mad mid up (* 0.7 h)) (* 0.9 h) rot AV:LAY-COTA T)
-  (av:mk-text wtxt  (av:mad mid up (* -1.6 h)) (* 0.9 h) rot AV:LAY-COTA T)
+  ;; --- linha de distribuicao: COTA (EST_Cota) ---------------------------
+  ;;     "87 (2X) N.1 %%c 8 C/15" acima  e  "(1300)" abaixo da linha
+  (if (not (av:mk-dim (av:tu th tdim lo) (av:tu th tdim hi) (av:tu th tdim lo)
+                      (+ th (/ pi 2.0)) (strcat faixa "\\X" wtxt) h 1 T))
+    (progn
+      (av:mk-line (av:tu th tdim (- lo (* 0.75 h))) (av:tu th tdim (+ hi (* 0.75 h)))
+                  AV:LAY-COTA nil nil)
+      (av:tique (av:tu th tdim lo) nrm h AV:LAY-COTA)
+      (av:tique (av:tu th tdim hi) nrm h AV:LAY-COTA)
+      (setq rot (av:leitura (+ th (/ pi 2.0)))
+            up  (list (- (sin rot)) (cos rot))
+            mid (av:tu th tdim (/ (+ lo hi) 2.0)))
+      (av:mk-text faixa (av:mad mid up (* 0.7 h)) (* 0.9 h) rot AV:LAY-COTA T)
+      (av:mk-text wtxt  (av:mad mid up (* -1.6 h)) (* 0.9 h) rot AV:LAY-COTA T)
+    )
+  )
 
   ;; --- indicacao: circulos no ferro e chamada tracejada ate a faixa -------
   (if (and (>= tdim (- ta 1e-9)) (<= tdim (+ tb 1e-9)))
