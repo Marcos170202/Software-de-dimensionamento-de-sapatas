@@ -38,6 +38,9 @@
 ;;;  5. Clique onde DESENHAR o ferro (ENTER = no proprio ponto). Pode ser
 ;;;     fora da laje: uma linha de chamada tracejada liga o ferro a faixa.
 ;;;  6. Clique a posicao da LINHA DE DISTRIBUICAO (ENTER = automatica).
+;;;     Se ela ficar FORA do ferro, clique o ponto da LINHA DE CHAMADA: a
+;;;     bolinha vai sobre o ferro nesse ponto e a chamada (em "L") segue
+;;;     ate a faixa (ENTER = automatico).
 ;;;  7. Clique onde inserir a TABELA DE FERROS VARIAVEIS (N?A, N?B, ...) e
 ;;;     onde inserir o RESUMO DE ACO.
 ;;;
@@ -1082,10 +1085,12 @@
 ;;;   pcs   = pedacos (cm) da barra representada;  neg = T -> simetrica
 ;;;   pcsa  = pedacos da barra vizinha alternada (ALTER.) ou nil
 ;;;   atxt  = texto do desenho ALTER.
+;;;   chama = (t u) do ponto da linha de chamada, ou nil (automatico); so e
+;;;           usado quando a faixa de distribuicao NAO cruza o ferro
 (defun av:desenha (th ud ta tb lo hi tdim hooks lado h uc espec faixa wtxt
-                   mtxt pcs neg lap pcsa atxt
+                   mtxt pcs neg lap pcsa atxt chama
                    / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1
-                     p1 leg2 tip2 uvar ues ualt rot up mid lts ucir)
+                     p1 leg2 tip2 uvar ues ualt rot up mid lts ucir tcir uq)
   (setq sg  (if (= lado 0) -1.0 1.0)       ; direita = -u, esquerda = +u
         l1 (nth 0 hooks) t1 (nth 1 hooks) l2 (nth 2 hooks) t2 (nth 3 hooks)
         ini (+ l1 t1)
@@ -1222,6 +1227,35 @@
         ((> ucir (+ hi 1e-9))
          (av:mk-line (av:tu th tdim hi) (av:tu th tdim (- ucir (* 0.375 h)))
                      AV:LAY-IND AV:LT-NOME (/ h lts)))
+      )
+    )
+    ;; faixa FORA do ferro: bolinha sobre o ferro e linha de chamada em "L"
+    ;; (perpendicular ao ferro e depois paralela a ele) ate a faixa
+    (progn
+      (setq tcir (if chama
+                   (max ta (min tb (car chama)))
+                   (if (< tdim ta)
+                     (min tb (+ ta (* 6.0 h)))
+                     (max ta (- tb (* 6.0 h)))))
+            ucir (av:u-pedaco tcir ud ta tb pcs ini uc lap (* -0.3 h sg)))
+      ;; trecho paralelo: dentro da faixa (senao nao encontra a linha)
+      (if chama
+        (setq uq (max lo (min hi (cadr chama))))
+        (progn
+          (setq uq (max lo (min hi (- ucir (* sg 3.0 h)))))
+          (if (< (abs (- uq ucir)) (* 2.0 h))
+            (setq uq (max lo (min hi (+ ucir (* sg 3.0 h))))))
+        )
+      )
+      (av:mk-circ (av:tu th tcir ucir) (* 0.225 h) AV:LAY-IND)
+      (av:mk-circ (av:tu th tcir ucir) (* 0.375 h) AV:LAY-IND)
+      (if (> (abs (- uq ucir)) (* 0.375 h))
+        (av:mk-pline (list (av:tu th tcir (+ ucir (if (> uq ucir) (* 0.375 h) (* -0.375 h))))
+                           (av:tu th tcir uq)
+                           (av:tu th tdim uq))
+                     AV:LAY-IND nil)
+        (av:mk-line (av:tu th (+ tcir (if (> tdim tcir) (* 0.375 h) (* -0.375 h))) ucir)
+                    (av:tu th tdim ucir) AV:LAY-IND nil nil)
       )
     )
   )
@@ -1749,7 +1783,7 @@
                     hooks lado pos pref rep bars u c total-cm b hsum grupos
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
-                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota)
+                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
@@ -1902,6 +1936,15 @@
                                 (r (setq tdim (car (av:xy-tu r th)))))
                         )
                       )
+                      ;; ---- 6b) faixa fora do ferro: linha de chamada ---------
+                      (setq chama nil)
+                      (if (and ok (or (< tdim ta) (> tdim tb)))
+                        (progn
+                          (setq r (av:pede-opc "\nPonto da LINHA DE CHAMADA (bolinha no ferro) - clique (ENTER = automatico): "))
+                          (cond ((eq r 'cancel) (setq ok nil))
+                                (r (setq chama (av:xy-tu r th))))
+                        )
+                      )
                       (if (not ok)
                         (princ "\nCancelado.")
                         (progn
@@ -1918,7 +1961,8 @@
                                       (strcat "(" (rtos (* (- hi lo) uc) 2 0) ")")
                                       mtxt pcsr neg lap pcsa
                                       (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
-                                              " C/" (av:fmt espcm) " ALTER."))
+                                              " C/" (av:fmt espcm) " ALTER.")
+                                      chama)
                           ;; ---- 8) tabelas --------------------------------
                           (setq nota (if (> nemd 0)
                                        (strcat "EMENDAS POR TRASPASSE: L = " (itoa lap)
