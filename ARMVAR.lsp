@@ -38,8 +38,9 @@
 ;;;  5. Clique onde DESENHAR o ferro (ENTER = no proprio ponto). Pode ser
 ;;;     fora da laje: uma linha de chamada tracejada liga o ferro a faixa.
 ;;;  6. Clique a posicao da LINHA DE DISTRIBUICAO (ENTER = automatica).
-;;;     Em seguida, clique ate 2 vertices do desenho (ex.: cantos da laje)
-;;;     para ancorar as LINHAS DE EXTENSAO da faixa (ENTER = nenhum).
+;;;     A cota da faixa tem LINHA DE EXTENSAO nas duas pontas, ancorada nos
+;;;     vertices do contorno que definem a faixa; clique ate 2 vertices
+;;;     para trocar a ancora da ponta mais proxima (ENTER = automatico).
 ;;;     Se ela ficar FORA do ferro, clique o ponto da LINHA DE CHAMADA: a
 ;;;     bolinha vai sobre o ferro nesse ponto e a chamada tracejada (em "L") segue
 ;;;     ate a faixa (ENTER = automatico).
@@ -1470,6 +1471,25 @@
   (if (or (vl-catch-all-error-p p) (null p)) nil (av:p2 (trans p 1 0)))
 )
 
+;;; vertice do contorno que define a ponta "uu" da faixa (u = lo ou hi):
+;;; entre os vertices com u = uu, o mais proximo (em t) da linha "tdim".
+;;; devolve (t u) ou nil
+(defun av:vert-ext (aneis th uu tdim / tol best q d dbest)
+  (setq tol 1e-6 best nil)
+  (foreach an aneis
+    (foreach p an
+      (setq q (av:xy-tu p th))
+      (if (< (abs (- (cadr q) uu)) (max tol (* 1e-6 (abs uu))))
+        (progn
+          (setq d (abs (- (car q) tdim)))
+          (if (or (null best) (< d dbest)) (setq best q dbest d))
+        )
+      )
+    )
+  )
+  best
+)
+
 ;;; getpoint opcional:  'cancel (ESC),  nil (ENTER)  ou  o ponto (WCS)
 (defun av:pede-opc (msg / p)
   (setq p (vl-catch-all-apply 'getpoint (list msg)))
@@ -1998,13 +2018,17 @@
                                 (r (setq tdim (car (av:xy-tu r th)))))
                         )
                       )
-                      ;; ---- 6a) vertices para as linhas de extensao da faixa ---
-                      ;;      (cada vertice vai para a ponta mais proxima)
-                      (setq anc (list nil nil) k 0)
+                      ;; ---- 6a) linhas de extensao da faixa, nas DUAS pontas ---
+                      ;;      padrao: vertices do contorno que definem cada
+                      ;;      ponta; um vertice clicado substitui o da ponta
+                      ;;      mais proxima
+                      (setq anc (list (av:vert-ext aneis th lo tdim)
+                                      (av:vert-ext aneis th hi tdim))
+                            k 0)
                       (while (and ok (< k 2))
                         (setq r (av:pede-opc (if (= k 0)
-                                  "\nVertice para ancorar a LINHA DE EXTENSAO da faixa (ENTER = nenhum): "
-                                  "\nOutro vertice para a outra ponta da faixa (ENTER = nenhum): ")))
+                                  "\nVertice para a LINHA DE EXTENSAO da faixa (ENTER = cantos do contorno): "
+                                  "\nVertice para a outra ponta da faixa (ENTER = canto do contorno): ")))
                         (cond ((eq r 'cancel) (setq ok nil))
                               ((null r) (setq k 2))
                               (t (setq r (av:xy-tu r th))
