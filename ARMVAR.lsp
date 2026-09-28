@@ -59,6 +59,11 @@
 ;;;   - Linha de distribuicao  87 (2X) N.1 %%c 8 C/15   e, abaixo, (1300)
 ;;;   - Trecho principal ...  VAR  (ou o valor, se for constante)
 ;;;   - Sem repeticao (rep = 1) o prefixo "(2X) " nao e escrito.
+;;;   - Comprimento CONSTANTE e emendado: cada pedaco vira uma POSICAO
+;;;     separada (N.1, N.2, ...), com o seu texto no ferro
+;;;     "(2X) N.1 9 %%c 10 C/15 C=1200" / "(2X) N.2 9 %%c 10 C/15 C=165",
+;;;     a faixa "9 (2X) N.1 N.2 %%c 10 C/15" e uma linha por posicao nas
+;;;     tabelas.  A janela passa a abrir na proxima posicao livre.
 ;;;
 ;;;  --------------------------------------------------------------------
 ;;;  SIMETRIA  (repeticoes >= 2)
@@ -815,27 +820,33 @@
   (if (> rep 1) (strcat "(" (itoa rep) "X) ") "")
 )
 
+;;; posicao: 1 -> "N.1";  uma string ("N.1 N.2") e usada como esta
+(defun av:ptxt (pos)
+  (if (= (type pos) 'STR) pos (strcat "N." (itoa pos)))
+)
+
 ;;; ferro:        (2X) N.1 87 %%c 8 C/15 C=VAR
 (defun av:txt-ferro (rep pos n bit esp ctxt)
-  (strcat (av:rep-txt rep) "N." (itoa pos) " " (itoa n)
+  (strcat (av:rep-txt rep) (av:ptxt pos) " " (itoa n)
           " %%c " bit " C/" (av:fmt esp) " C=" ctxt)
 )
 
 ;;; distribuicao: 87 (2X) N.1 %%c 8 C/15
 (defun av:txt-faixa (rep pos n bit esp)
-  (strcat (itoa n) " " (av:rep-txt rep) "N." (itoa pos)
+  (strcat (itoa n) " " (av:rep-txt rep) (av:ptxt pos)
           " %%c " bit " C/" (av:fmt esp))
 )
 
 ;;; titulo da tabela: (2X) N.1 87 %%c 8 C/15   (sem o "C=")
 (defun av:titulo-barra (rep pos n bit esp)
-  (strcat (av:rep-txt rep) "N." (itoa pos) " " (itoa n)
+  (strcat (av:rep-txt rep) (av:ptxt pos) " " (itoa n)
           " %%c " bit " C/" (av:fmt esp))
 )
 
 ;;; tabela de ferros variaveis
 ;;;   p0 = canto superior esquerdo da moldura;  nota = texto abaixo (ou nil)
-(defun av:tab-ferros (p0 h pos pref rep bit esp grupos nbar nota
+;;;   rots = rotulos das linhas (ex.: ("N1" "N2")), ou nil -> N1A, N1B, ...
+(defun av:tab-ferros (p0 h pos pref rep bit esp grupos nbar nota rots
                       / n x0 y0 wd ht y i yh xg)
   (setq n (length grupos)
         x0 (car p0) y0 (cadr p0)
@@ -861,7 +872,7 @@
   ;; linhas
   (setq i 0 y (- y0 (* 3.0 h)))
   (foreach g grupos
-    (av:mk-text (strcat pref (av:letra i))
+    (av:mk-text (if rots (nth i rots) (strcat pref (av:letra i)))
                 (list (+ x0 (* 1.0 h)) y) h 0.0 AV:LAY-TXT nil)
     (av:mk-text (itoa (cdr g))
                 (list (+ x0 (* 9.0 h)) y) h 0.0 AV:LAY-TXT nil)
@@ -878,10 +889,11 @@
 ;;; tabela com o COMPRIMENTO UNITARIO EQUIVALENTE (como a LISTA DE FERROS da
 ;;; prancha modelo):  POS. | %%c | QTD. | C.UNIT (cm) | C.TOTAL (cm)
 ;;;   C.UNIT = C.TOTAL / QTD  (ex.: 111388 / 174 = 640)
-(defun av:tab-equiv (p0 h pos pref rep bit esp nbar qtd ctot nota
-                     / x0 y0 wd ht yh xg c)
+;;;   linhas = ((pos qtd ctot) ...)  -- uma por posicao
+(defun av:tab-equiv (p0 h pos rep bit esp nbar linhas nota
+                     / x0 y0 wd ht yh xg c y ln)
   (setq x0 (car p0) y0 (cadr p0)
-        wd (* 36.0 h) ht (* 4.0 h)
+        wd (* 36.0 h) ht (+ (* 2.5 h) (* 1.5 h (length linhas)))
         yh (- y0 (* 1.5 h)))
   (av:mk-text (av:titulo-barra rep pos nbar bit esp)
               (list (+ x0 (* 1.0 h)) (+ y0 (* 0.5 h))) h 0.0 AV:LAY-TXT nil)
@@ -898,23 +910,26 @@
     (av:mk-line (list (+ x0 (* xg h)) yh) (list (+ x0 (* xg h)) (- y0 ht))
                 AV:LAY-GRADE nil nil)
   )
-  (foreach c (list (list 1.0 pref) (list 7.0 bit) (list 12.0 (itoa qtd))
-                   (list 18.0 (itoa (av:int (/ ctot qtd))))
-                   (list 27.0 (av:fmt ctot)))
-    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 3.0 h))) h 0.0
-                AV:LAY-TXT nil)
+  (setq y (- y0 (* 3.0 h)))
+  (foreach ln linhas
+    (foreach c (list (list 1.0 (car ln)) (list 7.0 bit) (list 12.0 (itoa (cadr ln)))
+                     (list 18.0 (itoa (av:int (/ (caddr ln) (cadr ln)))))
+                     (list 27.0 (av:fmt (caddr ln))))
+      (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) y) h 0.0 AV:LAY-TXT nil)
+    )
+    (setq y (- y (* 1.5 h)))
   )
   (if nota
     (av:mk-text nota (list x0 (- y0 ht (* 1.5 h))) (* 0.9 h) 0.0 AV:LAY-TXT nil)
   )
 )
 
-;;; resumo de aco: uma barra
-(defun av:tab-aco (p0 h pref bit aco qtd ctot kgm / x0 y0 wd ht peso m)
-  (setq x0 (car p0) y0 (cadr p0)
-        wd (* 47.0 h) ht (* 6.5 h)
-        m (/ ctot 100.0)          ; comprimento total em metros
-        peso (* m kgm))
+;;; resumo de aco:  linhas = ((pos qtd ctot) ...)  -- uma por posicao
+(defun av:tab-aco (p0 h linhas bit aco kgm / x0 y0 wd ht n y ln mt m c)
+  (setq n  (length linhas)
+        x0 (car p0) y0 (cadr p0)
+        wd (* 47.0 h) ht (+ (* 6.5 h) (* 1.5 h (1- n)))
+        mt 0.0)
   (av:mk-text (strcat "RESUMO DE A" (chr 199) "O  -  " aco)
               (list (+ x0 (* 1.0 h)) (+ y0 (* 0.5 h))) h 0.0 AV:LAY-TXT nil)
   (av:mk-pline (list (list x0 y0) (list (+ x0 wd) y0)
@@ -928,18 +943,22 @@
   )
   (av:mk-line (list x0 (- y0 (* 1.5 h))) (list (+ x0 wd) (- y0 (* 1.5 h)))
               AV:LAY-TAB nil nil)
-  ;; linha da barra
-  (foreach c (list (list 1.0 pref) (list 8.0 bit) (list 16.0 (itoa qtd))
-                   (list 22.0 (rtos m 2 2)) (list 36.0 (rtos peso 2 1)))
-    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 3.0 h))) h 0.0
-                AV:LAY-TXT nil)
+  ;; uma linha por posicao
+  (setq y (- y0 (* 3.0 h)))
+  (foreach ln linhas
+    (setq m (/ (caddr ln) 100.0) mt (+ mt m))
+    (foreach c (list (list 1.0 (car ln)) (list 8.0 bit) (list 16.0 (itoa (cadr ln)))
+                     (list 22.0 (rtos m 2 2)) (list 36.0 (rtos (* m kgm) 2 1)))
+      (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) y) h 0.0 AV:LAY-TXT nil)
+    )
+    (setq y (- y (* 1.5 h)))
   )
   ;; total
-  (av:mk-line (list x0 (- y0 (* 3.5 h))) (list (+ x0 wd) (- y0 (* 3.5 h)))
-              AV:LAY-TAB nil nil)
-  (foreach c (list (list 1.0 "TOTAL") (list 22.0 (rtos m 2 2))
-                   (list 36.0 (rtos peso 2 1)))
-    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 5.0 h))) h 0.0
+  (setq y (+ y (* 1.0 h)))
+  (av:mk-line (list x0 y) (list (+ x0 wd) y) AV:LAY-TAB nil nil)
+  (foreach c (list (list 1.0 "TOTAL") (list 22.0 (rtos mt 2 2))
+                   (list 36.0 (rtos (* mt kgm) 2 1)))
+    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y (* 1.5 h))) h 0.0
                 AV:LAY-TXT nil)
   )
 )
@@ -1076,6 +1095,20 @@
   )
 )
 
+;;; um texto do ferro por pedaco (posicoes separadas N.1, N.2...), centrado
+;;; em cada pedaco, do lado "away"
+(defun av:rot-espec (th uu ta tb pcs ini uc lap away h textos / n k a b ka kb p)
+  (setq n (length pcs) k 0 a 0.0)
+  (foreach p pcs
+    (setq b  (+ a p)
+          ka (if (= k 0) ta (+ ta (/ (- a ini) uc)))
+          kb (if (= k (1- n)) tb (+ ta (/ (- b ini) uc))))
+    (if (nth k textos)
+      (av:rotulo (nth k textos) (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-ESPEC))
+    (setq a (- b lap) k (1+ k))
+  )
+)
+
 ;;; posicao (u) da linha do ferro no ponto "tt": os pedacos de ordem impar
 ;;; sao desenhados deslocados de "off"; na zona de traspasse vale o pedaco par
 (defun av:u-pedaco (tt u ta tb pcs ini uc lap off / n k a b ka kb r p)
@@ -1127,12 +1160,13 @@
 ;;;   pcs   = pedacos (cm) da barra representada;  neg = T -> simetrica
 ;;;   pcsa  = pedacos da barra vizinha alternada (ALTER.) ou nil
 ;;;   atxt  = texto do desenho ALTER.
+;;;   espl  = textos do ferro por pedaco (posicoes separadas) ou nil
 ;;;   anc   = (vlo vhi): vertices (t u) onde ancorar as linhas de extensao
 ;;;           da faixa (cada um pode ser nil)
 ;;;   chama = (t u) do ponto da linha de chamada, ou nil (automatico); so e
 ;;;           usado quando a faixa de distribuicao NAO cruza o ferro
 (defun av:desenha (th ud ta tb lo hi tdim hooks lado h uc espec faixa wtxt
-                   mtxt pcs neg lap pcsa atxt chama anc
+                   mtxt pcs neg lap pcsa atxt chama anc espl
                    / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1
                      p1 leg2 tip2 uvar ues ualt rot up mid lts ucir tcir uq alo ahi av)
   (setq sg  (if (= lado 0) -1.0 1.0)       ; direita = -u, esquerda = +u
@@ -1216,8 +1250,12 @@
 
   ;; --- texto do ferro: centrado, do lado oposto aos ganchos --------------
   (setq ues (- ud (* sg (if emd (* 0.3 h) 0.0))))
-  (av:rotulo espec (av:tu th tc ues) th (list (- (car hk)) (- (cadr hk)))
-             h AV:LAY-ESPEC)
+  (if espl
+    ;; posicoes separadas: um texto centrado em cada pedaco
+    (av:rot-espec th ues ta tb pcs ini uc lap (list (- (car hk)) (- (cadr hk))) h espl)
+    (av:rotulo espec (av:tu th tc ues) th (list (- (car hk)) (- (cadr hk)))
+               h AV:LAY-ESPEC)
+  )
 
   ;; --- cotas dos traspasses (do lado oposto aos ganchos) -----------------
   (if emd (av:cotas-trasp th ud ta pcs ini uc lap sg h))
@@ -1854,6 +1892,14 @@
 ;;; inteiro mais proximo
 (defun av:int (v) (fix (+ v 0.5)))
 
+;;; ((1200 . 1) (165 . 2)) -> "N.1 N.2"
+(defun av:ptxt-lista (posl / r)
+  (setq r nil)
+  (foreach g posl
+    (setq r (if r (strcat r " N." (itoa (cdr g))) (strcat "N." (itoa (cdr g))))))
+  r
+)
+
 ;;; (890 450) -> "890+450"
 (defun av:junta (l / r)
   (setq r (itoa (car l)))
@@ -1865,7 +1911,8 @@
                     hooks lado pos pref rep bars u c total-cm b hsum grupos
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
-                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k)
+                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k
+                    posl sep ptx espl linhas)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
@@ -1980,6 +2027,24 @@
                           mtxt (av:fmt (- (car tots) hsum)))
                     (setq ctxt "VAR" mtxt "VAR")
                   )
+                  ;; comprimento constante e emendado: cada pedaco vira uma
+                  ;; POSICAO separada (N.1, N.2, ...), como no detalhe de parede
+                  (setq posl nil sep nil)
+                  (if (and emd (= (length tots) 1))
+                    (progn
+                      (setq pcs (av:divide (car tots) ini fim lcom lap afs pini dfs)
+                            k   pos)
+                      (if (cdr pcs)
+                        (progn
+                          (setq sep T)
+                          (foreach g (append pcs (if dfs (av:inverte pcs ini fim)))
+                            (if (not (assoc g posl))
+                              (setq posl (append posl (list (cons g k))) k (1+ k)))
+                          )
+                        )
+                      )
+                    )
+                  )
                   (princ (strcat "\n  " (itoa nbar) " barra(s) por repeticao, "
                                  (itoa (length tots)) " comprimento(s) diferente(s)"
                                  " (de " (itoa (car tots)) " a "
@@ -1991,6 +2056,15 @@
                   (if (and (not emd) (> (av:ultimo tots) lcom))
                     (princ (strcat "\n  ATENCAO: ha barras acima de " (itoa lcom)
                                    " cm e as emendas estao desligadas.")))
+                  (if sep
+                    (progn
+                      (princ "\n  Posicoes separadas:")
+                      (foreach g posl
+                        (princ (strcat "  N." (itoa (cdr g)) " C=" (itoa (car g))
+                                       " (" (itoa (cdr (assoc (car g) grupos))) ")")))
+                      (princ (strcat "\n  Proxima posicao livre: N." (itoa k)))
+                    )
+                  )
                   ;; ---- 4) ponto do ferro --------------------------------
                   (setq pk (av:pede-ponto edges th cov))
                   (if (null pk)
@@ -2056,34 +2130,57 @@
                           ;; ---- 7) desenha o ferro e a faixa --------------
                           (vla-StartUndoMark doc) (setq marcou T)
                           (av:prepara)
+                          ;; posicoes separadas: "N.1 N.2" e um texto por pedaco
+                          (setq ptx (if sep (av:ptxt-lista posl) pos)
+                                espl (if sep
+                                       (mapcar '(lambda (g)
+                                                  (av:txt-ferro rep
+                                                    (if (assoc g posl) (cdr (assoc g posl)) pos)
+                                                    (if (assoc g grupos) (cdr (assoc g grupos)) nbar)
+                                                    bit espcm (itoa g)))
+                                               pcsr)))
                           (av:desenha th ud ta tb lo hi tdim hooks lado h uc
                                       (av:txt-ferro rep pos nbar bit espcm ctxt)
-                                      (av:txt-faixa rep pos nbar bit espcm)
+                                      (av:txt-faixa rep ptx nbar bit espcm)
                                       (strcat "(" (rtos (* (- hi lo) uc) 2 0) ")")
                                       mtxt pcsr neg lap pcsa
                                       (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
                                               " C/" (av:fmt espcm) " ALTER.")
-                                      chama anc)
+                                      chama anc espl)
                           ;; ---- 8) tabelas --------------------------------
                           (setq nota (if (> nemd 0)
                                        (strcat "EMENDAS POR TRASPASSE: L = " (itoa lap)
                                                " cm  (BARRAS > " (itoa lcom) " cm)"
                                                (if dfs " - BARRAS ALTERNADAS" ""))))
                           (setq pt1 (av:pede-canto "\nClique no canto superior esquerdo da TABELA DE FERROS VARIAVEIS (ENTER = nao gerar): "))
+                          ;; linhas por posicao: ((pos qtd ctot) ...)
+                          (setq linhas
+                                (if sep
+                                  (mapcar '(lambda (g / q)
+                                             (setq q (* rep (cdr (assoc (car g) grupos))))
+                                             (list (strcat "N" (itoa (cdr g))) q (* 1.0 q (car g))))
+                                          posl)
+                                  (list (list pref (* npcs rep) ctot))))
                           (if pt1
                             (if (= AV:P-EQU "1")
                               ;; comprimento unitario equivalente (total / qtd.)
-                              (av:tab-equiv pt1 h pos pref rep bit espcm nbar
-                                            (* npcs rep) ctot nota)
-                              (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota)
+                              (av:tab-equiv pt1 h ptx rep bit espcm nbar linhas nota)
+                              (if sep
+                                (av:tab-ferros pt1 h ptx pref rep bit espcm
+                                               (mapcar '(lambda (g) (cons (car g) (cdr (assoc (car g) grupos)))) posl)
+                                               nbar nota
+                                               (mapcar '(lambda (g) (strcat "N" (itoa (cdr g)))) posl))
+                                (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota nil)
+                              )
                             )
                           )
                           (setq pt2 (av:pede-canto "\nClique no canto superior esquerdo do RESUMO DE ACO (ENTER = nao gerar): "))
                           (if pt2
-                            (av:tab-aco pt2 h pref bit (nth AV:P-ACO AV:ACOS)
-                                        (* npcs rep) ctot kgm)
+                            (av:tab-aco pt2 h linhas bit (nth AV:P-ACO AV:ACOS) kgm)
                           )
                           (vla-EndUndoMark doc) (setq marcou nil)
+                          ;; a janela ja abre na proxima posicao livre
+                          (if sep (setq AV:P-POS (itoa (+ pos (length posl)))))
                           (princ (strcat "\nConcluido:  " (av:rep-txt rep) "N." (itoa pos)
                                          "  %%c" bit "  -  "
                                          (rtos (/ ctot 100.0) 2 2) " m  /  "
