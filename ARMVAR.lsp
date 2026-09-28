@@ -38,11 +38,15 @@
 ;;;  5. Clique onde DESENHAR o ferro (ENTER = no proprio ponto). Pode ser
 ;;;     fora da laje: uma linha de chamada tracejada liga o ferro a faixa.
 ;;;  6. Clique a posicao da LINHA DE DISTRIBUICAO (ENTER = automatica).
+;;;     Em seguida, clique ate 2 vertices do desenho (ex.: cantos da laje)
+;;;     para ancorar as LINHAS DE EXTENSAO da faixa (ENTER = nenhum).
 ;;;     Se ela ficar FORA do ferro, clique o ponto da LINHA DE CHAMADA: a
-;;;     bolinha vai sobre o ferro nesse ponto e a chamada (em "L") segue
+;;;     bolinha vai sobre o ferro nesse ponto e a chamada tracejada (em "L") segue
 ;;;     ate a faixa (ENTER = automatico).
 ;;;  7. Clique onde inserir a TABELA DE FERROS VARIAVEIS (N?A, N?B, ...) e
-;;;     onde inserir o RESUMO DE ACO.
+;;;     onde inserir o RESUMO DE ACO.  Com a opcao "Tabela com comprimento
+;;;     unitario equivalente", a tabela sai numa linha so:
+;;;     POS. | %%c | QTD. | C.UNIT | C.TOTAL, com C.UNIT = C.TOTAL / QTD.
 ;;;
 ;;;  --------------------------------------------------------------------
 ;;;  PADRAO DOS TEXTOS  (igual a prancha modelo)
@@ -870,6 +874,40 @@
   )
 )
 
+;;; tabela com o COMPRIMENTO UNITARIO EQUIVALENTE (como a LISTA DE FERROS da
+;;; prancha modelo):  POS. | %%c | QTD. | C.UNIT (cm) | C.TOTAL (cm)
+;;;   C.UNIT = C.TOTAL / QTD  (ex.: 111388 / 174 = 640)
+(defun av:tab-equiv (p0 h pos pref rep bit esp nbar qtd ctot nota
+                     / x0 y0 wd ht yh xg c)
+  (setq x0 (car p0) y0 (cadr p0)
+        wd (* 36.0 h) ht (* 4.0 h)
+        yh (- y0 (* 1.5 h)))
+  (av:mk-text (av:titulo-barra rep pos nbar bit esp)
+              (list (+ x0 (* 1.0 h)) (+ y0 (* 0.5 h))) h 0.0 AV:LAY-TXT nil)
+  (av:mk-pline (list (list x0 y0) (list (+ x0 wd) y0)
+                     (list (+ x0 wd) (- y0 ht)) (list x0 (- y0 ht)))
+               AV:LAY-TAB T)
+  (foreach c (list (list 1.0 "POS.") (list 7.0 "%%c (mm)") (list 12.0 "QTD.")
+                   (list 18.0 "C.UNIT (cm)") (list 27.0 "C.TOTAL (cm)"))
+    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 1.2 h))) h 0.0
+                AV:LAY-TXT nil)
+  )
+  (av:mk-line (list x0 yh) (list (+ x0 wd) yh) AV:LAY-TAB nil nil)
+  (foreach xg '(6.0 11.0 17.0 26.0)
+    (av:mk-line (list (+ x0 (* xg h)) yh) (list (+ x0 (* xg h)) (- y0 ht))
+                AV:LAY-GRADE nil nil)
+  )
+  (foreach c (list (list 1.0 pref) (list 7.0 bit) (list 12.0 (itoa qtd))
+                   (list 18.0 (itoa (av:int (/ ctot qtd))))
+                   (list 27.0 (av:fmt ctot)))
+    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 3.0 h))) h 0.0
+                AV:LAY-TXT nil)
+  )
+  (if nota
+    (av:mk-text nota (list x0 (- y0 ht (* 1.5 h))) (* 0.9 h) 0.0 AV:LAY-TXT nil)
+  )
+)
+
 ;;; resumo de aco: uma barra
 (defun av:tab-aco (p0 h pref bit aco qtd ctot kgm / x0 y0 wd ht peso m)
   (setq x0 (car p0) y0 (cadr p0)
@@ -991,7 +1029,10 @@
 ;;;           fora (longe dos pontos);  sup = T suprime as linhas de chamada
 ;;;   Na string "txt", "\X" separa o texto de cima e o de baixo da linha.
 ;;; devolve o objeto, ou nil se o CAD nao aceitar (usa-se o desenho manual)
-(defun av:mk-dim (p1 p2 ploc ang txt h vpos sup / spc d)
+(defun av:mk-dim (p1 p2 ploc ang txt h vpos sup / spc d s1 s2)
+  ;; sup = T/nil (as duas linhas de chamada) ou (s1 s2) (cada uma)
+  (setq s1 (if (listp sup) (car sup) sup)
+        s2 (if (listp sup) (cadr sup) sup))
   (setq spc (vl-catch-all-apply
               '(lambda ()
                  (vla-get-Block (vla-get-ActiveLayout
@@ -1024,8 +1065,8 @@
                         (list 'vla-put-DimensionLineColor 256)  ; PorLayer
                         (list 'vla-put-ExtensionLineColor 256)
                         (list 'vla-put-TextColor AV:COR-TXT-COTA) ; texto white
-                        (list 'vla-put-ExtLine1Suppress (if sup :vlax-true :vlax-false))
-                        (list 'vla-put-ExtLine2Suppress (if sup :vlax-true :vlax-false))
+                        (list 'vla-put-ExtLine1Suppress (if s1 :vlax-true :vlax-false))
+                        (list 'vla-put-ExtLine2Suppress (if s2 :vlax-true :vlax-false))
                         (list 'vla-put-TextOverride txt))
         (vl-catch-all-apply (car pr) (list d (cadr pr)))
       )
@@ -1085,12 +1126,14 @@
 ;;;   pcs   = pedacos (cm) da barra representada;  neg = T -> simetrica
 ;;;   pcsa  = pedacos da barra vizinha alternada (ALTER.) ou nil
 ;;;   atxt  = texto do desenho ALTER.
+;;;   anc   = (vlo vhi): vertices (t u) onde ancorar as linhas de extensao
+;;;           da faixa (cada um pode ser nil)
 ;;;   chama = (t u) do ponto da linha de chamada, ou nil (automatico); so e
 ;;;           usado quando a faixa de distribuicao NAO cruza o ferro
 (defun av:desenha (th ud ta tb lo hi tdim hooks lado h uc espec faixa wtxt
-                   mtxt pcs neg lap pcsa atxt chama
+                   mtxt pcs neg lap pcsa atxt chama anc
                    / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1
-                     p1 leg2 tip2 uvar ues ualt rot up mid lts ucir tcir uq)
+                     p1 leg2 tip2 uvar ues ualt rot up mid lts ucir tcir uq alo ahi av)
   (setq sg  (if (= lado 0) -1.0 1.0)       ; direita = -u, esquerda = +u
         l1 (nth 0 hooks) t1 (nth 1 hooks) l2 (nth 2 hooks) t2 (nth 3 hooks)
         ini (+ l1 t1)
@@ -1195,10 +1238,24 @@
   )
 
   ;; --- linha de distribuicao: COTA (EST_Cota) ---------------------------
-  ;;     "87 (2X) N.1 %%c 8 C/15" acima  e  "(1300)" abaixo da linha
-  (if (not (av:mk-dim (av:tu th tdim lo) (av:tu th tdim hi) (av:tu th tdim lo)
-                      (+ th (/ pi 2.0)) (strcat faixa "\\X" wtxt) h 1 T))
+  ;;     "87 (2X) N.1 %%c 8 C/15" acima  e  "(1300)" abaixo da linha.
+  ;;     anc = (vertice-lo vertice-hi), em (t u): a ponta com vertice ganha
+  ;;     linha de extensao ate ele; sem vertice, a linha fica suprimida.
+  (setq alo (car anc) ahi (cadr anc))
+  (if (not (av:mk-dim (if alo (av:tu th (car alo) (cadr alo)) (av:tu th tdim lo))
+                      (if ahi (av:tu th (car ahi) (cadr ahi)) (av:tu th tdim hi))
+                      (av:tu th tdim lo)
+                      (+ th (/ pi 2.0)) (strcat faixa "\\X" wtxt) h 1
+                      (list (null alo) (null ahi))))
     (progn
+      (foreach av (list (list alo lo) (list ahi hi))
+        (if (car av)
+          (av:mk-line (av:tu th (+ (car (car av)) (* (if (> tdim (car (car av))) 0.2 -0.2) h))
+                             (cadr (car av)))
+                      (av:tu th (+ tdim (* (if (> tdim (car (car av))) 0.75 -0.75) h))
+                             (cadr (car av)))
+                      AV:LAY-COTA nil nil))
+      )
       (av:mk-line (av:tu th tdim (- lo (* 0.75 h))) (av:tu th tdim (+ hi (* 0.75 h)))
                   AV:LAY-COTA nil nil)
       (av:tique (av:tu th tdim lo) nrm h AV:LAY-COTA)
@@ -1250,12 +1307,12 @@
       (av:mk-circ (av:tu th tcir ucir) (* 0.225 h) AV:LAY-IND)
       (av:mk-circ (av:tu th tcir ucir) (* 0.375 h) AV:LAY-IND)
       (if (> (abs (- uq ucir)) (* 0.375 h))
-        (av:mk-pline (list (av:tu th tcir (+ ucir (if (> uq ucir) (* 0.375 h) (* -0.375 h))))
-                           (av:tu th tcir uq)
-                           (av:tu th tdim uq))
-                     AV:LAY-IND nil)
+        (av:mk-pl (list (av:tu th tcir (+ ucir (if (> uq ucir) (* 0.375 h) (* -0.375 h))))
+                        (av:tu th tcir uq)
+                        (av:tu th tdim uq))
+                  AV:LAY-IND nil AV:LT-NOME (/ h lts) nil)
         (av:mk-line (av:tu th (+ tcir (if (> tdim tcir) (* 0.375 h) (* -0.375 h))) ucir)
-                    (av:tu th tdim ucir) AV:LAY-IND nil nil)
+                    (av:tu th tdim ucir) AV:LAY-IND AV:LT-NOME (/ h lts))
       )
     )
   )
@@ -1491,6 +1548,7 @@
   (if (null AV:P-DFS) (setq AV:P-DFS "1"))        ; alterna barras vizinhas
   (if (null AV:P-AFS) (setq AV:P-AFS "20"))       ; afastamento entre emendas
   (if (null AV:P-PIN) (setq AV:P-PIN ""))         ; 1.o pedaco (vazio = comercial)
+  (if (null AV:P-EQU) (setq AV:P-EQU "0"))        ; tabela c/ comprimento equivalente
 )
 
 (defun av:write-dcl ( / f nome)
@@ -1567,6 +1625,8 @@
 "      : popup_list { key = \"uni\"; label = \"O desenho esta em :\"; edit_width = 26; }"
 "      : edit_box   { key = \"esc\"; label = \"Escala de plotagem  1 :\"; edit_width = 8; }"
 "      : edit_box   { key = \"alt\"; label = \"Altura do texto (mm) :\"; edit_width = 6; }"
+"      : toggle     { key = \"equ\"; label = \"Tabela com comprimento unitario equivalente\"; }"
+"      : text       { label = \"   (C.UNIT = C.TOTAL / QTD., uma linha por posicao)\"; }"
 "      : text { label = \"Padrao TQS: cm de papel, escala 1:50, texto 2 mm.\"; }"
 "    }"
 "  }"
@@ -1712,7 +1772,8 @@
             AV:P-SIM (get_tile "sim") AV:P-EMD (get_tile "emd")
             AV:P-LCM (get_tile "lcm") AV:P-TRA (get_tile "tra")
             AV:P-DFS (get_tile "dfs") AV:P-AFS (get_tile "afs")
-            AV:P-PIN (vl-string-trim " " (get_tile "pin")))
+            AV:P-PIN (vl-string-trim " " (get_tile "pin"))
+            AV:P-EQU (get_tile "equ"))
       T
     )
   )
@@ -1745,6 +1806,7 @@
         (set_tile "lcm" AV:P-LCM) (set_tile "tra" AV:P-TRA)
         (set_tile "dfs" AV:P-DFS) (set_tile "afs" AV:P-AFS)
         (set_tile "pin" AV:P-PIN)
+        (set_tile "equ" AV:P-EQU)
         (vl-catch-all-apply 'av:logo-desenha nil)
         (vl-catch-all-apply 'av:preview nil)
         (vl-catch-all-apply 'av:modo-emd nil)
@@ -1783,7 +1845,7 @@
                     hooks lado pos pref rep bars u c total-cm b hsum grupos
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
-                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama)
+                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
@@ -1936,6 +1998,21 @@
                                 (r (setq tdim (car (av:xy-tu r th)))))
                         )
                       )
+                      ;; ---- 6a) vertices para as linhas de extensao da faixa ---
+                      ;;      (cada vertice vai para a ponta mais proxima)
+                      (setq anc (list nil nil) k 0)
+                      (while (and ok (< k 2))
+                        (setq r (av:pede-opc (if (= k 0)
+                                  "\nVertice para ancorar a LINHA DE EXTENSAO da faixa (ENTER = nenhum): "
+                                  "\nOutro vertice para a outra ponta da faixa (ENTER = nenhum): ")))
+                        (cond ((eq r 'cancel) (setq ok nil))
+                              ((null r) (setq k 2))
+                              (t (setq r (av:xy-tu r th))
+                                 (if (< (abs (- (cadr r) lo)) (abs (- (cadr r) hi)))
+                                   (setq anc (list r (cadr anc)))
+                                   (setq anc (list (car anc) r)))
+                                 (setq k (1+ k))))
+                      )
                       ;; ---- 6b) faixa fora do ferro: linha de chamada ---------
                       (setq chama nil)
                       (if (and ok (or (< tdim ta) (> tdim tb)))
@@ -1962,7 +2039,7 @@
                                       mtxt pcsr neg lap pcsa
                                       (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
                                               " C/" (av:fmt espcm) " ALTER.")
-                                      chama)
+                                      chama anc)
                           ;; ---- 8) tabelas --------------------------------
                           (setq nota (if (> nemd 0)
                                        (strcat "EMENDAS POR TRASPASSE: L = " (itoa lap)
@@ -1970,7 +2047,12 @@
                                                (if dfs " - BARRAS ALTERNADAS" ""))))
                           (setq pt1 (av:pede-canto "\nClique no canto superior esquerdo da TABELA DE FERROS VARIAVEIS (ENTER = nao gerar): "))
                           (if pt1
-                            (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota)
+                            (if (= AV:P-EQU "1")
+                              ;; comprimento unitario equivalente (total / qtd.)
+                              (av:tab-equiv pt1 h pos pref rep bit espcm nbar
+                                            (* npcs rep) ctot nota)
+                              (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota)
+                            )
                           )
                           (setq pt2 (av:pede-canto "\nClique no canto superior esquerdo do RESUMO DE ACO (ENTER = nao gerar): "))
                           (if pt2
