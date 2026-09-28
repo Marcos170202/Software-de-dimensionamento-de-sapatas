@@ -143,7 +143,7 @@
       AV:LAY-TAB   "T_LINHAS_GREEN"
       AV:LAY-GRADE "TAB-ESTACAS-GRADE"
       AV:STY       "TQS_ARIAL"
-      AV:LTYPE     "AV_TRACEJADO"
+      AV:LT-NOME   "AV_TRACEJADO"
       AV:TOL       0.001            ; tolerancia para fechar o contorno
 )
 
@@ -311,7 +311,7 @@
   (av:layer AV:LAY-IND   8 13 nil)
   (av:layer AV:LAY-TAB   3 20 nil)
   (av:layer AV:LAY-GRADE 8 13 nil)
-  (av:ltype AV:LTYPE)
+  (av:ltype AV:LT-NOME)
   (if (not (tblsearch "STYLE" AV:STY))
     (entmake
       (list '(0 . "STYLE")
@@ -921,7 +921,7 @@
   (if neg
     (av:ferro th (+ ud (* sg dneg)) ta tb hooks (- sg) uc pcs lap
               (* 0.2 h) (* 0.3 h sg)
-              AV:LAY-NEG AV:LTYPE (/ (* 0.5 h) lts))
+              AV:LAY-NEG AV:LT-NOME (/ (* 0.5 h) lts))
   )
 
   ;; --- rotulos de cada trecho (geometria do positivo) --------------------
@@ -1009,10 +1009,10 @@
       (cond
         ((< ud (- lo 1e-9))
          (av:mk-line (av:tu th tdim lo) (av:tu th tdim (+ ud (* 0.375 h)))
-                     AV:LAY-IND AV:LTYPE (/ h lts)))
+                     AV:LAY-IND AV:LT-NOME (/ h lts)))
         ((> ud (+ hi 1e-9))
          (av:mk-line (av:tu th tdim hi) (av:tu th tdim (- ud (* 0.375 h)))
-                     AV:LAY-IND AV:LTYPE (/ h lts)))
+                     AV:LAY-IND AV:LT-NOME (/ h lts)))
       )
     )
   )
