@@ -70,14 +70,17 @@
 ;;;       L = 50 cm p/ %%c 10,0   L = 60 cm p/ %%c 12,5
 ;;;    demais bitolas: 50 x diametro (CONFIRA com a NBR 6118, 9.5.2).
 ;;;    O valor pode ser alterado na janela.
-;;;  - Uma barra com C > comercial e dividida em pedacos <= comercial:
-;;;    o 1.o pedaco tem o comprimento comercial, os do meio tambem, e o
-;;;    ultimo leva o resto + L.  Cada emenda acrescenta L ao consumo.
-;;;  - DETALHE DO POSICIONAMENTO DE EMENDAS: com "Defasar" ligado, nas
-;;;    barras alternadas o 1.o pedaco fica (L + 20) cm mais curto, para
-;;;    que as emendas de barras vizinhas nao fiquem na mesma secao.
-;;;  - O ultimo pedaco nunca fica menor que (gancho final + 2 L): se o resto
-;;;    for pequeno, o pedaco anterior e encurtado.
+;;;  - Uma barra com C > comercial e dividida no MENOR numero de pedacos
+;;;    <= comercial, no padrao do detalhe de parede da prancha modelo
+;;;    (PAR101: N.1 C=890 + N.2 C=450, traspasse 48): os pedacos do meio
+;;;    tem o comprimento comercial e o restante e repartido 2/3 no 1.o
+;;;    pedaco e 1/3 no ultimo.  Cada emenda acrescenta L ao consumo.
+;;;  - ALTERNANCIA (opcao "Alternar barras vizinhas"): a barra vizinha usa
+;;;    os MESMOS pedacos em ordem inversa (desenho "ALTER."), assim as
+;;;    emendas de barras vizinhas nao ficam na mesma secao e a tabela tem
+;;;    poucos comprimentos.  As zonas de traspasse de barras vizinhas ficam
+;;;    afastadas de pelo menos o "afastamento entre emendas" (padrao 20 cm);
+;;;    se nao ficarem, o 1.o pedaco e aumentado ou e usado um pedaco a mais.
 ;;;  - A tabela de ferros variaveis lista os PEDACOS (ja com o traspasse) e
 ;;;    o resumo de aco soma o comprimento real consumido.
 ;;;  - O ferro desenhado mostra as emendas (pedacos desencontrados) com a
@@ -681,36 +684,105 @@
 ;;;  5.  EMENDAS POR TRASPASSE
 ;;; ==========================================================================
 
+;;; teto (inteiro)
+(defun av:teto (v)
+  (if (> v (fix v)) (1+ (fix v)) (fix v))
+)
+
+;;; monta a lista:  p1, (n - 2) x m, pn
+(defun av:monta (p1 pn n m / r)
+  (setq r (list pn))
+  (repeat (- n 2) (setq r (cons m r)))
+  (cons p1 r)
+)
+
+;;; centros das zonas de traspasse, medidos do inicio da barra (cm)
+(defun av:zonas (pcs lap / a b r)
+  (setq a 0.0 r nil)
+  (foreach p (reverse (cdr (reverse pcs)))
+    (setq b (+ a p)
+          r (cons (- b (/ lap 2.0)) r)
+          a (- b lap))
+  )
+  (reverse r)
+)
+
+;;; T se, espelhando a barra na vizinha (ALTER.), as zonas de traspasse das
+;;; duas ficam afastadas de pelo menos "def" (centros a >= lap + def)
+(defun av:alterna-ok (pcs tot lap def / za ok)
+  (setq za (av:zonas pcs lap) ok T)
+  (foreach ca za
+    (foreach cb za
+      (if (< (abs (- ca (- tot cb))) (- (+ lap def) 1e-6)) (setq ok nil))
+    )
+  )
+  ok
+)
+
 ;;; divide uma barra de comprimento total "tot" (cm, inteiro) em pedacos de
-;;; no maximo "lcom", com traspasse "lap" entre pedacos consecutivos.
-;;;   ini / fim = comprimento dos ganchos (perna + ponta) no inicio / no fim
-;;;   def       = afastamento adicional entre emendas vizinhas (cm)
-;;;   impar     = T -> barra alternada: 1.o pedaco (lap + def) mais curto
-;;; devolve a lista dos comprimentos dos pedacos (inteiros), na ordem da
-;;; barra.  soma dos pedacos = tot + (n - 1) x lap
-(defun av:divide (tot ini fim lcom lap def impar / p pcs rest ult lmin dd)
+;;; no maximo "lcom", com traspasse "lap" entre pedacos consecutivos, no
+;;; padrao do detalhe de parede da prancha modelo (N.1 C=890 + N.2 C=450):
+;;;   - n = menor numero de pedacos;  pedacos do meio = lcom;
+;;;   - o que sobra (r) e repartido 2/3 no 1.o pedaco (arredondado a 10 cm,
+;;;     max. lcom) e 1/3 no ultimo;
+;;;   - a barra vizinha usa os MESMOS pedacos em ordem inversa (ALTER.),
+;;;     entao as emendas de barras vizinhas ficam desencontradas; se ficarem
+;;;     a menos de (lap + def) uma da outra, aumenta o 1.o pedaco ou usa
+;;;     um pedaco a mais.
+;;;   ini / fim = ganchos (perna + ponta) no inicio / no fim
+;;; devolve a lista dos pedacos (inteiros) na ordem da barra;
+;;; soma dos pedacos = tot + (n - 1) x lap
+(defun av:divide (tot ini fim lcom lap def / n n0 s r p1 pn pcs ok)
   (if (<= tot lcom)
     (list tot)
     (progn
-      (setq p (if impar (- lcom (+ lap def)) lcom))
-      ;; a emenda nao pode cair no gancho inicial
-      (if (< p (+ ini lap lap)) (setq p lcom))
-      (setq pcs (list p) rest (- tot p))
-      (while (> (+ rest lap) lcom)
-        (setq pcs  (cons lcom pcs)
-              rest (- (+ rest lap) lcom))
+      (setq n 2)
+      (while (> (+ tot (* (1- n) lap)) (* n lcom)) (setq n (1+ n)))
+      (setq n0 n ok nil)
+      (while (and (not ok) (<= n (+ n0 2)))
+        (setq s  (+ tot (* (1- n) lap))
+              r  (- s (* (- n 2) lcom))
+              p1 (min lcom (* 10 (fix (/ (* 2.0 r) 30.0))))
+              pn (- r p1))
+        (if (and (> pn 0) (<= pn lcom))
+          (progn
+            ;; se as emendas espelhadas coincidirem, desloca 10 cm por vez
+            (setq pcs (av:monta p1 pn n lcom))
+            (while (and (not (av:alterna-ok pcs tot lap def))
+                        (<= (+ p1 10) lcom) (> (- pn 10) (+ fim lap)))
+              (setq p1 (+ p1 10) pn (- pn 10)
+                    pcs (av:monta p1 pn n lcom))
+            )
+            (if (and (av:alterna-ok pcs tot lap def)
+                     (>= p1 (+ ini lap)) (>= pn (+ fim lap)))
+              (setq ok pcs))
+          )
+        )
+        (setq n (1+ n))
       )
-      (setq ult  (+ rest lap)
-            lmin (av:int (+ fim lap lap)))
-      ;; ultimo pedaco muito curto: encurta o anterior
-      (if (< ult lmin)
-        (setq dd  (- lmin ult)
-              pcs (cons (- (car pcs) dd) (cdr pcs))
-              ult lmin)
+      ;; sem solucao espelhada boa: fica com a divisao minima
+      (if ok ok
+        (progn
+          (setq s  (+ tot (* (1- n0) lap))
+                r  (- s (* (- n0 2) lcom))
+                p1 (min lcom (* 10 (fix (/ (* 2.0 r) 30.0)))))
+          (av:monta p1 (- r p1) n0 lcom)
+        )
       )
-      (reverse (cons ult pcs))
     )
   )
+)
+
+;;; pedacos da barra vizinha (ALTER.): ordem inversa; se os ganchos das
+;;; pontas forem diferentes, corrige o 1.o e o ultimo pedaco
+(defun av:inverte (pcs ini fim / r)
+  (setq r (reverse pcs))
+  (if (and (cdr r) (/= ini fim))
+    (setq r (av:setnth (av:setnth r 0 (av:int (+ (car r) (- ini fim))))
+                       (1- (length r))
+                       (av:int (+ (av:ultimo r) (- fim ini)))))
+  )
+  r
 )
 
 ;;; ==========================================================================
@@ -889,6 +961,32 @@
   (av:rotulo txt (av:tu th (/ (+ ka kb) 2.0) ul) th fora (* 0.9 h) AV:LAY-COTA)
 )
 
+;;; cotas dos traspasses de um ferro desenhado em "uu" (lado oposto aos
+;;; ganchos, sg = lado dos ganchos)
+(defun av:cotas-trasp (th uu ta pcs ini uc lap sg h / k a b)
+  (setq k 0 a 0.0)
+  (while (< k (1- (length pcs)))
+    (setq b (+ a (nth k pcs)))
+    (av:cota th (+ ta (/ (- b lap ini) uc)) (+ ta (/ (- b ini) uc))
+             (- uu (* sg 2.8 h)) (- uu (* sg 0.5 h)) (- sg) h (av:fmt lap))
+    (setq a (- b lap) k (1+ k))
+  )
+)
+
+;;; comprimento reto de cada pedaco (sem os ganchos), escrito no centro do
+;;; pedaco, do lado "away" (como "885" e "445" no detalhe de parede)
+(defun av:rot-pedacos (th uu ta tb pcs ini fim uc lap away h / n k a b ka kb c p)
+  (setq n (length pcs) k 0 a 0.0)
+  (foreach p pcs
+    (setq b  (+ a p)
+          ka (if (= k 0) ta (+ ta (/ (- a ini) uc)))
+          kb (if (= k (1- n)) tb (+ ta (/ (- b ini) uc)))
+          c  (- p (if (= k 0) ini 0.0) (if (= k (1- n)) fim 0.0)))
+    (av:rotulo (av:fmt c) (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-TXT)
+    (setq a (- b lap) k (1+ k))
+  )
+)
+
 ;;; desenha o ferro (e a barra simetrica invertida), os textos e a faixa.
 ;;;   th    = direcao;  ud = posicao perpendicular (u) do ferro desenhado
 ;;;   ta,tb = extremos do trecho principal (JA com cobrimento), em t
@@ -896,13 +994,16 @@
 ;;;   espec = texto do ferro;  faixa = texto da faixa;  wtxt = "(1300)"
 ;;;   mtxt  = texto do trecho principal ("VAR" ou o valor)
 ;;;   pcs   = pedacos (cm) da barra representada;  neg = T -> simetrica
+;;;   pcsa  = pedacos da barra vizinha alternada (ALTER.) ou nil
+;;;   atxt  = texto do desenho ALTER.
 (defun av:desenha (th ud ta tb lo hi tdim hooks lado h uc espec faixa wtxt
-                   mtxt pcs neg lap
-                   / sg l1 t1 l2 t2 ini emd tc d nrm hk dneg p0 leg1 tip1
-                     p1 leg2 tip2 uvar ues k a b ud2 rot up mid lts)
+                   mtxt pcs neg lap pcsa atxt
+                   / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1
+                     p1 leg2 tip2 uvar ues ualt rot up mid lts)
   (setq sg  (if (= lado 0) -1.0 1.0)       ; direita = -u, esquerda = +u
         l1 (nth 0 hooks) t1 (nth 1 hooks) l2 (nth 2 hooks) t2 (nth 3 hooks)
         ini (+ l1 t1)
+        fim (+ l2 t2)
         emd (> (length pcs) 1)
         tc  (/ (+ ta tb) 2.0)
         d   (list (cos th) (sin th))
@@ -945,7 +1046,11 @@
   (setq uvar (if neg
                (+ ud (* sg (+ dneg (if emd (* 0.3 h) 0.0))))
                ud))
-  (av:rotulo mtxt (av:tu th tc uvar) th hk h AV:LAY-TXT)
+  ;; com emendas e comprimento constante: o comprimento de cada pedaco
+  (if (and emd (/= mtxt "VAR"))
+    (av:rot-pedacos th uvar ta tb pcs ini fim uc lap hk h)
+    (av:rotulo mtxt (av:tu th tc uvar) th hk h AV:LAY-TXT)
+  )
   (if leg1
     (progn
       (av:rotulo (av:fmt l1) (list (/ (+ (car p0) (car leg1)) 2.0)
@@ -977,15 +1082,21 @@
              h AV:LAY-ESPEC)
 
   ;; --- cotas dos traspasses (do lado oposto aos ganchos) -----------------
-  (if emd
+  (if emd (av:cotas-trasp th ud ta pcs ini uc lap sg h))
+
+  ;; --- barra vizinha ALTERNADA (pedacos em ordem inversa) ----------------
+  ;;     desenhada ao lado, como o "(2X) N.1 ... ALTER." da prancha modelo
+  (if (and emd pcsa)
     (progn
-      (setq k 0 a 0.0 ud2 (- ud (* sg 2.8 h)))
-      (while (< k (1- (length pcs)))
-        (setq b (+ a (nth k pcs)))
-        (av:cota th (+ ta (/ (- b lap ini) uc)) (+ ta (/ (- b ini) uc))
-                 ud2 (- ud (* sg 0.5 h)) (- sg) h (av:fmt lap))
-        (setq a (- b lap) k (1+ k))
+      (setq ualt (- ud (* sg 8.0 h)))
+      (av:ferro th ualt ta tb hooks sg uc pcsa lap 0.0 (* -0.3 h sg)
+                AV:LAY-BAR nil nil)
+      (if (/= mtxt "VAR")
+        (av:rot-pedacos th (+ ualt (* sg 0.3 h)) ta tb pcsa ini fim uc lap hk h)
       )
+      (av:rotulo atxt (av:tu th tc (- ualt (* sg 0.3 h))) th
+                 (list (- (car hk)) (- (cadr hk))) h AV:LAY-ESPEC)
+      (av:cotas-trasp th ualt ta pcsa ini uc lap sg h)
     )
   )
 
@@ -1245,7 +1356,7 @@
   (if (null AV:P-EMD) (setq AV:P-EMD "1"))        ; emenda barras longas
   (if (null AV:P-LCM) (setq AV:P-LCM "1200"))     ; comprimento comercial
   (if (null AV:P-TRA) (setq AV:P-TRA (av:fmt (nth AV:P-BIT AV:TRASP))))
-  (if (null AV:P-DFS) (setq AV:P-DFS "1"))        ; defasa as emendas
+  (if (null AV:P-DFS) (setq AV:P-DFS "1"))        ; alterna barras vizinhas
   (if (null AV:P-AFS) (setq AV:P-AFS "20"))       ; afastamento entre emendas
 )
 
@@ -1312,8 +1423,8 @@
 "      : toggle   { key = \"emd\"; label = \"Emendar barras maiores que o comercial\"; }"
 "      : edit_box { key = \"lcm\"; label = \"Comprimento comercial (cm) :\"; edit_width = 7; }"
 "      : edit_box { key = \"tra\"; label = \"Traspasse  L  (cm) :\";         edit_width = 7; }"
-"      : toggle   { key = \"dfs\"; label = \"Defasar emendas vizinhas (L + afast.)\"; }"
-"      : edit_box { key = \"afs\"; label = \"Afastamento entre emendas (cm) :\"; edit_width = 7; }"
+"      : toggle   { key = \"dfs\"; label = \"Alternar barras vizinhas (ALTER.)\"; }"
+"      : edit_box { key = \"afs\"; label = \"Afastamento min. entre emendas (cm) :\"; edit_width = 7; }"
 "      : text { label = \"L padrao: 40 (6.3 e 8), 50 (10), 60 (12.5);\"; }"
 "      : text { label = \"demais bitolas 50 x diam. - CONFERIR.\"; }"
 "    }"
@@ -1520,11 +1631,18 @@
 ;;; inteiro mais proximo
 (defun av:int (v) (fix (+ v 0.5)))
 
+;;; (890 450) -> "890+450"
+(defun av:junta (l / r)
+  (setq r (itoa (car l)))
+  (foreach v (cdr l) (setq r (strcat r "+" (itoa v))))
+  r
+)
+
 (defun c:ARMVAR ( / *error* doc th aneis edges ex uc esc h cov esp espcm bit kgm
                     hooks lado pos pref rep bars u c total-cm b hsum grupos
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs neg pcs npcs nemd tots
-                    ctxt mtxt ta tb ud tdim tc tr pcsr r ok nota)
+                    ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg)))
@@ -1609,10 +1727,10 @@
                   (foreach b bars
                     (setq tot (av:int (+ (cadr b) hsum)))
                     (if (not (member tot tots)) (setq tots (cons tot tots)))
-                    (setq pcs (if emd
-                                (av:divide tot ini fim lcom lap afs
-                                           (and dfs (= 1 (rem (caddr b) 2))))
-                                (list tot)))
+                    (setq pcs (if emd (av:divide tot ini fim lcom lap afs) (list tot)))
+                    ;; barras alternadas: mesmos pedacos em ordem inversa
+                    (if (and emd dfs (= 1 (rem (caddr b) 2)))
+                      (setq pcs (av:inverte pcs ini fim)))
                     (if (cdr pcs) (setq nemd (1+ nemd)))
                     (foreach g pcs
                       (setq npcs (1+ npcs))
@@ -1629,9 +1747,11 @@
                         ctot   0.0)
                   (foreach g grupos (setq ctot (+ ctot (* 1.0 (car g) (cdr g)))))
                   (setq ctot (* ctot rep))
-                  ;; "C=368" se todas iguais; senao "C=VAR"
+                  ;; "C=368" se todas iguais ("C=890+450" se emendadas);
+                  ;; senao "C=VAR"
                   (if (= (length tots) 1)
-                    (setq ctxt (itoa (car tots))
+                    (setq ctxt (av:junta (if emd (av:divide (car tots) ini fim lcom lap afs)
+                                                 (list (car tots))))
                           mtxt (av:fmt (- (car tots) hsum)))
                     (setq ctxt "VAR" mtxt "VAR")
                   )
@@ -1676,9 +1796,10 @@
                       (if (not ok)
                         (princ "\nCancelado.")
                         (progn
-                          ;; pedacos da barra representada (sem defasagem)
+                          ;; pedacos da barra representada e da vizinha (ALTER.)
                           (setq tr   (av:int (+ (* (- tb ta) uc) hsum))
-                                pcsr (if emd (av:divide tr ini fim lcom lap afs nil) (list tr)))
+                                pcsr (if emd (av:divide tr ini fim lcom lap afs) (list tr))
+                                pcsa (if (and dfs (cdr pcsr)) (av:inverte pcsr ini fim)))
                           ;; ---- 7) desenha o ferro e a faixa --------------
                           (vla-StartUndoMark doc) (setq marcou T)
                           (av:prepara)
@@ -1686,11 +1807,14 @@
                                       (av:txt-ferro rep pos nbar bit espcm ctxt)
                                       (av:txt-faixa rep pos nbar bit espcm)
                                       (strcat "(" (rtos (* (- hi lo) uc) 2 0) ")")
-                                      mtxt pcsr neg lap)
+                                      mtxt pcsr neg lap pcsa
+                                      (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
+                                              " C/" (av:fmt espcm) " ALTER."))
                           ;; ---- 8) tabelas --------------------------------
                           (setq nota (if (> nemd 0)
                                        (strcat "EMENDAS POR TRASPASSE: L = " (itoa lap)
-                                               " cm  (BARRAS > " (itoa lcom) " cm)")))
+                                               " cm  (BARRAS > " (itoa lcom) " cm)"
+                                               (if dfs " - BARRAS ALTERNADAS" ""))))
                           (setq pt1 (av:pede-canto "\nClique no canto superior esquerdo da TABELA DE FERROS VARIAVEIS (ENTER = nao gerar): "))
                           (if pt1
                             (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota)
