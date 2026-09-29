@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.4
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.5
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -19,6 +19,8 @@
 ;;;    ARMVARATU .... refaz todos os detalhamentos (se os reatores estiverem
 ;;;                   desligados, ex.: desenho aberto sem a Lisp carregada)
 ;;;    ARMVARLISTA .. LISTA DE FERROS + RESUMO DE ACO de todo o desenho
+;;;    ARMVARTESTE .. diagnostico: testa no CAD (AutoCAD/ZWCAD) cada recurso
+;;;                   usado (xdata, xrecord, blocos, atributos, cotas, reatores)
 ;;;
 ;;;  ELEMENTO PARAMETRIZADO  (bloco com atributos + reatores)
 ;;;  --------------------------------------------------------------------
@@ -1532,7 +1534,14 @@
   (if (dictsearch d id) (dictremove d id))
   (setq x (entmakex (append (list '(0 . "XRECORD") '(100 . "AcDbXrecord"))
                             (av:enc dados))))
-  (if x (dictadd d id x))
+  (if x
+    (progn
+      (dictadd d id x)
+      ;; confere a leitura (evita edicao futura com dados errados)
+      (if (not (equal (av:reg-le id) dados 1e-6))
+        (av:aviso (strcat "os dados de " id " nao foram lidos de volta iguais."))))
+    (av:aviso (strcat "nao foi possivel gravar os dados de " id " (XRECORD)."))
+  )
   x
 )
 
@@ -1588,6 +1597,19 @@
     )
   )
   r
+)
+
+;;; ---- mensagens: nada de erro silencioso -------------------------------------
+(defun av:aviso (msg) (princ (strcat "\nARMVAR aviso: " msg)))
+
+;;; chama f com args; se der erro, MOSTRA o erro e devolve nil
+(defun av:roda (f args rotulo / r)
+  (setq r (vl-catch-all-apply f args))
+  (if (vl-catch-all-error-p r)
+    (progn
+      (princ (strcat "\n*** ARMVAR erro (" rotulo "): " (vl-catch-all-error-message r)))
+      nil)
+    r)
 )
 
 ;;; ---- ELEMENTO PARAMETRIZADO = BLOCO COM ATRIBUTOS ---------------------------
@@ -1710,9 +1732,31 @@
 
 (defun av:nome-bloco (id grp) (strcat "ARMVAR$" id "$" grp))
 
+;;; DXF completos (com marcadores de subclasse) -- aceitos por AutoCAD e ZWCAD
+(defun av:dxf-bloco (nome atr)
+  (list '(0 . "BLOCK") '(100 . "AcDbEntity") '(8 . "0") '(100 . "AcDbBlockBegin")
+        (cons 2 nome) (cons 70 (if atr 2 0)) '(10 0.0 0.0 0.0))
+)
+(defun av:dxf-attdef (tag prompt val h)
+  (list '(0 . "ATTDEF") '(100 . "AcDbEntity") '(8 . "0") '(100 . "AcDbText")
+        '(10 0.0 0.0 0.0) (cons 40 h) (cons 1 val) (cons 7 AV:STY)
+        '(100 . "AcDbAttributeDefinition") (cons 3 prompt) (cons 2 tag) '(70 . 1))
+)
+(defun av:dxf-attrib (tag val h)
+  (list '(0 . "ATTRIB") '(100 . "AcDbEntity") '(8 . "0") '(100 . "AcDbText")
+        '(10 0.0 0.0 0.0) (cons 40 h) (cons 1 val) (cons 7 AV:STY)
+        '(100 . "AcDbAttribute") (cons 2 tag) '(70 . 1))
+)
+(defun av:dxf-insert (nome atr xd)
+  (list '(0 . "INSERT") '(100 . "AcDbEntity") '(8 . "0") '(100 . "AcDbBlockReference")
+        (cons 66 (if atr 1 0)) (cons 2 nome) '(10 0.0 0.0 0.0)
+        '(41 . 1.0) '(42 . 1.0) '(43 . 1.0) '(50 . 0.0) xd)
+)
+
 ;;; junta as entidades soltas do grupo num bloco (cria ou REDEFINE) e garante
-;;; uma insercao; atrs = ((tag valor) ...) dos atributos (ou nil)
-(defun av:empacota (id grp atrs h / ents nome ins e ed n ok)
+;;; uma insercao; atrs = ((tag valor) ...) dos atributos (ou nil).
+;;; Se o CAD recusar algo, avisa e deixa as entidades soltas (nada se perde).
+(defun av:empacota (id grp atrs h / ents nome ins e ed n ok copiados fora fim novo)
   (setq ents (av:soltos id grp) nome (av:nome-bloco id grp)
         ins  (av:insert-de id grp))
   ;; bloco em uso por esta insercao (pode ter sufixo $n)
@@ -1722,54 +1766,63 @@
     (if ins (entdel ins))
     (progn
       ;; redefine o bloco; se o CAD nao aceitar redefinir, usa um nome novo
-      (setq ok (entmake (list '(0 . "BLOCK") (cons 2 nome) (cons 70 (if atrs 2 0))
-                              '(10 0.0 0.0 0.0))))
+      (setq ok (entmake (av:dxf-bloco nome atrs)))
       (if (not ok)
         (progn
           (setq n 1)
           (while (tblsearch "BLOCK" (strcat (av:nome-bloco id grp) "$" (itoa n)))
             (setq n (1+ n)))
-          (setq nome (strcat (av:nome-bloco id grp) "$" (itoa n)))
-          (entmake (list '(0 . "BLOCK") (cons 2 nome) (cons 70 (if atrs 2 0))
-                         '(10 0.0 0.0 0.0)))
+          (setq nome (strcat (av:nome-bloco id grp) "$" (itoa n))
+                ok   (entmake (av:dxf-bloco nome atrs)))
         )
       )
-      (foreach e (reverse ents)
-        (setq ed (vl-remove-if '(lambda (g) (member (car g) '(-1 5 67 102 330 360 410)))
-                               (entget e (list "*"))))
-        (entmake ed)
-      )
-      (foreach a atrs
-        (entmake (list '(0 . "ATTDEF") '(8 . "0") '(10 0.0 0.0 0.0) (cons 40 h)
-                       (cons 1 (cadr a)) (cons 3 (cadr (assoc (car a) AV:ATRIBS)))
-                       (cons 2 (car a)) '(70 . 1) (cons 7 AV:STY)))
-      )
-      (entmake '((0 . "ENDBLK")))
-      (foreach e ents (entdel e))
-      (if ins
+      (if (not ok)
+        (av:aviso (strcat "o CAD nao aceitou criar o bloco " nome
+                          "; o desenho fica solto (use ARMVAREDIT para editar)."))
         (progn
-          ;; bloco com nome novo: a insercao passa a usa-lo
-          (if (/= (cdr (assoc 2 (entget ins))) nome)
-            (entmod (subst (cons 2 nome) (assoc 2 (entget ins)) (entget ins))))
-          (if atrs (av:atr-grava ins atrs))
-          (entupd ins)
-        )
-        (progn
-          (entmake (list '(0 . "INSERT") '(8 . "0")
-                         (cons 2 nome) '(10 0.0 0.0 0.0)
-                         (cons 66 (if atrs 1 0))
-                         (av:xd-lista id "" grp)))
-          (if atrs
+          (setq copiados nil fora nil)
+          (foreach e (reverse ents)
+            (setq ed (vl-remove-if '(lambda (g) (member (car g) '(-1 5 67 102 330 360 410)))
+                                   (entget e (list "*"))))
+            (if (entmake ed)
+              (setq copiados (cons e copiados))
+              (setq fora (cons (cdr (assoc 0 ed)) fora)))
+          )
+          (foreach a atrs
+            (if (not (entmake (av:dxf-attdef (car a) (cadr (assoc (car a) AV:ATRIBS)) (cadr a) h)))
+              (setq fora (cons "ATTDEF" fora)))
+          )
+          (setq fim (entmake '((0 . "ENDBLK"))))
+          (if (not fim)
+            (av:aviso (strcat "o CAD nao fechou o bloco " nome "; o desenho fica solto."))
             (progn
-              (foreach a atrs
-                (entmake (list '(0 . "ATTRIB") '(8 . "0") '(10 0.0 0.0 0.0)
-                               (cons 40 h) (cons 1 (cadr a)) (cons 2 (car a))
-                               '(70 . 1) (cons 7 AV:STY)))
+              (foreach e copiados (entdel e))
+              (if fora
+                (av:aviso (strcat (itoa (length fora)) " objeto(s) ("
+                                  (car fora) ") ficaram fora do bloco " nome ".")))
+              (if ins
+                (progn
+                  ;; bloco com nome novo: a insercao passa a usa-lo
+                  (if (/= (cdr (assoc 2 (entget ins))) nome)
+                    (entmod (subst (cons 2 nome) (assoc 2 (entget ins)) (entget ins))))
+                  (if atrs (av:atr-grava ins atrs))
+                  (entupd ins)
+                )
+                (progn
+                  (setq novo (entmake (av:dxf-insert nome atrs (av:xd-lista id "" grp))))
+                  (if (and novo atrs)
+                    (progn
+                      (foreach a atrs (entmake (av:dxf-attrib (car a) (cadr a) h)))
+                      (entmake '((0 . "SEQEND")))
+                    )
+                  )
+                  (if novo
+                    (setq ins (av:insert-de id grp))
+                    (av:aviso (strcat "o CAD nao aceitou inserir o bloco " nome ".")))
+                )
               )
-              (entmake '((0 . "SEQEND")))
             )
           )
-          (setq ins (entlast))
         )
       )
     )
@@ -2302,7 +2355,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.4      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.5      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2997,7 +3050,7 @@
       (setq salvo (mapcar 'eval AV:PARAMS))
       (av:params-de id rec)
       (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id AV:SEMDLG T)
-      (vl-catch-all-apply 'c:ARMVAR nil)
+      (av:roda 'c:ARMVAR nil (strcat "atualizando " id))
       (mapcar 'set AV:PARAMS salvo)
       (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:SEMDLG nil AV:GRP nil)
     )
@@ -3014,7 +3067,7 @@
   )
   (cond
     ((or (null id) (= id "LISTA"))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.4)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.5)."))
     ((null (setq rec (av:reg-le id)))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3023,7 +3076,7 @@
      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id)
      (princ (strcat "\nEditando o detalhamento " id "..."))
      (setq AV:OCUP T)
-     (vl-catch-all-apply 'c:ARMVAR nil)
+     (av:roda 'c:ARMVAR nil (strcat "editando " id))
      (setq AV:OCUP nil)
      (mapcar 'set AV:PARAMS salvo)
      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:GRP nil)
@@ -3126,12 +3179,12 @@
           (if (or (cadr it) (av:atrs-mudaram-p (car it) rec))
             (progn
               (princ (strcat "\nARMVAR: atualizando o detalhamento " (car it) "..."))
-              (vl-catch-all-apply 'av:regenera (list (car it)))
+              (av:roda 'av:regenera (list (car it)) (strcat "atualizando " (car it)))
               (setq n (1+ n))
             )
             ;; nada mudou de fato (ex.: valor invalido): atributos voltam
             ;; aos valores validos guardados
-            (vl-catch-all-apply 'av:atrs-restaura (list (car it) rec))
+            (av:roda 'av:atrs-restaura (list (car it) rec) "atributos")
           )
         )
       )
@@ -3146,14 +3199,14 @@
   (setq cmd (strcase (if (car args) (car args) "")))
   (if (wcmatch cmd "U,UNDO,REDO,MREDO")
     (setq AV:PEND nil)
-    (vl-catch-all-apply 'av:processa nil)
+    (av:roda 'av:processa nil "fim de comando")
   )
 )
 
 ;;; selecao mudou (ex.: ESC depois de editar na janela Propriedades)
 (defun av:cb-sel (rea args)
   (if (and AV:PEND (= (getvar "CMDACTIVE") 0))
-    (vl-catch-all-apply 'av:processa nil))
+    (av:roda 'av:processa nil "selecao"))
 )
 
 ;;; ARMVARLISTA: LISTA DE FERROS + RESUMO DE ACO de todos os detalhamentos do
@@ -3175,10 +3228,91 @@
   (princ)
 )
 
+;;; ==========================================================================
+;;;  13.  ARMVARTESTE: diagnostico do CAD (AutoCAD / ZWCAD)
+;;; ==========================================================================
+(defun av:teste (nome f / r)
+  (setq r (vl-catch-all-apply f nil))
+  (princ (strcat "\n  " nome ": "
+                 (cond ((vl-catch-all-error-p r) (strcat "FALHOU - " (vl-catch-all-error-message r)))
+                       (r "OK")
+                       (t "FALHOU"))))
+  (if (vl-catch-all-error-p r) nil r)
+)
+
+(defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
+  (princ (strcat "\n=== ARMVAR v1.5 - diagnostico ===  CAD: "
+                 (vl-princ-to-string (getvar "ACADVER"))
+                 "  " (vl-princ-to-string (getvar "PRODUCT"))))
+  (setq id0 AV:ID hh 0.2)
+  (av:prepara)
+  (av:teste "1 ActiveX (vlax-get-acad-object)" '(lambda () (vlax-get-acad-object)))
+  (setq AV:ID "TESTE" AV:GRP "DET")
+  (setq ln (av:teste "2 XDATA (entmake com xdata)"
+             '(lambda () (av:mk-line '(0.0 0.0) '(1.0 0.0) "0" nil nil) (entlast))))
+  (av:teste "3 XDATA (leitura)" '(lambda () (= (car (av:id-ent ln)) "TESTE")))
+  (av:teste "4 ssget X por XDATA" '(lambda () (member ln (av:ents-id "TESTE"))))
+  (setq dados (list (list "a" 1) (list "b" 2.5) (list "c" "texto") (list "d" nil)
+                    (list "e" (list (list 1.0 2.0) (list 3.5 -4.25)))))
+  (av:teste "5 XRECORD (gravar)" '(lambda () (av:reg-grava "TESTE" dados)))
+  (av:teste "6 XRECORD (ler igual)" '(lambda () (equal (av:reg-le "TESTE") dados 1e-6)))
+  (setq dim (av:teste "7 cota ActiveX (AddDimRotated)"
+              '(lambda () (av:mk-dim '(0.0 1.0) '(1.0 1.0) '(0.0 1.5) 0.0 "T" hh 1 T))))
+  (setq AV:ID nil AV:GRP nil)
+  (av:teste "8 bloco com atributo (entmake BLOCK/ATTDEF/INSERT)"
+            '(lambda ( / ok)
+               (entmake (av:dxf-bloco "ARMVAR$TESTE" T))
+               (entmake (list '(0 . "LINE") '(8 . "0") '(10 0.0 0.0 0.0) '(11 1.0 1.0 0.0)))
+               (entmake (av:dxf-attdef "POSICAO" "Posicao" "1" hh))
+               (setq ok (entmake '((0 . "ENDBLK"))))
+               (if ok (entmake (av:dxf-insert "ARMVAR$TESTE" T (av:xd-lista "TESTE" "" "TST"))))
+               (if ok (progn (entmake (av:dxf-attrib "POSICAO" "1" hh)) (entmake '((0 . "SEQEND")))))
+               (setq ins (av:insert-de "TESTE" "TST"))
+               (and ok ins (equal (av:atr-le ins) '(("POSICAO" "1"))))))
+  (av:teste "9 editar atributo (entmod ATTRIB)"
+            '(lambda () (av:atr-grava ins '(("POSICAO" "7"))) (equal (av:atr-le ins) '(("POSICAO" "7")))))
+  (av:teste "10 REDEFINIR bloco por entmake"
+            '(lambda () (and (entmake (av:dxf-bloco "ARMVAR$TESTE" nil))
+                             (entmake (list '(0 . "CIRCLE") '(8 . "0") '(10 0.0 0.0 0.0) '(40 . 1.0)))
+                             (entmake '((0 . "ENDBLK"))))))
+  (if dim
+    (av:teste "11 copiar COTA para dentro de bloco"
+              '(lambda ( / ed)
+                 (setq ed (vl-remove-if '(lambda (g) (member (car g) '(-1 5 67 102 330 360 410)))
+                                        (entget (vlax-vla-object->ename dim) (list "*"))))
+                 (and (entmake (av:dxf-bloco "ARMVAR$TESTE2" nil)) (entmake ed)
+                      (entmake '((0 . "ENDBLK")))))))
+  (av:teste "12 reator de objeto (vlr-object-reactor)"
+            '(lambda ( / r) (setq r (vlr-object-reactor (list (vlax-ename->vla-object ln)) "T" '((:vlr-modified . av:cb-nada3))))
+                            (vlr-remove r) T))
+  (av:teste "13 reator de comando (vlr-command-reactor)"
+            '(lambda ( / r) (setq r (vlr-command-reactor "T" '((:vlr-commandEnded . av:cb-nada)))) (vlr-remove r) T))
+  (av:teste "14 reator de selecao (vlr-miscellaneous-reactor)"
+            '(lambda ( / r) (setq r (vlr-miscellaneous-reactor "T" '((:vlr-pickfirstModified . av:cb-nada)))) (vlr-remove r) T))
+  (princ (strcat "\n  reatores ligados agora: " (itoa (length AV:REATORES))
+                 "   comando: " (if AV:REAT-CMD "sim" "NAO")
+                 "   selecao: " (if AV:REAT-SEL "sim" "NAO")))
+  (princ (strcat "\n  detalhamentos guardados: " (vl-princ-to-string (av:reg-ids))))
+  ;; limpeza
+  (foreach e (av:ents-id "TESTE") (entdel e))
+  (if (and ins (entget ins)) (entdel ins))
+  (av:reg-apaga "TESTE")
+  (setq AV:ID id0 AV:GRP nil)
+  (princ "\n=== fim do diagnostico: copie estas linhas e envie. ===")
+  (princ)
+)
+(defun av:cb-nada (a b) nil)
+(defun av:cb-nada3 (a b c) nil)
+
 (setq AV:OCUP nil AV:PEND nil)
 ;;; reatores dos detalhamentos que ja existem no desenho aberto
-(if (vl-catch-all-error-p (vl-catch-all-apply 'av:reat-liga nil))
-  (princ "\nARMVAR: reatores indisponiveis neste CAD (use ARMVARATU para atualizar)."))
-(princ "\nARMVAR v1.4 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA.")
+(av:roda 'av:reat-liga nil "ligando reatores")
+(cond
+  ((null AV:REAT-CMD)
+   (princ "\nARMVAR: este CAD nao aceitou o reator de comandos -> use ARMVARATU depois de editar."))
+  ((null AV:REAT-SEL)
+   (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
+)
+(princ "\nARMVAR v1.5 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ)
