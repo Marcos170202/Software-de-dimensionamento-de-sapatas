@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.6
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.7
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -2363,7 +2363,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.6      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.7      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2917,7 +2917,7 @@
                                 pcsa (if (and dfs (cdr pcsr)) (av:inverte pcsr ini fim)))
                           (setq AV:ETAPA "7 desenho do ferro")
                           ;; ---- 7) desenha o ferro e a faixa --------------
-                          (if (not AV:SEMDLG) (progn (vla-StartUndoMark doc) (setq marcou T)))
+                          (if (or (not AV:SEMDLG) AV:EDITA) (progn (vla-StartUndoMark doc) (setq marcou T)))
                           (setq ocup0 AV:OCUP AV:OCUP T)  ; reatores ignoram as nossas alteracoes
                           (av:prepara)
                           ;; edicao: reusa o id (o bloco sera redefinido)
@@ -3077,9 +3077,149 @@
   )
 )
 
-;;; ARMVAREDIT: clique no detalhamento (bloco); a janela abre com os dados
-;;; dele, e ferro, cotas, tabelas e LISTA sao refeitos.
-(defun c:ARMVAREDIT ( / sel id rec salvo)
+;;; ---- ARMVAREDIT: menu do que editar ----------------------------------------
+;;;  Os pontos novos sao pedidos ANTES de redesenhar (ESC cancela sem mexer
+;;;  em nada) e gravados nas respostas guardadas; o detalhamento e refeito
+;;;  com elas.  Os pontos do desenho ficam no sistema do BLOCO: se o bloco
+;;;  foi movido/girado, o clique e convertido para que o elemento apareca
+;;;  exatamente onde foi clicado.
+
+;;; ponto (WCS) -> sistema do bloco "grp" do detalhamento id
+(defun av:bloco-pt (p id grp / ins ed b sx sy a x y)
+  (if (and p (listp p) (setq ins (av:insert-de id grp)))
+    (progn
+      (setq ed (entget ins) b (cdr (assoc 10 ed))
+            sx (cdr (assoc 41 ed)) sy (cdr (assoc 42 ed)) a (cdr (assoc 50 ed)))
+      (if (or (null sx) (equal sx 0.0 1e-12)) (setq sx 1.0))
+      (if (or (null sy) (equal sy 0.0 1e-12)) (setq sy 1.0))
+      (if (null a) (setq a 0.0))
+      (setq x (- (car p) (car b)) y (- (cadr p) (cadr b)))
+      (list (/ (+ (* x (cos a)) (* y (sin a))) sx)
+            (/ (- (* y (cos a)) (* x (sin a))) sy))
+    )
+    p
+  )
+)
+
+;;; troca (ou cria) a resposta k nas respostas da edicao
+(defun av:resp-muda (k v)
+  (setq AV:RESP (cons (list k v)
+                      (vl-remove-if '(lambda (x) (and (listp x) (= (car x) k))) AV:RESP)))
+)
+
+;;; clique opcional convertido para o bloco: 'cancel, nil (ENTER) ou ponto
+(defun av:ed-pede (msg id grp / r)
+  (setq r (av:pede-opc msg))
+  (if (and r (listp r)) (av:bloco-pt r id grp) r)
+)
+
+;;; canto de tabela: ENTER = manter, N = nao gerar
+(defun av:ed-tabela (msg atual id grp / p)
+  (initget "Nao")
+  (setq p (vl-catch-all-apply 'getpoint (list msg)))
+  (cond
+    ((vl-catch-all-error-p p) 'cancel)
+    ((null p) (list atual))
+    ((= (type p) 'STR) (list nil))
+    (t (list (av:bloco-pt (av:p2 (trans p 1 0)) id grp)))
+  )
+)
+
+;;; pede os pontos das chaves ks; devolve T (ok) ou nil (cancelado)
+(defun av:ed-pergunta (id ks / ok r l k)
+  (setq ok T)
+  (if (and ok (member "pk" ks))
+    (progn
+      (setq r (av:pede-opc "\nClique num ponto DENTRO do contorno: barra que o ferro representa (ENTER = manter): "))
+      (cond ((eq r 'cancel) (setq ok nil))
+            (r (av:resp-muda "pk" r)))))
+  (if (and ok (member "pd" ks))
+    (progn
+      (setq r (av:ed-pede "\nNova posicao do DESENHO do ferro - clique (ENTER = sobre a barra): " id "DET"))
+      (if (eq r 'cancel) (setq ok nil) (av:resp-muda "pd" r))))
+  (if (and ok (member "pf" ks))
+    (progn
+      (setq r (av:ed-pede "\nNova posicao da LINHA DE DISTRIBUICAO - clique (ENTER = automatica): " id "DET"))
+      (if (eq r 'cancel) (setq ok nil) (av:resp-muda "pf" r))))
+  (if (and ok (member "pv" ks))
+    (progn
+      (setq l nil k 0)
+      (while (and ok (< k 2))
+        (setq r (av:ed-pede (if (= k 0)
+                              "\nVertice para a LINHA DE EXTENSAO da faixa (ENTER = cantos do contorno): "
+                              "\nVertice para a outra ponta da faixa (ENTER = canto do contorno): ")
+                            id "DET"))
+        (cond ((eq r 'cancel) (setq ok nil))
+              ((null r) (setq k 2))
+              (t (setq l (append l (list r)) k (1+ k)))))
+      (if ok (av:resp-muda "pv" l))))
+  (if (and ok (member "pc" ks))
+    (progn
+      (setq r (av:ed-pede "\nNovo ponto da LINHA DE CHAMADA (bolinha no ferro) - clique (ENTER = automatico): " id "DET"))
+      (if (eq r 'cancel) (setq ok nil) (av:resp-muda "pc" r))))
+  (if (and ok (member "t1" ks))
+    (progn
+      (setq r (av:ed-tabela "\nNovo canto da TABELA DE FERROS VARIAVEIS - clique (ENTER = manter, N = nao gerar): "
+                            (av:rp "t1") id "T1"))
+      (if (eq r 'cancel) (setq ok nil) (av:resp-muda "t1" (car r)))))
+  (if (and ok (member "t2" ks))
+    (progn
+      (setq r (av:ed-tabela "\nNovo canto do RESUMO DE ACO - clique (ENTER = manter, N = nao gerar): "
+                            (av:rp "t2") id "T2"))
+      (if (eq r 'cancel) (setq ok nil) (av:resp-muda "t2" (car r)))))
+  ok
+)
+
+;;; opcoes do menu: (palavra  abre-janela  pontos)
+(setq AV:ED-OPCOES
+  '(("Parametros" T   nil)
+    ("Armadura"   nil ("pk" "pd"))
+    ("Faixa"      nil ("pf"))
+    ("Extensao"   nil ("pv"))
+    ("Indicacao"  nil ("pc"))
+    ("Tabelas"    nil ("t1" "t2"))
+    ("Desenho"    nil ("pk" "pd" "pf" "pv" "pc"))
+    ("Completo"   T   ("pk" "pd" "pf" "pv" "pc" "t1" "t2"))))
+
+(defun av:ed-menu (dflt / r)
+  (initget "Parametros Armadura Faixa Extensao Indicacao Tabelas Desenho Completo Sair")
+  (setq r (vl-catch-all-apply 'getkword
+            (list (strcat "\nEditar [Parametros/Armadura/Faixa/Extensao/Indicacao/Tabelas/Desenho/Completo/Sair] <"
+                          dflt ">: "))))
+  (cond ((vl-catch-all-error-p r) nil)
+        ((null r) dflt)
+        (t r))
+)
+
+;;; edita o detalhamento id conforme a opcao do menu
+(defun av:ed-executa (id op / rec salvo o ok)
+  (setq o (assoc op AV:ED-OPCOES))
+  (if (null (setq rec (av:reg-le id)))
+    (progn (princ "\nDados desse detalhamento nao encontrados.") nil)
+    (progn
+      (setq salvo (mapcar 'eval AV:PARAMS))
+      (av:params-de id rec)
+      (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id AV:EDITA T AV:OCUP T)
+      (setq ok (if (cadr o) (av:dialog) T))
+      (if ok (setq ok (av:ed-pergunta id (caddr o))))
+      (if ok
+        (progn
+          (princ (strcat "\nEditando o detalhamento " id "..."))
+          (setq AV:SEMDLG T)
+          (av:roda 'c:ARMVAR nil (strcat "editando " id)))
+        (princ "\nEdicao cancelada: nada foi alterado."))
+      (mapcar 'set AV:PARAMS salvo)
+      (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:GRP nil
+            AV:SEMDLG nil AV:EDITA nil AV:OCUP nil)
+      ok
+    )
+  )
+)
+
+;;; ARMVAREDIT: clique no detalhamento (ferro ou tabelas) e escolha o que
+;;; editar: parametros (janela), armadura, faixa, linhas de extensao, linha
+;;; de chamada, tabelas, todo o desenho ou tudo.  Repete ate "Sair".
+(defun c:ARMVAREDIT ( / sel id op dflt)
   (setq sel (vl-catch-all-apply 'entsel
               (list "\nSelecione o detalhamento ARMVAR: ")))
   (if (and sel (not (vl-catch-all-error-p sel)))
@@ -3087,19 +3227,15 @@
   )
   (cond
     ((or (null id) (= id "LISTA"))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.6)."))
-    ((null (setq rec (av:reg-le id)))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.7)."))
+    ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
-     (setq salvo (mapcar 'eval AV:PARAMS))
-     (av:params-de id rec)
-     (setq AV:RESP rec AV:MODO 'replay AV:ED-ID id)
-     (princ (strcat "\nEditando o detalhamento " id "..."))
-     (setq AV:OCUP T)
-     (av:roda 'c:ARMVAR nil (strcat "editando " id))
-     (setq AV:OCUP nil)
-     (mapcar 'set AV:PARAMS salvo)
-     (setq AV:MODO nil AV:ED-ID nil AV:RESP nil AV:ID nil AV:GRP nil)
+     (setq dflt "Parametros")
+     (while (and (setq op (av:ed-menu dflt)) (/= op "Sair"))
+       (av:ed-executa id op)
+       (setq dflt "Sair")
+     )
      (av:reat-liga)
     )
   )
@@ -3261,7 +3397,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.6 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.7 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3334,6 +3470,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.6 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.7 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
+(princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
 (princ)
