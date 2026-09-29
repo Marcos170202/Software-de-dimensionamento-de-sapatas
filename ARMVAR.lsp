@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.7
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.8
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -1924,13 +1924,37 @@
   )
 )
 
-;;; ---- LISTA DE FERROS geral (todos os detalhamentos) ------------------------
+;;; ---- LISTAS DE FERROS ------------------------------------------------------
+;;;  "LISTA" = lista geral (todos os detalhamentos); "LS1", "LS2", ... =
+;;;  listas de detalhamentos SELECIONADOS (dados: ("p0" canto) ("ids" (...))).
+;;;  Cada lista so e refeita quando muda um detalhamento que ela contem.
+
+;;; o id e de uma lista?
+(defun av:lista-id-p (id)
+  (and id (or (= id "LISTA") (wcmatch id "LS#*")))
+)
+
+;;; ids das listas guardadas
+(defun av:listas ( / r)
+  (foreach id (av:reg-ids) (if (av:lista-id-p id) (setq r (cons id r))))
+  (reverse r)
+)
+
+;;; novo id de lista: LS1, LS2, ...
+(defun av:lista-novo-id ( / n m)
+  (setq n 0)
+  (foreach k (av:reg-ids)
+    (if (wcmatch k "LS#*")
+      (if (> (setq m (atoi (substr k 3))) n) (setq n m)))
+  )
+  (strcat "LS" (itoa (1+ n)))
+)
 ;;; linha guardada em cada detalhamento ("res"):
 ;;;   (rotulo bitola qtd ctot aco kgm elemento)
-(defun av:lista-linhas ( / r d vivos)
+(defun av:lista-linhas (ids / r d vivos)
   (setq r nil)
   (foreach id (av:reg-ids)
-    (if (/= id "LISTA")
+    (if (and (not (av:lista-id-p id)) (or (null ids) (member id ids)))
       (if (av:ents-id id)
         (if (setq d (av:reg-le id))
           (foreach ln (av:rp-de d "res")
@@ -1948,12 +1972,12 @@
 (defun av:num-rot (rot) (atoi (substr rot 2)))
 
 ;;; desenha a LISTA DE FERROS e o RESUMO DE ACO a partir do canto p0
-(defun av:lista-desenha (p0 h / lns els x0 y0 y wd ht n el grp res tot
+(defun av:lista-desenha (lid ids p0 h / lns els x0 y0 y wd ht n el grp res tot
                                  ch k mt pt c xg ln lst)
-  (setq lns (vl-sort (av:lista-linhas)
+  (setq lns (vl-sort (av:lista-linhas ids)
                      '(lambda (a b) (< (av:num-rot (car a)) (av:num-rot (car b)))))
-        AV:ID "LISTA" AV:GRP "LST")
-  (foreach e (av:soltos "LISTA" "LST") (entdel e))
+        AV:ID lid AV:GRP "LST")
+  (foreach e (av:soltos lid "LST") (entdel e))
   (av:prepara)
   (setq x0 (car p0) y0 (cadr p0) wd (* 34.0 h))
   ;; elementos na ordem da 1.a posicao
@@ -2037,16 +2061,25 @@
   (av:mk-text "PESO TOTAL" (list (+ x0 (* 1.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
   (av:mk-text (rtos tot 2 1) (list (+ x0 (* 25.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
   (setq AV:ID nil AV:GRP nil)
-  (av:empacota "LISTA" "LST" nil h)
-  (av:reg-grava "LISTA" (list (list "p0" p0) (list "h" h)))
-  (princ (strcat "\n  LISTA DE FERROS: " (itoa (length lns)) " posicao(oes), "
+  (av:empacota lid "LST" nil h)
+  (av:reg-grava lid (list (list "p0" p0) (list "h" h) (list "ids" ids)))
+  (princ (strcat "\n  LISTA DE FERROS"
+                 (if ids (strcat " (" (itoa (length ids)) " detalhamento(s) selecionado(s))") " geral")
+                 ": " (itoa (length lns)) " posicao(oes), "
                  (rtos tot 2 1) " kg."))
 )
 
-;;; se ja existe uma LISTA no desenho, atualiza (a insercao fica onde estiver)
-(defun av:lista-auto (h / d)
-  (if (and (av:insert-de "LISTA" "LST") (setq d (av:reg-le "LISTA")))
-    (av:lista-desenha (cadr (assoc "p0" d)) h)
+;;; refaz as listas existentes que contem o detalhamento id
+;;; (id nil = todas); a insercao de cada lista fica onde estiver
+(defun av:lista-auto (h id / d ids)
+  (foreach lid (av:listas)
+    (if (and (av:insert-de lid "LST") (setq d (av:reg-le lid)))
+      (progn
+        (setq ids (cadr (assoc "ids" d)))
+        (if (or (null id) (null ids) (member id ids))
+          (av:lista-desenha lid ids (cadr (assoc "p0" d)) h))
+      )
+    )
   )
 )
 
@@ -2363,7 +2396,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.7      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.8      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2669,7 +2702,7 @@
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
                     ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k
-                    posl sep ptx espl linhas pvs pvg ocup0)
+                    posl sep ptx espl linhas pvs pvg ocup0 idl)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg (if AV:ETAPA (strcat "  [etapa: " AV:ETAPA "]") ""))))
@@ -3002,8 +3035,8 @@
                                          (av:nome-bloco AV:ID "DET")
                                          "). Edite os atributos na janela Propriedades,"
                                          " com duplo clique ou com ARMVAREDIT."))
-                          (setq AV:ID nil AV:ETAPA "10 lista geral")
-                          (av:lista-auto h)
+                          (setq idl AV:ID AV:ID nil AV:ETAPA "10 listas")
+                          (av:lista-auto h idl)
                           (if marcou (progn (vla-EndUndoMark doc) (setq marcou nil)))
                           (setq AV:OCUP ocup0)
                           (setq AV:ETAPA "11 reatores")
@@ -3226,8 +3259,8 @@
     (setq id (car (av:id-ent (car sel))))
   )
   (cond
-    ((or (null id) (= id "LISTA"))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.7)."))
+    ((or (null id) (av:lista-id-p id))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.8)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3246,7 +3279,7 @@
 (defun c:ARMVARATU ( / n)
   (setq n 0 AV:OCUP T)
   (foreach id (av:reg-ids)
-    (if (and (/= id "LISTA") (av:insert-de id "DET"))
+    (if (and (not (av:lista-id-p id)) (av:insert-de id "DET"))
       (progn (av:regenera id) (setq n (1+ n))))
   )
   (setq AV:OCUP nil)
@@ -3271,7 +3304,7 @@
   (foreach r AV:REATORES (vl-catch-all-apply 'vlr-remove (list r)))
   (setq AV:REATORES nil AV:CONTORNOS nil)
   (foreach id (av:reg-ids)
-    (if (and (/= id "LISTA") (setq ins (av:insert-de id "DET")) (setq rec (av:reg-le id)))
+    (if (and (not (av:lista-id-p id)) (setq ins (av:insert-de id "DET")) (setq rec (av:reg-le id)))
       (progn
         (setq objs nil)
         ;; contorno
@@ -3365,23 +3398,72 @@
     (av:roda 'av:processa nil "selecao"))
 )
 
-;;; ARMVARLISTA: LISTA DE FERROS + RESUMO DE ACO de todos os detalhamentos do
-;;; desenho.  Se ja existir, e atualizada no mesmo lugar (e tambem se atualiza
-;;; sozinha a cada ARMVAR / ARMVAREDIT).
-(defun c:ARMVARLISTA ( / p h esc uc)
+;;; ARMVARLISTA:
+;;;   Geral    - lista de TODOS os detalhamentos (se ja existir, e refeita
+;;;              no mesmo lugar);
+;;;   Selecao  - lista NOVA so dos detalhamentos selecionados (ferros ou
+;;;              tabelas); ela nao muda com os outros detalhamentos;
+;;;   Atualizar- refaz so a lista clicada.
+;;; As listas tambem se refazem sozinhas quando um detalhamento delas muda.
+(defun av:lista-sel-ids ( / ss i id r)
+  (princ "\nSelecione os detalhamentos (ferros ou tabelas) da lista: ")
+  (setq ss (vl-catch-all-apply 'ssget (list (list (list -3 (list AV:APP))))))
+  (if (and ss (not (vl-catch-all-error-p ss)))
+    (progn
+      (setq i 0)
+      (while (< i (sslength ss))
+        (setq id (car (av:id-ent (ssname ss i))) i (1+ i))
+        (if (and id (not (av:lista-id-p id)) (not (member id r)) (av:reg-le id))
+          (setq r (cons id r)))
+      )
+    )
+  )
+  (vl-sort r '(lambda (a b) (< (atoi (substr a 3)) (atoi (substr b 3)))))
+)
+
+(defun c:ARMVARLISTA ( / p h esc uc op d ids lid sel)
   (setq esc (av:num (if AV:P-ESC AV:P-ESC "50"))
         uc  (cond ((or (null AV:P-UNI) (= AV:P-UNI 0)) esc) ((= AV:P-UNI 1) 100.0)
                   ((= AV:P-UNI 2) 1.0) (t 0.1))
         h   (/ (* (/ (av:num (if AV:P-ALT AV:P-ALT "2")) 10.0) esc) uc))
+  (initget "Geral Selecao Atualizar")
+  (setq op (vl-catch-all-apply 'getkword
+             (list "\nLista de ferros [Geral/Selecao/Atualizar] <Geral>: ")))
+  (cond ((vl-catch-all-error-p op) (setq op nil))
+        ((null op) (setq op "Geral")))
   (setq AV:OCUP T)
-  (if (and (av:insert-de "LISTA" "LST") (setq p (av:reg-le "LISTA")))
-    (progn (av:lista-desenha (cadr (assoc "p0" p)) h) (princ "\n  Lista atualizada."))
-    (if (setq p (av:pede-canto "\nClique no canto superior esquerdo da LISTA DE FERROS: "))
-      (av:lista-desenha p h)
-    )
+  (cond
+    ((= op "Geral")
+     (if (and (av:insert-de "LISTA" "LST") (setq d (av:reg-le "LISTA")))
+       (progn (av:lista-desenha "LISTA" nil (cadr (assoc "p0" d)) h)
+              (princ "\n  Lista geral atualizada."))
+       (if (setq p (av:pede-canto "\nClique no canto superior esquerdo da LISTA DE FERROS: "))
+         (av:lista-desenha "LISTA" nil p h))))
+    ((= op "Selecao")
+     (if (null (setq ids (av:lista-sel-ids)))
+       (princ "\n  Nenhum detalhamento ARMVAR selecionado.")
+       (progn
+         (princ (strcat "\n  Detalhamentos: " (av:junta-txt ids)))
+         (if (setq p (av:pede-canto "\nClique no canto superior esquerdo da LISTA DE FERROS: "))
+           (av:lista-desenha (av:lista-novo-id) ids p h)))))
+    ((= op "Atualizar")
+     (setq sel (vl-catch-all-apply 'entsel (list "\nClique na lista de ferros: ")))
+     (if (and sel (not (vl-catch-all-error-p sel))
+              (av:lista-id-p (setq lid (car (av:id-ent (car sel)))))
+              (setq d (av:reg-le lid)))
+       (progn (av:lista-desenha lid (cadr (assoc "ids" d)) (cadr (assoc "p0" d)) h)
+              (princ "\n  Lista atualizada."))
+       (princ "\n  Isso nao e uma lista de ferros ARMVAR.")))
   )
   (setq AV:OCUP nil)
   (princ)
+)
+
+;;; ("AV1" "AV3") -> "AV1, AV3"
+(defun av:junta-txt (l / r)
+  (setq r "")
+  (foreach x l (setq r (if (= r "") x (strcat r ", " x))))
+  r
 )
 
 ;;; ==========================================================================
@@ -3397,7 +3479,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.7 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.8 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3470,7 +3552,8 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.7 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.8 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
+(princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
 (princ)
