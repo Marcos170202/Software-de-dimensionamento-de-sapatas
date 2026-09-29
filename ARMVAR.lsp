@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.5
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.6
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -323,6 +323,11 @@
 )
 
 (defun av:ultimo (l) (car (reverse l)))
+
+;;; nth que aceita lista vazia ou curta (o ZWCAD da erro em (nth 0 nil))
+(defun av:nth (n l)
+  (if (and l (listp l) (>= n 0) (< n (length l))) (nth n l))
+)
 
 ;;; ==========================================================================
 ;;;  2.  CRIACAO DE ENTIDADES
@@ -960,7 +965,7 @@
   ;; linhas
   (setq i 0 y (- y0 (* 3.0 h)))
   (foreach g grupos
-    (av:mk-text (if rots (nth i rots) (strcat pref (av:letra i)))
+    (av:mk-text (if rots (av:nth i rots) (strcat pref (av:letra i)))
                 (list (+ x0 (* 1.0 h)) y) h 0.0 AV:LAY-TXT nil)
     (av:mk-text (itoa (cdr g))
                 (list (+ x0 (* 9.0 h)) y) h 0.0 AV:LAY-TXT nil)
@@ -1197,8 +1202,8 @@
     (setq b  (+ a p)
           ka (if (= k 0) ta (+ ta (/ (- a ini) uc)))
           kb (if (= k (1- n)) tb (+ ta (/ (- b ini) uc))))
-    (if (nth k textos)
-      (av:rotulo (nth k textos) (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-ESPEC))
+    (if (av:nth k textos)
+      (av:rotulo (av:nth k textos) (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-ESPEC))
     (setq a (- b lap) k (1+ k))
   )
 )
@@ -1604,10 +1609,11 @@
 
 ;;; chama f com args; se der erro, MOSTRA o erro e devolve nil
 (defun av:roda (f args rotulo / r)
-  (setq r (vl-catch-all-apply f args))
+  (setq AV:ETAPA nil r (vl-catch-all-apply f args))
   (if (vl-catch-all-error-p r)
     (progn
-      (princ (strcat "\n*** ARMVAR erro (" rotulo "): " (vl-catch-all-error-message r)))
+      (princ (strcat "\n*** ARMVAR erro (" rotulo "): " (vl-catch-all-error-message r)
+                     (if AV:ETAPA (strcat "  [etapa: " AV:ETAPA "]") "")))
       nil)
     r)
 )
@@ -1927,7 +1933,9 @@
     (if (/= id "LISTA")
       (if (av:ents-id id)
         (if (setq d (av:reg-le id))
-          (foreach ln (av:rp-de d "res") (setq r (cons ln r))))
+          (foreach ln (av:rp-de d "res")
+            (if (and (listp ln) (>= (length ln) 7) (= (type (car ln)) 'STR))
+              (setq r (cons ln r)))))
         ;; detalhamento apagado do desenho: descarta os dados
         (av:reg-apaga id)
       )
@@ -1950,12 +1958,12 @@
   (setq x0 (car p0) y0 (cadr p0) wd (* 34.0 h))
   ;; elementos na ordem da 1.a posicao
   (setq els nil)
-  (foreach ln lns (if (not (member (nth 6 ln) els)) (setq els (append els (list (nth 6 ln))))))
+  (foreach ln lns (if (not (member (av:nth 6 ln) els)) (setq els (append els (list (av:nth 6 ln))))))
   ;; linhas da tabela: ("EL" nome) ou ("POS" linha)
   (setq lst nil)
   (foreach el els
     (if (/= el "") (setq lst (append lst (list (list "EL" el)))))
-    (foreach ln lns (if (= (nth 6 ln) el) (setq lst (append lst (list (list "POS" ln))))))
+    (foreach ln lns (if (= (av:nth 6 ln) el) (setq lst (append lst (list (list "POS" ln))))))
   )
   (setq n (length lst) ht (+ (* 1.5 h) (* 1.5 h n) (* 1.0 h)))
   (av:mk-text "LISTA DE FERROS" (list (+ x0 (* 17.0 h)) (+ y0 (* 0.6 h))) (* 1.2 h) 0.0 AV:LAY-TXT T)
@@ -1979,10 +1987,10 @@
       (av:mk-text (cadr it) (list (+ x0 (* 1.0 h)) y) h 0.0 AV:LAY-TXT nil)
       (progn
         (setq ln (cadr it))
-        (foreach c (list (list 1.0 (itoa (av:num-rot (car ln)))) (list 5.0 (nth 1 ln))
-                         (list 11.0 (itoa (nth 2 ln)))
-                         (list 17.0 (itoa (av:int (/ (nth 3 ln) (max 1 (nth 2 ln))))))
-                         (list 25.0 (av:fmt (nth 3 ln))))
+        (foreach c (list (list 1.0 (itoa (av:num-rot (car ln)))) (list 5.0 (av:nth 1 ln))
+                         (list 11.0 (itoa (av:nth 2 ln)))
+                         (list 17.0 (itoa (av:int (/ (av:nth 3 ln) (max 1 (av:nth 2 ln))))))
+                         (list 25.0 (av:fmt (av:nth 3 ln))))
           (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) y) h 0.0 AV:LAY-TXT nil)
         )
       )
@@ -1992,11 +2000,11 @@
   ;; ---- resumo por aco e bitola
   (setq res nil)
   (foreach ln lns
-    (setq k (list (nth 4 ln) (nth 1 ln)))
+    (setq k (list (av:nth 4 ln) (av:nth 1 ln)))
     (if (assoc k res)
-      (setq res (subst (list k (+ (cadr (assoc k res)) (nth 3 ln)) (nth 5 ln))
+      (setq res (subst (list k (+ (cadr (assoc k res)) (av:nth 3 ln)) (av:nth 5 ln))
                        (assoc k res) res))
-      (setq res (append res (list (list k (nth 3 ln) (nth 5 ln)))))
+      (setq res (append res (list (list k (av:nth 3 ln) (av:nth 5 ln)))))
     )
   )
   (setq res (vl-sort res '(lambda (a b)
@@ -2355,7 +2363,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.5      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.6      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2664,14 +2672,14 @@
                     posl sep ptx espl linhas pvs pvg ocup0)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
-      (princ (strcat "\n*** Erro: " msg)))
+      (princ (strcat "\n*** Erro: " msg (if AV:ETAPA (strcat "  [etapa: " AV:ETAPA "]") ""))))
     (if marcou (vl-catch-all-apply 'vla-EndUndoMark (list doc)))
     (setq AV:ID nil AV:TAG nil AV:GRP nil AV:OCUP nil)
     (vl-catch-all-apply 'redraw nil)
     (princ)
   )
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)) marcou nil
-        AV:REC nil AV:ID nil AV:TAG nil)
+        AV:REC nil AV:ID nil AV:TAG nil AV:ETAPA "0 janela")
 
   (if (not (if AV:SEMDLG T (av:dialog)))
     (progn (princ "\nCancelado.") (princ))
@@ -2711,11 +2719,13 @@
             fim  (+ (nth 2 hooks) (nth 3 hooks))
             hsum (+ ini fim))
 
+      (setq AV:ETAPA "1 direcao")
       ;; ---- 1) direcao --------------------------------------------------
       (setq th (av:gr "dir" (if (av:rp-p) (av:rp "dir") (av:pede-direcao))))
       (if (null th)
         (princ "\nCancelado.")
         (progn
+          (setq AV:ETAPA "2 contorno")
           ;; ---- 2) contorno --------------------------------------------
           (setq aneis (if (av:rp-p) (av:aneis-replay) (av:pede-contorno uc)))
           (av:gr "anel" aneis)
@@ -2727,6 +2737,7 @@
                     ex    (av:extensao edges)
                     umin  (nth 0 ex) umax (nth 1 ex)
                     lo    umin hi umax)
+              (setq AV:ETAPA "3 barras")
               ;; ---- 3) barras --------------------------------------------
               ;;      cada barra = (u  principal-cm  indice-da-posicao-u)
               (setq bars nil iu 0 posu (av:posicoes umin umax cov esp))
@@ -2820,6 +2831,7 @@
                       (princ (strcat "\n  Proxima posicao livre: N." (itoa k)))
                     )
                   )
+                  (setq AV:ETAPA "4 ponto do ferro")
                   ;; ---- 4) ponto do ferro --------------------------------
                   (if (av:rp-p)
                     (progn
@@ -2838,6 +2850,7 @@
                             tb (- (nth 2 pk) (nth 4 pk))
                             tc (/ (+ ta tb) 2.0)
                             ok T)
+                      (setq AV:ETAPA "5 posicao do desenho")
                       ;; ---- 5) onde desenhar o ferro ---------------------
                       (setq r (if (av:rp-p) (av:rp "pd")
                                 (av:pede-opc "\nPosicao do DESENHO do ferro - clique (ENTER = no ponto escolhido): ")))
@@ -2859,6 +2872,7 @@
                                 (r (setq tdim (car (av:xy-tu r th)))))
                         )
                       )
+                      (setq AV:ETAPA "6a linhas de extensao")
                       ;; ---- 6a) linhas de extensao da faixa, nas DUAS pontas ---
                       ;;      padrao: vertices do contorno que definem cada
                       ;;      ponta; um vertice clicado substitui o da ponta
@@ -2868,7 +2882,7 @@
                             k 0 pvs (av:rp "pv") pvg nil)
                       (while (and ok (< k 2))
                         (setq r (if (av:rp-p)
-                                  (nth k pvs)
+                                  (av:nth k pvs)
                                   (av:pede-opc (if (= k 0)
                                     "\nVertice para a LINHA DE EXTENSAO da faixa (ENTER = cantos do contorno): "
                                     "\nVertice para a outra ponta da faixa (ENTER = canto do contorno): "))))
@@ -2882,6 +2896,7 @@
                                  (setq k (1+ k))))
                       )
                       (av:gr "pv" pvg)
+                      (setq AV:ETAPA "6b linha de chamada")
                       ;; ---- 6b) faixa fora do ferro: linha de chamada ---------
                       (setq chama nil)
                       (if (and ok (or (< tdim ta) (> tdim tb)))
@@ -2900,6 +2915,7 @@
                           (setq tr   (av:int (+ (* (- tb ta) uc) hsum))
                                 pcsr (if emd (av:divide tr ini fim lcom lap afs pini dfs) (list tr))
                                 pcsa (if (and dfs (cdr pcsr)) (av:inverte pcsr ini fim)))
+                          (setq AV:ETAPA "7 desenho do ferro")
                           ;; ---- 7) desenha o ferro e a faixa --------------
                           (if (not AV:SEMDLG) (progn (vla-StartUndoMark doc) (setq marcou T)))
                           (setq ocup0 AV:OCUP AV:OCUP T)  ; reatores ignoram as nossas alteracoes
@@ -2926,6 +2942,7 @@
                                       (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
                                               " C/" (av:fmt espcm) " ALTER.")
                                       chama anc espl)
+                          (setq AV:ETAPA "8 tabelas")
                           ;; ---- 8) tabelas --------------------------------
                           (setq AV:GRP "T1")
                           (setq nota (if (> nemd 0)
@@ -2961,11 +2978,13 @@
                           (if pt2
                             (av:tab-aco pt2 h linhas bit (nth AV:P-ACO AV:ACOS) kgm)
                           )
+                          (setq AV:ETAPA "9 blocos")
                           ;; ---- 9) elemento parametrizado: blocos -------------
                           (setq AV:GRP nil)
                           (av:empacota AV:ID "DET" (av:params->atrs) h)
                           (av:empacota AV:ID "T1" nil h)
                           (av:empacota AV:ID "T2" nil h)
+                          (setq AV:ETAPA "10 dados e lista")
                           ;; ---- 10) dados para edicao futura e lista geral --
                           (av:reg-grava AV:ID
                             (append
@@ -2983,10 +3002,11 @@
                                          (av:nome-bloco AV:ID "DET")
                                          "). Edite os atributos na janela Propriedades,"
                                          " com duplo clique ou com ARMVAREDIT."))
-                          (setq AV:ID nil)
+                          (setq AV:ID nil AV:ETAPA "10 lista geral")
                           (av:lista-auto h)
                           (if marcou (progn (vla-EndUndoMark doc) (setq marcou nil)))
                           (setq AV:OCUP ocup0)
+                          (setq AV:ETAPA "11 reatores")
                           (if (not AV:SEMDLG) (av:reat-liga))
                           ;; a janela ja abre na proxima posicao livre
                           (if (not (av:rp-p))
@@ -3067,7 +3087,7 @@
   )
   (cond
     ((or (null id) (= id "LISTA"))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.5)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.6)."))
     ((null (setq rec (av:reg-le id)))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3241,7 +3261,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.5 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.6 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3289,6 +3309,7 @@
             '(lambda ( / r) (setq r (vlr-command-reactor "T" '((:vlr-commandEnded . av:cb-nada)))) (vlr-remove r) T))
   (av:teste "14 reator de selecao (vlr-miscellaneous-reactor)"
             '(lambda ( / r) (setq r (vlr-miscellaneous-reactor "T" '((:vlr-pickfirstModified . av:cb-nada)))) (vlr-remove r) T))
+  (av:teste "15 nth em lista vazia" '(lambda () (nth 0 nil) T))
   (princ (strcat "\n  reatores ligados agora: " (itoa (length AV:REATORES))
                  "   comando: " (if AV:REAT-CMD "sim" "NAO")
                  "   selecao: " (if AV:REAT-SEL "sim" "NAO")))
@@ -3313,6 +3334,6 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.5 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.6 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ)
