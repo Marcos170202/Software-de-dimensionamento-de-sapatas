@@ -1,0 +1,866 @@
+# =============================================================================
+# SAPATA-7 -- ruleset.yaml
+# Unica fonte de verdade para A3, A4 e A5. Escrito EXCLUSIVAMENTE pelo a2-verificador.
+# Qualquer alteracao neste arquivo INVALIDA as aprovacoes de A6 e A7 (nova rodada).
+# Integridade: ver ruleset.lock (sha256 deste arquivo).
+# =============================================================================
+meta:
+  versao: 0.1.0
+  rotulo: v0-geotecnico-minimo
+  gerado_por: a2-verificador
+  data: '2026-09-29'
+  gate_1:
+    estado: CONGELADO
+    escopo_congelado: >-
+      Verificacao GEOTECNICA de sapata isolada, planta retangular, carga vertical centrada de
+      compressao, solo declarado homogeneo, tensao admissivel / resistente de calculo (ou tensao
+      de ruptura caracteristica) FORNECIDA pelo engenheiro. Nada de capacidade de carga calculada,
+      recalque calculado, excentricidade, vento, carga horizontal ou dimensionamento estrutural.
+    criterio: >-
+      100 % dos registros em `regras` estao APROVADA. Nenhum registro de `regras` depende de
+      PENDENTE_HUMANO nao resolvido. Itens bloqueados/pendentes ficam FORA de `regras`
+      (secao `fora_do_escopo_v0`) e sao PROIBIDOS de implementar.
+    liberado_para: [a3-interface, a4-geotecnico]
+    nao_liberado_para:
+      a5-estrutural: nenhuma regra da NBR 6118 / NBR 8681 foi extraida; A5 nao tem o que implementar.
+  base_auditada:
+    commit_a1: [fc1fb60, a903ce7]
+    sha256_kb:
+      kb/clausulas.jsonl: 958b2c1274e15df6f23a2d9033b4867833fbb4588d86e80461205b1fbf3c0307
+      kb/formulas.yaml: d1ca6f9fc8444e7ea68bc08de47c7edd96bc64c5910cdc5bbfe1621df1828d20
+      kb/exemplos.yaml: 000d98662b10b07b5f34383fa600f901b5de30f61964d3b455147f9712c08f1a
+    fonte:
+      norma: ABNT NBR 6122:2022
+      arquivo: refs/NBR 06122 - 2022 - Projeto e execução de fundações.pdf
+      sha256_pdf: 65fb1d5c60b81066010c08a2e86fdedb3491d0603a7c98a46917d52f29571f53
+    hash_metodo: sha256 do campo `enunciado` da clausula em kb/clausulas.jsonl apos NFC + colapso de espacos
+  cascata_A2:
+    1_rastreabilidade: >-
+      43/43 clausulas com norma+item+pagina+hash; hash recomputado confere em 43/43; enunciado
+      localizado literalmente nas paginas declaradas em 43/43 (5 exigiram remover rodape de
+      pagina / rotulo de figura intercalados -- artefato de layout, conteudo integro).
+      12/12 trecho_literal de kb/formulas.yaml conferem (hash e presenca). Tabela 1, 3.30, 3.31
+      e 5.6 conferidos visualmente na pagina rasterizada pelo A2.
+    2_dimensional: >-
+      tools/checar_dimensoes.py. Sobre kb/formulas.yaml: FALHA em 3.30/3.31 na leitura literal
+      (P_adm tensao x S_k "solicitacoes" esforco) -- defeito da FONTE, resolvido por vinculacao
+      a 3.47 (ver regra NBR6122-3.30-verificacao-admissivel); FALHA na forma simbolica do A1 de
+      7.7.1, 7.7.2 e 7.7.3 (comprimento comparado com numero puro) -- forma simbolica REJEITADA,
+      formalizada aqui com constantes com unidade. Sobre este ruleset: 0 falhas.
+    3_consistencia_cruzada: ver `requisitos_de_execucao` (RT-01 metodo, RT-02 namespaces) e guarda de vento.
+    4_sanity: ver bloco `sanity_check` (executado por tools/checar_dimensoes.py --sanity).
+    5_fila_humana: kb/pendencias.md (nenhuma pendencia bloqueia `regras`).
+
+# -----------------------------------------------------------------------------
+# Requisitos de execucao (obrigatorios para A3/A4; o A6 audita)
+# -----------------------------------------------------------------------------
+requisitos_de_execucao:
+  - id: RT-01-separacao-de-metodo
+    requisito: >-
+      O projeto roda em UM metodo in {admissivel, calculo}, declarado na entrada e imutavel.
+      Toda grandeza de carga e de tensao carrega a etiqueta natureza in {caracteristica, calculo}.
+      Qualquer operacao ou comparacao entre naturezas diferentes levanta excecao
+      (ErroMisturaDeMetodo) em tempo de execucao. FS_g so existe no metodo admissivel; gamma_m e
+      gamma_f so existem no metodo de calculo. Comparacoes PERMITIDAS: admissivel-ELU
+      sigma_solo_k <= sigma_adm; calculo-ELU sigma_solo_d <= sigma_Rd; ELS (ambos os metodos)
+      sigma_solo_k <= sigma_ELS (6.2.2.1, acoes caracteristicas). Todo o resto e PROIBIDO, em
+      especial: tensao de calculo x tensao admissivel; tensao caracteristica x tensao resistente de
+      calculo; sigma_r_k/gamma_m no metodo admissivel; sigma_r_k/FS_g no metodo de calculo;
+      min() entre limite de calculo e limite caracteristico.
+    base: NBR 6122:2022 3.30, 3.31, 3.45 NOTA, 3.48 NOTA, 6.2.1.1.1, 6.2.2.1, 7.1
+  - id: RT-02-namespaces
+    requisito: >-
+      Identificadores em calc_core usam o namespace da tabela `namespaces`. Simbolos colidentes
+      (d, sigma, A, gamma, C, alpha, P) nunca aparecem sem prefixo de dominio.
+  - id: RT-03-guardas-recusam
+    requisito: >-
+      Toda guarda (tipo: guarda) violada devolve Verificacao(aplicavel=False, motivo=..., regra=<id>)
+      e interrompe a cadeia de calculo. Proibido produzir numero parcial ou extrapolar em silencio.
+  - id: RT-04-sem-default-para-entrada-do-engenheiro
+    requisito: >-
+      Entradas marcadas `entrada_obrigatoria: true` nao tem valor padrao. Ausentes -> recusa.
+      Em especial: metodo, sigma_adm/sigma_Rd (ou sigma_r_k + metodo_resistencia), sigma_ELS
+      (sempre no metodo de calculo; no admissivel so no modo B),
+      G_k (ou declaracao G_k_desconhecido), P_solo_k (pode ser 0, mas declarado), em_divisa,
+      declaracoes de 7.5 e de solo homogeneo, coef_reducao_ao_caracteristico (5.1) quando usado.
+  - id: RT-05-unidades
+    requisito: >-
+      Calculo interno em kN, m, kPa. Toda constante normativa e nomeada, com unidade e [rule: id]
+      (ex.: B_MIN = 0.60 m). Proibido comparar grandeza com numero puro cuja unidade so existe em
+      comentario (defeito encontrado na forma simbolica do A1 para 7.7.1-7.7.3).
+  - id: RT-06-rastreabilidade
+    requisito: >-
+      Toda funcao publica de calc_core tem docstring com norma, item, pagina e [rule: <id>]
+      deste arquivo. Todo numero do memorial cita a regra que o produziu.
+  - id: RT-07-sem-veredito-global
+    requisito: >-
+      O software nao emite "sapata aprovada". Emite o estado de cada verificacao executada e a
+      lista obrigatoria de verificacoes NAO executadas (regra NBR6122-6.2.1-7.1-memorial-nao-verificado).
+
+namespaces:
+  geotecnico.B: {significado: menor dimensao da base em planta, unidade: m}
+  geotecnico.L: {significado: maior dimensao da base em planta, unidade: m, colisao: "Bastos 2023 usa A para o lado maior -- nunca usar A para lado"}
+  geotecnico.area_base: {significado: area da base B*L, unidade: m**2}
+  geotecnico.D_assentamento: {significado: profundidade da base (menor, se variavel -- 3.28), unidade: m, colisao: "estrutural.d_util (NBR 6118)"}
+  geotecnico.sigma_solo_k: {significado: tensao de trabalho caracteristica no terreno (3.47), unidade: kPa, colisao: "estrutural.sigma_aco"}
+  geotecnico.sigma_solo_d: {significado: tensao de calculo atuante no terreno, unidade: kPa}
+  geotecnico.sigma_adm: {significado: tensao admissivel (3.45), unidade: kPa, colisao: "3.30 usa P_adm para tensao de sapata; P e reservado a cargas"}
+  geotecnico.sigma_Rd: {significado: tensao resistente de calculo (3.48), unidade: kPa}
+  geotecnico.sigma_r_k: {significado: tensao de ruptura caracteristica (3.46 / R_k em 3.30-3.31), unidade: kPa}
+  geotecnico.sigma_ELS: {significado: maior tensao caracteristica que atende ao ELS (7.4 / 6.2.2.1), declarada pelo engenheiro, unidade: kPa, natureza: caracteristica}
+  cargas.N_k: {significado: forca vertical caracteristica no topo da fundacao, unidade: kN}
+  cargas.N_d: {significado: forca vertical de calculo no topo da fundacao, unidade: kN}
+  cargas.G_k: {significado: parcela permanente caracteristica da forca vertical, unidade: kN}
+  cargas.P_pp_k: {significado: peso proprio da sapata considerado (5.6), unidade: kN}
+  cargas.P_solo_k: {significado: peso do solo sobre a sapata, declarado pelo engenheiro, unidade: kN}
+  seguranca.FS_g: {significado: fator de seguranca global, unidade: adimensional, metodo: admissivel}
+  seguranca.gamma_m: {significado: coef. de ponderacao da resistencia, unidade: adimensional, metodo: calculo, colisao: "geotecnico.gamma_solo (peso especifico), estrutural.gamma_c, estrutural.gamma_s"}
+  seguranca.gamma_f: {significado: coef. de ponderacao das solicitacoes, unidade: adimensional, metodo: calculo}
+  execucao.e_lastro: {significado: espessura do lastro, unidade: m}
+  reservados_A5: [estrutural.d_util, estrutural.h, estrutural.sigma_aco, estrutural.gamma_c, estrutural.gamma_s, estrutural.alpha_v]
+  reservados_futuro: {ELS.C_limite: "C de 6.2.2.1 -- nao confundir com geotecnico.c_coesao", geotecnico.alpha_cotas: "alpha de 7.7.4 -- nao confundir com alpha da face (Bastos) nem alpha_v (6118)"}
+
+# -----------------------------------------------------------------------------
+# REGRAS (todas APROVADA). Implementar apenas estas.
+# -----------------------------------------------------------------------------
+regras:
+
+  # ---------------------------------------------------------------- guardas --
+  - id: NBR6122-3.28-guarda-fundacao-rasa
+    status: APROVADA
+    tipo: guarda
+    metodo: ambos
+    titulo: Enquadramento como fundacao rasa
+    norma: ABNT NBR 6122:2022
+    item: '3.28'
+    pagina: [5]
+    pagina_pdf: [17]
+    clausula_kb: NBR6122-2022-3.28
+    hash_trecho: sha256:29fc0033ef2fd98929cf8dd0059c7c2ca40a7088186f1b072b5018ae343833c5
+    trecho_literal:
+      - elemento de fundação cuja base está assentada em profundidade inferior a duas vezes a menor dimensão da fundação
+      - para esta definição adota-se a menor profundidade, caso esta não seja constante em todo o perí- metro da fundação
+    origem: LITERAL
+    sympy: ["D_assentamento < 2*Min(B, L)"]
+    variaveis:
+      D_assentamento: {unidade_pint: m, implementacao: geotecnico.D_assentamento, entrada_obrigatoria: true, nota: "menor profundidade da base, se nao constante"}
+      B: {unidade_pint: m, implementacao: geotecnico.B}
+      L: {unidade_pint: m, implementacao: geotecnico.L}
+    acao_se_violada: recusar (fora do dominio de fundacao rasa -- Secao 8, nao implementada)
+    observacao_A2: >-
+      Interage com 7.7.2: sapata 0,60 x 0,60 m em divisa com D = 1,5 m NAO e fundacao rasa
+      (1,5 >= 1,2) e deve ser recusada. Isso e comportamento correto, nao defeito.
+
+  - id: NBR6122-7.6.2-guarda-carga-centrada
+    status: APROVADA
+    tipo: guarda
+    metodo: ambos
+    titulo: Recusa de carga excentrica (inclui momento gerado por forca horizontal ou por pilar fora do centro)
+    norma: ABNT NBR 6122:2022
+    item: 7.6.2
+    pagina: [23, 24]
+    pagina_pdf: [35, 36]
+    clausula_kb: NBR6122-2022-7.6.2
+    hash_trecho: sha256:eed6b449ab45e526b01399ac49e74b940882c4986e7affd926af2d089095838e
+    trecho_literal:
+      - Uma fundação é solicitada por carga excêntrica quando estiver submetida a qualquer composição de forças que incluam ou gerem momentos na fundação.
+    itens_relacionados:
+      - {item: 7.6.3, clausula_kb: NBR6122-2022-7.6.3, pagina: [24], pagina_pdf: [36], hash_trecho: "sha256:986053f97c9b89ec05d2e63de9a289ab99c9ca1d70acc03c8bbdddb13b323abd"}
+    origem: LITERAL
+    entradas:
+      M_x: {unidade_pint: kN*m, entrada_obrigatoria: true}
+      M_y: {unidade_pint: kN*m, entrada_obrigatoria: true}
+      H_x: {unidade_pint: kN, entrada_obrigatoria: true}
+      H_y: {unidade_pint: kN, entrada_obrigatoria: true}
+      e_pilar_x: {unidade_pint: m, entrada_obrigatoria: true, nota: "distancia entre centroide do pilar e centro da base"}
+      e_pilar_y: {unidade_pint: m, entrada_obrigatoria: true}
+    condicao_de_aplicabilidade: "M_x == 0 e M_y == 0 e H_x == 0 e H_y == 0 e e_pilar_x == 0 e e_pilar_y == 0 (valores declarados, comparacao exata)"
+    acao_se_violada: recusar -- carga excentrica (7.6.2) / horizontal (7.6.3) fora do escopo v0
+    decisao_A2: >-
+      NAO basta omitir a excentricidade. Pela primeira frase de 7.6.2, qualquer forca que GERE
+      momento na base torna a carga excentrica: forca horizontal no topo da sapata gera momento
+      na base, e pilar deslocado do centro gera momento N*e. Sem esta guarda o v0 aplicaria a
+      distribuicao uniforme de 7.6.1 a um caso excentrico e produziria numero plausivel e errado
+      (contra a seguranca: ignora a tensao de borda e a area comprimida minima de 7.6.2).
+
+  - id: NBR6122-6.2.1.1.1-guarda-compressao
+    status: APROVADA
+    tipo: guarda
+    metodo: ambos
+    titulo: Tabela 1 vale so para solicitacoes de compressao
+    norma: ABNT NBR 6122:2022
+    item: 6.2.1.1.1
+    pagina: [17]
+    pagina_pdf: [29]
+    clausula_kb: NBR6122-2022-6.2.1.1.1
+    hash_trecho: sha256:607af8000aa7fc8b8e005d825f22eddd6baed1ff5bdc046a3042367e3db95dd3
+    trecho_literal:
+      - Tabela 1 – Fundações rasas – Fatores de segurança e coeficientes de ponderação para solicitações de compressão
+    origem: LITERAL
+    condicao_de_aplicabilidade: "N_k > 0 (ou N_d > 0) -- compressao"
+    acao_se_violada: recusar -- tracao/arrancamento (6.2.1 e; 6.2.1.1.2) nao extraido nem implementado
+
+  - id: NBR6122-7.5-guarda-casos-particulares
+    status: APROVADA
+    tipo: guarda
+    metodo: ambos
+    titulo: Recusa de rocha, solo expansivo e solo colapsivel; declaracao de solo homogeneo
+    norma: ABNT NBR 6122:2022
+    item: 7.5.1 / 7.5.2 / 7.5.3
+    pagina: [23]
+    pagina_pdf: [35]
+    clausula_kb: [NBR6122-2022-7.5.1, NBR6122-2022-7.5.2, NBR6122-2022-7.5.3]
+    hash_trecho:
+      '7.5.1': sha256:c48991ce5aed87a9fd9962f32e283b3931680d8bdcfa0ba1264d62643e575422
+      '7.5.2': sha256:2ee45412837570cd5e8f2ada7be51853b44b6fe8b9f916743fe6e7365ccd40bb
+      '7.5.3': sha256:7fb7227181bc542557a7d1063171b9e3ff93bf0e421d9492e35c241b3892a7eb
+    itens_relacionados:
+      - {item: '3.41', clausula_kb: NBR6122-2022-3.41, pagina: [8], pagina_pdf: [20], hash_trecho: "sha256:4498dda4fb0ff6636b91204a92e8f077ac748fbe9da60b93023836dee0160352"}
+      - {item: '3.43', clausula_kb: NBR6122-2022-3.43, pagina: [8], pagina_pdf: [20], hash_trecho: "sha256:02253077d5747ef471397e5bddb38838e73a121736eab09226370c99cb08fe74"}
+    trecho_literal:
+      - deve-se considerar as suas descontinuidades
+      - Nesses solos pode ocorrer o levantamento da fundação e a diminuição de resistência devido à expansão.
+      - Deve ser considerada a possibilidade de ocorrer o encharcamento
+    origem: LITERAL
+    entradas:
+      apoio_em_rocha: {tipo: bool, entrada_obrigatoria: true}
+      solo_expansivo: {tipo: bool, entrada_obrigatoria: true}
+      solo_colapsivel: {tipo: bool, entrada_obrigatoria: true}
+      solo_homogeneo_declarado: {tipo: bool, entrada_obrigatoria: true, nota: "declaracao do engenheiro; o software nao infere homogeneidade de perfil SPT"}
+    condicao_de_aplicabilidade: "apoio_em_rocha == False e solo_expansivo == False e solo_colapsivel == False e solo_homogeneo_declarado == True"
+    acao_se_violada: recusar -- caso particular exige consideracoes que o v0 nao modela
+
+  - id: NBR6122-6.3-guarda-vento-sem-majoracao
+    status: APROVADA
+    tipo: guarda
+    metodo: ambos
+    titulo: Majoracao por vento proibida no v0 (guarda explicita, nunca constante)
+    norma: ABNT NBR 6122:2022
+    item: 6.3.2 / 6.3.3
+    pagina: [21]
+    pagina_pdf: [33]
+    clausula_kb: [NBR6122-2022-6.3.2, NBR6122-2022-6.3.3]
+    hash_trecho:
+      '6.3.2': sha256:84d1ae1f85d1e0ce5c8cd840b8d049760a8f86ae726c011961ebb075f4081b34
+      '6.3.3': sha256:78db5d44f7c79a57cf267db30ae13f771c197de1c69fb81ccbcf75fcf3a49399
+    trecho_literal:
+      - podem ser majorados em até 15 %
+      - Caso a majoração não seja utilizada, podem ser aplicados todos os requisitos desta Norma relativos ao valor do fator de segurança global.
+      - podem ser majorados em até 10 %.
+    origem: LITERAL
+    entradas:
+      solicitar_majoracao_vento: {tipo: bool, entrada_obrigatoria: false, padrao_unico_permitido: false}
+    condicao_de_aplicabilidade: "nenhuma majoracao de sigma_adm ou sigma_Rd e aplicada; pedido de majoracao -> recusa"
+    acao_se_violada: recusar -- majoracao condicional (vento como acao variavel principal; 15 %/30 %/10 %; FS_g >= 1,6) nao implementada no v0
+    decisao_A2: >-
+      A majoracao e permissiva ("podem ser majorados") e condicionada ao vento ser a acao variavel
+      PRINCIPAL da combinacao. Nao majorar e sempre conforme. No v0 o fator de majoracao nao existe
+      no codigo (nem como constante 1,0 configuravel): qualquer pedido e recusado. A implementacao
+      futura exige: guarda vento_principal, lista fechada de obras para 30 % (so admissivel),
+      e resolucao da pendencia P-05 (FS_g >= 1,6 nominal x efetivo).
+
+  # ------------------------------------------------------ entradas e cargas --
+  - id: NBR6122-7.3-7.4-entrada-tensao-de-referencia
+    status: APROVADA
+    tipo: contrato_de_entrada
+    metodo: ambos
+    titulo: Tensao de referencia do terreno e fornecida e assumida pelo engenheiro
+    norma: ABNT NBR 6122:2022
+    item: 7.3 / 7.4 / 7.2
+    pagina: [22, 23]
+    pagina_pdf: [34, 35]
+    clausula_kb: [NBR6122-2022-7.3, NBR6122-2022-7.4, NBR6122-2022-7.2]
+    hash_trecho:
+      '7.3': sha256:294623f588e99fd1f86de27bd69e9e56d34b86c24520d7de16b56fa39ab3804a
+      '7.4': sha256:7496ae728c85ac50643c9f1c98a02d20dd203d8caa7c102f42f9a1bf98de464c
+      '7.2': sha256:07c8fd5eb46dddecde650a3788d0263554628e67e28d9aa5ebf1cec319d4d9b4
+    trecho_literal:
+      - A tensão admissível ou a tensão resistente de cálculo deve ser fixada a partir da utilização e interpretação de um ou mais dos procedimentos descritos em 7.3.1 a 7.3.3, além de atender ao disposto em 7.4.
+      - As tensões determinadas em 7.3 devem também atender ao estado limite de serviço.
+      - Devem ser considerados os seguintes fatores nessa determinação
+    origem: LITERAL
+    modos_de_entrada:
+      modo_A_tensao_final:
+        descricao: engenheiro fornece sigma_adm (admissivel, ja atendendo ELU e ELS por 3.45) ou sigma_Rd (calculo, ELU por 3.48) + sigma_ELS
+        entradas_obrigatorias:
+          admissivel: [metodo, sigma_adm, procedimento_7_3 (7.3.1 | 7.3.2 | 7.3.3), declaracao_ELS_atendido (7.4), declaracao_fatores_7_2]
+          calculo: [metodo, sigma_Rd, sigma_ELS, procedimento_7_3 (7.3.1 | 7.3.2 | 7.3.3), declaracao_fatores_7_2]
+      modo_B_ruptura_caracteristica:
+        descricao: engenheiro fornece sigma_r_k e o metodo de determinacao; o software aplica a Tabela 1 (regra NBR6122-T1-resistencia-ELU) e o ELS (regra NBR6122-7.1-7.4-ELU-e-ELS)
+        entradas_obrigatorias: [metodo, sigma_r_k, metodo_resistencia, sigma_ELS, declaracao_fatores_7_2]
+    decisao_A2: >-
+      A NBR 6122:2022 nao fornece formula de capacidade de carga nem correlacao SPT (7.3.2/7.3.3 so
+      autorizam metodos "nos dominios de validade"). O v0 NAO calcula sigma_r_k nem sigma_adm a
+      partir de ensaio. A tensao de referencia e entrada, com procedimento declarado, e o memorial
+      registra que a sua fixacao (12 fatores de 7.2) e responsabilidade do engenheiro.
+
+  - id: NBR6122-5.1-entrada-esforcos
+    status: APROVADA
+    tipo: contrato_de_entrada
+    metodo: ambos
+    titulo: Esforcos de entrada no topo da fundacao, com natureza (caracteristico/calculo) declarada
+    norma: ABNT NBR 6122:2022
+    item: '5.1'
+    pagina: [13, 14]
+    pagina_pdf: [25, 26]
+    clausula_kb: NBR6122-2022-5.1
+    hash_trecho: sha256:8f34d03b1f133b4c5abc82d57ebb871711436dc32050698ab5f0cfd91958600a
+    trecho_literal:
+      - Esses esforços devem ser fornecidos em valores de cálculo, já afetados pelos coeficientes de combinação e de ponderação da ABNT NBR 8681.
+      - Para o caso de o projeto de fundações ser desenvolvido utilizando fator de segurança global, devem ser solicitados ao projetista estrutural os valores dos coeficientes pelos quais as solicitações de cálculo devem ser divididas, em cada caso, para reduzi-las às solicitações características.
+    origem: LITERAL
+    sympy: ["Eq(N_k, N_d/coef_reducao)"]
+    variaveis:
+      N_k: {unidade_pint: kN, implementacao: cargas.N_k}
+      N_d: {unidade_pint: kN, implementacao: cargas.N_d}
+      coef_reducao: {unidade_pint: dimensionless, implementacao: cargas.coef_reducao_ao_caracteristico, entrada_obrigatoria: true, nota: "fornecido pelo projetista estrutural; SEM padrao (proibido assumir 1,4)"}
+    regras_de_uso:
+      admissivel: "aceita N_k; ou N_d + coef_reducao informado (N_k = N_d/coef_reducao). N_d sem coef_reducao -> recusa."
+      calculo: "aceita N_d (nenhum coeficiente aplicado a ele) ou N_k (aplicar gamma_f da regra NBR6122-T1c-gamma-f)."
+    decisao_A2: >-
+      NBR 8681 nao extraida NAO bloqueia o v0: pela 5.1 as combinacoes sao responsabilidade do
+      projetista da estrutura e chegam prontas. O software nao monta combinacoes.
+
+  - id: NBR6122-5.6-peso-proprio
+    status: APROVADA
+    tipo: formula
+    metodo: ambos
+    titulo: Peso proprio da sapata considerado na carga vertical
+    norma: ABNT NBR 6122:2022
+    item: '5.6'
+    pagina: [15]
+    pagina_pdf: [27]
+    clausula_kb: NBR6122-2022-5.6
+    hash_trecho: sha256:df73ee21436cca0a95c8bf22b247044203b2c8a9367aba4370e7773f3cadcd45
+    trecho_literal:
+      - Deve ser considerado o peso próprio de blocos de coroamento ou sapatas, ou no mínimo 5 % da carga vertical permanente.
+    origem: DERIVADA_DO_TEXTO
+    sympy: ["Eq(P_pp_k, Max(P_pp_real_k, frac_min_pp*G_k))"]
+    variaveis:
+      P_pp_k: {unidade_pint: kN, implementacao: cargas.P_pp_k}
+      P_pp_real_k: {unidade_pint: kN, implementacao: cargas.P_pp_real_k, entrada_obrigatoria: false, nota: "peso real calculado pelo engenheiro; ausente -> 0 (so vale o piso de 5 %), e o memorial registra 'peso real nao informado'"}
+      G_k: {unidade_pint: kN, implementacao: cargas.G_k, entrada_obrigatoria: true, nota: "se desconhecido, o engenheiro declara G_k_desconhecido e usa-se G_k := N_k (conservador, pois N_k >= G_k); sem N_k nem G_k -> recusa"}
+    constantes:
+      frac_min_pp: {valor: 0.05, unidade_pint: dimensionless, literal: "no mínimo 5 % da carga vertical permanente"}
+    resolucao_ambiguidade_A2: >-
+      Leitura do literal (conferido na pagina rasterizada, PDF p.27): a virgula separa dois objetos
+      alternativos de "Deve ser considerado": [o peso proprio de (blocos de coroamento ou sapatas)]
+      , ou [no minimo 5 % da carga vertical permanente]. O primeiro "ou" liga tipos de elemento; o
+      segundo liga alternativas de valor. Leitura gramatical = (i) alternativas, com 5 % como piso
+      da estimativa. Mas (i) literal permitiria adotar 5 % mesmo com peso real maior (inseguro), e
+      (ii) max() e a outra leitura do A1. A envoltoria max(P_pp_real_k, 0,05*G_k) e CONFORME sob
+      as duas leituras (usa o peso real quando >= 5 %, e o piso de 5 % caso contrario) e nunca e
+      menos conservadora que qualquer uma delas -- por isso nao depende de julgamento humano para
+      ser aprovada. Base e a carga vertical PERMANENTE (G_k), nao a total: o Kmaj = 1,1 de Bastos
+      (10 % da carga total, incluindo solo) e hipotese do autor, nao a norma. O texto nao trata do
+      solo sobre a sapata -> ver P_solo_k na regra NBR6122-7.6.1-tensao-uniforme.
+    no_metodo_de_calculo: "P_pp_k e valor caracteristico: entra multiplicado por gamma_f (regra NBR6122-T1c-gamma-f)."
+
+  # -------------------------------------------------------------- geometria --
+  - id: NBR6122-7.6.1-tensao-uniforme
+    status: APROVADA
+    tipo: formula
+    metodo: ambos
+    titulo: Tensao no terreno sob carga centrada, uniformemente distribuida; area minima da base
+    norma: ABNT NBR 6122:2022
+    item: 7.6.1
+    pagina: [23]
+    pagina_pdf: [35]
+    clausula_kb: NBR6122-2022-7.6.1
+    hash_trecho: sha256:26d28e2ac1d76564dc24651c2a13cb1648d388233dfc03a21776ad9c9ec09c52
+    trecho_literal:
+      - A área da fundação solicitada por cargas centradas deve ser tal que as tensões transmitidas ao terreno, admitidas uniformemente distribuídas, satisfaçam aos requisitos de segurança conforme Seção 6.
+    itens_relacionados:
+      - {item: '3.47', clausula_kb: NBR6122-2022-3.47, pagina: [9], pagina_pdf: [21], hash_trecho: "sha256:0bd33bce770266a1548dee60129a159aca11fd6ca4028465e45b0adaa0d2c612"}
+    origem: DERIVADA_DO_TEXTO
+    justificativa_derivacao: >-
+      A norma nao escreve sigma = N/(B*L). A expressao e consequencia matematica direta do literal
+      "admitidas uniformemente distribuidas": tensao uniforme sobre a area A em equilibrio com a
+      resultante vertical V vale V/A. Nao introduz coeficiente, hipotese ou parametro fora do texto.
+      Por isso e APROVADA, mas marcada DERIVADA_DO_TEXTO (nao LITERAL): o memorial deve citar
+      "7.6.1 (distribuicao uniforme admitida)" e nao apresentar a expressao como texto da norma.
+      Restricao do v0 (decisao de escopo do A2, nao da norma): base retangular, A = B*L.
+    sympy:
+      - "Eq(area_base, B*L)"
+      - "Eq(sigma_solo_k, (N_k + P_pp_k + P_solo_k)/area_base)"
+      - "Eq(sigma_solo_d, (N_d + gamma_f*(P_pp_k + P_solo_k))/area_base)"
+      - "Eq(area_min_adm, (N_k + P_pp_k + P_solo_k)/sigma_adm)"
+      - "Eq(area_min_calc, (N_d + gamma_f*(P_pp_k + P_solo_k))/sigma_Rd)"
+    variaveis:
+      area_base: {unidade_pint: m**2, implementacao: geotecnico.area_base}
+      B: {unidade_pint: m, implementacao: geotecnico.B, entrada_obrigatoria: true}
+      L: {unidade_pint: m, implementacao: geotecnico.L, entrada_obrigatoria: true}
+      sigma_solo_k: {unidade_pint: kPa, implementacao: geotecnico.sigma_solo_k, natureza: caracteristica, uso: "ELU no metodo admissivel; ELS nos dois metodos"}
+      sigma_solo_d: {unidade_pint: kPa, implementacao: geotecnico.sigma_solo_d, natureza: calculo, uso: "ELU no metodo de calculo"}
+      N_k: {unidade_pint: kN, implementacao: cargas.N_k}
+      N_d: {unidade_pint: kN, implementacao: cargas.N_d}
+      P_pp_k: {unidade_pint: kN, implementacao: cargas.P_pp_k}
+      P_solo_k: {unidade_pint: kN, implementacao: cargas.P_solo_k, entrada_obrigatoria: true, nota: "peso do solo sobre a sapata; declarado pelo engenheiro, pode ser 0; SEM padrao. A 6122 nao o regula; incluir ou nao depende de como sigma_adm foi definida (bruta x liquida) -- decisao do engenheiro, registrada no memorial (ver P-03)"}
+      gamma_f: {unidade_pint: dimensionless, implementacao: seguranca.gamma_f, metodo: calculo}
+      sigma_adm: {unidade_pint: kPa, implementacao: geotecnico.sigma_adm, metodo: admissivel}
+      sigma_Rd: {unidade_pint: kPa, implementacao: geotecnico.sigma_Rd, metodo: calculo}
+      area_min_adm: {unidade_pint: m**2, implementacao: geotecnico.area_min, metodo: admissivel, nota: "saida informativa; o v0 verifica B e L fornecidos"}
+      area_min_calc: {unidade_pint: m**2, implementacao: geotecnico.area_min, metodo: calculo}
+    escopo_v0: >-
+      Modo VERIFICACAO: B e L sao entradas; o software calcula area_min e verifica. A escolha de
+      proporcao B x L (balancos iguais, arredondamento a 5 cm) NAO e normativa e NAO esta aprovada
+      (pendencia P-02).
+
+  - id: NBR6122-7.7.1-dimensao-minima
+    status: APROVADA
+    tipo: verificacao
+    metodo: ambos
+    titulo: Dimensao minima em planta
+    norma: ABNT NBR 6122:2022
+    item: 7.7.1
+    pagina: [24]
+    pagina_pdf: [36]
+    clausula_kb: NBR6122-2022-7.7.1
+    hash_trecho: sha256:ad140cac8d6fb9c1c7ea8814f0a4c22fceb463db4e49fade7d14782df457b1ca
+    trecho_literal:
+      - Em planta, as sapatas isoladas ou os blocos não podem ter dimensões inferiores a 60 cm.
+    origem: LITERAL
+    sympy: ["B >= B_min", "L >= B_min"]
+    variaveis:
+      B: {unidade_pint: m, implementacao: geotecnico.B}
+      L: {unidade_pint: m, implementacao: geotecnico.L}
+    constantes:
+      B_min: {valor: 0.60, unidade_pint: m, literal: "60 cm"}
+    nota_A2: forma simbolica do A1 ("B >= 60", unidade so no comentario) REJEITADA na checagem dimensional; substituida por constante com unidade.
+
+  - id: NBR6122-7.7.2-profundidade-divisa
+    status: APROVADA
+    tipo: verificacao
+    metodo: ambos
+    titulo: Profundidade minima de apoio nas divisas
+    norma: ABNT NBR 6122:2022
+    item: 7.7.2
+    pagina: [24]
+    pagina_pdf: [36]
+    clausula_kb: NBR6122-2022-7.7.2
+    hash_trecho: sha256:e3a8828e0aa22221fdd39c54d891308684dd3124449b1e09d367f8bf8441655d
+    trecho_literal:
+      - Nas divisas com terrenos vizinhos, salvo quando a fundação for assente sobre rocha, a profundidade de apoio não pode ser inferior a 1,5 m.
+      - Em casos de obras cujas sapatas ou blocos tenham, em sua maioria, dimensões inferiores a 1,0 m, essa profundidade mínima pode ser reduzida.
+      - A cota de apoio de uma fundação deve ser tal que assegure que a capacidade de suporte do solo de apoio não seja influenciada pelas variações sazonais de clima ou por alterações de umidade.
+    origem: LITERAL
+    sympy: ["D_assentamento >= D_min_divisa"]
+    variaveis:
+      D_assentamento: {unidade_pint: m, implementacao: geotecnico.D_assentamento}
+    constantes:
+      D_min_divisa: {valor: 1.5, unidade_pint: m, literal: "1,5 m"}
+    entradas:
+      em_divisa: {tipo: bool, entrada_obrigatoria: true}
+      obra_maioria_sapatas_menores_1m: {tipo: bool, entrada_obrigatoria: true}
+      declaracao_cota_sem_influencia_sazonal: {tipo: bool, entrada_obrigatoria: true, nota: "requisito qualitativo do 2o paragrafo; declarado pelo engenheiro, registrado no memorial"}
+    logica:
+      - "em_divisa == False -> verificacao de 1,5 m nao se aplica (registrar)"
+      - "em_divisa == True e D_assentamento >= 1,5 m -> ATENDE"
+      - "em_divisa == True e D_assentamento < 1,5 m e obra_maioria_sapatas_menores_1m == False -> NAO_ATENDE"
+      - "em_divisa == True e D_assentamento < 1,5 m e obra_maioria_sapatas_menores_1m == True -> INCONCLUSIVO: a norma permite reduzir mas nao fixa valor; exige justificativa escrita do engenheiro no memorial. O software nao aprova nem inventa piso."
+      - "excecao 'assente sobre rocha' inalcancavel no v0 (rocha recusada pela guarda 7.5)"
+    nota_A2: forma simbolica do A1 ("D_apoio >= 1.5") REJEITADA na checagem dimensional; substituida por constante com unidade.
+
+  - id: NBR6122-7.7.3-lastro
+    status: APROVADA
+    tipo: verificacao
+    metodo: ambos
+    titulo: Lastro de concreto nao estrutural
+    norma: ABNT NBR 6122:2022
+    item: 7.7.3
+    pagina: [24]
+    pagina_pdf: [36]
+    clausula_kb: NBR6122-2022-7.7.3
+    hash_trecho: sha256:ab32305a5d3419f440ee1a8539a947dc9cafcb6082dced895ec2f91c844be2dd
+    trecho_literal:
+      - devem ser concretadas sobre um lastro de concreto não estrutural com no mínimo 5 cm de espessura, a ser lançado sobre toda a superfície de contato solo-fundação.
+    origem: LITERAL
+    sympy: ["e_lastro >= e_lastro_min"]
+    variaveis:
+      e_lastro: {unidade_pint: m, implementacao: execucao.e_lastro, entrada_obrigatoria: false}
+    constantes:
+      e_lastro_min: {valor: 0.05, unidade_pint: m, literal: "5 cm"}
+    logica:
+      - "e_lastro informado -> verificar e_lastro >= 0,05 m"
+      - "e_lastro ausente -> nota obrigatoria no memorial/desenho: lastro >= 5 cm sobre toda a superficie de contato"
+      - "o lastro nao entra em P_pp_k nem altera D_assentamento no v0"
+    nota_A2: forma simbolica do A1 ("e_lastro >= 5") REJEITADA na checagem dimensional; substituida por constante com unidade.
+
+  # --------------------------------------------------------------- seguranca --
+  - id: NBR6122-3.30-verificacao-admissivel
+    status: APROVADA
+    tipo: verificacao
+    metodo: admissivel
+    titulo: Condicao de seguranca -- metodo de valores admissiveis
+    norma: ABNT NBR 6122:2022
+    item: '3.30'
+    pagina: [6]
+    pagina_pdf: [18]
+    clausula_kb: NBR6122-2022-3.30
+    hash_trecho: sha256:d246cae14d3778a831b56d2fa1a3d3b6b939bfcb4ab7ff2f9c64458ca2de386c
+    trecho_literal:
+      - Padm = Rk/FSg e Padm ≥ Sk
+      - Padm é a tensão admissível de sapatas e tubulões e carga admissível de estacas
+    itens_relacionados:
+      - {item: '3.45', clausula_kb: NBR6122-2022-3.45, pagina: [8], pagina_pdf: [20], hash_trecho: "sha256:a6a74718c740ceff74f2e6f0c4e795205024ef53440bc40b8e51451e8415b209"}
+      - {item: '3.47', clausula_kb: NBR6122-2022-3.47, pagina: [9], pagina_pdf: [21], hash_trecho: "sha256:0bd33bce770266a1548dee60129a159aca11fd6ca4028465e45b0adaa0d2c612"}
+    origem: LITERAL_COM_VINCULACAO
+    sympy: ["sigma_solo_k <= sigma_adm"]
+    variaveis:
+      sigma_solo_k: {unidade_pint: kPa, implementacao: geotecnico.sigma_solo_k, metodo: admissivel}
+      sigma_adm: {unidade_pint: kPa, implementacao: geotecnico.sigma_adm, metodo: admissivel}
+    vinculacao_A2: >-
+      Checagem dimensional: na leitura literal, P_adm (tensao, para sapatas) >= S_k ("solicitacoes
+      caracteristicas", esforcos) e dimensionalmente inconsistente -- defeito da redacao da FONTE
+      (conferido na pagina rasterizada), nao da transcricao do A1. Para sapatas, o unico S_k
+      homogeneo com P_adm e a "tensao de trabalho ... em valores caracteristicos" definida em 3.47,
+      i.e. sigma_solo_k da regra NBR6122-7.6.1-tensao-uniforme. Vinculacao S_k := sigma_solo_k.
+
+  - id: NBR6122-3.31-verificacao-calculo
+    status: APROVADA
+    tipo: verificacao
+    metodo: calculo
+    titulo: Condicao de seguranca -- metodo de valores de calculo
+    norma: ABNT NBR 6122:2022
+    item: '3.31'
+    pagina: [6]
+    pagina_pdf: [18]
+    clausula_kb: NBR6122-2022-3.31
+    hash_trecho: sha256:bc4779697b8995fe5b2f7d08ffb31aa69424994beda03d535d09502a234234aa
+    trecho_literal:
+      - Rd = Rk/γm e Sd = Sk ∙ γf e Rd ≥ Sd
+      - Rd representa a tensão resistente de cálculo para sapatas ou tubulões
+    itens_relacionados:
+      - {item: '3.48', clausula_kb: NBR6122-2022-3.48, pagina: [9], pagina_pdf: [21], hash_trecho: "sha256:41389c277b0b322510ab46d71af79fc57b09dbe50d5d5b050da1ef83cad1e65a"}
+    origem: LITERAL_COM_VINCULACAO
+    sympy: ["sigma_solo_d <= sigma_Rd"]
+    variaveis:
+      sigma_solo_d: {unidade_pint: kPa, implementacao: geotecnico.sigma_solo_d, metodo: calculo}
+      sigma_Rd: {unidade_pint: kPa, implementacao: geotecnico.sigma_Rd, metodo: calculo}
+    vinculacao_A2: >-
+      Mesmo defeito dimensional de 3.30 na leitura literal (R_d tensao x S_d solicitacao). Para
+      sapatas, S_d := sigma_solo_d (regra NBR6122-7.6.1-tensao-uniforme), com gamma_f aplicado so
+      as parcelas caracteristicas (regra NBR6122-T1c-gamma-f).
+
+  - id: NBR6122-T1-resistencia-ELU
+    status: APROVADA
+    tipo: formula
+    metodo: ambos
+    titulo: Tabela 1 -- tensao admissivel / resistente de calculo a partir da ruptura (ELU), compressao
+    norma: ABNT NBR 6122:2022
+    item: 6.2.1.1.1 (Tabela 1)
+    pagina: [17]
+    pagina_pdf: [29]
+    clausula_kb: NBR6122-2022-6.2.1.1.1
+    hash_trecho: sha256:607af8000aa7fc8b8e005d825f22eddd6baed1ff5bdc046a3042367e3db95dd3
+    trecho_literal:
+      - A verificação da segurança pode ser feita com valores característicos e fator de segurança global ou com valores de cálculo, obtidos pela aplicação de coeficientes de ponderação aos valores característicos, devendo ser obedecidos os valores da Tabela 1.
+      - Semiempíricos a Valores propostos no próprio processo e no mínimo 2,15 Valores propostos no próprio processo e no mínimo 3,00 Analíticos b 2,15 3,00
+      - acrescidos de duas ou mais provas de carga, necessariamente executadas na fase de projeto, conforme 7.3.1 1,40 2,00
+    origem: LITERAL
+    sympy:
+      - "Eq(sigma_adm_ELU, sigma_r_k/FS_g)"
+      - "Eq(sigma_Rd_ELU, sigma_r_k/gamma_m)"
+    variaveis:
+      sigma_r_k: {unidade_pint: kPa, implementacao: geotecnico.sigma_r_k, entrada_obrigatoria: true}
+      sigma_adm_ELU: {unidade_pint: kPa, implementacao: geotecnico.sigma_adm_ELU, metodo: admissivel}
+      sigma_Rd_ELU: {unidade_pint: kPa, implementacao: geotecnico.sigma_Rd_ELU, metodo: calculo}
+      FS_g: {unidade_pint: dimensionless, implementacao: seguranca.FS_g, metodo: admissivel}
+      gamma_m: {unidade_pint: dimensionless, implementacao: seguranca.gamma_m, metodo: calculo}
+    tabela:
+      semiempirico:
+        FS_g: {minimo: 3.00, valor: "proposto no proprio processo (entrada obrigatoria), >= 3,00"}
+        gamma_m: {minimo: 2.15, valor: "proposto no proprio processo (entrada obrigatoria), >= 2,15"}
+        condicao: "nota a: atendendo ao dominio de validade para o terreno local (declaracao obrigatoria do engenheiro)"
+      analitico:
+        FS_g: {valor: 3.00}
+        gamma_m: {valor: 2.15}
+        condicao: "nota b: sem aplicacao de coeficientes de ponderacao aos parametros de resistencia do terreno (declaracao obrigatoria)"
+      com_provas_de_carga:
+        FS_g: {valor: 2.00}
+        gamma_m: {valor: 1.40}
+        condicao: "n_provas_de_carga >= 2 (entrada inteira obrigatoria) E executadas na fase de projeto conforme 7.3.1 (declaracao obrigatoria); senao a linha e inacessivel"
+    entradas:
+      metodo_resistencia: {tipo: "enum {semiempirico, analitico, com_provas_de_carga}", entrada_obrigatoria: true}
+    acao_se_violada: "FS_g ou gamma_m informado abaixo do minimo da linha -> recusa; linha com provas de carga sem n >= 2 / fase de projeto -> recusa"
+    conferencia_A2: >-
+      Celulas conferidas na pagina rasterizada (PDF p.29). Consistencia interna: FS_g ~ gamma_m *
+      gamma_f com gamma_f = 1,4: 2,15*1,4 = 3,01 ~ 3,00 e 1,40*1,4 = 1,96 ~ 2,00 -- confirma que
+      as colunas nao foram trocadas. A saida desta regra e SO o limite de ELU; a tensao de projeto
+      exige tambem ELS (regra NBR6122-7.1-7.4-ELU-e-ELS).
+
+  - id: NBR6122-T1c-gamma-f
+    status: APROVADA
+    tipo: constante
+    metodo: calculo
+    titulo: gamma_f = 1,4 sobre esforco disponivel apenas em valor caracteristico
+    norma: ABNT NBR 6122:2022
+    item: 6.2.1.1.1 (Tabela 1, nota c)
+    pagina: [17]
+    pagina_pdf: [29]
+    clausula_kb: NBR6122-2022-6.2.1.1.1
+    hash_trecho: sha256:607af8000aa7fc8b8e005d825f22eddd6baed1ff5bdc046a3042367e3db95dd3
+    trecho_literal:
+      - Em todas as situações de γm, γf = 1,4 (majoração) para o esforço atuante, se disponível apenas o seu valor característico; se já fornecido o valor de cálculo, nenhum coeficiente de ponderação deve ser aplicado a ele.
+    origem: LITERAL
+    sympy: ["Eq(N_d, gamma_f*N_k)"]
+    variaveis:
+      N_d: {unidade_pint: kN, implementacao: cargas.N_d}
+      N_k: {unidade_pint: kN, implementacao: cargas.N_k}
+      gamma_f: {unidade_pint: dimensionless, implementacao: seguranca.gamma_f}
+    constantes_nomeadas:
+      GAMMA_F_6122_T1C: {valor: 1.4, unidade_pint: dimensionless}
+    logica:
+      - "N_d fornecido -> usar N_d sem nenhum coeficiente"
+      - "so N_k fornecido -> N_d = 1,4 * N_k"
+      - "P_pp_k e P_solo_k (sempre caracteristicos) -> multiplicar por 1,4"
+      - "nao se aplica ao metodo admissivel (RT-01)"
+
+  - id: NBR6122-7.1-7.4-ELU-e-ELS
+    status: APROVADA
+    tipo: formula
+    metodo: ambos
+    titulo: Tensao de projeto atende simultaneamente ELU e ELS
+    norma: ABNT NBR 6122:2022
+    item: 7.1 / 7.4
+    pagina: [21, 23]
+    pagina_pdf: [33, 35]
+    clausula_kb: [NBR6122-2022-7.1, NBR6122-2022-7.4]
+    hash_trecho:
+      '7.1': sha256:345202eaac7529a694582fc6dbf391e648b3421e2dd7c615934f56b2baf2b0cf
+      '7.4': sha256:7496ae728c85ac50643c9f1c98a02d20dd203d8caa7c102f42f9a1bf98de464c
+    trecho_literal:
+      - Essas tensões devem satisfazer simultaneamente aos estados limites últimos (ELU) e de serviço (ELS), para cada elemento isolado de fundação, bem como para o conjunto.
+      - A tensão admissível ou tensão resistente de cálculo é, neste caso, o valor máximo da tensão aplicada ao terreno que atenda aos requisitos em 6.2.2.
+    itens_relacionados:
+      - {item: 6.2.2.1, clausula_kb: NBR6122-2022-6.2.2.1, pagina: [20], pagina_pdf: [32], hash_trecho: "sha256:479e98952ca73226d73e7eaa166f1f218c2974770bc9ac6369be495032aaf743"}
+    origem: DERIVADA_DO_TEXTO
+    justificativa_derivacao: >-
+      "Satisfazer simultaneamente" ELU e ELS = atender aos dois limites. No metodo admissivel, em que
+      ELU e ELS se expressam ambos em valores caracteristicos, isso equivale a sigma_adm = menor dos
+      dois limites. No metodo de calculo NAO se toma o minimo: o ELU compara valores de calculo
+      (sigma_solo_d <= sigma_Rd_ELU, regra 3.31) e o ELS compara valores CARACTERISTICOS
+      (6.2.2.1: "calculado considerando-se ... acoes caracteristicas"), logo e uma segunda
+      verificacao separada, sigma_solo_k <= sigma_ELS. Tomar min(sigma_Rd, sigma_ELS) misturaria
+      bases (RT-01). Operacoes logicas, sem parametro novo.
+    sympy:
+      - "Eq(sigma_adm, Min(sigma_adm_ELU, sigma_ELS))"
+      - "sigma_solo_k <= sigma_ELS"
+    variaveis:
+      sigma_adm: {unidade_pint: kPa, implementacao: geotecnico.sigma_adm, metodo: admissivel}
+      sigma_adm_ELU: {unidade_pint: kPa, implementacao: geotecnico.sigma_adm_ELU, metodo: admissivel}
+      sigma_ELS: {unidade_pint: kPa, implementacao: geotecnico.sigma_ELS, entrada_obrigatoria: true, natureza: caracteristica, nota: "maior tensao caracteristica que atende 6.2.2 (E_k <= C), determinada pelo engenheiro; o v0 NAO calcula recalque"}
+      sigma_solo_k: {unidade_pint: kPa, implementacao: geotecnico.sigma_solo_k, natureza: caracteristica}
+    aplica_se_a:
+      admissivel_modo_B: "sigma_adm = Min(sigma_adm_ELU, sigma_ELS)"
+      admissivel_modo_A: "sigma_adm fornecido ja atende ELU e ELS por definicao (3.45) -- declaracao obrigatoria, sigma_ELS dispensado"
+      calculo_modos_A_e_B: "verificacao adicional obrigatoria sigma_solo_k <= sigma_ELS; sigma_Rd (3.48) e definido so pela ruptura, logo o ELS nunca esta implicito nele"
+    decisao_A2: >-
+      Achado adversarial: sigma_r_k/FS_g sozinho NAO e a "tensao admissivel" da 3.45 (que exige ELU
+      E ELS). Sem esta regra o v0 apresentaria o limite de ELU como tensao admissivel. A saida da
+      Tabela 1 deve ser rotulada sigma_adm_ELU / sigma_Rd_ELU e nunca exibida como tensao de projeto.
+      "Para o conjunto" (efeito de grupo) nao e verificado no v0 -> memorial.
+
+  # ---------------------------------------------------------------- memorial --
+  - id: NBR6122-6.2.1-7.1-memorial-nao-verificado
+    status: APROVADA
+    tipo: nota_memorial
+    metodo: ambos
+    titulo: Lista obrigatoria de verificacoes NAO realizadas pelo v0
+    norma: ABNT NBR 6122:2022
+    item: 6.2.1 / 7.1 / 6.2.2.2.1 / 7.8.1
+    pagina: [16, 17, 20, 21, 25]
+    pagina_pdf: [28, 29, 32, 33, 37]
+    clausula_kb: [NBR6122-2022-6.2.1, NBR6122-2022-7.1, NBR6122-2022-6.2.2.2.1, NBR6122-2022-7.8.1]
+    hash_trecho:
+      '6.2.1': sha256:93e00328440a4e2a16823e807c2c4cbf8afc36b0f13df171f0ffe68bf04505bf
+      '7.1': sha256:345202eaac7529a694582fc6dbf391e648b3421e2dd7c615934f56b2baf2b0cf
+      '6.2.2.2.1': sha256:404fa99b609e536ee4066dda06d3f046e9029c550b3608192f5a9f87d378ed9f
+      '7.8.1': sha256:f8734ac6d993edc2cf88a28c29626f5434ff7a4a756dd46cd526bbb9fc2865df
+    trecho_literal:
+      - Os seguintes mecanismos podem caracterizar o estado limite último
+      - A elaboração do memorial de cálculo é obrigatória, devendo estar disponível quando solicitado.
+      - O dimensionamento estrutural de sapatas de concreto deve atender à ABNT NBR 6118.
+    origem: LITERAL
+    conteudo_obrigatorio_do_memorial:
+      - "ELU 6.2.1 a) perda de estabilidade global -- NAO VERIFICADO"
+      - "ELU 6.2.1 b) esgotamento da resistencia do terreno -- verificado SOMENTE contra a tensao de referencia fornecida pelo engenheiro"
+      - "ELU 6.2.1 c) deslizamento -- NAO VERIFICADO (sem carga horizontal por guarda)"
+      - "ELU 6.2.1 d) ruptura estrutural por movimentos da fundacao -- NAO VERIFICADO"
+      - "ELU 6.2.1 e) arrancamento/tracao -- NAO VERIFICADO (compressao por guarda)"
+      - "ELU 6.2.1 f) carregamentos transversais -- NAO VERIFICADO"
+      - "ELU 6.2.1 g) ruptura estrutural da sapata (NBR 6118, 7.8.1) -- NAO VERIFICADO: sem regras aprovadas"
+      - "ELS 6.2.2 recalques/levantamentos/vibracoes -- NAO CALCULADO; limite de ELS declarado pelo engenheiro"
+      - "7.1 verificacao do conjunto de fundacoes -- NAO VERIFICADO (v0 trata elemento isolado)"
+      - "7.7.4 fundacoes vizinhas em cotas diferentes -- NAO VERIFICADO"
+      - "7.2 os 12 fatores da tensao admissivel foram considerados pelo engenheiro (declaracao), nao pelo software"
+
+# -----------------------------------------------------------------------------
+# FORA DO ESCOPO v0 -- PROIBIDO IMPLEMENTAR. Nao sao regras; nao contam no GATE 1.
+# -----------------------------------------------------------------------------
+fora_do_escopo_v0:
+  - id: LAC-01-capacidade-de-carga-analitica
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.3.2
+    motivo: >-
+      A 6122 so autoriza "metodos analiticos (teorias de capacidade de carga) nos dominios de
+      validade"; nao fornece nenhuma equacao (Terzaghi/Vesic/Hansen) nem fatores. Sem fonte
+      normativa aprovavel. Destrava so com decisao do usuario sobre bibliografia como fonte
+      (pendencia P-01) e nova extracao do A1.
+    afeta: calc_core/geotecnico/capacidade.py (A4) -- NAO criar
+  - id: LAC-02-metodos-semiempiricos
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.3.3
+    motivo: nenhuma correlacao SPT/CPT na norma; mesma dependencia de P-01.
+    afeta: calc_core/geotecnico/semiempirico.py (A4) -- NAO criar
+  - id: LAC-03-prova-de-carga-em-placa
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.3.1
+    motivo: ensaio pela NBR 6489 (fora do acervo); interpretacao modelo-prototipo e julgamento de engenharia.
+    afeta: calc_core/geotecnico/prova_carga.py (A4) -- NAO criar
+  - id: LAC-04-recalques-ELS
+    status: BLOQUEADA
+    item: NBR 6122:2022 6.2.2.1 / 7.4
+    motivo: E_k <= C sem metodo de calculo de E_k nem valor de C na norma (6.2.2.2.2 lista fatores, sem numeros).
+    afeta: calc_core/geotecnico/recalques.py (A4) -- NAO criar
+  - id: LAC-05-carga-excentrica
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.6.2 (area comprimida >= 2/3 caract. / >= 50 % calculo; tensao de borda)
+    motivo: fora do escopo minimo. Registro do A1 verificado (literal e hash OK; sympy dimensionalmente OK). A guarda de recusa esta APROVADA em `regras`.
+  - id: LAC-06-carga-horizontal
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.6.3 / 6.2.1.1.2
+    motivo: fora do escopo minimo; 6.2.1.1.2 nao extraido.
+  - id: LAC-07-majoracao-vento
+    status: BLOQUEADA
+    item: NBR 6122:2022 6.3.1 / 6.3.2 / 6.3.3
+    motivo: fora do escopo minimo; guarda "sem majoracao" APROVADA em `regras`; pendencia P-05 (FS_g >= 1,6 nominal x efetivo).
+  - id: LAC-08-cotas-diferentes
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.7.4
+    motivo: exige fundacoes vizinhas (v0 = elemento isolado) e a norma nao define "solos pouco resistentes" x "resistentes" (pendencia P-06).
+  - id: LAC-09-estrutural
+    status: BLOQUEADA
+    item: NBR 6122:2022 7.8.1 / 7.8.2; NBR 6118:2023 + Emenda 1
+    motivo: NBR 6118 nao extraida. A5 sem nenhuma regra. Bastos Ex.1 partes b-d nao podem ser usadas como teste ainda.
+  - id: LAC-10-combinacoes
+    status: BLOQUEADA
+    item: NBR 8681:2025
+    motivo: "nao extraida. Nao bloqueia o v0 geotecnico (5.1 -- esforcos chegam combinados). Bloqueia calc_core/estrutural/combinacoes.py."
+  - id: LAC-11-proporcao-BxL
+    status: PENDENTE_HUMANO
+    item: nenhum (convencao de projeto; Bastos 2023 Eq. 1.5/1.9)
+    motivo: balancos iguais e arredondamento a 5 cm nao sao normativos. v0 opera em modo verificacao (B, L de entrada). Pendencia P-02.
+  - id: LAC-12-extracoes-faltantes
+    status: DEVOLVIDO_A1
+    item: NBR 6122:2022 5.3 (subpressao) e 6.1.1 (regiao representativa)
+    motivo: >-
+      Relevantes para "solo homogeneo" e para qualquer futura modelagem de NA (5.3 proibe
+      considerar o efeito favoravel da subpressao salvo demonstracao). Nao bloqueiam o v0, que nao
+      modela agua nem reduz cargas por subpressao.
+
+# -----------------------------------------------------------------------------
+# Veredito do A2 sobre cada registro de kb/formulas.yaml e kb/exemplos.yaml
+# -----------------------------------------------------------------------------
+veredito_registros_A1:
+  F-NBR6122-3.30: APROVADA com vinculacao S_k := sigma_solo_k (defeito dimensional da fonte, nao do A1); unidades_nota do A1 contem afirmacao falsa -- devolvido
+  F-NBR6122-3.31: APROVADA com vinculacao S_d := sigma_solo_d (idem)
+  F-NBR6122-6.2.2.1: verificado; sem uso no v0 (LAC-04)
+  C-NBR6122-T1: APROVADA (celulas conferidas visualmente; consistencia FS_g ~ gamma_m*gamma_f)
+  R-NBR6122-5.6-peso-proprio: APROVADA com resolucao da ambiguidade (envoltoria max)
+  R-NBR6122-7.6.2-area-comprimida: BLOQUEADA (LAC-05); guarda de recusa APROVADA
+  R-NBR6122-7.7.1-dimensao-minima: literal APROVADO; forma simbolica REJEITADA (dimensional) -- devolvido
+  R-NBR6122-7.7.2-profundidade-minima-divisa: literal APROVADO; forma simbolica REJEITADA (dimensional) -- devolvido
+  R-NBR6122-7.7.3-lastro: literal APROVADO; forma simbolica REJEITADA (dimensional) -- devolvido
+  R-NBR6122-7.7.4-cotas-diferentes: BLOQUEADA (LAC-08)
+  R-NBR6122-6.3.2-vento-admissivel: BLOQUEADA (LAC-07)
+  R-NBR6122-6.3.3-vento-calculo: BLOQUEADA (LAC-07)
+  BASTOS-2023-EX1: >-
+    parte a) utilizavel pelo A7 como teste do v0 SE a hipotese do autor for passada como entrada:
+    P_pp_real_k = 0,10*N_k = 125 kN (Kmaj = 1,1, inclui solo) e P_solo_k = 0 (ja embutido) ->
+    area_min = 5,2885 m2 (reproduz 52 885 cm2, ver sanity SC-02). B e L do autor entram como
+    entrada (modo verificacao). Partes b)-d) bloqueadas (LAC-09).
+  CINTRA-2011-CAP2-EX1: >-
+    sigma_r nao e reproduzivel pelo software (LAC-01). Utilizavel apenas como valor de entrada
+    sigma_r_k (modo B) em testes da regra NBR6122-T1-resistencia-ELU.
+
+# -----------------------------------------------------------------------------
+# Passo 4 -- sanity check numerico (tools/checar_dimensoes.py --sanity)
+# -----------------------------------------------------------------------------
+sanity_check:
+  nota: >-
+    N_SPT = 15 nao pode ser convertido em tensao por nenhuma regra aprovada (LAC-01/02). Usa-se o
+    sigma_r do exemplo Cintra 2011 Cap.2 Ex.1a (argila rija, N_SPT = 15, metodo analitico, hipoteses
+    do autor) como entrada sigma_r_k. Faixa tau_Rd (0,3-1,5 MPa) nao aplicavel: nenhuma regra
+    estrutural no v0.
+  casos:
+    - id: SC-01
+      descricao: instancia tipica (B = 2,0 m, L = 3,0 m, D = 1,5 m, N_SPT = 15 via sigma_r de Cintra)
+      valores:
+        sigma_r_k: {valor: 890, unidade_pint: kPa}
+        FS_g: {valor: 3.0, unidade_pint: dimensionless}
+        gamma_m: {valor: 2.15, unidade_pint: dimensionless}
+        gamma_f: {valor: 1.4, unidade_pint: dimensionless}
+        sigma_ELS: {valor: 300, unidade_pint: kPa}
+        B: {valor: 2.0, unidade_pint: m}
+        L: {valor: 3.0, unidade_pint: m}
+        D_assentamento: {valor: 1.5, unidade_pint: m}
+        N_k: {valor: 1400, unidade_pint: kN}
+        G_k: {valor: 1000, unidade_pint: kN}
+        P_pp_real_k: {valor: 90, unidade_pint: kN}
+        P_solo_k: {valor: 97.2, unidade_pint: kN}
+        frac_min_pp: {valor: 0.05, unidade_pint: dimensionless}
+        B_min: {valor: 0.60, unidade_pint: m}
+        dois: {valor: 2, unidade_pint: dimensionless}
+      passos:
+        - {alvo: sigma_adm_ELU, expr: "sigma_r_k/FS_g", unidade_pint: kPa, regra: NBR6122-T1-resistencia-ELU}
+        - {alvo: sigma_Rd_ELU, expr: "sigma_r_k/gamma_m", unidade_pint: kPa, regra: NBR6122-T1-resistencia-ELU}
+        - {alvo: sigma_adm, expr: "Min(sigma_adm_ELU, sigma_ELS)", unidade_pint: kPa, regra: NBR6122-7.1-7.4-ELU-e-ELS}
+        - {alvo: P_pp_k, expr: "Max(P_pp_real_k, frac_min_pp*G_k)", unidade_pint: kN, regra: NBR6122-5.6-peso-proprio}
+        - {alvo: area_base, expr: "B*L", unidade_pint: m**2, regra: NBR6122-7.6.1-tensao-uniforme}
+        - {alvo: sigma_solo_k, expr: "(N_k + P_pp_k + P_solo_k)/area_base", unidade_pint: kPa, regra: NBR6122-7.6.1-tensao-uniforme}
+        - {alvo: N_d, expr: "gamma_f*N_k", unidade_pint: kN, regra: NBR6122-T1c-gamma-f}
+        - {alvo: sigma_solo_d, expr: "(N_d + gamma_f*(P_pp_k + P_solo_k))/area_base", unidade_pint: kPa, regra: NBR6122-7.6.1-tensao-uniforme}
+        - {alvo: consist_T1, expr: "gamma_m*gamma_f", unidade_pint: dimensionless, regra: NBR6122-T1-resistencia-ELU}
+      faixas:
+        sigma_adm_ELU: {min: 50, max: 600, unidade_pint: kPa}
+        sigma_adm: {min: 50, max: 600, unidade_pint: kPa}
+        sigma_solo_k: {min: 50, max: 600, unidade_pint: kPa}
+        consist_T1: {min: 2.98, max: 3.02, unidade_pint: dimensionless}
+      condicoes:
+        - {expr: "D_assentamento < dois*Min(B, L)", esperado: true}
+        - {expr: "B >= B_min", esperado: true}
+        - {expr: "sigma_solo_k <= sigma_adm", esperado: true}
+        - {expr: "sigma_solo_d <= sigma_Rd_ELU", esperado: true}
+        - {expr: "sigma_solo_k <= sigma_ELS", esperado: true}
+    - id: SC-02
+      descricao: Bastos 2023 Ex.1 parte a) com a hipotese do autor como entrada (Kmaj = 1,1 -> P_pp_real_k = 125 kN incluindo solo)
+      valores:
+        N_k: {valor: 1250, unidade_pint: kN}
+        G_k: {valor: 1250, unidade_pint: kN}
+        P_pp_real_k: {valor: 125, unidade_pint: kN}
+        P_solo_k: {valor: 0, unidade_pint: kN}
+        frac_min_pp: {valor: 0.05, unidade_pint: dimensionless}
+        sigma_adm: {valor: 0.26, unidade_pint: MPa}
+        B: {valor: 2.05, unidade_pint: m}
+        L: {valor: 2.65, unidade_pint: m}
+      passos:
+        - {alvo: P_pp_k, expr: "Max(P_pp_real_k, frac_min_pp*G_k)", unidade_pint: kN, regra: NBR6122-5.6-peso-proprio}
+        - {alvo: area_min_adm, expr: "(N_k + P_pp_k + P_solo_k)/sigma_adm", unidade_pint: m**2, regra: NBR6122-7.6.1-tensao-uniforme}
+        - {alvo: area_base, expr: "B*L", unidade_pint: m**2, regra: NBR6122-7.6.1-tensao-uniforme}
+        - {alvo: sigma_solo_k, expr: "(N_k + P_pp_k + P_solo_k)/area_base", unidade_pint: kPa, regra: NBR6122-7.6.1-tensao-uniforme}
+      esperado:
+        area_min_adm: {valor: 5.2885, tol_abs: 0.0005, unidade_pint: m**2}
+        area_base: {valor: 5.4325, tol_abs: 0.0005, unidade_pint: m**2}
+      condicoes:
+        - {expr: "sigma_solo_k <= sigma_adm", esperado: true}
+    - id: SC-03
+      descricao: interacao 7.7.2 x 3.28 -- sapata minima 0,60 x 0,60 m em divisa com D = 1,5 m deve ser RECUSADA como nao-rasa
+      valores:
+        B: {valor: 0.60, unidade_pint: m}
+        L: {valor: 0.60, unidade_pint: m}
+        D_assentamento: {valor: 1.5, unidade_pint: m}
+        dois: {valor: 2, unidade_pint: dimensionless}
+      passos: []
+      condicoes:
+        - {expr: "D_assentamento < dois*Min(B, L)", esperado: false}
