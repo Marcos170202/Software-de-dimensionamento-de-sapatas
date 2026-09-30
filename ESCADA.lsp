@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ESCADA.lsp
-;;;  FORMAS E ARMADURA DE ESCADAS DE CONCRETO ARMADO  --  v1.4
+;;;  FORMAS E ARMADURA DE ESCADAS DE CONCRETO ARMADO  --  v1.5
 ;;;
 ;;;  Desenvolvido por Baluarte Solucoes Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -27,6 +27,20 @@
 ;;;                    (viga invertida <-> normal), Espelhar (outro lado),
 ;;;                    Girar (graus), Desnivel (topo, cm), Estender, Editar.
 ;;;                    Tudo e refeito (planta, cortes, armadura).
+;;;    ESCADAGRAF .... EDICAO GRAFICA: quadrados (alcas) nos desenhos; clique,
+;;;                    arraste e clique (ou digite o valor + ENTER):
+;;;                    desenvolvimento - fim do lance (+/- degraus), 1.o degrau
+;;;                    (piso x espelho), espessuras, fim do patamar, posicao /
+;;;                    altura / largura das vigas; planta - fim dos trechos,
+;;;                    vigas (mover, pontas = extensoes), linhas de corte;
+;;;                    armadura - inicio / fim / meio de cada barra (gruda nos
+;;;                    pontos da escada).  Teclas: A apagar, E editar (janela),
+;;;                    D dividir lance (corta o lance e poe um patamar), C novo
+;;;                    corte, N nova barra (2 cliques no corte armado), R
+;;;                    armadura automatica, Q quantitativo, J janela, Z desfazer.
+;;;    ESCADAQTD ..... QUANTITATIVO de concreto (m3) e formas (m2: fundo,
+;;;                    laterais, espelhos) por trecho e por viga, aco (kgf) e
+;;;                    taxa; na linha de comando e na tabela do desenho.
 ;;;    ESCADAEDIT .... clique em qualquer desenho de uma escada: a janela abre
 ;;;                    com todos os dados e TODOS os desenhos (planta e cortes)
 ;;;                    sao refeitos no lugar (mesmo que tenham sido movidos)
@@ -119,7 +133,7 @@
 
 (vl-load-com)
 
-(setq ES:VERSAO    "1.4"
+(setq ES:VERSAO    "1.5"
       ES:LAY-CORTE "EST_FormaCorte"
       ES:LAY-VISTA "EST_FormaVista"
       ES:LAY-OCULTA "EST_FormaOculta"
@@ -174,7 +188,8 @@
                     ES:DPLA ES:DLON ES:DTRA ES:TRAL ES:LATE ES:LATD
                     ES:MTIPO ES:MDES ES:MNDG ES:MPIS ES:MHL ES:MHP ES:MLP
                     ES:NIVFMT ES:PAVS ES:SECFILL ES:LEGH ES:HESC
-                    ES:FCK ES:COB ES:AIB ES:AIS ES:ASB ES:ASS ES:ADB ES:ADS ES:NEGF ES:DARM))
+                    ES:FCK ES:COB ES:AIB ES:AIS ES:ASB ES:ASS ES:ADB ES:ADS ES:NEGF ES:DARM
+                    ES:DQTD))
 
 ;;; ==========================================================================
 ;;;  1.  UTILITARIOS
@@ -1041,6 +1056,7 @@
       (if (> (abs (nth 16 g)) 0.001)
         (es:dimv (nth 3 g) (nth 11 g) (+ xmax (* 0.5 c)) xd (es:f (nth 16 g))))))
   (es:dimv 0.0 y1 (+ xmax (* 0.5 c)) (+ xd (* 2.5 c)) (es:f y1))
+  (es:alcas-lon gs)
   ;; ---- titulo
   (setq bb ES:CAIXA)
   (es:titulo (strcat "CORTE LONGITUDINAL - " ES:NOME)
@@ -1216,6 +1232,7 @@
         (es:txt (car it) (list (+ x (* 3.8 c)) (+ u c)) 0.8 0.0 ES:LAY-TXT 0 2))))
   ;; linhas de corte
   (es:marca-cortes gs)
+  (es:alcas-pla gs)
   (setq bb ES:CAIXA)
   (es:titulo (strcat "PLANTA DE FORMAS - " ES:NOME) (strcat "ESC. 1:" ES:ESC)
              (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
@@ -1438,9 +1455,10 @@
         ES:HC (* ES:H ES:UC))
 )
 
-;;; desenha um desenho (grp = "PLA" "LON" "TRA") com origem o e empacota
+;;; desenha um desenho (grp = "PLA" "LON" "TRA" "ARM" "PAR" "QTD" "SEC-x") com origem o e empacota
 (defun es:desenha-view (id grp o gs)
   (foreach e (es:soltos id grp) (entdel e))
+  (setq ES:PEGAS (vl-remove-if '(lambda (h) (= (car h) grp)) ES:PEGAS))
   (setq ES:ID id ES:TAG "" ES:GRP grp ES:O (es:p2 o) ES:CAIXA nil ES:REG nil ES:DESL nil)
   (cond
     ((= grp "PLA") (es:des-pla gs))
@@ -1448,6 +1466,7 @@
     ((= grp "TRA") (es:des-sec gs (es:corte-aa gs)))
     ((= grp "ARM") (es:des-arm gs))
     ((= grp "PAR") (if (null ES:ARMS) (setq ES:ARMS (es:arm-auto gs))) (es:des-parm gs))
+    ((= grp "QTD") (es:des-qtd gs))
     ((wcmatch grp "SEC-*")
      (foreach ct (es:cortes-todos gs)
        (if (= (strcat "SEC-" (car ct)) grp) (es:des-sec gs ct))))
@@ -1518,6 +1537,7 @@
   (if (null ES:ADS)   (setq ES:ADS "20"))
   (if (null ES:NEGF)  (setq ES:NEGF "0.25"))
   (if (null ES:DARM)  (setq ES:DARM "0"))
+  (if (null ES:DQTD)  (setq ES:DQTD "1"))
   (if (null ES:TRE)   (es:gera-modelo))
   (setq ES:APO (mapcar 'es:apo-completo ES:APO))
 )
@@ -1528,7 +1548,7 @@
   (foreach ln
    (list
 "es_main : dialog {"
-"  label = \"ESCADA  -  FORMAS E ARMADURA      v1.4      Baluarte\";"
+"  label = \"ESCADA  -  FORMAS E ARMADURA      v1.5      Baluarte\";"
 "  : row {"
 "    : column {"
 "      : boxed_column {"
@@ -1561,6 +1581,7 @@
 "        : list_box { key = \"cor\"; height = 3; width = 30; }"
 "        : button { key = \"rmc\"; label = \"Remover corte\"; }"
 "        : toggle { key = \"darm\"; label = \"Detalhamento da ARMADURA + lista de ferros\"; }"
+"        : toggle { key = \"dqtd\"; label = \"QUANTITATIVO de concreto e formas (tabela)\"; }"
 "        : row {"
 "          : button { key = \"apr\"; label = \"Apresentacao...\"; }"
 "          : button { key = \"arm\"; label = \"Armadura...\"; }"
@@ -1731,6 +1752,7 @@
 "        : button { key = \"upb\"; label = \"Subir\"; }"
 "        : button { key = \"dnb\"; label = \"Descer\"; }"
 "      }"
+"      : image { key = \"preva\"; width = 84; height = 10; color = -15; }"
 "    }"
 "  }"
 "  : text { key = \"lbinfo\"; width = 100; }"
@@ -1763,6 +1785,7 @@
 "  }"
 "  : text { label = \"Deslocamento: + no sentido da subida.  Valor da ponta: perna da dobra, Lq da quimica ou\"; }"
 "  : text { label = \"prolongamento (vazio = automatico: espessura - 2c / lb).\"; }"
+"  : image { key = \"prevb\"; width = 90; height = 13; color = -15; }"
 "  : text { key = \"info\"; width = 90; }"
 "  ok_cancel;"
 "}"
@@ -1905,7 +1928,7 @@
   (set_tile "mtipo" (itoa ES:MTIPO)) (set_tile "mdes" ES:MDES) (set_tile "mndg" ES:MNDG)
   (set_tile "mpis" ES:MPIS) (set_tile "mhl" ES:MHL) (set_tile "mhp" ES:MHP) (set_tile "mlp" ES:MLP)
   (set_tile "dpla" ES:DPLA) (set_tile "dlon" ES:DLON) (set_tile "dtra" ES:DTRA)
-  (set_tile "darm" ES:DARM)
+  (set_tile "darm" ES:DARM) (set_tile "dqtd" ES:DQTD)
   (set_tile "latet" (nth 0 ES:LATE)) (set_tile "laten" (nth 1 ES:LATE))
   (set_tile "lateb" (nth 2 ES:LATE)) (set_tile "lateh" (nth 3 ES:LATE))
   (set_tile "latdt" (nth 0 ES:LATD)) (set_tile "latdn" (nth 1 ES:LATD))
@@ -1923,7 +1946,7 @@
         ES:MPIS (get_tile "mpis") ES:MHL (get_tile "mhl") ES:MHP (get_tile "mhp")
         ES:MLP (get_tile "mlp")
         ES:DPLA (get_tile "dpla") ES:DLON (get_tile "dlon") ES:DTRA (get_tile "dtra")
-        ES:DARM (get_tile "darm")
+        ES:DARM (get_tile "darm") ES:DQTD (get_tile "dqtd")
         ES:LATE (list (get_tile "latet") (get_tile "laten") (get_tile "lateb") (get_tile "lateh"))
         ES:LATD (list (get_tile "latdt") (get_tile "latdn") (get_tile "latdb") (get_tile "latdh"))
         ES:UNI (atoi (get_tile "uni")) ES:ESC (get_tile "esc") ES:ALT (get_tile "alt"))
@@ -2242,7 +2265,8 @@
       (foreach k '("fck" "aib" "asb") (action_tile k "(es:lb-info)"))
       (foreach k '("auto" "rmb" "dupb" "upb" "dnb")
         (action_tile k (strcat "(vl-catch-all-apply 'es:arm-acao (list \"" k "\"))")))
-      (action_tile "arms" "(setq ES:SEL-B (atoi $value)) (if (= $reason 4) (progn (es:arm-le) (done_dialog 41)))")
+      (action_tile "arms" "(setq ES:SEL-B (atoi $value)) (es:img-barra \"preva\" (es:nth ES:SEL-B ES:ARMS)) (if (= $reason 4) (progn (es:arm-le) (done_dialog 41)))")
+      (es:img-barra "preva" (es:nth (if ES:SEL-B ES:SEL-B 0) ES:ARMS))
       (action_tile "addb" "(es:arm-le) (setq ES:SEL-B (es:sel \"arms\")) (done_dialog 40)")
       (action_tile "edb" "(if (es:sel \"arms\") (progn (es:arm-le) (setq ES:SEL-B (es:sel \"arms\")) (done_dialog 41)))")
       (action_tile "accept"
@@ -2309,8 +2333,11 @@
       (set_tile "ptf" (es:ad d 8)) (set_tile "valf" (es:ad d 9))
       (set_tile "bit" (es:ad d 10)) (set_tile "esp" (es:ad d 11)) (set_tile "qtd" (es:ad d 12))
       (es:barra-modo)
-      (action_tile "tipo" "(es:barra-chaves) (es:barra-pontos) (es:barra-modo)")
-      (action_tile "det" "(setq ES:BR-KI \"INI\" ES:BR-KF \"FIM\") (es:barra-pontos)")
+      (es:barra-prev)
+      (action_tile "tipo" "(es:barra-chaves) (es:barra-pontos) (es:barra-modo) (es:barra-prev)")
+      (action_tile "det" "(setq ES:BR-KI \"INI\" ES:BR-KF \"FIM\") (es:barra-pontos) (es:barra-prev)")
+      (foreach k '("ini" "fim" "offi" "offf" "pti" "ptf" "vali" "valf" "bit" "esp")
+        (action_tile k "(es:barra-chaves) (es:barra-prev)"))
       (action_tile "accept"
         (strcat "(cond"
                 "((null (es:num (get_tile \"offi\"))) (es:erro-campo \"offi\" \"Deslocamento: numero (0 = no ponto).\"))"
@@ -2329,6 +2356,71 @@
       (action_tile "cancel" "(done_dialog 0)")
       (setq ES:RETORNO nil ok (start_dialog))
       (if (= ok 1) ES:RETORNO)))
+)
+
+;;; barra com os valores atuais da janela (sem validar)
+(defun es:barra-tiles ()
+  (list (get_tile "tipo") (itoa (1+ (atoi (get_tile "det"))))
+        (if ES:BR-KI ES:BR-KI "INI") (get_tile "offi") (if ES:BR-KF ES:BR-KF "FIM") (get_tile "offf")
+        (get_tile "pti") (vl-string-trim " " (get_tile "vali"))
+        (get_tile "ptf") (vl-string-trim " " (get_tile "valf"))
+        (get_tile "bit") (get_tile "esp") (vl-string-trim " " (get_tile "qtd")))
+)
+(defun es:barra-prev () (es:img-barra "prevb" (es:barra-tiles)))
+
+;;; previa de uma barra no corte do seu detalhe: concreto (cinza), apoios,
+;;; outras barras do detalhe (apagadas) e a barra (vermelho)
+(defun es:img-barra (key d / w h gs dts dt geo top bot sups b pts xmin xmax ymin ymax k ox oy
+                         a q lst i os r)
+  (setq w (dimx_tile key) h (dimy_tile key))
+  (start_image key)
+  (fill_image 0 0 w h -15)
+  (if (and d ES:TRE)
+    (progn
+      (setq gs (es:geo ES:TRE) dts (es:arm-detalhes gs) i (es:int (es:n (es:ad d 1)))
+            dt (es:nth (1- i) dts))
+      (if dt (setq geo (es:arm-geo gs dt)))
+      (if (and geo (car geo))
+        (progn
+          (setq top (es:topo-grupo (car geo)) bot (nth 1 geo) sups (nth 3 geo)
+                b (vl-catch-all-apply 'es:arm-barra (list gs geo d (es:n ES:LAR))))
+          (if (vl-catch-all-error-p b) (setq b nil))
+          (setq os nil)
+          (foreach e ES:ARMS
+            (if (and (= (es:int (es:n (es:ad e 1))) i) (not (equal e d))
+                     (member (car e) '("0" "1")))
+              (progn
+                (setq r (vl-catch-all-apply 'es:arm-barra (list gs geo e (es:n ES:LAR))))
+                (if (and r (not (vl-catch-all-error-p r))) (setq os (cons (nth 1 r) os))))))
+          (setq pts (append top bot))
+          (foreach s sups (setq pts (cons (list (car s) (nth 2 s)) (cons (list (cadr s) (nth 3 s)) pts))))
+          (if b (setq pts (append pts (nth 1 b))))
+          (setq xmin (apply 'min (mapcar 'car pts)) xmax (apply 'max (mapcar 'car pts))
+                ymin (apply 'min (mapcar 'cadr pts)) ymax (apply 'max (mapcar 'cadr pts)))
+          (setq k (min (/ (- w 10.0) (max 1.0 (- xmax xmin))) (/ (- h 10.0) (max 1.0 (- ymax ymin))))
+                ox (* 0.5 (- w (* k (- xmax xmin)))) oy (* 0.5 (- h (* k (- ymax ymin)))))
+          (setq lst (list (list top 8) (list bot 8)
+                          (list (list (car bot) (car top)) 8) (list (list (es:ultimo bot) (es:ultimo top)) 8)))
+          (foreach s sups
+            (setq lst (cons (list (list (list (car s) (nth 2 s)) (list (cadr s) (nth 2 s)) (list (cadr s) (nth 3 s))
+                                        (list (car s) (nth 3 s)) (list (car s) (nth 2 s))) 9) lst)))
+          (foreach o os (setq lst (cons (list o 251) lst)))
+          (if b
+            (if (member (car b) '("2" "3"))
+              (foreach p (nth 1 b)
+                (setq lst (cons (list (list (es:add p '(-2.0 -2.0)) (es:add p '(2.0 2.0))) 1)
+                                (cons (list (list (es:add p '(-2.0 2.0)) (es:add p '(2.0 -2.0))) 1) lst))))
+              (setq lst (cons (list (nth 1 b) 1) lst))))
+          (foreach c (reverse lst)
+            (setq a (es:img-pt (car (car c)) k ox oy xmin ymin h))
+            (foreach p (cdr (car c))
+              (setq q (es:img-pt p k ox oy xmin ymin h))
+              (vector_image (car a) (cadr a) (car q) (cadr q) (cadr c))
+              (setq a q)))))))
+  (end_image)
+)
+(defun es:img-pt (p k ox oy xmin ymin h)
+  (list (fix (+ ox (* k (- (car p) xmin)))) (fix (- h oy (* k (- (cadr p) ymin)))))
 )
 
 ;;; laco da janela de armaduras (Cancelar desfaz tudo o que foi feito nela)
@@ -3899,11 +3991,13 @@
             (foreach x nb (es:barra-extr (caddr x) dyi (es:txt-pos (car x) (cdr x)) ES:LAY-ARMP nil))))
         (foreach x bars
           (if (= (cadr x) "1") (es:barra-extr (caddr x) dys (es:txt-pos (car x) (cdr x)) ES:LAY-ARMN ES:LT)))
+        (es:alcas-arm geo i)
         ;; lista (uma linha por posicao)
         (foreach x bars (setq lista (cons x lista)))
         (setq notas (cons (es:arm-apoios dt geo i) notas))
         (es:titulo (strcat "CORTE D" (itoa i) " - " (car dt)) (strcat ES:NOME "   ESC. 1:" ES:ESC)
                    (* 0.5 (+ (car ES:CAIXA) (caddr ES:CAIXA))) (- (cadr ES:CAIXA) (* 3.0 c)))
+        (es:alca "ZONA" i nil nil nil (list ES:DESL ES:CAIXA))
         (setq ybaixo (+ (cadr ES:CAIXA) (cadr ES:DESL)) xmx (max xmx (+ (caddr ES:CAIXA) (car ES:DESL)))))))
   ;; notas e lista ao lado
   (setq ES:DESL (list (+ xmx (* 10.0 c)) 0.0) ES:CAIXA nil)
@@ -4075,6 +4169,876 @@
 )
 
 ;;; ==========================================================================
+;;; 12.  QUANTITATIVO DE CONCRETO E FORMAS  (a partir do modelo)
+;;;  Por trecho: volume da secao (degraus + laje, com a cunha da quebra sob o
+;;;  patamar) x largura; formas de fundo (descontadas as vigas), laterais
+;;;  (sem as laterais encostadas em viga / parede lateral), espelhos e bordas
+;;;  livres dos patamares.  Vigas: b x h x comprimento menos o que ja esta na
+;;;  laje.  Lajes de piso e paredes de apoio NAO entram (estrutura existente).
+;;;  ESTIMATIVA: confira.
+;;; ==========================================================================
+
+;;; numero com 2 casas e virgula: 0.625 -> "0,63"
+(defun es:f2 (v / c r)
+  (setq c (es:int (* (abs v) 100.0)) r (rem c 100))
+  (strcat (if (< v -0.004) "-" "") (itoa (/ c 100)) "," (if (< r 10) "0" "") (itoa r))
+)
+
+;;; area de um poligono (valor absoluto)
+(defun es:area-pol (pts / a p)
+  (setq a 0.0 p (es:ultimo pts))
+  (foreach q pts
+    (setq a (+ a (- (* (car p) (cadr q)) (* (car q) (cadr p)))) p q))
+  (abs (* 0.5 a))
+)
+
+;;; parte de uma cadeia (x crescente) ABAIXO de yref, com x em [x1, x2]:
+;;; (area comprimento-da-cadeia extensao-horizontal)
+(defun es:cunha (cad x1 x2 yref / a l e p xa xb ya yb xm k)
+  (setq a 0.0 l 0.0 e 0.0 p (car cad))
+  (foreach q (cdr cad)
+    (setq xa (max x1 (min (car p) (car q))) xb (min x2 (max (car p) (car q))))
+    (if (> xb (+ xa 1e-9))
+      (progn
+        (setq k (/ (- (cadr q) (cadr p)) (- (car q) (car p)))
+              ya (- yref (+ (cadr p) (* k (- xa (car p)))))
+              yb (- yref (+ (cadr p) (* k (- xb (car p))))))
+        (cond
+          ((and (<= ya 1e-6) (<= yb 1e-6)) nil)
+          ((and (>= ya -1e-6) (>= yb -1e-6))
+           (setq a (+ a (* 0.5 (+ ya yb) (- xb xa))) e (+ e (- xb xa))
+                 l (+ l (* (- xb xa) (sqrt (+ 1.0 (* k k)))))))
+          (t
+           (setq xm (+ xa (* (- xb xa) (/ ya (- ya yb)))))
+           (if (> ya 0.0)
+             (setq a (+ a (* 0.5 ya (- xm xa))) e (+ e (- xm xa))
+                   l (+ l (* (- xm xa) (sqrt (+ 1.0 (* k k))))))
+             (setq a (+ a (* 0.5 yb (- xb xm))) e (+ e (- xb xm))
+                   l (+ l (* (- xb xm) (sqrt (+ 1.0 (* k k)))))))))))
+    (setq p q))
+  (list a l e)
+)
+
+;;; comprimento de sobreposicao de [a1 a2] com [b1 b2]
+(defun es:sobrepoe (a1 a2 b1 b2) (max 0.0 (- (min a2 b2) (max a1 b1))))
+
+;;; apoio lateral ativo (viga "1" / parede "2")
+(defun es:lat-tipo (lat) (if lat (es:int (es:n (car lat))) 0))
+
+;;; linhas do quantitativo: ((nome volume-cm3 fundo-cm2 lateral-cm2 espelho-cm2 grupo) ...)
+;;; grupo "E" escada / "V" viga
+(defun es:quant (gs / refs sc k r g rf wt vol fu la es ant prx cw tp sub ext cu lat nlat
+                      ap rt lc so d b h ll lov t0 s bx inv c)
+  (setq refs (es:planta-refs gs) sc (es:intradorso gs) k 0 r nil)
+  (foreach g gs
+    (setq rf (nth k refs) wt (- (nth 4 rf) (nth 3 rf))
+          ant (es:nth (1- k) gs) prx (es:nth (1+ k) gs))
+    (if (= (car g) "L")
+      (progn
+        ;; secao: degraus + laje entre s0 e s1, mais as cunhas sob patamares vizinhos
+        (setq sub (es:corta-x sc (nth 1 g) (nth 2 g))
+              vol (es:area-pol (append (nth 7 g) (reverse sub)))
+              fu (es:comp sub) ext 0.0)
+        (foreach vz (list ant prx)
+          (if (and vz (= (car vz) "P"))
+            (progn
+              (setq cu (es:cunha sc (nth 1 vz) (nth 2 vz) (nth 5 vz)))
+              (setq vol (+ vol (car cu)) fu (+ fu (cadr cu))))))
+        (setq nlat (- 2 (if (> (es:lat-tipo ES:LATE) 0) 1 0) (if (> (es:lat-tipo ES:LATD) 0) 1 0))
+              la (* nlat vol) es (* (nth 12 g) (nth 13 g) wt)
+              c (sqrt (+ 1.0 (* (nth 6 g) (nth 6 g))))
+              vol (* vol wt) fu (* fu wt)))
+      (progn
+        (setq vol (* (nth 18 g) wt (nth 8 g)) fu (* (nth 18 g) wt) c 1.0
+              es (* (max 0.0 (nth 16 g)) wt))
+        ;; o fundo do patamar sob a cunha dos lances vizinhos fica no lance
+        (if (or (and ant (= (car ant) "L")) (and prx (= (car prx) "L")))
+          (setq cu (es:cunha sc (nth 1 g) (nth 2 g) (nth 5 g))
+                fu (max 0.0 (- fu (* (caddr cu) (es:n ES:LAR))))))
+        ;; bordas livres: frente (u = 0), fundo (u = L) e lados (v)
+        (setq lat (list (- wt (if ant (es:n ES:LAR) 0.0) (if (and prx (member (nth 17 g) '(3 4))) (es:n ES:LAR) 0.0))
+                        (- wt (if (and prx (= (nth 17 g) 0)) (es:n ES:LAR) 0.0))
+                        (- (nth 18 g) (if (and prx (= (nth 17 g) 1)) (es:n ES:LAR) 0.0))
+                        (- (nth 18 g) (if (and prx (= (nth 17 g) 2)) (es:n ES:LAR) 0.0))))
+        ;; vigas de borda deste patamar escondem o lado
+        (foreach ap ES:APO
+          (if (and (= (es:apo-k gs ap) k) (> (es:apo-dir ap) 0) (/= (es:int (es:n (nth 1 ap))) 1))
+            (setq lat (es:setnth lat (if (= (es:apo-dir ap) 1) 2 3)
+                                 (max 0.0 (- (nth (if (= (es:apo-dir ap) 1) 2 3) lat) (nth 18 g)))))))
+        (setq la (* (nth 8 g) (apply '+ (mapcar '(lambda (x) (max 0.0 x)) lat))))))
+    ;; fundo apoiado em vigas / paredes transversais (nao invertidas)
+    (foreach ap (es:apos-transv)
+      (if (and (/= (es:int (es:n (nth 1 ap))) 1) (not (es:apo-inv ap)))
+        (progn
+          (setq rt (es:apo-ret gs ap) lc (es:sobrepoe (nth 0 rt) (nth 1 rt) (nth 1 g) (nth 2 g)))
+          (if (> lc 0.0)
+            (setq fu (max 0.0 (- fu (* lc c (min wt (+ (es:n ES:LAR) (es:apo-ext1 ap) (es:apo-ext2 ap)))))))))))
+    (setq r (cons (list (nth 9 g) vol fu la es "E") r) k (1+ k)))
+  ;; vigas laterais inclinadas dos lances
+  (foreach lat (list ES:LATE ES:LATD)
+    (if (= (es:lat-tipo lat) 1)
+      (progn
+        (setq b (es:n (nth 2 lat)) h (es:n (nth 3 lat)) ll 0.0 lov 0.0)
+        (foreach g gs
+          (if (= (car g) "L")
+            (setq c (sqrt (+ 1.0 (* (nth 6 g) (nth 6 g))))
+                  ll (+ ll (* (nth 18 g) c))
+                  lov (+ lov (* (nth 18 g) c (min h (/ (nth 8 g) (/ 1.0 c))))))))
+        (if (> ll 0.0)
+          (setq r (cons (list (nth 1 lat) (* b h ll) (* b ll) (- (* 2.0 h ll) lov) 0.0 "V") r))))))
+  ;; vigas de apoio (tipo viga): caixa menos o que ja esta dentro da laje
+  (foreach so (es:solidos gs)
+    (if (and (= (car so) "B") (setq ap (es:nth 8 (nth 9 so))) (= (es:int (es:n (nth 1 ap))) 0))
+      (progn
+        (setq d (nth 9 so) h (nth 2 d) inv (es:apo-inv ap)
+              bx (if (> (es:apo-dir ap) 0) (- (nth 6 so) (nth 5 so)) (- (nth 4 so) (nth 3 so)))
+              ll (if (> (es:apo-dir ap) 0) (- (nth 4 so) (nth 3 so)) (- (nth 6 so) (nth 5 so)))
+              g (nth 8 so) k (nth 7 so) rf (nth k refs) wt (- (nth 4 rf) (nth 3 rf)))
+        (if (> (es:apo-dir ap) 0)
+          (progn
+            ;; borda: ao longo do trecho (inclinada no lance); faixa dentro da laje
+            (setq c (if (= (car g) "L") (sqrt (+ 1.0 (* (nth 6 g) (nth 6 g)))) 1.0)
+                  ll (* ll c)
+                  t0 (min h (if (= (car g) "L") (* (nth 8 g) c) (nth 8 g)))
+                  lov (* t0 (min (nth 18 g) ll))
+                  s (max 0.0 (- bx (max 0.0 (es:n (nth 5 ap)))))))
+          (progn
+            (setq s (es:apo-s gs ap)
+                  t0 (min h (max 0.0 (- (es:topo-est gs s) (es:fundo-est gs s))))
+                  s (es:sobrepoe (- s (* 0.5 bx)) (+ s (* 0.5 bx)) (es:s-ini gs) (es:s-fim gs))
+                  lov (* t0 (min ll wt)))))
+        ;; volume: tira a parte dentro da laje; fundo (invertida: so fora da laje);
+        ;; laterais: altura toda menos a parte encostada na laje
+        (setq r (cons (list (car ap)
+                            (max 0.0 (- (* bx h ll) (* s lov)))
+                            (if inv (* bx (max 0.0 (- ll (if (> (es:apo-dir ap) 0) (min (nth 18 g) ll) (min ll wt))))) (* bx ll))
+                            (max 0.0 (- (* 2.0 h ll) (* (if (> (es:apo-dir ap) 0) (if (> s 0.0) 1.0 0.0) (* 2.0 (/ s (max 1.0 bx)))) lov)))
+                            0.0 "V")
+                      r)))))
+  (reverse r)
+)
+
+;;; peso de aco (kgf) da lista de barras
+(defun es:aco-kg (gs / dts i geo k b tot w)
+  (setq dts (es:arm-detalhes gs) i 0 tot 0.0 w (es:n ES:LAR))
+  (if (null ES:ARMS) (setq ES:ARMS (es:arm-auto gs)))
+  (foreach dt dts
+    (setq i (1+ i) geo (es:arm-geo gs dt))
+    (if (car geo)
+      (foreach d ES:ARMS
+        (if (and (= (es:int (es:n (es:ad d 1))) i) (setq b (es:arm-barra gs geo d w)))
+          (setq tot (+ tot (* (/ (es:comp-barra b) 100.0) (nth 4 b) (nth (nth 2 b) ES:MASSAS))))))))
+  tot
+)
+
+;;; totais: (volume-m3 forma-m2 aco-kg ou nil)
+(defun es:quant-tot (lin / v f)
+  (setq v 0.0 f 0.0)
+  (foreach x lin (setq v (+ v (nth 1 x)) f (+ f (nth 2 x) (nth 3 x) (nth 4 x))))
+  (list (/ v 1e6) (/ f 1e4))
+)
+
+;;; linha de comando
+(defun es:quant-print (gs / lin tt kg)
+  (setq lin (es:quant gs) tt (es:quant-tot lin))
+  (princ (strcat "\n---- QUANTITATIVO - ESCADA " ES:NOME " (estimativa) ----"
+                 "\n  ELEMENTO              CONCRETO m3   FORMA m2 (fundo + lateral + espelho)"))
+  (foreach x lin
+    (princ (strcat "\n  " (substr (strcat (car x) "                      ") 1 22)
+                   (substr (strcat (es:f2 (/ (nth 1 x) 1e6)) "            ") 1 14)
+                   (es:f2 (/ (+ (nth 2 x) (nth 3 x) (nth 4 x)) 1e4))
+                   "  (" (es:f2 (/ (nth 2 x) 1e4)) " + " (es:f2 (/ (nth 3 x) 1e4)) " + " (es:f2 (/ (nth 4 x) 1e4)) ")")))
+  (princ (strcat "\n  TOTAL: concreto " (es:f2 (car tt)) " m3 (fck " ES:FCK " MPa),  formas " (es:f2 (cadr tt)) " m2"))
+  (if (or ES:ARMS (= ES:DARM "1"))
+    (progn
+      (setq kg (es:aco-kg gs))
+      (princ (strcat "\n  ACO: " (itoa (es:teto kg)) " kgf  -  taxa "
+                     (if (> (car tt) 0.0) (itoa (es:int (/ kg (car tt)))) "-") " kg/m3"))))
+  (princ "\n  (lajes de piso e paredes de apoio nao incluidas; confira)")
+  (princ)
+)
+
+;;; ---- desenho: tabela QUANTITATIVO ------------------------------------------------
+(defun es:des-qtd (gs / h cx wd y y0 lin tt kg k cab x0 sg)
+  (setq h ES:HC lin (es:quant gs) tt (es:quant-tot lin) x0 0.0 y0 0.0 y 0.0
+        cx (list 0.0 16.0 25.0 32.0 39.0 46.0 54.0) wd (* 54.0 h))
+  (es:txt (strcat "QUANTITATIVO - ESCADA " ES:NOME) (list (* 0.5 wd) (* 1.2 h)) 1.1 0.0 ES:LAY-TIT 1 0)
+  ;; cabecalho
+  (es:line (list 0.0 (- y (* 5.0 h))) (list wd (- y (* 5.0 h))) ES:LAY-GRADE)
+  (setq cab (list "ELEMENTO" "CONCRETO" "FUNDO" "LATERAL" "ESPELHO" "TOTAL") k 0)
+  (foreach s cab
+    (es:txt s (list (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx)))) (- y (* (if (< k 2) 2.0 3.6) h))) 0.8 0.0 ES:LAY-TXT 1 2)
+    (setq k (1+ k)))
+  (es:txt "FORMAS (m2)" (list (* h 39.5) (- y (* 1.1 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (es:txt "(m3)" (list (* h 20.5) (- y (* 3.4 h))) 0.7 0.0 ES:LAY-TXT 1 2)
+  (es:line (list (* h 25.0) (- y (* 2.2 h))) (list wd (- y (* 2.2 h))) ES:LAY-GRADE)
+  (foreach xx (list 16.0 25.0)
+    (es:line (list (* h xx) y) (list (* h xx) (- y (* 5.0 h))) ES:LAY-GRADE))
+  (setq y (- y (* 5.0 h)) sg nil)
+  (foreach x lin
+    (if (and sg (/= sg (nth 5 x)))
+      (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE))
+    (setq sg (nth 5 x) k 0)
+    (foreach s (list (car x) (es:f2 (/ (nth 1 x) 1e6)) (es:f2 (/ (nth 2 x) 1e4)) (es:f2 (/ (nth 3 x) 1e4))
+                     (es:f2 (/ (nth 4 x) 1e4)) (es:f2 (/ (+ (nth 2 x) (nth 3 x) (nth 4 x)) 1e4)))
+      (if (= k 0)
+        (es:txt s (list (* h 0.6) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 0 2)
+        (es:txt s (list (* h (- (nth (1+ k) cx) 0.8)) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 2 2))
+      (setq k (1+ k)))
+    (setq y (- y (* 1.8 h))))
+  ;; total
+  (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE)
+  (es:txt "TOTAL" (list (* h 0.6) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 0 2)
+  (es:txt (es:f2 (car tt)) (list (* h 24.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
+  (es:txt (es:f2 (cadr tt)) (list (* h 53.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
+  (setq y (- y (* 1.8 h)))
+  (foreach xx (list 16.0 25.0 32.0 39.0 46.0)
+    (es:line (list (* h xx) (- y0 (if (> xx 26.0) (* 2.2 h) 0.0))) (list (* h xx) y) ES:LAY-GRADE))
+  (es:ret 0.0 y wd y0 ES:LAY-TAB nil)
+  ;; aco e observacoes
+  (setq y (- y (* 1.6 h)))
+  (es:txt (strcat "Concreto: fck = " ES:FCK " MPa") (list 0.0 y) 0.75 0.0 ES:LAY-TXT 0 2)
+  (if (or ES:ARMS (= ES:DARM "1"))
+    (progn
+      (setq kg (es:aco-kg gs) y (- y (* 1.4 h)))
+      (es:txt (strcat "Aco (lista de ferros): " (itoa (es:teto kg)) " kgf   -   taxa "
+                      (if (> (car tt) 0.0) (itoa (es:int (/ kg (car tt)))) "-") " kg/m3")
+              (list 0.0 y) 0.75 0.0 ES:LAY-TXT 0 2)))
+  (setq y (- y (* 1.4 h)))
+  (es:txt "Estimativa pelo modelo. Lajes de piso e paredes de apoio nao incluidas." (list 0.0 y) 0.65 0.0 ES:LAY-TXT 0 2)
+  (setq y (- y (* 1.2 h)))
+  (es:txt "Formas: fundo (sem as faixas sobre vigas), laterais livres, espelhos." (list 0.0 y) 0.65 0.0 ES:LAY-TXT 0 2)
+)
+
+;;; ==========================================================================
+;;; 13.  EDITOR GRAFICO  (comando ESCADAGRAF)
+;;;  Os desenhos registram ALCAS (quadrados) nos pontos editaveis:
+;;;   DESENVOLVIMENTO: fim do lance (+/- degraus), 1.o degrau (piso x espelho),
+;;;     espessura do lance, fim e espessura do patamar, posicao, altura e
+;;;     largura das vigas;
+;;;   PLANTA DE FORMAS: fim de cada trecho, vigas (mover e pontas = extensoes),
+;;;     linhas de corte (pontas e meio);
+;;;   ARMADURA: inicio, fim e meio de cada barra (gruda nos pontos da escada).
+;;;  Arraste com o mouse (clique na alca, mova, clique); digite um valor +
+;;;  ENTER durante o arraste para um valor exato.  Tudo e refeito na hora.
+;;;  Alca = (desenho tipo indice ponto-no-bloco direcao descricao extra)
+;;; ==========================================================================
+
+;;; ponto local (cm) -> coordenadas do bloco (sem mexer na caixa envolvente)
+(defun es:w0 (p / q)
+  (setq q (if ES:DESL (es:add p ES:DESL) p))
+  (list (+ (car ES:O) (/ (car q) ES:UC)) (+ (cadr ES:O) (/ (cadr q) ES:UC)))
+)
+
+(defun es:alca (tipo idx p dir desc extra)
+  (if ES:GRP
+    (setq ES:PEGAS (cons (list ES:GRP tipo idx (if p (es:w0 p)) dir desc extra) ES:PEGAS)))
+)
+
+;;; bloco <-> mundo (insercao movida, girada ou escalada)
+(defun es:ins-dados (ins / ed ip r s)
+  (setq ed (entget ins) ip (cdr (assoc 10 ed)) r (cdr (assoc 50 ed)) s (cdr (assoc 41 ed)))
+  (if (null r) (setq r 0.0))
+  (if (or (null s) (= s 0.0)) (setq s 1.0))
+  (list (es:p2 ip) r s)
+)
+(defun es:bloco->mundo (p id3 / r s)
+  (setq r (cadr id3) s (caddr id3))
+  (es:add (car id3) (list (* s (- (* (car p) (cos r)) (* (cadr p) (sin r))))
+                          (* s (+ (* (car p) (sin r)) (* (cadr p) (cos r))))))
+)
+(defun es:mundo->bloco (p id3 / q r s)
+  (setq r (cadr id3) s (caddr id3) q (es:sub (es:p2 p) (car id3)))
+  (list (/ (+ (* (car q) (cos r)) (* (cadr q) (sin r))) s)
+        (/ (- (* (cadr q) (cos r)) (* (car q) (sin r))) s))
+)
+;;; vetor em cm locais -> vetor no mundo
+(defun es:vet->mundo (v id3)
+  (es:sub (es:bloco->mundo (es:mul v (/ 1.0 ES:UC)) id3) (es:bloco->mundo '(0.0 0.0) id3))
+)
+
+(defun es:dot (a b) (+ (* (car a) (car b)) (* (cadr a) (cadr b))))
+(defun es:arred (v passo) (* passo (es:int (/ v passo))))
+
+;;; ---- alcas ativas: ((alca ponto-mundo dados-da-insercao) ...) -----------------
+(defun es:graf-alcas (id / r ins id3 cache c)
+  (setq r nil cache nil)
+  (foreach h ES:PEGAS
+    (if (nth 3 h)
+      (progn
+        (if (setq c (assoc (car h) cache))
+          (setq id3 (cdr c))
+          (setq id3 (if (setq ins (es:insert-de id (car h))) (es:ins-dados ins))
+                cache (cons (cons (car h) id3) cache)))
+        (if id3 (setq r (cons (list h (es:bloco->mundo (nth 3 h) id3) id3) r))))))
+  r
+)
+
+(defun es:graf-cor (tp)
+  (cond ((wcmatch tp "L-*") 5) ((wcmatch tp "P-*") 4) ((wcmatch tp "A-*,V-*") 3)
+        ((wcmatch tp "C-*") 6) (t 1))
+)
+
+;;; quadrado (e um X se destacado) para grvecs
+(defun es:graf-quad (p r cor x / a b c d)
+  (setq a (list (- (car p) r) (- (cadr p) r)) b (list (+ (car p) r) (- (cadr p) r))
+        c (list (+ (car p) r) (+ (cadr p) r)) d (list (- (car p) r) (+ (cadr p) r)))
+  (append (list cor a b cor b c cor c d cor d a)
+          (if x (list cor a c cor b d)))
+)
+
+(defun es:graf-tam () (/ (getvar "VIEWSIZE") 110.0))
+
+(defun es:graf-mostra (alcas sel / r v)
+  (redraw)
+  (setq r (es:graf-tam) v nil)
+  (foreach a alcas
+    (setq v (append v (es:graf-quad (cadr a) r (if (eq a sel) 2 (es:graf-cor (nth 1 (car a)))) (eq a sel)))))
+  (if v (grvecs v))
+)
+
+;;; alca mais perto do ponto (dentro de 1,6 x o tamanho)
+(defun es:graf-perto (alcas p / r dmin d)
+  (setq dmin (* 1.6 (es:graf-tam)) r nil)
+  (foreach a alcas
+    (if (< (setq d (es:dist (cadr a) p)) dmin) (setq dmin d r a)))
+  r
+)
+
+;;; ---- valores de um arraste ---------------------------------------------------------
+;;; dcm = deslocamento do mouse em cm locais.  Devolve (texto valor desloc-cm-previa)
+(defun es:graf-valor (h dcm / tp i d g tr ap n p e v ct x xs best key off pts dir k)
+  (setq tp (nth 1 h) i (nth 2 h) dir (nth 4 h)
+        d (if dir (es:dot dcm dir) 0.0))
+  (cond
+    ((= tp "L-FIM")
+     (setq g (nth i ES:GS) p (nth 14 g) n (max 1 (+ (nth 12 g) (es:int (/ d p)))))
+     (list (strcat (nth 9 g) ":  N = " (itoa n) " espelhos  (" (itoa (+ (nth 15 g) (- n (nth 12 g)))) " pisos)")
+           n (es:mul dir (* p (- n (nth 12 g))))))
+    ((= tp "L-DEG")
+     (setq g (nth i ES:GS)
+           p (max 10.0 (es:arred (+ (nth 14 g) (car dcm)) 0.5))
+           e (max 5.0 (es:arred (+ (nth 13 g) (cadr dcm)) 0.5)))
+     (list (strcat (nth 9 g) ":  piso " (es:f p) " x espelho " (es:f e) "   (2e + p = " (es:f (+ p e e)) ")")
+           (list p e) (list (- p (nth 14 g)) (- e (nth 13 g)))))
+    ((member tp '("L-H" "P-H"))
+     (setq g (nth i ES:GS) v (max 5.0 (es:arred (+ (nth 8 g) d) 1.0)))
+     (list (strcat (nth 9 g) ":  espessura h = " (es:f v) " cm") v (es:mul dir (- v (nth 8 g)))))
+    ((= tp "P-FIM")
+     (setq g (nth i ES:GS) v (max 10.0 (es:arred (+ (nth 18 g) d) 1.0)))
+     (list (strcat (nth 9 g) ":  comprimento = " (es:f v) " cm") v (es:mul dir (- v (nth 18 g)))))
+    ((= tp "A-MOV")
+     (setq ap (nth i ES:APO) v (es:arred (+ (es:n (nth 5 ap)) d) 1.0))
+     (list (strcat (car ap) ":  deslocamento do eixo = " (es:f v) " cm") v (es:mul dir (- v (es:n (nth 5 ap))))))
+    ((= tp "A-H")
+     (setq ap (nth i ES:APO) v (max 5.0 (es:arred (+ (es:n (nth 3 ap)) d) 1.0)))
+     (list (strcat (car ap) ":  altura h = " (es:f v) " cm  (" (es:f (es:n (nth 2 ap))) "/" (es:f v) ")")
+           v (es:mul dir (- v (es:n (nth 3 ap))))))
+    ((= tp "A-B")
+     (setq ap (nth i ES:APO) v (max 5.0 (es:arred (+ (es:n (nth 2 ap)) (* 2.0 d)) 1.0)))
+     (list (strcat (car ap) ":  largura b = " (es:f v) " cm  (" (es:f v) "/" (es:f (es:n (nth 3 ap))) ")")
+           v (es:mul dir (* 0.5 (- v (es:n (nth 2 ap)))))))
+    ((= tp "V-MOV")
+     (setq ap (nth i ES:APO) v (list (es:arred (car dcm) 1.0) (es:arred (cadr dcm) 1.0)))
+     (list (strcat (car ap) ":  mover  dx = " (es:f (car v)) "  dy = " (es:f (cadr v)) " cm") v v))
+    ((member tp '("V-E1" "V-E2"))
+     (setq ap (nth i ES:APO) k (if (= tp "V-E1") 7 8)
+           v (max 0.0 (es:arred (+ (es:n (nth k ap)) d) 1.0)))
+     (list (strcat (car ap) ":  extensao = " (es:f v) " cm") v (es:mul dir (- v (es:n (nth k ap))))))
+    ((member tp '("C-A" "C-B" "C-M"))
+     (setq ct (nth i ES:CORTES) v (list (es:arred (car dcm) 1.0) (es:arred (cadr dcm) 1.0)))
+     (list (strcat "Corte " (car ct) "-" (car ct) ":  "
+                   (cond ((= tp "C-A") "ponta A") ((= tp "C-B") "ponta B") (t "mover a linha")))
+           v v))
+    ((member tp '("B-I" "B-F"))
+     ;; extra = (pontos-notaveis x-atual chave-campo); gruda no ponto mais perto
+     (setq pts (car (nth 6 h)) x (+ (cadr (nth 6 h)) d) best nil
+           k (if (= tp "B-I") 2 3) ap (nth i ES:ARMS)
+           key (es:ad ap (if (= tp "B-I") 2 4)))
+     (foreach q pts
+       (if (and (< (abs (- x (caddr q))) (max 3.0 (* 1.2 ES:HC)))
+                (or (null best) (< (abs (- x (caddr q))) (abs (- x (caddr best))))))
+         (setq best q)))
+     (if best
+       (setq key (car best) off 0 xs (caddr best))
+       (progn
+         (setq xs (caddr (assoc key pts)))
+         (if (null xs) (setq key "INI" xs (caddr (assoc "INI" pts))))
+         (setq off (es:int (- x xs)) xs (+ xs off))))
+     (list (strcat "N" (itoa (1+ i)) (if (= tp "B-I") "  inicio: " "  fim: ") key
+                   (if (/= off 0) (strcat (if (> off 0) " +" " ") (itoa off)) "  (no ponto)"))
+           (list key off) (list (- xs (cadr (nth 6 h))) 0.0)))
+    ((= tp "B-MOV")
+     (setq v (es:int d))
+     (list (strcat "N" (itoa (1+ i)) ":  mover a barra " (itoa v) " cm") v (list (float v) 0.0)))
+    (t (list tp nil '(0.0 0.0))))
+)
+
+;;; valor digitado durante o arraste (absoluto; dois numeros com "/")
+(defun es:graf-digitado (h s / tp i nums g ap v)
+  (setq tp (nth 1 h) i (nth 2 h)
+        nums (vl-remove-if 'null (mapcar 'es:num (apply 'append (mapcar '(lambda (x) (es:split x ";")) (es:split s "/"))))))
+  (if nums
+    (cond
+      ((= tp "L-FIM") (max 1 (es:int (car nums))))
+      ((= tp "L-DEG")
+       (setq g (nth i ES:GS))
+       (list (max 10.0 (car nums)) (if (cadr nums) (max 5.0 (cadr nums)) (nth 13 g))))
+      ((member tp '("L-H" "P-H" "A-H" "A-B")) (max 5.0 (car nums)))
+      ((= tp "P-FIM") (max 10.0 (car nums)))
+      ((= tp "A-MOV") (car nums))
+      ((member tp '("V-E1" "V-E2")) (max 0.0 (car nums)))
+      ((member tp '("V-MOV" "C-A" "C-B" "C-M")) (list (car nums) (if (cadr nums) (cadr nums) 0.0)))
+      ((member tp '("B-I" "B-F"))
+       (setq ap (nth i ES:ARMS))
+       (list (es:ad ap (if (= tp "B-I") 2 4)) (es:int (car nums))))
+      ((= tp "B-MOV") (es:int (car nums)))))
+)
+
+;;; ---- aplica um valor no modelo ------------------------------------------------------
+(defun es:graf-aplica (h v / tp i tr ap ct d)
+  (setq tp (nth 1 h) i (nth 2 h))
+  (cond
+    ((null v) nil)
+    ((wcmatch tp "L-*,P-*")
+     (setq tr (nth i ES:TRE))
+     (cond
+       ((= tp "L-FIM") (setq tr (es:setnth tr 2 (itoa v))))
+       ((= tp "L-DEG") (setq tr (es:setnth (es:setnth tr 4 (es:f (car v))) 3 (es:f (cadr v)))))
+       ((= tp "L-H") (setq tr (es:setnth tr 6 (es:f v))))
+       ((= tp "P-FIM") (setq tr (es:setnth tr 2 (es:f v))))
+       ((= tp "P-H") (setq tr (es:setnth tr 3 (es:f v)))))
+     (setq ES:TRE (es:setnth ES:TRE i tr)))
+    ((wcmatch tp "A-*,V-*")
+     (setq ap (nth i ES:APO))
+     (cond
+       ((= tp "A-MOV") (setq ap (es:setnth ap 5 (es:f v))))
+       ((= tp "A-H") (setq ap (es:setnth ap 3 (es:f v))))
+       ((= tp "A-B") (setq ap (es:setnth ap 2 (es:f v))))
+       ((= tp "V-MOV") (setq ap (es:apo-move ap v ES:GS)))
+       ((= tp "V-E1") (setq ap (es:setnth ap 7 (es:f v))))
+       ((= tp "V-E2") (setq ap (es:setnth ap 8 (es:f v)))))
+     (setq ES:APO (es:setnth ES:APO i ap)))
+    ((wcmatch tp "C-*")
+     (setq ct (nth i ES:CORTES))
+     (if (member tp '("C-A" "C-M"))
+       (setq ct (es:setnth (es:setnth ct 1 (+ (nth 1 ct) (car v))) 2 (+ (nth 2 ct) (cadr v)))))
+     (if (member tp '("C-B" "C-M"))
+       (setq ct (es:setnth (es:setnth ct 3 (+ (nth 3 ct) (car v))) 4 (+ (nth 4 ct) (cadr v)))))
+     (setq ES:CORTES (es:setnth ES:CORTES i ct)))
+    ((wcmatch tp "B-*")
+     (setq d (nth i ES:ARMS))
+     (cond
+       ((= tp "B-I") (setq d (es:setnth (es:setnth d 2 (car v)) 3 (itoa (cadr v)))))
+       ((= tp "B-F") (setq d (es:setnth (es:setnth d 4 (car v)) 5 (itoa (cadr v)))))
+       ((= tp "B-MOV")
+        (setq d (es:setnth (es:setnth d 3 (itoa (+ (es:int (es:n (es:ad d 3))) v)))
+                           5 (itoa (+ (es:int (es:n (es:ad d 5))) v))))))
+     (setq ES:ARMS (es:setnth ES:ARMS i d))))
+)
+
+;;; ---- arraste de uma alca: devolve o valor (ou nil = cancelado) ----------------------
+(defun es:graf-arrasta (a alcas / h p0 id3 fim r g dcm vv buf pp c)
+  (setq h (car a) p0 (cadr a) id3 (caddr a) fim nil r nil buf "")
+  (princ (strcat "\n" (nth 5 h) "  - mova e clique  (ou digite o valor + ENTER; ESC / botao direito = cancela)"))
+  (while (not fim)
+    (setq g (vl-catch-all-apply 'grread (list T 15 0)))
+    (cond
+      ((vl-catch-all-error-p g) (setq fim T r nil))
+      ((member (car g) '(5 3))
+       (setq dcm (es:mul (es:sub (es:mundo->bloco (cadr g) id3) (es:mundo->bloco p0 id3)) ES:UC)
+             vv (es:graf-valor h dcm)
+             pp (es:add p0 (es:vet->mundo (caddr vv) id3)))
+       (es:graf-mostra alcas a)
+       (grvecs (append (list -2 p0 pp) (es:graf-quad pp (es:graf-tam) 2 T)))
+       (grtext -1 (if (/= buf "") (strcat "Valor: " buf) (car vv)))
+       (if (= (car g) 3)
+         (progn (setq r (cadr vv) fim T) (princ (strcat "\n" (car vv))))))
+      ((= (car g) 2)
+       (setq c (cadr g))
+       (cond
+         ((member c '(13 32))
+          (if (/= buf "")
+            (progn (setq r (es:graf-digitado h buf) fim T)
+                   (if (null r) (princ (strcat "\nValor invalido: " buf))))
+            (setq fim T r nil)))
+         ((= c 27) (setq fim T r nil))
+         ((= c 8) (if (> (strlen buf) 0) (setq buf (substr buf 1 (1- (strlen buf))))) (grtext -1 (strcat "Valor: " buf)))
+         ((or (and (>= c 48) (<= c 57)) (member c '(44 45 46 47 59)))
+          (setq buf (strcat buf (chr c))) (grtext -1 (strcat "Valor: " buf)))))
+      ((member (car g) '(11 25)) (setq fim T r nil))))
+  r
+)
+
+;;; ---- comandos por tecla ---------------------------------------------------------------
+;;; ponto do mundo -> (grp ponto-local) no desenho LON / PLA / ARM (ou nil)
+(defun es:graf-onde (id ors p grp / ins o q)
+  (if (and (setq ins (es:insert-de id grp)) (setq o (es:origem ors grp)))
+    (es:mul (es:sub (es:mundo->bloco p (es:ins-dados ins)) (es:p2 o)) ES:UC))
+)
+
+;;; lance sob o ponto: (indice degrau) no desenvolvimento ou na planta
+(defun es:graf-lance-em (id ors p / q r k refs rf u v g)
+  (setq r nil)
+  (if (setq q (es:graf-onde id ors p "LON"))
+    (progn
+      (setq k 0)
+      (foreach g ES:GS
+        (if (and (null r) (= (car g) "L") (>= (car q) (nth 1 g)) (<= (car q) (nth 2 g))
+                 (>= (cadr q) (- (es:yint g (car q)) 20.0)) (<= (cadr q) (+ (nth 4 g) 20.0)))
+          (setq r (list k (- (car q) (nth 1 g)))))
+        (setq k (1+ k)))))
+  (if (and (null r) (setq q (es:graf-onde id ors p "PLA")))
+    (progn
+      (setq refs (es:planta-refs ES:GS) k 0)
+      (foreach g ES:GS
+        (setq rf (nth k refs)
+              u (es:dot (es:sub q (nth 0 rf)) (es:vet (nth 1 rf)))
+              v (es:dot (es:sub q (nth 0 rf)) (es:nrm (nth 1 rf))))
+        (if (and (null r) (= (car g) "L") (>= u 0.0) (<= u (nth 2 rf)) (>= v (nth 3 rf)) (<= v (nth 4 rf)))
+          (setq r (list k u)))
+        (setq k (1+ k)))))
+  (if r
+    (progn
+      (setq g (nth (car r) ES:GS))
+      (list (car r) (max 1 (min (1- (nth 12 g)) (1+ (fix (/ (cadr r) (nth 14 g))))))))
+  )
+)
+
+;;; renumera "LANCE n" / "PATAMAR n" na ordem
+(defun es:renumera ( / nl np r)
+  (setq nl 0 np 0 r nil)
+  (foreach tr ES:TRE
+    (if (es:lance-p tr)
+      (progn (setq nl (1+ nl))
+             (if (wcmatch (strcase (nth 1 tr)) "LANCE #*") (setq tr (es:setnth tr 1 (strcat "LANCE " (itoa nl))))))
+      (progn (setq np (1+ np))
+             (if (wcmatch (strcase (nth 1 tr)) "PATAMAR #*") (setq tr (es:setnth tr 1 (strcat "PATAMAR " (itoa np)))))))
+    (setq r (cons tr r)))
+  (setq ES:TRE (reverse r))
+)
+
+;;; divide o lance k no degrau j: lance (j espelhos) + patamar + lance (resto)
+(defun es:divide-lance (k j lp / tr n a b pt r jj kk f)
+  (setq tr (nth k ES:TRE) n (es:int (es:n (nth 2 tr))))
+  (if (and (> n 1) (>= j 1) (< j n))
+    (progn
+      (setq a (es:setnth (es:setnth tr 2 (itoa j)) 5 "0")
+            b (es:setnth (es:setnth tr 2 (itoa (- n j))) 1 (strcat (nth 1 tr) "B"))
+            pt (list "PATAMAR" "PATAMAR 0" (es:f lp) (nth 6 tr) "0" "0" "0" ""))
+      (setq ES:TRE (es:insere-nth (es:insere-nth (es:setnth ES:TRE k a) (1+ k) pt) (+ k 2) b))
+      ;; apoios do fim do lance vao para o fim do novo lance; os de depois andam 2
+      (foreach ap ES:APO
+        (setq jj (es:int (es:n (nth 4 ap))) kk (/ jj 2) f (rem jj 2))
+        (if (or (> kk k) (and (= kk k) (= f 1))) (setq kk (+ kk 2)))
+        (setq r (cons (es:setnth ap 4 (itoa (+ (* 2 kk) f))) r)))
+      (setq ES:APO (reverse r))
+      (es:renumera)
+      T))
+)
+
+;;; ponto notavel mais perto de x (ou deslocamento a partir do inicio): (chave desl)
+(defun es:graf-gruda (pts x / best)
+  (foreach q pts
+    (if (and (< (abs (- x (caddr q))) (max 5.0 (* 1.5 ES:HC)))
+             (or (null best) (< (abs (- x (caddr q))) (abs (- x (caddr best))))))
+      (setq best q)))
+  (if best (list (car best) 0) (list "INI" (es:int (- x (caddr (assoc "INI" pts))))))
+)
+
+;;; nova barra: clique no corte armado (inicio) e no fim; abre a janela da barra
+(defun es:graf-nova-barra (id ors p1 / q z c ql bb i geo tp x1 x2 p2 q2 pts k1 k2 d dcl did r yb yt)
+  (setq q (es:graf-onde id ors p1 "ARM") z nil r nil)
+  (if q
+    (foreach h ES:PEGAS
+      (if (and (null z) (= (car h) "ARM") (= (nth 1 h) "ZONA"))
+        (progn
+          (setq c (nth 6 h) bb (cadr c) ql (if (car c) (es:sub q (car c)) q))
+          (if (and bb (>= (car ql) (car bb)) (<= (car ql) (caddr bb))
+                   (>= (cadr ql) (cadr bb)) (<= (cadr ql) (cadddr bb)))
+            (setq z (list (nth 2 h) (car c) ql)))))))
+  (if (null z)
+    (princ "\nClique DENTRO de um corte armado (desenho da ARMADURA).")
+    (progn
+      (setq i (car z) geo (es:arm-geo ES:GS (nth (1- i) (es:arm-detalhes ES:GS)))
+            x1 (car (caddr z))
+            yb (es:y-cadeia (nth 1 geo) x1) yt (es:y-cadeia (nth 2 geo) x1)
+            tp (if (and yb yt (> (abs (- (cadr (caddr z)) yb)) (abs (- (cadr (caddr z)) yt)))) "1" "0"))
+      (princ (strcat "\nNova barra " (if (= tp "0") "INFERIOR" "SUPERIOR") " no detalhe D" (itoa i) "."))
+      (setq p2 (vl-catch-all-apply 'getpoint (list p1 "\nFim da nova barra: ")))
+      (if (and p2 (not (vl-catch-all-error-p p2)) (setq q2 (es:graf-onde id ors p2 "ARM")))
+        (progn
+          (setq x2 (car (if (cadr z) (es:sub q2 (cadr z)) q2)))
+          (if (> x1 x2) (setq d x1 x1 x2 x2 d))
+          (setq pts (es:arm-pontos geo tp) k1 (es:graf-gruda pts x1) k2 (es:graf-gruda pts x2))
+          (setq d (list tp (itoa i) (car k1) (itoa (cadr k1)) (car k2) (itoa (cadr k2))
+                        (if (member (car k1) '("INI" "FIM")) "3" (if (= tp "0") "5" "2")) ""
+                        (if (member (car k2) '("INI" "FIM")) "3" (if (= tp "0") "5" "2")) ""
+                        (itoa (if (= tp "0") ES:AIB ES:ASB)) (if (= tp "0") ES:AIS ES:ASS) ""))
+          (setq dcl (es:write-dcl) did (load_dialog dcl))
+          (if (> did 0)
+            (progn
+              (setq d (es:dlg-barra did d))
+              (unload_dialog did)
+              (if d (setq ES:ARMS (append ES:ARMS (list d)) r T))))))))
+  r
+)
+
+;;; E: janela do elemento da alca
+(defun es:graf-edita (a / h tp i dcl did r)
+  (setq h (car a) tp (nth 1 h) i (nth 2 h) r nil)
+  (setq dcl (es:write-dcl) did (load_dialog dcl))
+  (if (> did 0)
+    (progn
+      (cond
+        ((wcmatch tp "L-*,P-*")
+         (if (setq r (if (es:lance-p (nth i ES:TRE)) (es:dlg-lance did (nth i ES:TRE)) (es:dlg-pat did (nth i ES:TRE))))
+           (setq ES:TRE (es:setnth ES:TRE i r))))
+        ((wcmatch tp "A-*,V-*")
+         (if (setq r (es:dlg-apo did (nth i ES:APO))) (setq ES:APO (es:setnth ES:APO i r))))
+        ((wcmatch tp "B-*")
+         (if (setq r (es:dlg-barra did (nth i ES:ARMS))) (setq ES:ARMS (es:setnth ES:ARMS i r))))
+        (t (princ "\nLinha de corte: arraste as pontas ou o meio; para apagar use A.")))
+      (unload_dialog did)))
+  r
+)
+
+;;; A: apaga o elemento da alca
+(defun es:graf-apaga (a / h tp i)
+  (setq h (car a) tp (nth 1 h) i (nth 2 h))
+  (cond
+    ((wcmatch tp "L-*,P-*")
+     (if (> (length ES:TRE) 1)
+       (progn
+         (princ (strcat "\n" (nth 1 (nth i ES:TRE)) " apagado."))
+         (setq ES:TRE (es:remove-nth ES:TRE i))
+         (es:apo-remapeia (list "rem" i))
+         (es:renumera)
+         T)
+       (progn (princ "\nA escada precisa de pelo menos um trecho.") nil)))
+    ((wcmatch tp "A-*,V-*")
+     (princ (strcat "\nApoio " (car (nth i ES:APO)) " apagado."))
+     (setq ES:APO (es:remove-nth ES:APO i)) T)
+    ((wcmatch tp "C-*")
+     (princ (strcat "\nCorte " (car (nth i ES:CORTES)) " apagado."))
+     (setq ES:CORTES (es:remove-nth ES:CORTES i)) T)
+    ((wcmatch tp "B-*")
+     (princ (strcat "\nBarra N" (itoa (1+ i)) " apagada (as seguintes sobem um numero)."))
+     (setq ES:ARMS (es:remove-nth ES:ARMS i))
+     (if (null ES:ARMS) (princ "\n(lista vazia: a armadura automatica volta a ser gerada)"))
+     T))
+)
+
+;;; ---- laco principal ----------------------------------------------------------------
+(defun es:graf-recarrega (id / d ors)
+  (if (setq d (es:reg-le id))
+    (progn (setq ors (es:carrega d)) (es:unidades) (setq ES:GS (es:geo ES:TRE)) ors))
+)
+(defun es:graf-refaz (id ors)
+  (setq ES:PEGAS nil)
+  (redraw)
+  (es:roda 'es:gera (list id ors nil) "ESCADAGRAF")
+  (es:graf-recarrega id)
+)
+
+(defun es:graf-ajuda ()
+  (princ (strcat
+    "\n---- ESCADAGRAF: edicao grafica da escada " ES:NOME " ----"
+    "\n  Clique numa ALCA (quadrado) e arraste; clique de novo para soltar."
+    "\n  Durante o arraste: digite o valor exato + ENTER (dois valores: 28/17.5)."
+    "\n  Azul = lances, ciano = patamares, verde = vigas / apoios, magenta = cortes,"
+    "\n  vermelho = barras da armadura."
+    "\n  Teclas:  A apagar   E editar (janela)   D dividir lance (cortar com patamar)"
+    "\n           C novo corte na planta   N nova barra (2 cliques no corte armado)"
+    "\n           R refazer armadura automatica   Q quantitativo   J janela completa"
+    "\n           Z desfazer   ?  ajuda   ENTER / botao direito = sair"))
+)
+
+(defun es:graf-modo-txt (m)
+  (cond ((= m "A") "APAGAR: clique na alca do elemento")
+        ((= m "E") "EDITAR: clique na alca (fora de alca = janela completa)")
+        ((= m "D") "DIVIDIR: clique no degrau do lance onde entra o patamar")
+        ((= m "N") "NOVA BARRA: clique no inicio da barra no corte armado")
+        (t ""))
+)
+
+(defun es:graf-refazer-arm? ( / k)
+  (if ES:ARMS
+    (progn
+      (initget "Sim Nao")
+      (setq k (vl-catch-all-apply 'getkword (list "\nA escada mudou de trechos. Refazer a armadura automatica? [Sim/Nao] <Sim>: ")))
+      (if (or (vl-catch-all-error-p k) (/= k "Nao")) (setq ES:ARMS nil))))
+)
+
+(defun es:graf-laco (id / ors alcas fim g a modo desf p r v k bk lp)
+  (setq desf nil fim nil modo nil)
+  (setq ors (es:graf-refaz id (es:graf-recarrega id)))
+  (setq alcas (es:graf-alcas id))
+  (es:graf-ajuda)
+  (if (null alcas) (princ "\nNenhuma alca: ligue a PLANTA, o DESENVOLVIMENTO ou a ARMADURA no ESCADAEDIT."))
+  (while (and (not fim) ors)
+    (setq g (vl-catch-all-apply 'grread (list T 15 0)))
+    (cond
+      ((vl-catch-all-error-p g) (setq fim T))
+      ((= (car g) 5)
+       (setq a (es:graf-perto alcas (cadr g)))
+       (es:graf-mostra alcas a)
+       (grtext -1 (cond (modo (strcat (es:graf-modo-txt modo) (if a (strcat "  -  " (nth 5 (car a))) "")))
+                        (a (nth 5 (car a)))
+                        (t "ESCADAGRAF: arraste as alcas  |  A E D C N R Q J Z  |  ENTER sai"))))
+      ((= (car g) 3)
+       (setq a (es:graf-perto alcas (cadr g)) p (cadr g) r nil bk (es:dados ors))
+       (cond
+         ((= modo "A")
+          (if a (setq r (es:graf-apaga a)) (princ "\nNada para apagar aqui: clique numa alca."))
+          (if (and r (wcmatch (nth 1 (car a)) "L-*,P-*")) (es:graf-refazer-arm?)))
+         ((= modo "E")
+          (redraw)
+          (if a
+            (setq r (es:graf-edita a))
+            (if (not (setq r (es:janela))) (es:carrega bk))))
+         ((= modo "D")
+          (if (setq v (es:graf-lance-em id ors p))
+            (progn
+              (initget 6)
+              (setq lp (vl-catch-all-apply 'getreal (list (strcat "\nComprimento do novo patamar (cm) <" ES:MLP ">: "))))
+              (if (or (vl-catch-all-error-p lp) (null lp)) (setq lp (es:n ES:MLP)))
+              (if (setq r (es:divide-lance (car v) (cadr v) lp))
+                (progn (princ (strcat "\nLance dividido no degrau " (itoa (cadr v)) "."))
+                       (es:graf-refazer-arm?))
+                (princ "\nEsse lance nao pode ser dividido ai (precisa de 2 espelhos ou mais).")))
+            (princ "\nClique SOBRE um lance (no desenvolvimento ou na planta).")))
+         ((= modo "N") (redraw) (setq r (es:graf-nova-barra id ors p)))
+         (a
+          (if (setq v (es:graf-arrasta a alcas)) (progn (es:graf-aplica (car a) v) (setq r T)))))
+       (setq modo nil)
+       (if r
+         (setq desf (cons bk desf) ors (es:graf-refaz id ors) alcas (es:graf-alcas id))))
+      ((= (car g) 2)
+       (setq k (strcase (chr (cadr g))))
+       (cond
+         ((member (cadr g) '(13 32 27)) (if modo (setq modo nil) (setq fim T)))
+         ((member k '("A" "E" "D" "N"))
+          (setq modo k) (princ (strcat "\n" (es:graf-modo-txt k) "  (botao direito = desiste)")))
+         ((= k "Z")
+          (if desf
+            (progn (es:carrega (car desf)) (setq desf (cdr desf) ors (es:graf-refaz id ors) alcas (es:graf-alcas id))
+                   (princ "\nDesfeito."))
+            (princ "\nNada para desfazer.")))
+         ((= k "C")
+          (redraw) (setq bk (es:dados ors))
+          (es:secao-laco id)
+          (setq desf (cons bk desf) ors (es:graf-refaz id (es:graf-recarrega id)) alcas (es:graf-alcas id)))
+         ((= k "R")
+          (setq desf (cons (es:dados ors) desf) ES:ARMS (es:arm-auto ES:GS)
+                ors (es:graf-refaz id ors) alcas (es:graf-alcas id))
+          (princ "\nArmadura automatica refeita."))
+         ((= k "Q") (es:quant-print ES:GS))
+         ((= k "J")
+          (redraw) (setq bk (es:dados ors))
+          (if (es:janela)
+            (setq desf (cons bk desf) ors (es:graf-refaz id ors) alcas (es:graf-alcas id))
+            (es:carrega bk)))
+         ((member k '("?" "H")) (es:graf-ajuda))))
+      ((member (car g) '(11 25)) (if modo (setq modo nil) (setq fim T)))))
+  (redraw)
+  (grtext -1 "")
+  (princ "\nESCADAGRAF terminado.")
+  (princ)
+)
+
+;;; ---- alcas de cada desenho (chamadas no fim do desenho) -----------------------------
+(defun es:alcas-lon (gs / k sm r ap inv)
+  (setq k 0)
+  (foreach g gs
+    (if (= (car g) "L")
+      (progn
+        (es:alca "L-FIM" k (list (nth 2 g) (nth 4 g)) '(1.0 0.0)
+                 (strcat (nth 9 g) ": fim do lance (arraste = + / - degraus)") nil)
+        (es:alca "L-DEG" k (list (+ (nth 1 g) (nth 14 g)) (+ (nth 3 g) (nth 13 g))) nil
+                 (strcat (nth 9 g) ": 1.o degrau (horizontal = piso, vertical = espelho)") nil)
+        (setq sm (* 0.5 (+ (nth 1 g) (nth 2 g))))
+        (es:alca "L-H" k (list sm (es:yint g sm)) (es:mul (es:nrm (atan (nth 6 g))) -1.0)
+                 (strcat (nth 9 g) ": espessura") nil))
+      (progn
+        (es:alca "P-FIM" k (list (nth 2 g) (nth 11 g)) '(1.0 0.0)
+                 (strcat (nth 9 g) ": fim do patamar (comprimento)") nil)
+        (es:alca "P-H" k (list (* 0.5 (+ (nth 1 g) (nth 2 g))) (nth 5 g)) '(0.0 -1.0)
+                 (strcat (nth 9 g) ": espessura") nil)))
+    (setq k (1+ k)))
+  (setq k 0)
+  (foreach ap ES:APO
+    (if (= (es:apo-dir ap) 0)
+      (progn
+        (setq r (es:apo-ret gs ap) inv (es:apo-inv ap))
+        (es:alca "A-MOV" k (list (* 0.5 (+ (nth 0 r) (nth 1 r))) (* 0.5 (+ (nth 2 r) (nth 3 r)))) '(1.0 0.0)
+                 (strcat (car ap) ": posicao (deslocamento do eixo)") nil)
+        (if (/= (nth 4 r) 1)
+          (progn
+            (es:alca "A-H" k (list (* 0.5 (+ (nth 0 r) (nth 1 r))) (if inv (nth 3 r) (nth 2 r)))
+                     (if inv '(0.0 1.0) '(0.0 -1.0)) (strcat (car ap) ": altura h") nil)
+            (es:alca "A-B" k (list (nth 1 r) (+ (nth 2 r) (* 0.25 (- (nth 3 r) (nth 2 r))))) '(1.0 0.0)
+                     (strcat (car ap) ": largura b") nil)))))
+    (setq k (1+ k)))
+)
+
+(defun es:alcas-pla (gs / refs k rf so ap i a d dr)
+  (setq refs (es:planta-refs gs) k 0)
+  (foreach g gs
+    (setq rf (nth k refs))
+    (es:alca (if (= (car g) "L") "L-FIM" "P-FIM") k
+             (es:uv (nth 0 rf) (nth 1 rf) (nth 2 rf) (* 0.5 (+ (nth 3 rf) (nth 4 rf)))) (es:vet (nth 1 rf))
+             (strcat (nth 9 g) (if (= (car g) "L") ": fim do lance (arraste = + / - degraus)" ": comprimento"))
+             nil)
+    (setq k (1+ k)))
+  (foreach so (es:solidos gs)
+    (if (and (= (car so) "B") (setq ap (es:nth 8 (nth 9 so))) (/= (nth 3 (nth 9 so)) "S")
+             (setq i (vl-position ap ES:APO)))
+      (progn
+        (setq a (nth 2 so) d (nth 1 so) dr (es:apo-dir ap))
+        (es:alca "V-MOV" i (es:uv d a (* 0.5 (+ (nth 3 so) (nth 4 so))) (* 0.5 (+ (nth 5 so) (nth 6 so)))) nil
+                 (strcat (car ap) ": mover a viga") nil)
+        (if (= dr 0)
+          (progn
+            (es:alca "V-E1" i (es:uv d a 0.0 (nth 5 so)) (es:mul (es:nrm a) -1.0) (strcat (car ap) ": ponta (extensao)") nil)
+            (es:alca "V-E2" i (es:uv d a 0.0 (nth 6 so)) (es:nrm a) (strcat (car ap) ": ponta (extensao)") nil))
+          (progn
+            (es:alca "V-E1" i (es:uv d a (nth 3 so) 0.0) (es:mul (es:vet a) -1.0) (strcat (car ap) ": ponta (extensao)") nil)
+            (es:alca "V-E2" i (es:uv d a (nth 4 so) 0.0) (es:vet a) (strcat (car ap) ": ponta (extensao)") nil))))))
+  (setq k 0)
+  (foreach ct ES:CORTES
+    (es:alca "C-A" k (list (nth 1 ct) (nth 2 ct)) nil (strcat "Corte " (car ct) ": ponta") nil)
+    (es:alca "C-B" k (list (nth 3 ct) (nth 4 ct)) nil (strcat "Corte " (car ct) ": ponta") nil)
+    (es:alca "C-M" k (list (* 0.5 (+ (nth 1 ct) (nth 3 ct))) (* 0.5 (+ (nth 2 ct) (nth 4 ct)))) nil
+             (strcat "Corte " (car ct) ": mover a linha") nil)
+    (setq k (1+ k)))
+)
+
+;;; barras de um detalhe: pontas presas aos pontos, meio = mover
+(defun es:alcas-arm (geo i / k pts fi lay xi xf x0 x1 y)
+  (setq k 0)
+  (foreach d ES:ARMS
+    (if (= (es:int (es:n (es:ad d 1))) i)
+      (progn
+        (setq pts (es:arm-pontos geo (car d)) fi (es:bit (es:int (es:n (es:ad d 10))))
+              lay (es:arm-camada geo (car d) fi) x0 (car (car lay)) x1 (car (es:ultimo lay))
+              xi (+ (es:arm-x geo (car d) (es:ad d 2)) (es:n (es:ad d 3)))
+              xf (+ (es:arm-x geo (car d) (es:ad d 4)) (es:n (es:ad d 5))))
+        (foreach e (list (list "B-I" xi "inicio") (list "B-F" xf "fim"))
+          (setq y (es:y-cadeia lay (max x0 (min x1 (cadr e)))))
+          (if y
+            (es:alca (car e) k (list (max x0 (min x1 (cadr e))) y) '(1.0 0.0)
+                     (strcat "N" (itoa (1+ k)) " (" (nth (es:int (es:n (car d))) ES:TIPOS-ARM-C) "): " (caddr e)
+                             " - gruda nos pontos da escada")
+                     (list pts (cadr e)))))
+        (setq y (es:y-cadeia lay (max x0 (min x1 (* 0.5 (+ xi xf))))))
+        (if y
+          (es:alca "B-MOV" k (list (max x0 (min x1 (* 0.5 (+ xi xf)))) y) '(1.0 0.0)
+                   (strcat "N" (itoa (1+ k)) ": mover a barra inteira") nil))))
+    (setq k (1+ k)))
+)
+
+;;; ==========================================================================
 ;;;  8.  COMANDOS
 ;;; ==========================================================================
 
@@ -4107,7 +5071,8 @@
                                           "\nDESENVOLVIMENTO - inicio da escada, nivel inicial <nao desenhar>: ")
                          londef)
                    (list "ARM" 'ES:DARM "\nDETALHAMENTO DA ARMADURA - ponto de insercao <nao desenhar>: " nil)
-                   (list "PAR" 'ES:DARM "\nPLANTA DE ARMACAO - ponto do inicio do 1.o lance, no eixo <nao desenhar>: " nil))
+                   (list "PAR" 'ES:DARM "\nPLANTA DE ARMACAO - ponto do inicio do 1.o lance, no eixo <nao desenhar>: " nil)
+                   (list "QTD" 'ES:DQTD "\nQUANTITATIVO (tabela) - canto superior esquerdo <nao desenhar>: " nil))
              (mapcar '(lambda (c) (list (strcat "SEC-" (car c)) nil
                                         (strcat "\nCORTE " (car c) "-" (car c)
                                                 " - ponto do inicio da linha de corte, no nivel inicial <remover o corte>: ")
@@ -4207,6 +5172,21 @@
 )
 
 ;;; ---- ESCADAVIGA: mexer numa viga / apoio direto na planta -------------------------
+;;; move um apoio de dl (cm da planta): transversal = deslocamento do eixo + lateral;
+;;; borda = afastamento da borda + extensoes (desliza ao longo do trecho)
+(defun es:apo-move (ap dl gs / ang du dv)
+  (setq ang (nth 1 (nth (es:apo-k gs ap) (es:planta-refs gs)))
+        du (+ (* (car dl) (cos ang)) (* (cadr dl) (sin ang)))
+        dv (- (* (cadr dl) (cos ang)) (* (car dl) (sin ang))))
+  (if (> (es:apo-dir ap) 0)
+    (setq ap (es:setnth ap 5 (es:f (+ (es:n (nth 5 ap)) (if (= (es:apo-dir ap) 1) dv (- dv)))))
+          ap (es:setnth ap 7 (es:f (- (es:apo-ext1 ap) du)))
+          ap (es:setnth ap 8 (es:f (+ (es:apo-ext2 ap) du))))
+    (setq ap (es:setnth ap 5 (es:f (+ (es:n (nth 5 ap)) du)))
+          ap (es:setnth ap 13 (es:f (+ (es:apo-dv ap) dv)))))
+  ap
+)
+
 ;;; apoio mais proximo do ponto (cm da planta): indice em ES:APO ou nil
 (defun es:viga-perto (gs q / r dmin so d u v du dv dd i)
   (setq dmin (* 4.0 ES:HC))
@@ -4239,18 +5219,7 @@
           ((= op "Mover")
            (setq p1 (getpoint "\nPonto base: "))
            (if (and p1 (setq p2 (getpoint p1 "\nNovo ponto: ")))
-             (progn
-               (setq dl (es:sub (es:mundo->planta p2 ins o) (es:mundo->planta p1 ins o))
-                     ang (nth 1 (nth (es:apo-k gs ap) (es:planta-refs gs)))
-                     du (+ (* (car dl) (cos ang)) (* (cadr dl) (sin ang)))
-                     dv (- (* (cadr dl) (cos ang)) (* (car dl) (sin ang))))
-               (if (> (es:apo-dir ap) 0)
-                 ;; borda: lateral pelo deslocamento, ao longo pelas extensoes
-                 (setq ap (es:setnth ap 5 (es:f (+ (es:n (nth 5 ap)) (if (= (es:apo-dir ap) 1) dv (- dv)))))
-                       ap (es:setnth ap 7 (es:f (- (es:apo-ext1 ap) du)))
-                       ap (es:setnth ap 8 (es:f (+ (es:apo-ext2 ap) du))))
-                 (setq ap (es:setnth ap 5 (es:f (+ (es:n (nth 5 ap)) du)))
-                       ap (es:setnth ap 13 (es:f (+ (es:apo-dv ap) dv))))))))
+             (setq ap (es:apo-move ap (es:sub (es:mundo->planta p2 ins o) (es:mundo->planta p1 ins o)) gs))))
           ((= op "Inverter")
            (setq ap (es:setnth ap 11 (if (es:apo-inv ap) "0" "1"))))
           ((= op "Espelhar")
@@ -4298,6 +5267,50 @@
     ((null (es:insert-de (setq id (car x)) "PLA")) (princ "\nEssa escada nao tem planta de formas."))
     (t (es:roda 'es:viga-laco (list id (cadr s)) "ESCADAVIGA")))
   (es:undo-fim doc)
+  (princ)
+)
+
+;;; ---- ESCADAGRAF: edicao grafica (alcas arrastaveis) ---------------------------------
+(defun c:ESCADAGRAF ( / *error* doc s id)
+  (defun *error* (msg)
+    (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
+      (princ (strcat "\n*** Erro: " msg (if ES:ETAPA (strcat "  [etapa: " ES:ETAPA "]") ""))))
+    (redraw) (grtext -1 "") (es:undo-fim doc) (setq ES:ID nil ES:GRP nil) (princ))
+  (setq s (entsel "\nESCADAGRAF - clique num desenho da escada: "))
+  (cond
+    ((null s) (princ "\nNada selecionado."))
+    ((null (setq id (car (es:id-ent (car s))))) (princ "\nIsso nao e um desenho da ESCADA."))
+    ((null (es:reg-le id)) (princ (strcat "\nOs dados da escada " id " nao foram encontrados.")))
+    (t
+     (setq doc (es:undo-ini))
+     (es:roda 'es:graf-laco (list id) "ESCADAGRAF")
+     (es:undo-fim doc)))
+  (princ)
+)
+
+;;; ---- ESCADAQTD: quantitativo na linha de comando (e a tabela) ------------------------
+(defun c:ESCADAQTD ( / *error* doc s id ors k)
+  (defun *error* (msg)
+    (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
+      (princ (strcat "\n*** Erro: " msg (if ES:ETAPA (strcat "  [etapa: " ES:ETAPA "]") ""))))
+    (es:undo-fim doc) (setq ES:ID nil ES:GRP nil) (princ))
+  (setq s (entsel "\nESCADAQTD - clique num desenho da escada: "))
+  (cond
+    ((null s) (princ "\nNada selecionado."))
+    ((null (setq id (car (es:id-ent (car s))))) (princ "\nIsso nao e um desenho da ESCADA."))
+    ((null (es:reg-le id)) (princ (strcat "\nOs dados da escada " id " nao foram encontrados.")))
+    (t
+     (setq ors (es:carrega (es:reg-le id)))
+     (es:unidades)
+     (es:roda 'es:quant-print (list (es:geo ES:TRE)) "quantitativo")
+     (initget "Sim Nao")
+     (setq k (getkword (strcat "\n" (if (es:insert-de id "QTD") "Atualizar" "Desenhar")
+                               " a tabela QUANTITATIVO no desenho? [Sim/Nao] <Sim>: ")))
+     (if (/= k "Nao")
+       (progn
+         (setq doc (es:undo-ini) ES:DQTD "1")
+         (es:roda 'es:gera (list id ors nil) "quantitativo")
+         (es:undo-fim doc)))))
   (princ)
 )
 
@@ -4354,5 +5367,7 @@
 (princ (strcat "\nESCADA v" ES:VERSAO " carregada (Baluarte).  Comandos: ESCADA (nova), "
                "ESCADACORTE (a partir de um corte desenhado), ESCADASECAO (tracar cortes na planta), "
                "ESCADAVIGA (mover / inverter / girar vigas na planta), "
+               "ESCADAGRAF (editar arrastando alcas: trechos, vigas, cortes, barras), "
+               "ESCADAQTD (quantitativo de concreto e formas), "
                "ESCADAEDIT (editar; armaduras no botao Armadura...)."))
 (princ)
