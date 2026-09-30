@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ESCADA.lsp
-;;;  FORMAS E ARMADURA DE ESCADAS DE CONCRETO ARMADO  --  v1.6
+;;;  FORMAS E ARMADURA DE ESCADAS DE CONCRETO ARMADO  --  v1.7
 ;;;
 ;;;  Desenvolvido por Baluarte Solucoes Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -106,6 +106,19 @@
 ;;;  laje) ou INVERTIDA (fundo na laje, sobe acima dela - na planta aparece
 ;;;  cheia), desnivel do topo, deslocamento lateral e ROTACAO.
 ;;;
+;;;  PADRAO DE PRANCHA (modelo EC-PE-SOBRADO): titulos alinhados a esquerda
+;;;  com a escala embaixo (cortes sublinhados); cada ELEMENTO (nome do 1.o lance
+;;;  do detalhe, ex.: LE101) tem "LE101 - ARMADURAS" e "CORTE 1 - LE101" (secao
+;;;  com as longitudinais em bolinhas e leaders, distribuicao em U com pernas
+;;;  h - 2c extraida com cotas) e a marca do corte no lance; rotulos
+;;;  "N.7 8 %%c 8.0 c/17 C=210"; distribuicao identificada por leaders curtos;
+;;;  leader "ANCORAGEM QUIMICA (xx CM DE EMBUTIMENTO)"; posicoes numeradas por
+;;;  elemento; LISTA DE FERROS agrupada por elemento (N | %%c | QUANT. |
+;;;  UNITARIO | TOTAL) e RESUMO DE ACO CA-60B / CA-50A com kg/m e PESO TOTAL;
+;;;  TABELA DE FORMAS (LARGURA | AREA DA SECAO | PERIMETRO DE FORMA | FORMAS |
+;;;  CONCRETO); vista lateral com a cota de cada piso e espelho; legenda das
+;;;  hachuras em tabela.  Para caber tudo como na prancha, use ESC 1:25.
+;;;
 ;;;  SEM EMPUXO AO VAZIO (qualquer tipo de escada): nenhuma barra longitudinal
 ;;;  (inferior ou superior) passa dobrada por um canto em que a tracao a
 ;;;  empurraria para fora do concreto.  A barra e dividida no canto e as
@@ -145,7 +158,7 @@
 
 (vl-load-com)
 
-(setq ES:VERSAO    "1.6"
+(setq ES:VERSAO    "1.7"
       ES:LAY-CORTE "EST_FormaCorte"
       ES:LAY-VISTA "EST_FormaVista"
       ES:LAY-OCULTA "EST_FormaOculta"
@@ -601,12 +614,21 @@
   (es:ordena (reverse r) '(lambda (x) (cadr x)))
 )
 
-;;; titulo sublinhado centrado em (x, y) com a escala embaixo
-(defun es:titulo (txt sub x y / c l)
-  (setq c ES:HC l (* (strlen txt) 0.95 1.4 c))
-  (es:txt txt (list x y) 1.4 0.0 ES:LAY-TIT 1 0)
-  (es:line (list (- x (* 0.5 l)) (- y (* 0.45 c))) (list (+ x (* 0.5 l)) (- y (* 0.45 c))) ES:LAY-TIT)
-  (if sub (es:txt sub (list x (- y (* 1.9 c))) 0.9 0.0 ES:LAY-TIT 1 0))
+;;; titulo no padrao da prancha: ALINHADO A ESQUERDA do desenho (caixa atual),
+;;; escala embaixo; so os CORTES sao sublinhados.  x = centro (se nao houver caixa)
+(defun es:titulo (txt sub x y / c l xl)
+  (setq c ES:HC l (* (strlen txt) 0.95 1.4 c)
+        xl (if ES:CAIXA (car ES:CAIXA) (- x (* 0.5 l))))
+  (es:txt txt (list xl y) 1.4 0.0 ES:LAY-TIT 0 0)
+  (if (wcmatch (strcase txt) "CORTE*")
+    (es:line (list xl (- y (* 0.45 c))) (list (+ xl l) (- y (* 0.45 c))) ES:LAY-TIT))
+  (if sub (es:txt sub (list xl (- y (* 1.9 c))) 0.9 0.0 ES:LAY-TIT 0 0))
+)
+
+;;; bitola com uma casa: "8" -> "8.0", "6.3" -> "6.3"
+(defun es:bitf (i / s)
+  (setq s (nth i ES:BITOLAS))
+  (if (vl-string-position 46 s) s (strcat s ".0"))
 )
 
 ;;; ---- cotas -----------------------------------------------------------------
@@ -1045,7 +1067,7 @@
 ;;;  nivel inicial.
 ;;; ---------------------------------------------------------------------------
 (defun es:des-lon (gs / c top sc s0 s1 y1 rets r x1 x2 yb yt tp ylim ymin ymax xmax
-                        xd yd sm ys ang n bb g ap ym)
+                        xd yd sm ys ang n bb g ap ym q)
   (setq c ES:HC top (es:topo gs) sc (es:intradorso gs)
         s0 (es:s-ini gs) s1 (es:s-fim gs) y1 (es:y-fim gs))
   ;; apoios (retangulos) - usados tambem para recortar as faces das pontas
@@ -1118,11 +1140,23 @@
       (if (> (abs (nth 16 g)) 0.001)
         (es:dimv (nth 3 g) (nth 11 g) (+ xmax (* 0.5 c)) xd (es:f (nth 16 g))))))
   (es:dimv 0.0 y1 (+ xmax (* 0.5 c)) (+ xd (* 2.5 c)) (es:f y1))
+  ;; ---- cota de CADA piso (em cima) e de CADA espelho (ao lado), como na prancha
+  (foreach g gs
+    (if (= (car g) "L")
+      (progn
+        (setq q (car (nth 7 g)))
+        (foreach p (cdr (nth 7 g))
+          (cond
+            ((< (abs (- (car p) (car q))) 1e-6)
+             (es:dimv (cadr q) (cadr p) (car p) (- (car p) (* 0.9 c)) (es:f (- (cadr p) (cadr q)))))
+            ((< (abs (- (cadr p) (cadr q))) 1e-6)
+             (es:dimh (car q) (car p) (cadr p) (+ (cadr p) (* 1.1 c)) (es:f (- (car p) (car q))))))
+          (setq q p)))))
   (es:alcas-lon gs)
   ;; ---- titulo
   (setq bb ES:CAIXA)
-  (es:titulo (strcat "CORTE LONGITUDINAL - " ES:NOME)
-             (strcat "(DESENVOLVIDO)   ESC. 1:" ES:ESC)
+  (es:titulo (strcat "FORMA VISTA LATERAL - " ES:NOME)
+             (strcat "(DESENVOLVIDA)   ESC 1:" ES:ESC)
              (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
 )
 
@@ -1283,20 +1317,30 @@
                             ang 0.8 ES:LAY-TXT)))))))
   (if (and leg (= ES:LEGH "1"))
     (progn
-      (setq bb ES:CAIXA x (+ (caddr bb) (* 4.0 c)) u (cadddr bb))
-      (es:txt "LEGENDA" (list x u) 1.0 0.0 ES:LAY-TXT 0 0)
+      ;; tabela LEGENDA HACHURAS ESCADA: HACHURA | DESCRICAO (padrao da prancha)
+      (setq bb ES:CAIXA x (+ (caddr bb) (* 4.0 c)) u (cadddr bb)
+            kk (* c (+ 2.0 (* 0.62 0.8 (apply 'max (mapcar '(lambda (it) (strlen (car it))) leg))))))
+      (es:txt "LEGENDA HACHURAS ESCADA" (list (+ x (* 0.5 (+ (* 8.0 c) kk))) (- u (* 1.2 c))) 0.8 0.0 ES:LAY-TXT 1 2)
+      (es:line (list x (- u (* 2.4 c))) (list (+ x (* 8.0 c) kk) (- u (* 2.4 c))) ES:LAY-GRADE)
+      (es:txt "HACHURA" (list (+ x (* 4.0 c)) (- u (* 3.6 c))) 0.75 0.0 ES:LAY-TXT 1 2)
+      (es:txt "DESCRICAO" (list (+ x (* 8.0 c) (* 0.5 kk)) (- u (* 3.6 c))) 0.75 0.0 ES:LAY-TXT 1 2)
+      (setq vd (- u (* 4.8 c)))
+      (es:line (list x vd) (list (+ x (* 8.0 c) kk) vd) ES:LAY-GRADE)
       (foreach it (reverse leg)
-        (setq u (- u (* 3.0 c)))
-        (es:ret x u (+ x (* 3.0 c)) (+ u (* 2.0 c)) ES:LAY-TXT nil)
-        (es:hachura-i (list (list x u) (list (+ x (* 3.0 c)) u) (list (+ x (* 3.0 c)) (+ u (* 2.0 c)))
-                            (list x (+ u (* 2.0 c))))
+        (setq vd (- vd (* 3.0 c)))
+        (es:ret (+ x (* 2.0 c)) (+ vd (* 0.5 c)) (+ x (* 6.0 c)) (+ vd (* 2.5 c)) ES:LAY-TXT nil)
+        (es:hachura-i (list (list (+ x (* 2.0 c)) (+ vd (* 0.5 c))) (list (+ x (* 6.0 c)) (+ vd (* 0.5 c)))
+                            (list (+ x (* 6.0 c)) (+ vd (* 2.5 c))) (list (+ x (* 2.0 c)) (+ vd (* 2.5 c))))
                       (cadr it) ES:LAY-HACH nil)
-        (es:txt (car it) (list (+ x (* 3.8 c)) (+ u c)) 0.8 0.0 ES:LAY-TXT 0 2))))
+        (es:txt (car it) (list (+ x (* 9.0 c)) (+ vd (* 1.5 c))) 0.75 0.0 ES:LAY-TXT 0 2)
+        (es:line (list x vd) (list (+ x (* 8.0 c) kk) vd) ES:LAY-GRADE))
+      (es:line (list (+ x (* 8.0 c)) (- u (* 2.4 c))) (list (+ x (* 8.0 c)) vd) ES:LAY-GRADE)
+      (es:ret x vd (+ x (* 8.0 c) kk) u ES:LAY-TAB nil)))
   ;; linhas de corte
   (es:marca-cortes gs)
   (es:alcas-pla gs)
   (setq bb ES:CAIXA)
-  (es:titulo (strcat "PLANTA DE FORMAS - " ES:NOME) (strcat "ESC. 1:" ES:ESC)
+  (es:titulo (strcat "PLANTA DE FORMAS - " ES:NOME) (strcat "ESC 1:" ES:ESC)
              (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
 )
 
@@ -1610,7 +1654,7 @@
   (foreach ln
    (list
 "es_main : dialog {"
-"  label = \"ESCADA  -  FORMAS E ARMADURA      v1.6      Baluarte\";"
+"  label = \"ESCADA  -  FORMAS E ARMADURA      v1.7      Baluarte\";"
 "  : row {"
 "    : column {"
 "      : boxed_column {"
@@ -3432,7 +3476,7 @@
   (es:alcas-sec ct pcs cxs a0 dc len)
   (setq bb ES:CAIXA)
   (if bb
-    (es:titulo (strcat "CORTE " (car ct) "-" (car ct)) (strcat ES:NOME "   ESC. 1:" ES:ESC)
+    (es:titulo (strcat "CORTE " (car ct) "-" (car ct)) (strcat ES:NOME "   ESC 1:" ES:ESC)
                (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c))))
   (if (null pcs) (es:aviso (strcat "o corte " (car ct) "-" (car ct) " nao atravessa nenhum lance/patamar.")))
 )
@@ -3776,10 +3820,23 @@
   (list (es:limpa pts) quim)
 )
 
-;;; tira pontos a menos de 1 cm do anterior
-(defun es:limpa (pts / r)
+;;; tira pontos a menos de 1 cm do anterior e "degraus" (pernas) menores que 3 cm
+;;; no meio da barra (so ruido numerico entre camadas; nao se dobra aco assim)
+(defun es:limpa (pts / r q n i a b)
   (foreach p pts (if (not (and r (< (es:dist p (car r)) 1.0))) (setq r (cons p r))))
-  (reverse r)
+  (setq r (reverse r))
+  (if (> (length r) 3)
+    (progn
+      (setq q (list (car r)) i 1 n (length r))
+      (while (< i (1- n))
+        (setq a (nth i r) b (nth (1+ i) r))
+        (if (and (< (es:dist a b) 3.0) (< (1+ i) (1- n)))
+          ;; perna curta interna: junta os dois vertices no meio
+          (setq q (cons (es:mul (es:add a b) 0.5) q) i (+ i 2))
+          (setq q (cons a q) i (1+ i))))
+      (if (< i n) (setq q (cons (nth (1- n) r) q)))
+      (setq r (reverse q))))
+  r
 )
 
 ;;; prolonga a ponta alem de um canto CRUZADO (sem empuxo ao vazio): reta ate
@@ -4131,7 +4188,9 @@
      (setq dots (es:ao-longo sub (max 1.0 esp) (/ (+ (es:bit (if (= tipo "2") ES:AIB ES:ASB)) fi) 20.0)
                              (if (= tipo "2") 1.0 -1.0)))
      (setq n (if (es:num (es:ad d 12)) (es:int (es:num (es:ad d 12))) (length dots)))
-     (list tipo dots (es:int (es:n (es:ad d 10))) esp n nil (- w (* 2.0 c))))
+     ;; barra transversal em U: pernas dobradas na espessura (h - 2c)
+     (setq leg (if dots (max 5.0 (- (es:esp-perp geo (car (nth (/ (length dots) 2) dots))) (* 2.0 c))) 5.0))
+     (list tipo dots (es:int (es:n (es:ad d 10))) esp n nil (+ (- w (* 2.0 c)) (* 2.0 leg)) leg))
     (t
      (setq pts sub)
      (foreach fim (list nil T)
@@ -4177,29 +4236,49 @@
       (setq p (es:pernas (nth 1 b)) q (reverse p))
       (list (car b) (nth 2 b) (es:f (nth 3 b)) (if (es:lista< q p) q p))))
 )
-;;; ((indice-na-lista . posicao) ...)
-(defun es:arm-posicoes (gs / dts geos k i dt geo b ch chs r n)
-  (setq dts (es:arm-detalhes gs) geos nil k 0 chs nil r nil n 0)
-  (foreach d ES:ARMS
-    (setq k (1+ k) i (es:int (es:n (es:ad d 1))) dt (es:nth (1- i) dts))
-    (if dt
-      (progn
-        (if (null (assoc i geos)) (setq geos (cons (cons i (es:arm-geo gs dt)) geos)))
-        (setq geo (cdr (assoc i geos)))
-        (if (and (car geo) (setq b (es:arm-barra gs geo d (es:n ES:LAR))))
+;;; nome do ELEMENTO de um detalhe (padrao da prancha: LE101, LE102...) = nome
+;;; do 1.o lance do detalhe
+(defun es:elem-nome (geo dt / r)
+  (foreach p (car geo)
+    (if (and (null r) (= (car p) "L")) (setq r (nth 9 (nth 8 (nth 9 p))))))
+  (if r r (car dt))
+)
+
+;;; ((indice-na-lista . posicao) ...), numeradas por ELEMENTO (detalhe) em ordem;
+;;; tambem ES:POSDET ((pos . detalhe) ...) e ES:ELEMS (nomes dos detalhes)
+(defun es:arm-posicoes (gs / dts k i dt geo b ch chs r n)
+  (setq dts (es:arm-detalhes gs) r nil n 0 i 0 ES:POSDET nil ES:ELEMS nil)
+  (foreach dt dts
+    (setq i (1+ i) geo (es:arm-geo gs dt) chs nil k 0)
+    (setq ES:ELEMS (append ES:ELEMS (list (if (car geo) (es:elem-nome geo dt) (car dt)))))
+    (if (car geo)
+      (foreach d ES:ARMS
+        (setq k (1+ k))
+        (if (and (= (es:int (es:n (es:ad d 1))) i) (setq b (es:arm-barra gs geo d (es:n ES:LAR))))
           (progn
             (setq ch (es:arm-chave b))
-            (if (null (assoc ch chs)) (setq n (1+ n) chs (cons (cons ch n) chs)))
+            (if (null (assoc ch chs))
+              (setq n (1+ n) chs (cons (cons ch n) chs) ES:POSDET (cons (cons n i) ES:POSDET)))
             (setq r (cons (cons k (cdr (assoc ch chs))) r)))))))
   (reverse r)
 )
 (defun es:pos (k / x) (if (setq x (assoc k ES:POSMAP)) (cdr x) k))
 
-;;; texto padrao: "9 N1 %%c10 C/15 C=268"
+;;; rotulo no padrao da prancha: "N.7 8 %%c 8.0 c/17 C=210"
 (defun es:txt-pos (pos b / l)
-  (setq l (if (member (car b) '("2" "3")) (es:teto (nth 6 b)) (es:teto (es:comp (nth 1 b)))))
-  (strcat (itoa (nth 4 b)) " N" (itoa pos) " %%c " (nth (nth 2 b) ES:BITOLAS)
-          " C/" (es:f (nth 3 b)) " C=" (itoa l))
+  (setq l (es:comp-barra b))
+  (strcat "N." (itoa pos) " " (itoa (nth 4 b)) " %%c " (es:bitf (nth 2 b))
+          (if (> (nth 3 b) 0.0) (strcat " c/" (es:f (nth 3 b))) "") " C=" (itoa l))
+)
+
+;;; espessura perpendicular ao fundo na abscissa x
+(defun es:esp-perp (geo x / bot a k r)
+  (setq bot (nth 1 geo) a (car bot) k 0.0)
+  (foreach b (cdr bot)
+    (if (and (> (- (car b) (car a)) 1e-6) (>= x (- (car a) 1e-6)) (<= x (+ (car b) 1e-6)))
+      (setq k (/ (- (cadr b) (cadr a)) (- (car b) (car a)))))
+    (setq a b))
+  (/ (es:esp-x (nth 1 geo) (nth 2 geo) x) (sqrt (+ 1.0 (* k k))))
 )
 
 ;;; comprimento de uma barra (cm, arredondado para cima)
@@ -4208,36 +4287,51 @@
 )
 
 ;;; barra "extraida" (deslocada), com as pernas e o texto ao longo da maior perna
-(defun es:barra-extr (pts dy txt lay lt / q a best bl m n ang c)
+(defun es:barra-extr (pts dy txt lay lt / q a best bl m n ang c g sd ls)
   (setq c ES:HC q (mapcar '(lambda (p) (list (car p) (+ (cadr p) dy))) pts))
   (es:pl q lay nil lt nil)
+  ;; centro da barra: cotas das pernas para FORA; o texto principal do lado
+  ;; oposto as pernas (padrao da prancha: U de baixo com o texto embaixo)
+  (setq g (es:mul (list (apply '+ (mapcar 'car q)) (apply '+ (mapcar 'cadr q))) (/ 1.0 (length q))))
   (setq a (car q) bl 0.0)
+  (foreach b (cdr q)
+    (if (> (es:dist a b) bl) (setq bl (es:dist a b) best (list a b)))
+    (setq a b))
+  (setq a (car q))
   (foreach b (cdr q)
     (if (> (es:dist a b) 0.5)
       (progn
-        (setq ang (es:leitura (angle (es:p2 a) (es:p2 b))) n (es:nrm ang) m (es:mul (es:add a b) 0.5))
-        (es:txt (itoa (es:int (es:dist a b))) (es:add m (es:mul n (* -1.2 c))) 0.75 ang ES:LAY-ARMT 1 0)
-        (if (> (es:dist a b) bl) (setq bl (es:dist a b) best (list a b)))))
+        (setq ang (es:leitura (angle (es:p2 a) (es:p2 b))) n (es:nrm ang) m (es:mul (es:add a b) 0.5)
+              sd (if (> (es:dot n (es:sub m g)) 0.01) 1.0 (if (< (es:dot n (es:sub m g)) -0.01) -1.0 0.0)))
+        ;; perna maior: cota do lado das outras pernas; demais: para fora
+        (setq ls (if (and best (equal (list a b) best 1e-9)) (if (= sd 0.0) -1.0 (- sd)) (if (= sd 0.0) -1.0 sd)))
+        (es:txt (itoa (es:int (es:dist a b))) (es:add m (es:mul n (if (> ls 0) (* 0.6 c) (* -1.2 c)))) 0.75 ang ES:LAY-ARMT 1 0)))
     (setq a b))
   (if best
     (progn
       (setq ang (es:leitura (angle (es:p2 (car best)) (es:p2 (cadr best)))) n (es:nrm ang)
-            m (es:mul (es:add (car best) (cadr best)) 0.5))
-      (es:txt txt (es:add m (es:mul n (* 0.6 c))) 0.85 ang ES:LAY-ARMT 1 0)))
+            m (es:mul (es:add (car best) (cadr best)) 0.5)
+            sd (if (< (es:dot n (es:sub m g)) -0.01) -1.0 1.0))
+      ;; texto mais comprido que a perna: mais afastado (nao bate nas cotas das pontas)
+      (setq ls (if (> (* (strlen txt) 0.6 0.85 c) (* 0.8 bl)) 1.2 0.0))
+      (es:txt txt (es:add m (es:mul n (if (> sd 0) (* (+ 0.9 ls) c) (* (- -1.8 ls) c)))) 0.85 ang ES:LAY-ARMT 1 0)))
 )
 
-;;; leque: linhas de um ponto a cada bolinha e o texto no ponto
-(defun es:leque (dots apice txt lay / k st i)
-  (setq st (max 1 (es:teto (/ (length dots) 12.0))) i 0)
-  (foreach p dots
-    (if (= 0 (rem i st)) (es:line apice p lay))
-    (setq i (1+ i)))
-  (es:line apice (es:add apice (list (* (strlen txt) 0.55 0.8 ES:HC) 0.0)) lay)
-  (es:txt txt (es:add apice (list 0.0 (* 0.3 ES:HC))) 0.8 0.0 ES:LAY-ARMT 0 0)
+;;; identificacao por LEADERS (padrao da prancha): texto num ponto e linhas
+;;; finas ate algumas bolinhas (2 a 3, perto do meio)
+(defun es:leaders (dots apice txt / n m sel r)
+  (setq n (length dots) m (/ n 2) sel nil)
+  (foreach i (list (- m 2) m (+ m 2))
+    (if (and (>= i 0) (< i n) (not (member i sel))) (setq sel (cons i sel))))
+  (foreach i sel
+    (setq r (es:unit (es:sub (nth i dots) apice)))
+    (es:line apice (es:sub (nth i dots) (es:mul r (* 0.15 ES:HC))) ES:LAY-GRADE))
+  (es:txt txt (es:add apice (list (* 0.3 ES:HC) 0.0)) 0.8 0.0 ES:LAY-ARMT 0 2)
 )
 
 ;;; ---- desenho: um corte armado por detalhe, barras extraidas, lista ---------------
 (defun es:des-arm (gs / c dts w i geo defs k pos bars b ymin ymax dyi dys yb ybaixo xmx top xm feitas cxs tx lg plsup fs
+                       q pq elem xmt
                        quims notas lista nb y0 ap bot)
   (setq c ES:HC dts (es:arm-detalhes gs) w (es:n ES:LAR) ES:DESL (list 0.0 0.0)
         ybaixo 0.0 xmx 0.0 ES:AVISOS nil quims nil notas nil lista nil i 0 feitas nil)
@@ -4292,9 +4386,12 @@
           (if (and (member (car b) '("2" "3")) (nth 1 b))
             (progn
               (setq xm (car (nth (/ (length (nth 1 b)) 2) (nth 1 b))))
-              (es:leque (nth 1 b)
-                        (list (+ xm (* 3.0 c)) (if (= (car b) "2") (- (es:y-cadeia bot xm) (* 5.0 c)) (+ ymax (* 3.0 c))))
-                        (es:txt-pos (es:pos (car x)) b) ES:LAY-ARMT))))
+              (es:leaders (nth 1 b)
+                          (list (+ xm (* 2.5 c))
+                                (if (= (car b) "2")
+                                  (- (es:y-cadeia bot xm) (* 3.5 c))
+                                  (+ (es:y-cadeia top xm) (* 3.5 c))))
+                          (strcat "N." (itoa (es:pos (car x))))))))
         ;; barras extraidas: inferiores embaixo, superiores em cima (mesma posicao)
         (setq nb (vl-remove-if-not '(lambda (x) (= (cadr x) "0")) bars))
         (if nb
@@ -4312,11 +4409,23 @@
           (setq feitas (cons (es:pos (car (car z))) feitas))
           (es:barra-extr (caddr (car z)) (cadr z) (caddr z) ES:LAY-ARMN ES:LT))
         (es:alcas-arm geo i)
+        ;; ancoragem quimica: leader com a profundidade
+        (foreach x bars
+          (setq b (cdr x))
+          (if (and (nth 5 b) (setq q (es:ponta-quim geo (nth (1- (car x)) ES:ARMS) b)))
+            (progn
+              (setq pq (es:add (car q) (list (* (cadr q) 4.0 c) (* -4.0 c))))
+              (es:line (car q) pq ES:LAY-GRADE)
+              (es:txt (strcat "ANCORAGEM QUIMICA (" (itoa (nth 5 b)) " CM DE EMBUTIMENTO)")
+                      pq 0.7 0.0 ES:LAY-ARMT (if (< (cadr q) 0) 2 0) 2))))
         ;; lista (uma linha por posicao)
         (foreach x bars (setq lista (cons x lista)))
-        (setq notas (cons (es:arm-apoios dt geo i) notas))
-        (es:titulo (strcat "CORTE D" (itoa i) " - " (car dt)) (strcat ES:NOME "   ESC. 1:" ES:ESC)
+        (setq notas (cons (es:arm-apoios dt geo i) notas) elem (es:elem-nome geo dt))
+        (es:titulo (strcat elem " - ARMADURAS") (strcat ES:NOME "   ESC 1:" ES:ESC)
                    (* 0.5 (+ (car ES:CAIXA) (caddr ES:CAIXA))) (- (cadr ES:CAIXA) (* 3.0 c)))
+        ;; corte transversal do elemento, a direita, e a marca dele no lance
+        (setq xmt (es:corte-transv i elem geo bars (+ (caddr ES:CAIXA) (* 12.0 c)) (* 0.5 (+ ymin ymax))))
+        (if xmt (es:marca-transv i geo xmt))
         (es:alca "ZONA" i nil nil nil (list ES:DESL ES:CAIXA))
         (setq ybaixo (+ (cadr ES:CAIXA) (cadr ES:DESL)) xmx (max xmx (+ (caddr ES:CAIXA) (car ES:DESL)))))))
   ;; notas e lista ao lado
@@ -4385,69 +4494,88 @@
 ;;; aco pela bitola (5 mm = CA-60)
 (defun es:aco-bit (fi) (if (<= (es:bit fi) 5.0) "60B" "50A"))
 
-;;; LISTA (padrao ACO | POS | BIT | QUANT | COMPRIMENTO UNIT / TOTAL) e RESUMO
-(defun es:arm-tabela (lista x0 y0 / h cx y wd res b fi l k m tot aco)
-  (setq h ES:HC y y0 cx (list 0.0 6.0 11.0 17.0 23.0 30.0 37.0) wd (* 37.0 h))
-  ;; cabecalho
-  (es:ret x0 (- y (* 5.0 h)) (+ x0 wd) y ES:LAY-TAB nil)
-  (setq k 0)
-  (foreach s (list "ACO" "POS" "BIT" "QUANT")
-    (es:txt s (list (+ x0 (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx))))) (- y (* 1.25 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-    (setq k (1+ k)))
-  (es:txt "COMPRIMENTO" (list (+ x0 (* h 30.0)) (- y (* 1.25 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-  (es:line (list (+ x0 (* h 23.0)) (- y (* 2.5 h))) (list (+ x0 wd) (- y (* 2.5 h))) ES:LAY-GRADE)
-  (es:txt "UNIT" (list (+ x0 (* h 26.5)) (- y (* 3.25 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-  (es:txt "TOTAL" (list (+ x0 (* h 33.5)) (- y (* 3.25 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-  (es:txt "mm" (list (+ x0 (* h 14.0)) (- y (* 4.4 h))) 0.7 0.0 ES:LAY-TXT 1 2)
-  (es:txt "cm" (list (+ x0 (* h 26.5)) (- y (* 4.4 h))) 0.7 0.0 ES:LAY-TXT 1 2)
-  (es:txt "cm" (list (+ x0 (* h 33.5)) (- y (* 4.4 h))) 0.7 0.0 ES:LAY-TXT 1 2)
-  (foreach xx (list 6.0 11.0 17.0 23.0)
-    (es:line (list (+ x0 (* h xx)) y) (list (+ x0 (* h xx)) (- y (* 5.0 h))) ES:LAY-GRADE))
-  (es:line (list (+ x0 (* h 30.0)) (- y (* 2.5 h))) (list (+ x0 (* h 30.0)) (- y (* 5.0 h))) ES:LAY-GRADE)
-  (setq y (- y (* 5.0 h)))
-  (es:txt (strcat "ARMACOES DA ESCADA " ES:NOME) (list (+ x0 (* 0.5 wd)) (- y (* 0.9 h))) 0.75 0.0 ES:LAY-TXT 1 2)
-  (setq y (- y (* 1.8 h)) res nil)
+;;; LISTA DE FERROS (padrao da prancha): N | %%c (mm) | QUANT. | COMPRIMENTOS
+;;; UNITARIO / TOTAL (cm), agrupada por ELEMENTO; RESUMO DE ACO CA-60B e CA-50A
+(defun es:arm-tabela (lista x0 y0 / h cx y wd b fi l k m tot res60 res50 det ant yt)
+  (setq h ES:HC y y0 cx (list 0.0 5.0 10.0 17.0 27.0 37.0) wd (* 37.0 h))
+  (es:txt "LISTA DE FERROS" (list (+ x0 (* 0.5 wd)) (- y (* 1.3 h))) 1.3 0.0 ES:LAY-TXT 1 2)
+  (es:line (list x0 (- y (* 2.6 h))) (list (+ x0 wd) (- y (* 2.6 h))) ES:LAY-GRADE)
+  (setq yt (- y (* 2.6 h)))
+  (es:txt "N" (list (+ x0 (* 2.5 h)) (- yt (* 2.2 h))) 0.9 0.0 ES:LAY-TXT 1 2)
+  (es:txt "%%c" (list (+ x0 (* 7.5 h)) (- yt (* 1.5 h))) 0.9 0.0 ES:LAY-TXT 1 2)
+  (es:txt "(mm)" (list (+ x0 (* 7.5 h)) (- yt (* 2.9 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (es:txt "QUANT." (list (+ x0 (* 13.5 h)) (- yt (* 2.2 h))) 0.9 0.0 ES:LAY-TXT 1 2)
+  (es:txt "COMPRIMENTOS" (list (+ x0 (* 27.0 h)) (- yt (* 0.9 h))) 0.9 0.0 ES:LAY-TXT 1 2)
+  (es:line (list (+ x0 (* 17.0 h)) (- yt (* 1.8 h))) (list (+ x0 wd) (- yt (* 1.8 h))) ES:LAY-GRADE)
+  (es:txt "UNITARIO" (list (+ x0 (* 22.0 h)) (- yt (* 2.6 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (es:txt "(cm)" (list (+ x0 (* 22.0 h)) (- yt (* 3.7 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (es:txt "TOTAL" (list (+ x0 (* 32.0 h)) (- yt (* 2.6 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (es:txt "(cm)" (list (+ x0 (* 32.0 h)) (- yt (* 3.7 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+  (foreach xx (list 5.0 10.0 17.0)
+    (es:line (list (+ x0 (* h xx)) yt) (list (+ x0 (* h xx)) (- yt (* 4.4 h))) ES:LAY-GRADE))
+  (es:line (list (+ x0 (* h 27.0)) (- yt (* 1.8 h))) (list (+ x0 (* h 27.0)) (- yt (* 4.4 h))) ES:LAY-GRADE)
+  (setq y (- yt (* 4.4 h)) res60 nil res50 nil ant nil)
+  (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
   (foreach x lista
-    (setq b (cdr x) fi (nth 2 b) l (es:comp-barra b) k 0)
-    (foreach s (list (es:aco-bit fi) (itoa (car x)) (nth fi ES:BITOLAS) (itoa (nth 4 b)) (itoa l) (itoa (* l (nth 4 b))))
+    (setq b (cdr x) fi (nth 2 b) l (es:comp-barra b)
+          det (cdr (assoc (car x) ES:POSDET)))
+    ;; cabecalho do elemento (LE101, LE102...)
+    (if (and det (/= det ant))
+      (progn
+        (es:txt (es:nth (1- det) ES:ELEMS) (list (+ x0 (* 0.5 h)) (- y (* 0.9 h))) 0.9 0.0 ES:LAY-TXT 0 2)
+        (setq y (- y (* 1.8 h)) ant det)
+        (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)))
+    (setq k 0)
+    (foreach s (list (itoa (car x)) (nth fi ES:BITOLAS) (itoa (nth 4 b)) (itoa l) (itoa (* l (nth 4 b))))
       (es:txt s (list (+ x0 (* h (+ (nth (1+ k) cx) -0.8))) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 2 2)
       (setq k (1+ k)))
-    (setq m (assoc fi res))
-    (if m (setq res (subst (list fi (+ (cadr m) (* l (nth 4 b)))) m res))
-          (setq res (cons (list fi (* l (nth 4 b))) res)))
-    (setq y (- y (* 1.8 h))))
-  (foreach xx (list 6.0 11.0 17.0 23.0 30.0)
-    (es:line (list (+ x0 (* h xx)) (+ y (* 1.8 h (length lista)))) (list (+ x0 (* h xx)) y) ES:LAY-GRADE))
+    (foreach xx (list 5.0 10.0 17.0 27.0)
+      (es:line (list (+ x0 (* h xx)) y) (list (+ x0 (* h xx)) (- y (* 1.8 h))) ES:LAY-GRADE))
+    (setq y (- y (* 1.8 h)))
+    (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
+    ;; resumo por aco
+    (if (<= (es:bit fi) 5.0)
+      (setq res60 (es:soma-res res60 fi (* l (nth 4 b))))
+      (setq res50 (es:soma-res res50 fi (* l (nth 4 b))))))
   (es:ret x0 y (+ x0 wd) y0 ES:LAY-TAB nil)
-  ;; resumo
-  (setq y (- y (* 4.0 h)) y0 y cx (list 0.0 9.0 16.0 26.0 37.0))
-  (es:txt "RESUMO DE ACO" (list (+ x0 (* 0.5 wd)) (- y (* 1.0 h))) 0.9 0.0 ES:LAY-TXT 1 2)
-  (es:line (list x0 (- y (* 2.0 h))) (list (+ x0 wd) (- y (* 2.0 h))) ES:LAY-GRADE)
-  (setq k 0)
-  (foreach s (list "ACO" "BIT" "COMPR" "PESO")
-    (es:txt s (list (+ x0 (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx))))) (- y (* 3.0 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-    (setq k (1+ k)))
-  (setq k 1)
-  (foreach s (list "mm" "m" "kgf")
-    (es:txt s (list (+ x0 (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx))))) (- y (* 4.2 h))) 0.7 0.0 ES:LAY-TXT 1 2)
-    (setq k (1+ k)))
-  (setq y (- y (* 5.0 h)) tot 0.0)
-  (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
-  (foreach m (es:ordena res '(lambda (x) (car x)))
-    (setq l (/ (cadr m) 100.0) tot (+ tot (* l (nth (car m) ES:MASSAS))) k 0)
-    (foreach s (list (es:aco-bit (car m)) (nth (car m) ES:BITOLAS) (itoa (es:teto l))
-                     (itoa (es:teto (* l (nth (car m) ES:MASSAS)))))
-      (es:txt s (list (+ x0 (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx))))) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-      (setq k (1+ k)))
-    (setq y (- y (* 1.8 h))))
-  (foreach xx (list 9.0 16.0 26.0)
-    (es:line (list (+ x0 (* h xx)) (- y0 (* 2.0 h))) (list (+ x0 (* h xx)) y) ES:LAY-GRADE))
-  (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
-  (es:txt "Peso Total" (list (+ x0 (* h 0.5)) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 0 2)
-  (es:txt "50A =" (list (+ x0 (* h 16.0)) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-  (es:txt (strcat (itoa (es:teto tot)) " kgf") (list (+ x0 (* h 36.0)) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 2 2)
-  (setq y (- y (* 1.8 h)))
-  (es:ret x0 y (+ x0 wd) y0 ES:LAY-TAB nil)
+  ;; resumos
+  (setq y (- y (* 3.0 h)) tot 0.0)
+  (foreach rs (list (list "CA-60B" res60) (list "CA-50A" res50))
+    (if (cadr rs)
+      (progn
+        (setq y0 y)
+        (es:txt (strcat "RESUMO DE ACO " (car rs)) (list (+ x0 (* 0.5 wd)) (- y (* 1.0 h))) 1.0 0.0 ES:LAY-TXT 1 2)
+        (es:line (list x0 (- y (* 2.0 h))) (list (+ x0 wd) (- y (* 2.0 h))) ES:LAY-GRADE)
+        (setq k 0)
+        (foreach s (list "%%c" "kg/m" "COMPR. (m)" "PESO (kg)")
+          (es:txt s (list (+ x0 (* h (nth k (list 2.5 11.0 22.0 32.0)))) (- y (* 2.9 h))) 0.85 0.0 ES:LAY-TXT 1 2)
+          (setq k (1+ k)))
+        (setq y (- y (* 3.8 h)))
+        (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
+        (foreach m (es:ordena (cadr rs) '(lambda (x) (car x)))
+          (setq l (/ (cadr m) 100.0) tot (+ tot (* l (nth (car m) ES:MASSAS))) k 0)
+          (foreach s (list (nth (car m) ES:BITOLAS) (rtos (nth (car m) ES:MASSAS) 2 3) (rtos l 2 1)
+                           (itoa (es:teto (* l (nth (car m) ES:MASSAS)))))
+            (es:txt s (list (+ x0 (* h (nth k (list 4.5 16.0 26.0 36.0)))) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 2 2)
+            (setq k (1+ k)))
+          (setq y (- y (* 1.8 h))))
+        (foreach xx (list 5.0 17.0 27.0)
+          (es:line (list (+ x0 (* h xx)) (- y0 (* 2.0 h))) (list (+ x0 (* h xx)) y) ES:LAY-GRADE))
+        (if (= (car rs) "CA-50A")
+          (progn
+            (es:line (list x0 y) (list (+ x0 wd) y) ES:LAY-GRADE)
+            (es:txt "PESO TOTAL" (list (+ x0 (* 22.0 h)) (- y (* 0.9 h))) 0.9 0.0 ES:LAY-TXT 1 2)
+            (setq y (- y (* 1.8 h)))))
+        (es:ret x0 y (+ x0 wd) y0 ES:LAY-TAB nil)
+        (setq y (- y (* 2.5 h))))))
+  ;; peso total (as duas categorias) na ultima linha do CA-50A (ou sozinho)
+  (es:txt (itoa (es:teto tot)) (list (+ x0 (* h 36.0)) (+ y (* 2.5 h) (* 0.9 h))) 0.9 0.0 ES:LAY-TXT 2 2)
+)
+
+;;; soma comprimento (cm) por bitola
+(defun es:soma-res (res fi l / m)
+  (setq m (assoc fi res))
+  (if m (subst (list fi (+ (cadr m) l)) m res) (cons (list fi l) res))
 )
 
 ;;; ---- PLANTA DE ARMACAO: caminho de cada barra na planta ---------------------------
@@ -4520,8 +4648,110 @@
                                (es:add (es:add a0 (es:mul dc (+ v (* 1.0 c)))) (es:mul (es:nrm (nth 4 dt)) (* 0.3 w)))
                                (+ (nth 4 dt) (/ pi 2.0)) 0.8 ES:LAY-ARMT)))))))))
   (setq bb ES:CAIXA)
-  (es:titulo (strcat "PLANTA DE ARMACAO - " ES:NOME) (strcat "ESC. 1:" ES:ESC)
+  (es:titulo (strcat "PLANTA DE ARMACAO - " ES:NOME) (strcat "ESC 1:" ES:ESC)
              (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
+)
+
+;;; ponta da barra com ancoragem quimica: (ponto sentido) sentido -1 inicio / +1 fim
+(defun es:ponta-quim (geo d b / pts r s p)
+  (setq pts (nth 1 b) r nil)
+  (foreach e (list (list (car pts) -1 6) (list (es:ultimo pts) 1 8))
+    (setq p (car e))
+    (if (null r)
+      (cond
+        ((= (es:ad d (caddr e)) "4") (setq r (list p (cadr e))))
+        ((= (es:ad d (caddr e)) "3")
+         (foreach s (nth 3 geo)
+           (if (and (null r) (<= (car s) (+ (car p) 1.0)) (>= (cadr s) (- (car p) 1.0))
+                    (es:nth 6 s) (es:apo-quim (es:nth 6 s)))
+             (setq r (list p (cadr e)))))))))
+  r
+)
+
+;;; ---- CORTE TRANSVERSAL de um elemento (padrao da prancha: "CORTE 1 - LE101") -----
+;;; secao da laje (largura x espessura) no meio do 1.o lance do detalhe:
+;;; longitudinais em bolinhas com leaders, distribuicao em U e extraida com cotas.
+;;; x0 = canto esquerdo da secao; yc = meio da altura (cm locais do desenho)
+(defun es:corte-transv (k elem geo bars x0 yc / c w cb p xm hh y1 y2 xs sets n j i fi r
+                        xr dots lb dI dS b pe yd u lab posl)
+  (setq c ES:HC w (es:n ES:LAR) cb (es:n ES:COB)
+        p (car (vl-remove-if-not '(lambda (q) (= (car q) "L")) (car geo))))
+  (if p
+    (progn
+      (setq xm (* 0.5 (+ (nth 1 p) (nth 2 p))) hh (nth 8 (nth 8 (nth 9 p)))
+            y1 (- yc (* 0.5 hh)) y2 (+ yc (* 0.5 hh)))
+      (es:ret x0 y1 (+ x0 w) y2 ES:LAY-CORTE nil)
+      (if (= ES:SECFILL "1")
+        (es:hachura (list (list x0 y1) (list (+ x0 w) y1) (list (+ x0 w) y2) (list x0 y2)) "SOLID" 1.0 ES:LAY-HACH 253))
+      ;; longitudinais que passam no meio do lance: inferiores e superiores
+      (foreach lado (list (list "0" y1 1.0 -1.0) (list "1" y2 -1.0 1.0))
+        (setq sets nil)
+        (foreach x bars
+          (setq b (cdr x))
+          (if (and (= (car b) (car lado))
+                   (<= (apply 'min (mapcar 'car (nth 1 b))) xm) (>= (apply 'max (mapcar 'car (nth 1 b))) xm))
+            (setq sets (cons x sets))))
+        (setq sets (reverse sets) j 0 dots nil posl nil)
+        (foreach x sets
+          (setq b (cdr x) n (max 1 (nth 4 b)) fi (es:bit (nth 2 b)) i 0
+                posl (if (member (es:pos (car x)) posl) posl (append posl (list (es:pos (car x))))))
+          (while (< i n)
+            (setq xr (+ x0 cb (* (- w (* 2.0 cb)) (/ (+ i (/ (+ j 0.5) (length sets))) n)))
+                  dots (cons (list xr (+ (cadr lado) (* (caddr lado) (+ cb (/ fi 20.0))))) dots))
+            (es:circ (car dots) (max (/ fi 20.0) (* 0.12 c)) (if (= (car lado) "0") ES:LAY-ARMP ES:LAY-ARMN))
+            (setq i (1+ i)))
+          (setq j (1+ j)))
+        (if dots
+          (progn
+            ;; cota da faixa ocupada "(106)" e as posicoes com leaders
+            (es:dimh (+ x0 cb) (+ x0 (- w cb)) (cadr lado) (+ (cadr lado) (* (cadddr lado) 2.5 c))
+                     (strcat "(" (es:f (- w (* 2.0 cb))) ")"))
+            (setq lab (apply 'strcat (mapcar '(lambda (q) (strcat "N." (itoa q) " ")) posl)))
+            (es:leaders (es:ordena dots '(lambda (q) (car q)))
+                        (list (+ x0 (* 0.45 w)) (+ (cadr lado) (* (cadddr lado) 4.6 c))) lab))))
+      ;; distribuicao em U dentro da secao e extraida (superior em cima, inferior embaixo)
+      (foreach x bars
+        (setq b (cdr x))
+        (if (and (member (car b) '("2" "3")) (nth 1 b)
+                 (<= (apply 'min (mapcar 'car (nth 1 b))) (+ xm 1.0)) (>= (apply 'max (mapcar 'car (nth 1 b))) (- xm 1.0)))
+          (progn
+            (setq pe (if (nth 7 b) (nth 7 b) 5.0) fi (es:bit (nth 2 b))
+                  u (if (= (car b) "2") 1.0 -1.0)
+                  yd (if (= (car b) "2") (+ y1 cb (/ fi 10.0) (/ fi 20.0)) (- y2 cb (/ fi 10.0) (/ fi 20.0)))
+                  r (list (list (+ x0 cb) (+ yd (* u pe))) (list (+ x0 cb) yd)
+                          (list (+ x0 (- w cb)) yd) (list (+ x0 (- w cb)) (+ yd (* u pe)))))
+            (es:pl r (if (= (car b) "2") ES:LAY-ARMP ES:LAY-ARMN) nil (if (= (car b) "3") ES:LT) nil)
+            (es:barra-extr r (if (= (car b) "2") (- (- y1 yd) (* 9.0 c)) (+ (- y2 yd) (* 9.0 c) pe))
+                           (es:txt-pos (es:pos (car x)) (es:qtd-pos (car x) bars))
+                           (if (= (car b) "2") ES:LAY-ARMP ES:LAY-ARMN) (if (= (car b) "3") ES:LT)))))
+      ;; titulo sublinhado e escala, alinhados a esquerda da secao
+      (es:txt (strcat "CORTE " (itoa k) " - " elem) (list x0 (+ y2 (* 17.0 c))) 1.3 0.0 ES:LAY-TIT 0 0)
+      (es:line (list x0 (+ y2 (* 16.5 c))) (list (+ x0 (* (+ 9 (strlen elem)) 0.95 1.3 c)) (+ y2 (* 16.5 c))) ES:LAY-TIT)
+      (es:txt (strcat "ESC 1:" ES:ESC) (list x0 (+ y2 (* 15.0 c))) 0.9 0.0 ES:LAY-TIT 0 0)
+      xm))
+)
+
+;;; marca do corte transversal no detalhe (triangulo cheio + numero), dos dois
+;;; lados da laje, perpendicular a ela
+(defun es:marca-transv (k geo xm / c bot top yb yt a b kk u n q sg)
+  (setq c ES:HC bot (nth 1 geo) top (es:topo-grupo (car geo))
+        yb (es:y-cadeia bot xm) yt (es:y-cadeia top xm) kk 0.0 a (car bot))
+  (foreach b (cdr bot)
+    (if (and (> (- (car b) (car a)) 1e-6) (>= xm (car a)) (<= xm (car b)))
+      (setq kk (/ (- (cadr b) (cadr a)) (- (car b) (car a)))))
+    (setq a b))
+  (if (and yb yt)
+    (progn
+      (setq u (es:unit (list 1.0 kk)) n (list (- (cadr u)) (car u)))
+      (foreach s (list (list (list xm yb) -1.0) (list (list xm yt) 1.0))
+        (setq q (es:add (car s) (es:mul n (* (cadr s) 2.5 c))))
+        (es:pl (list q (es:add q (es:mul n (* (cadr s) 2.2 c)))) ES:LAY-EIXO nil nil (* 0.2 c))
+        (es:solido (es:add q (es:mul n (* (cadr s) 0.3 c)))
+                   (es:add q (es:mul n (* (cadr s) 1.7 c)))
+                   (es:add (es:add q (es:mul n (* (cadr s) 1.0 c))) (es:mul u (* -1.2 c)))
+                   ES:LAY-EIXO)
+        (es:txt (itoa k) (es:add (es:add q (es:mul n (* (cadr s) 1.0 c))) (es:mul u (* -2.2 c)))
+                1.0 0.0 ES:LAY-EIXO 1 2))))
 )
 
 ;;; ==========================================================================
@@ -4581,8 +4811,9 @@
 ;;; apoio lateral ativo (viga "1" / parede "2")
 (defun es:lat-tipo (lat) (if lat (es:int (es:n (car lat))) 0))
 
-;;; linhas do quantitativo: ((nome volume-cm3 fundo-cm2 lateral-cm2 espelho-cm2 grupo) ...)
-;;; grupo "E" escada / "V" viga
+;;; linhas do quantitativo: ((nome volume-cm3 fundo-cm2 lateral-cm2 espelho-cm2 grupo
+;;;   largura-cm referencia-cm) ...)   grupo "E" escada / "V" viga;  referencia =
+;;;   largura (trecho: secao = volume / largura) ou comprimento (viga)
 (defun es:quant (gs / refs sc k r g rf wt vol fu la es ant prx cw tp sub ext cu lat nlat
                       ap rt lc so d b h ll lov t0 s bx inv c)
   (setq refs (es:planta-refs gs) sc (es:intradorso gs) k 0 r nil)
@@ -4629,7 +4860,7 @@
           (setq rt (es:apo-ret gs ap) lc (es:sobrepoe (nth 0 rt) (nth 1 rt) (nth 1 g) (nth 2 g)))
           (if (> lc 0.0)
             (setq fu (max 0.0 (- fu (* lc c (min wt (+ (es:n ES:LAR) (es:apo-ext1 ap) (es:apo-ext2 ap)))))))))))
-    (setq r (cons (list (nth 9 g) vol fu la es "E") r) k (1+ k)))
+    (setq r (cons (list (nth 9 g) vol fu la es "E" wt wt) r) k (1+ k)))
   ;; vigas laterais inclinadas dos lances
   (foreach lat (list ES:LATE ES:LATD)
     (if (= (es:lat-tipo lat) 1)
@@ -4641,7 +4872,7 @@
                   ll (+ ll (* (nth 18 g) c))
                   lov (+ lov (* (nth 18 g) c (min h (/ (nth 8 g) (/ 1.0 c))))))))
         (if (> ll 0.0)
-          (setq r (cons (list (nth 1 lat) (* b h ll) (* b ll) (- (* 2.0 h ll) lov) 0.0 "V") r))))))
+          (setq r (cons (list (nth 1 lat) (* b h ll) (* b ll) (- (* 2.0 h ll) lov) 0.0 "V" b ll) r))))))
   ;; vigas de apoio (tipo viga): caixa menos o que ja esta dentro da laje
   (foreach so (es:solidos gs)
     (if (and (= (car so) "B") (setq ap (es:nth 8 (nth 9 so))) (= (es:int (es:n (nth 1 ap))) 0))
@@ -4669,7 +4900,7 @@
                             (max 0.0 (- (* bx h ll) (* s lov)))
                             (if inv (* bx (max 0.0 (- ll (if (> (es:apo-dir ap) 0) (min (nth 18 g) ll) (min ll wt))))) (* bx ll))
                             (max 0.0 (- (* 2.0 h ll) (* (if (> (es:apo-dir ap) 0) (if (> s 0.0) 1.0 0.0) (* 2.0 (/ s (max 1.0 bx)))) lov)))
-                            0.0 "V")
+                            0.0 "V" bx ll)
                       r)))))
   (reverse r)
 )
@@ -4715,29 +4946,30 @@
   (princ)
 )
 
-;;; ---- desenho: tabela QUANTITATIVO ------------------------------------------------
-(defun es:des-qtd (gs / h cx wd y y0 lin tt kg k cab x0 sg)
+;;; ---- desenho: TABELA DE FORMAS (padrao da prancha) ------------------------------
+;;;  ELEMENTO | LARGURA (m) | AREA DA SECAO (m2) | PERIMETRO DE FORMA (m) |
+;;;  FORMAS (m2) | CONCRETO (m3);  formas = perimetro x largura + laterais
+(defun es:des-qtd (gs / h cx wd y y0 lin tt kg k sg x0 cab ar pe fo nq)
   (setq h ES:HC lin (es:quant gs) tt (es:quant-tot lin) x0 0.0 y0 0.0 y 0.0
-        cx (list 0.0 16.0 25.0 32.0 39.0 46.0 54.0) wd (* 54.0 h))
-  (es:txt (strcat "QUANTITATIVO - ESCADA " ES:NOME) (list (* 0.5 wd) (* 1.2 h)) 1.1 0.0 ES:LAY-TIT 1 0)
-  ;; cabecalho
-  (es:line (list 0.0 (- y (* 5.0 h))) (list wd (- y (* 5.0 h))) ES:LAY-GRADE)
-  (setq cab (list "ELEMENTO" "CONCRETO" "FUNDO" "LATERAL" "ESPELHO" "TOTAL") k 0)
-  (foreach s cab
-    (es:txt s (list (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx)))) (- y (* (if (< k 2) 2.0 3.6) h))) 0.8 0.0 ES:LAY-TXT 1 2)
+        cx (list 0.0 14.0 22.0 31.0 41.0 49.0 57.0) wd (* 57.0 h))
+  (es:txt (strcat "TABELA DE FORMAS - ESCADA " ES:NOME) (list (* 0.5 wd) (- y (* 1.3 h))) 1.1 0.0 ES:LAY-TXT 1 2)
+  (es:line (list 0.0 (- y (* 2.6 h))) (list wd (- y (* 2.6 h))) ES:LAY-GRADE)
+  (setq y (- y (* 2.6 h)) k 0)
+  (foreach cb (list (list "ELEMENTO" "") (list "LARGURA" "(m)") (list "AREA DA" "SECAO (m2)")
+                    (list "PERIMETRO DE" "FORMA (m)") (list "FORMAS" "(m2)") (list "CONCRETO" "(m3)"))
+    (es:txt (car cb) (list (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx)))) (- y (* 1.4 h))) 0.8 0.0 ES:LAY-TXT 1 2)
+    (es:txt (cadr cb) (list (* h (* 0.5 (+ (nth k cx) (nth (1+ k) cx)))) (- y (* 2.8 h))) 0.8 0.0 ES:LAY-TXT 1 2)
     (setq k (1+ k)))
-  (es:txt "FORMAS (m2)" (list (* h 39.5) (- y (* 1.1 h))) 0.8 0.0 ES:LAY-TXT 1 2)
-  (es:txt "(m3)" (list (* h 20.5) (- y (* 3.4 h))) 0.7 0.0 ES:LAY-TXT 1 2)
-  (es:line (list (* h 25.0) (- y (* 2.2 h))) (list wd (- y (* 2.2 h))) ES:LAY-GRADE)
-  (foreach xx (list 16.0 25.0)
-    (es:line (list (* h xx) y) (list (* h xx) (- y (* 5.0 h))) ES:LAY-GRADE))
-  (setq y (- y (* 5.0 h)) sg nil)
+  (setq y (- y (* 4.2 h)) sg nil)
+  (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE)
   (foreach x lin
-    (if (and sg (/= sg (nth 5 x)))
-      (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE))
-    (setq sg (nth 5 x) k 0)
-    (foreach s (list (car x) (es:f2 (/ (nth 1 x) 1e6)) (es:f2 (/ (nth 2 x) 1e4)) (es:f2 (/ (nth 3 x) 1e4))
-                     (es:f2 (/ (nth 4 x) 1e4)) (es:f2 (/ (+ (nth 2 x) (nth 3 x) (nth 4 x)) 1e4)))
+    (if (and sg (/= sg (nth 5 x))) (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE))
+    (setq sg (nth 5 x) k 0
+          ar (/ (nth 1 x) (max 1.0 (nth 7 x)))
+          pe (/ (+ (nth 2 x) (nth 4 x) (if (= (nth 5 x) "V") (nth 3 x) 0.0)) (max 1.0 (nth 7 x)))
+          fo (+ (nth 2 x) (nth 3 x) (nth 4 x)))
+    (foreach s (list (car x) (es:f2 (/ (nth 6 x) 100.0)) (es:f2 (/ ar 1e4)) (es:f2 (/ pe 100.0))
+                     (es:f2 (/ fo 1e4)) (es:f2 (/ (nth 1 x) 1e6)))
       (if (= k 0)
         (es:txt s (list (* h 0.6) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 0 2)
         (es:txt s (list (* h (- (nth (1+ k) cx) 0.8)) (- y (* 0.9 h))) 0.8 0.0 ES:LAY-TXT 2 2))
@@ -4746,25 +4978,39 @@
   ;; total
   (es:line (list 0.0 y) (list wd y) ES:LAY-GRADE)
   (es:txt "TOTAL" (list (* h 0.6) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 0 2)
-  (es:txt (es:f2 (car tt)) (list (* h 24.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
-  (es:txt (es:f2 (cadr tt)) (list (* h 53.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
+  (es:txt (es:f2 (cadr tt)) (list (* h 48.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
+  (es:txt (es:f2 (car tt)) (list (* h 56.2) (- y (* 0.9 h))) 0.85 0.0 ES:LAY-TXT 2 2)
   (setq y (- y (* 1.8 h)))
-  (foreach xx (list 16.0 25.0 32.0 39.0 46.0)
-    (es:line (list (* h xx) (- y0 (if (> xx 26.0) (* 2.2 h) 0.0))) (list (* h xx) y) ES:LAY-GRADE))
+  (foreach xx (list 14.0 22.0 31.0 41.0 49.0)
+    (es:line (list (* h xx) (- y0 (* 2.6 h))) (list (* h xx) y) ES:LAY-GRADE))
   (es:ret 0.0 y wd y0 ES:LAY-TAB nil)
-  ;; aco e observacoes
+  ;; notas (padrao da prancha), aco e ancoragens quimicas
   (setq y (- y (* 1.6 h)))
-  (es:txt (strcat "Concreto: fck = " ES:FCK " MPa") (list 0.0 y) 0.75 0.0 ES:LAY-TXT 0 2)
+  (es:txt "*NOTAS:" (list 0.0 y) 0.75 0.0 ES:LAY-TXT 0 2)
+  (foreach s (list "1) FORMAS = PERIMETRO DE FORMA (FUNDO + ESPELHOS) x LARGURA + AREA DAS LATERAIS LIVRES;"
+                   "2) NAO FOI CONTADA A LATERAL CONTIDA POR VIGA OU PAREDE; LAJES DE PISO E PAREDES DE APOIO NAO INCLUIDAS;"
+                   (strcat "3) CONCRETO fck = " ES:FCK " MPa.  ESTIMATIVA PELO MODELO: CONFIRA."))
+    (setq y (- y (* 1.3 h)))
+    (es:txt s (list (* 0.8 h) y) 0.65 0.0 ES:LAY-TXT 0 2))
   (if (or ES:ARMS (= ES:DARM "1"))
     (progn
-      (setq kg (es:aco-kg gs) y (- y (* 1.4 h)))
-      (es:txt (strcat "Aco (lista de ferros): " (itoa (es:teto kg)) " kgf   -   taxa "
-                      (if (> (car tt) 0.0) (itoa (es:int (/ kg (car tt)))) "-") " kg/m3")
+      (setq kg (es:aco-kg gs) nq (es:quim-und gs) y (- y (* 1.5 h)))
+      (es:txt (strcat "ACO (LISTA DE FERROS): " (itoa (es:teto kg)) " kg   -   TAXA "
+                      (if (> (car tt) 0.0) (itoa (es:int (/ kg (car tt)))) "-") " kg/m3"
+                      (if (> nq 0) (strcat "   -   ANCORAGEM QUIMICA: " (itoa nq) " und") ""))
               (list 0.0 y) 0.75 0.0 ES:LAY-TXT 0 2)))
-  (setq y (- y (* 1.4 h)))
-  (es:txt "Estimativa pelo modelo. Lajes de piso e paredes de apoio nao incluidas." (list 0.0 y) 0.65 0.0 ES:LAY-TXT 0 2)
-  (setq y (- y (* 1.2 h)))
-  (es:txt "Formas: fundo (sem as faixas sobre vigas), laterais livres, espelhos." (list 0.0 y) 0.65 0.0 ES:LAY-TXT 0 2)
+)
+
+;;; numero de ancoragens quimicas (barras x pontas quimicas)
+(defun es:quim-und (gs / dts i geo b n q)
+  (setq dts (es:arm-detalhes gs) i 0 n 0)
+  (foreach dt dts
+    (setq i (1+ i) geo (es:arm-geo gs dt))
+    (if (car geo)
+      (foreach d ES:ARMS
+        (if (and (= (es:int (es:n (es:ad d 1))) i) (setq b (es:arm-barra gs geo d (es:n ES:LAR))) (nth 5 b))
+          (setq n (+ n (nth 4 b)))))))
+  n
 )
 
 ;;; ==========================================================================
