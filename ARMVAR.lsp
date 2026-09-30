@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.8
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.9
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -1971,15 +1971,39 @@
 (defun av:rp-de (d k) (cadr (assoc k d)))
 (defun av:num-rot (rot) (atoi (substr rot 2)))
 
-;;; desenha a LISTA DE FERROS e o RESUMO DE ACO a partir do canto p0
-(defun av:lista-desenha (lid ids p0 h / lns els x0 y0 y wd ht n el grp res tot
-                                 ch k mt pt c xg ln lst)
+;;; ---- desenho das listas (padrao Baluarte) ---------------------------------
+;;; texto alinhado pelo MEIO: al 0 = esquerda, 1 = centro, 2 = direita
+(defun av:txt-al (txt x y h lay al)
+  (entmake (append
+             (list '(0 . "TEXT") (cons 8 lay) (cons 10 (list x y 0.0))
+                   (cons 40 h) (cons 1 txt) '(50 . 0.0) '(41 . 1.0) (cons 7 AV:STY)
+                   (cons 72 al) (cons 11 (list x y 0.0)) '(73 . 2))
+             (av:xd)))
+)
+(defun av:hl (x1 x2 y lay) (av:mk-line (list x1 y) (list x2 y) lay nil nil))
+(defun av:vl (x y1 y2 lay) (av:mk-line (list x y1) (list x y2) lay nil nil))
+(defun av:ret (x1 y1 x2 y2 lay)
+  (av:mk-pline (list (list x1 y1) (list x2 y1) (list x2 y2) (list x1 y2)) lay T)
+)
+;;; nome do aco no titulo do resumo: CA-50 -> CA-50A, CA-60 -> CA-60B
+(defun av:aco-titulo (a)
+  (cond ((= a "CA-50") "CA-50A") ((= a "CA-60") "CA-60B") (t a))
+)
+
+;;; desenha a LISTA DE FERROS e o(s) RESUMO(S) DE ACO a partir do canto p0
+;;;   LISTA:  N | %%c (mm) | QUANT. | COMPRIMENTOS: UNITARIO (cm) | TOTAL (cm)
+;;;           com uma linha de titulo por ELEMENTO (campo "Elemento")
+;;;   RESUMO: um por aco -  %%c | kg/m | COMPR. (m) | PESO (kg) | PESO TOTAL
+(defun av:lista-desenha (lid ids p0 h / lns els x0 y0 y wd n el res tot
+                                 k mt c ln lst cx rc ya yb yc ym yt acos ac pk)
   (setq lns (vl-sort (av:lista-linhas ids)
                      '(lambda (a b) (< (av:num-rot (car a)) (av:num-rot (car b)))))
         AV:ID lid AV:GRP "LST")
   (foreach e (av:soltos lid "LST") (entdel e))
   (av:prepara)
-  (setq x0 (car p0) y0 (cadr p0) wd (* 34.0 h))
+  (setq x0 (car p0) y0 (cadr p0) wd (* 36.5 h)
+        ;; colunas (bordas esquerdas + borda direita)
+        cx (mapcar '(lambda (v) (+ x0 (* v h))) '(0.0 4.5 9.0 16.5 26.5 36.5)))
   ;; elementos na ordem da 1.a posicao
   (setq els nil)
   (foreach ln lns (if (not (member (av:nth 6 ln) els)) (setq els (append els (list (av:nth 6 ln))))))
@@ -1989,39 +2013,52 @@
     (if (/= el "") (setq lst (append lst (list (list "EL" el)))))
     (foreach ln lns (if (= (av:nth 6 ln) el) (setq lst (append lst (list (list "POS" ln))))))
   )
-  (setq n (length lst) ht (+ (* 1.5 h) (* 1.5 h n) (* 1.0 h)))
-  (av:mk-text "LISTA DE FERROS" (list (+ x0 (* 17.0 h)) (+ y0 (* 0.6 h))) (* 1.2 h) 0.0 AV:LAY-TXT T)
-  (setq AV:TAG "LST")
-  (av:mk-pline (list (list x0 y0) (list (+ x0 wd) y0)
-                     (list (+ x0 wd) (- y0 ht)) (list x0 (- y0 ht)))
-               AV:LAY-TAB T)
-  (setq AV:TAG nil)
-  (foreach c (list (list 1.0 "N") (list 5.0 "%%c (mm)") (list 11.0 "QUANT.")
-                   (list 17.0 "UNIT. (cm)") (list 25.0 "TOTAL (cm)"))
-    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 1.2 h))) h 0.0 AV:LAY-TXT nil)
-  )
-  (av:mk-line (list x0 (- y0 (* 1.5 h))) (list (+ x0 wd) (- y0 (* 1.5 h))) AV:LAY-TAB nil nil)
-  (foreach xg '(4.0 10.0 16.0 24.0)
-    (av:mk-line (list (+ x0 (* xg h)) (- y0 (* 1.5 h))) (list (+ x0 (* xg h)) (- y0 ht))
-                AV:LAY-GRADE nil nil)
-  )
-  (setq y (- y0 (* 3.0 h)))
+  ;; ---- titulo
+  (setq ya (- y0 (* 3.5 h)))
+  (av:txt-al "LISTA DE FERROS" (+ x0 (/ wd 2.0)) (/ (+ y0 ya) 2.0) (* 2.0 h) AV:LAY-TXT 1)
+  ;; ---- cabecalho (duas linhas)
+  (setq yb (- ya (* 2.2 h)) yc (- yb (* 3.2 h)) ym (/ (+ ya yc) 2.0))
+  (av:txt-al "N" (/ (+ (nth 0 cx) (nth 1 cx)) 2.0) ym h AV:LAY-TXT 1)
+  (av:txt-al "%%c" (/ (+ (nth 1 cx) (nth 2 cx)) 2.0) (+ ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:txt-al "(mm)" (/ (+ (nth 1 cx) (nth 2 cx)) 2.0) (- ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:txt-al "QUANT." (/ (+ (nth 2 cx) (nth 3 cx)) 2.0) ym h AV:LAY-TXT 1)
+  (av:txt-al "COMPRIMENTOS" (/ (+ (nth 3 cx) (nth 5 cx)) 2.0) (/ (+ ya yb) 2.0) h AV:LAY-TXT 1)
+  (setq ym (/ (+ yb yc) 2.0))
+  (av:txt-al (strcat "UNIT" (chr 193) "RIO") (/ (+ (nth 3 cx) (nth 4 cx)) 2.0) (+ ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:txt-al "(cm)" (/ (+ (nth 3 cx) (nth 4 cx)) 2.0) (- ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:txt-al "TOTAL" (/ (+ (nth 4 cx) (nth 5 cx)) 2.0) (+ ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:txt-al "(cm)" (/ (+ (nth 4 cx) (nth 5 cx)) 2.0) (- ym (* 0.8 h)) h AV:LAY-TXT 1)
+  (av:hl x0 (+ x0 wd) ya AV:LAY-TAB)
+  (av:hl (nth 3 cx) (nth 5 cx) yb AV:LAY-GRADE)
+  (av:hl x0 (+ x0 wd) yc AV:LAY-TAB)
+  (foreach xg (list (nth 1 cx) (nth 2 cx) (nth 3 cx)) (av:vl xg ya yc AV:LAY-GRADE))
+  (av:vl (nth 4 cx) yb yc AV:LAY-GRADE)
+  ;; ---- linhas
+  (setq y yc)
   (foreach it lst
+    (setq yt (- y (* 2.0 h)) ym (- y h))
     (if (= (car it) "EL")
-      (av:mk-text (cadr it) (list (+ x0 (* 1.0 h)) y) h 0.0 AV:LAY-TXT nil)
+      (av:txt-al (cadr it) (+ x0 (* 0.6 h)) ym h AV:LAY-TXT 0)
       (progn
         (setq ln (cadr it))
-        (foreach c (list (list 1.0 (itoa (av:num-rot (car ln)))) (list 5.0 (av:nth 1 ln))
-                         (list 11.0 (itoa (av:nth 2 ln)))
-                         (list 17.0 (itoa (av:int (/ (av:nth 3 ln) (max 1 (av:nth 2 ln))))))
-                         (list 25.0 (av:fmt (av:nth 3 ln))))
-          (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) y) h 0.0 AV:LAY-TXT nil)
+        (foreach xg (list (nth 1 cx) (nth 2 cx) (nth 3 cx) (nth 4 cx)) (av:vl xg y yt AV:LAY-GRADE))
+        (setq k 1)
+        (foreach c (list (itoa (av:num-rot (car ln))) (av:nth 1 ln)
+                         (itoa (av:nth 2 ln))
+                         (itoa (av:int (/ (av:nth 3 ln) (max 1 (av:nth 2 ln)))))
+                         (itoa (av:int (av:nth 3 ln))))
+          (av:txt-al c (- (nth k cx) (* 0.6 h)) ym h AV:LAY-TXT 2)
+          (setq k (1+ k))
         )
       )
     )
-    (setq y (- y (* 1.5 h)))
+    (if (/= it (av:ultimo lst)) (av:hl x0 (+ x0 wd) yt AV:LAY-GRADE))
+    (setq y yt)
   )
-  ;; ---- resumo por aco e bitola
+  (setq AV:TAG "LST")
+  (av:ret x0 y0 (+ x0 wd) y AV:LAY-TAB)
+  (setq AV:TAG nil)
+  ;; ---- resumo por aco e bitola: ((aco bitola) ctot kgm)
   (setq res nil)
   (foreach ln lns
     (setq k (list (av:nth 4 ln) (av:nth 1 ln)))
@@ -2035,38 +2072,52 @@
                             (if (= (car (car a)) (car (car b)))
                               (< (atof (cadr (car a))) (atof (cadr (car b))))
                               (< (car (car a)) (car (car b)))))))
-  (setq y0 (- y0 ht (* 3.0 h)) ht (+ (* 1.5 h) (* 1.5 h (length res)) (* 2.5 h)) tot 0.0)
-  (av:mk-text (strcat "RESUMO DE A" (chr 199) "O") (list (+ x0 (* 17.0 h)) (+ y0 (* 0.6 h)))
-              (* 1.2 h) 0.0 AV:LAY-TXT T)
-  (av:mk-pline (list (list x0 y0) (list (+ x0 wd) y0)
-                     (list (+ x0 wd) (- y0 ht)) (list x0 (- y0 ht)))
-               AV:LAY-TAB T)
-  (foreach c (list (list 1.0 (strcat "A" (chr 199) "O")) (list 7.0 "%%c (mm)") (list 12.0 "kg/m")
-                   (list 17.0 "COMPR. (m)") (list 25.0 "PESO (kg)"))
-    (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) (- y0 (* 1.2 h))) h 0.0 AV:LAY-TXT nil)
-  )
-  (av:mk-line (list x0 (- y0 (* 1.5 h))) (list (+ x0 wd) (- y0 (* 1.5 h))) AV:LAY-TAB nil nil)
-  (setq y (- y0 (* 3.0 h)))
-  (foreach g res
-    (setq mt (/ (cadr g) 100.0) tot (+ tot (* mt (caddr g))))
-    (foreach c (list (list 1.0 (car (car g))) (list 7.0 (cadr (car g)))
-                     (list 12.0 (rtos (caddr g) 2 3)) (list 17.0 (rtos mt 2 1))
-                     (list 25.0 (rtos (* mt (caddr g)) 2 1)))
-      (av:mk-text (cadr c) (list (+ x0 (* (car c) h)) y) h 0.0 AV:LAY-TXT nil)
+  (setq acos nil)
+  (foreach g res (if (not (member (car (car g)) acos)) (setq acos (append acos (list (car (car g)))))))
+  (setq rc (mapcar '(lambda (v) (+ x0 (* v h))) '(0.0 4.5 14.0 26.5 36.5))
+        y (- y (* 4.0 h)) pk 0.0)
+  (foreach ac acos
+    (setq y0 y ya (- y (* 3.0 h)) tot 0.0)
+    (av:txt-al (strcat "RESUMO DE A" (chr 199) "O " (av:aco-titulo ac))
+               (+ x0 (/ wd 2.0)) (/ (+ y ya) 2.0) (* 1.6 h) AV:LAY-TXT 1)
+    (av:hl x0 (+ x0 wd) ya AV:LAY-TAB)
+    (setq y ya yt (- y (* 2.0 h)) ym (- y h) k 0)
+    (foreach c '("%%c" "kg/m" "COMPR. (m)" "PESO (kg)")
+      (av:txt-al c (/ (+ (nth k rc) (nth (1+ k) rc)) 2.0) ym h AV:LAY-TXT 1)
+      (setq k (1+ k)))
+    (foreach xg (list (nth 1 rc) (nth 2 rc) (nth 3 rc)) (av:vl xg y yt AV:LAY-GRADE))
+    (av:hl x0 (+ x0 wd) yt AV:LAY-GRADE)
+    (setq y yt)
+    (foreach g res
+      (if (= (car (car g)) ac)
+        (progn
+          (setq mt (/ (cadr g) 100.0) tot (+ tot (* mt (caddr g)))
+                yt (- y (* 2.0 h)) ym (- y h) k 1)
+          (foreach c (list (cadr (car g)) (rtos (caddr g) 2 3) (rtos mt 2 1)
+                           (rtos (* mt (caddr g)) 2 0))
+            (av:txt-al c (- (nth k rc) (* 0.6 h)) ym h AV:LAY-TXT 2)
+            (setq k (1+ k)))
+          (foreach xg (list (nth 1 rc) (nth 2 rc) (nth 3 rc)) (av:vl xg y yt AV:LAY-GRADE))
+          (av:hl x0 (+ x0 wd) yt AV:LAY-GRADE)
+          (setq y yt)
+        )
+      )
     )
-    (setq y (- y (* 1.5 h)))
+    (setq yt (- y (* 2.0 h)) ym (- y h))
+    (av:txt-al "PESO TOTAL" (/ (+ x0 (nth 3 rc)) 2.0) ym h AV:LAY-TXT 1)
+    (av:txt-al (rtos tot 2 0) (- (+ x0 wd) (* 0.6 h)) ym h AV:LAY-TXT 2)
+    (av:vl (nth 3 rc) y yt AV:LAY-GRADE)
+    (setq y yt pk (+ pk tot))
+    (av:ret x0 y0 (+ x0 wd) y AV:LAY-TAB)
+    (setq y (- y (* 3.0 h)))
   )
-  (setq y (+ y (* 1.0 h)))
-  (av:mk-line (list x0 y) (list (+ x0 wd) y) AV:LAY-TAB nil nil)
-  (av:mk-text "PESO TOTAL" (list (+ x0 (* 1.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
-  (av:mk-text (rtos tot 2 1) (list (+ x0 (* 25.0 h)) (- y (* 1.5 h))) h 0.0 AV:LAY-TXT nil)
   (setq AV:ID nil AV:GRP nil)
   (av:empacota lid "LST" nil h)
   (av:reg-grava lid (list (list "p0" p0) (list "h" h) (list "ids" ids)))
   (princ (strcat "\n  LISTA DE FERROS"
                  (if ids (strcat " (" (itoa (length ids)) " detalhamento(s) selecionado(s))") " geral")
                  ": " (itoa (length lns)) " posicao(oes), "
-                 (rtos tot 2 1) " kg."))
+                 (rtos pk 2 1) " kg."))
 )
 
 ;;; refaz as listas existentes que contem o detalhamento id
@@ -2396,7 +2447,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.8      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.9      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -3260,7 +3311,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.8)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.9)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3479,7 +3530,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.8 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.9 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3552,7 +3603,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.8 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.9 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
