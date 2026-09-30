@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ESCADA.lsp
-;;;  FORMAS DE ESCADAS DE CONCRETO ARMADO  --  v1.0
+;;;  FORMAS DE ESCADAS DE CONCRETO ARMADO  --  v1.1
 ;;;
 ;;;  Desenvolvido por Baluarte Solucoes Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -18,9 +18,13 @@
 ;;;                    dos degraus / contorno do corte), reconhece lances,
 ;;;                    patamares, espelhos, pisos e espessuras e abre a janela
 ;;;                    ja preenchida
+;;;    ESCADASECAO ... CORTE EM QUALQUER POSICAO: clique na planta de formas,
+;;;                    trace a linha de corte (2 pontos), clique o lado para
+;;;                    onde o corte olha, de o nome (B, C...) e o ponto do
+;;;                    desenho.  O corte e calculado no MODELO 3D da escada.
 ;;;    ESCADAEDIT .... clique em qualquer desenho de uma escada: a janela abre
-;;;                    com todos os dados e os desenhos sao refeitos no lugar
-;;;                    (mesmo que tenham sido movidos)
+;;;                    com todos os dados e TODOS os desenhos (planta e cortes)
+;;;                    sao refeitos no lugar (mesmo que tenham sido movidos)
 ;;;
 ;;;  --------------------------------------------------------------------
 ;;;  MODELO DA ESCADA
@@ -47,17 +51,22 @@
 ;;;  (viga ou parede, a esquerda e/ou a direita) aparecem na planta e no
 ;;;  corte transversal.
 ;;;
+;;;  MODELO 3D: a planta (posicao, orientacao e giro de cada trecho) mais os
+;;;  niveis formam os solidos da escada (lances, patamares, vigas, lajes de
+;;;  piso, paredes, apoios laterais).  A laje inclinada continua sob o patamar
+;;;  ate a quebra (encontro com o fundo do patamar).
+;;;
 ;;;  DESENHOS (cada um e um BLOCO: mova a vontade; ESCADAEDIT refaz no lugar)
-;;;   - PLANTA DE FORMAS: lances com os degraus, linha de subida (SOBE),
-;;;     patamares com nome, espessura e nivel, apoios (tracejados) com nome,
-;;;     cotas e a indicacao do corte A-A.
-;;;   - CORTE LONGITUDINAL (desenvolvido): perfil dos degraus, laje inclinada,
-;;;     patamares, apoios com nome e secao, espessuras, niveis e cotas
-;;;     (pisos "8x28=224" e espelhos "9x17,5=158").
-;;;   - CORTE TRANSVERSAL A-A de um lance: laje, degrau visto, apoios
-;;;     laterais e cotas.
-;;;  Obs.: numa escada com giro, o corte longitudinal e DESENVOLVIDO (os
-;;;  trechos em sequencia, como se a escada fosse reta).
+;;;   - PLANTA DE FORMAS: lances com os degraus numerados, linha de subida
+;;;     (SOBE), patamares com nome, espessura e nivel, apoios (tracejados)
+;;;     com nome, cotas e as LINHAS DE CORTE (A-A, B-B, ...).
+;;;   - CORTES (A-A automatico, transversal ao lance escolhido, e os tracados
+;;;     com ESCADASECAO): o que o plano corta (concreto, vigas, lajes e
+;;;     paredes, com a quebra da laje), as arestas VISTAS atras do plano, sem
+;;;     as escondidas, nomes, espessuras, niveis dos patamares e pavimentos e
+;;;     cotas ("5x28=140", "6x18=108").
+;;;   - DESENVOLVIMENTO (opcional): os trechos em sequencia, como se a escada
+;;;     fosse reta (util para o detalhamento da armadura).
 ;;;
 ;;;  UNIDADES: padrao "cm de papel" na escala 1:50 (igual a ARMVAR / TQS);
 ;;;  tambem metros, centimetros ou milimetros reais.  Todas as medidas da
@@ -78,7 +87,7 @@
 
 (vl-load-com)
 
-(setq ES:VERSAO    "1.0"
+(setq ES:VERSAO    "1.1"
       ES:LAY-CORTE "EST_FormaCorte"
       ES:LAY-VISTA "EST_FormaVista"
       ES:LAY-OCULTA "EST_FormaOculta"
@@ -310,6 +319,7 @@
 )
 
 (defun es:line (a b lay)
+  (if (and ES:REG (> (es:dist a b) 1e-6)) (setq ES:REG (cons (list (es:p2 a) (es:p2 b)) ES:REG)))
   (if (> (es:dist a b) 1e-6)
     (entmake (append (list '(0 . "LINE") '(100 . "AcDbEntity") (cons 8 lay)
                            '(100 . "AcDbLine") (cons 10 (es:w a)) (cons 11 (es:w b)))
@@ -317,7 +327,12 @@
 )
 
 ;;; polilinha; lt = tipo de linha (nil = PorLayer); wid = largura
-(defun es:pl (pts lay closed lt wid / ok)
+(defun es:pl (pts lay closed lt wid / ok q)
+  (if ES:REG
+    (progn
+      (setq q (car pts))
+      (foreach p (append (cdr pts) (if closed (list (car pts))))
+        (setq ES:REG (cons (list (es:p2 q) (es:p2 p)) ES:REG) q p))))
   (setq ok (and lt (tblsearch "LTYPE" lt)))
   (entmake (append
              (list '(0 . "LWPOLYLINE") '(100 . "AcDbEntity") (cons 8 lay))
@@ -855,8 +870,8 @@
 )
 
 (defun es:des-pla (gs / c refs rf p ang l vmin vmax k u x b nl uu tp
-                        bx w bb kk uc vd)
-  (setq c ES:HC refs (es:planta-refs gs) w (es:n ES:LAR) k 0 nl 0)
+                        w bb kk vd ndg)
+  (setq c ES:HC refs (es:planta-refs gs) w (es:n ES:LAR) k 0 nl 0 ndg 0)
   (foreach g gs
     (setq rf (nth k refs) p (nth 0 rf) ang (nth 1 rf) l (nth 2 rf)
           vmin (nth 3 rf) vmax (nth 4 rf))
@@ -903,22 +918,13 @@
                                                         (+ vmax (* 0.5 b))
                                                         (- vmin (* 0.5 b))))
                             ang (min 0.7 (/ (* 0.8 b) ES:HC)) ES:LAY-TXT))))
-        ;; indicacao do corte A-A
-        (if (and (= nl (es:int (es:n ES:TRAL))) (= ES:DTRA "1"))
-          (progn
-            (setq uc (* (+ (fix (* 0.5 (nth 15 g))) 0.5) (nth 14 g)))
-            (if (> uc l) (setq uc (* 0.5 l)))
-            (foreach sd (list (list vmax 1.0) (list vmin -1.0))
-              ;; lado direito: depois das cotas; lado esquerdo: junto a escada
-              (setq bx (+ (car sd) (* (cadr sd) (+ (if (> (cadr sd) 0) (* 0.5 c) (* 3.6 c))
-                                                   (if (> (cadr sd) 0) (es:lat-b ES:LATE) (es:lat-b ES:LATD))))))
-              (es:pl (list (es:uv p ang uc bx) (es:uv p ang uc (+ bx (* (cadr sd) 1.5 c))))
-                     ES:LAY-EIXO nil nil (* 0.25 c))
-              (es:seta (es:uv p ang uc (+ bx (* (cadr sd) 1.5 c)))
-                       (es:uv p ang (+ uc (* 1.4 c)) (+ bx (* (cadr sd) 1.5 c)))
-                       (* 0.8 c) (* 0.4 c) ES:LAY-EIXO)
-              (es:txt-bloco (list "A") (es:uv p ang (+ uc (* 2.4 c)) (+ bx (* (cadr sd) 1.5 c)))
-                            ang 1.2 ES:LAY-EIXO))))
+        ;; numeracao dos degraus (continua desde o 1.o lance)
+        (setq x 1)
+        (while (<= x (nth 15 g))
+          (es:txt-bloco (list (itoa (+ ndg x))) (es:uv p ang (* (- x 0.5) (nth 14 g)) (- vmax (* 0.8 c)))
+                        ang 0.55 ES:LAY-TXT)
+          (setq x (1+ x)))
+        (setq ndg (+ ndg (nth 15 g)))
         (setq nl (1+ nl))
       )
       ;; patamar: nome, espessura e nivel
@@ -959,6 +965,8 @@
                              (* 0.5 (+ vmin vmax)))
                       (+ ang (/ pi 2.0)) 0.8 ES:LAY-TXT)))
   )
+  ;; linhas de corte
+  (es:marca-cortes gs)
   (setq bb ES:CAIXA)
   (es:titulo (strcat "PLANTA DE FORMAS - " ES:NOME) (strcat "ESC. 1:" ES:ESC)
              (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
@@ -980,87 +988,6 @@
   (if (and lat (> (es:int (es:n (car lat))) 0)) (es:n (nth 2 lat)) 0.0)
 )
 
-;;; ---------------------------------------------------------------------------
-;;;  CORTE TRANSVERSAL A-A de um lance (no meio de um piso).  Origem = centro
-;;;  da face inferior da laje.
-;;; ---------------------------------------------------------------------------
-(defun es:lance-idx (gs i / r k)
-  (setq k 0)
-  (foreach g gs
-    (if (= (car g) "L")
-      (progn (if (= k i) (setq r g)) (setq k (1+ k)))))
-  (if r r (car (vl-remove-if-not '(lambda (g) (= (car g) "L")) gs)))
-)
-
-(defun es:des-tra (gs / c g w m sc tp hh e rets x0 x1 tpl b h nm yb yt sd bb xr yd xx hv)
-  (setq c ES:HC g (es:lance-idx gs (es:int (es:n ES:TRAL))) w (es:n ES:LAR))
-  (if g
-    (progn
-      (setq m  (fix (* 0.5 (nth 15 g)))
-            sc (+ (nth 1 g) (* (+ m 0.5) (nth 14 g)))
-            tp (+ (nth 3 g) (* (1+ m) (nth 13 g)))
-            hh (- tp (es:yint g sc))
-            e  (nth 13 g)
-            x0 (* -0.5 w) x1 (* 0.5 w) rets nil)
-      ;; apoios laterais: retangulos
-      (foreach lat (list (list ES:LATE -1.0) (list ES:LATD 1.0))
-        (setq tpl (es:int (es:n (car (car lat)))) sd (cadr lat))
-        (if (> tpl 0)
-          (progn
-            (setq b (es:n (nth 2 (car lat))) h (es:n (nth 3 (car lat))) nm (nth 1 (car lat)))
-            (if (= tpl 1)
-              (setq yt hh yb (- hh h))
-              (setq yt (+ hh (* 2.5 c) e) yb (- (* 3.0 c))))
-            (setq xr (if (< sd 0.0) (list (- x0 b) x0) (list x1 (+ x1 b))))
-            (setq rets (cons (list (car xr) (cadr xr) yb yt) rets))
-            ;; face externa, e interna fora da laje
-            (es:line (list (if (< sd 0.0) (car xr) (cadr xr)) yb)
-                     (list (if (< sd 0.0) (car xr) (cadr xr)) yt) ES:LAY-CORTE)
-            (setq xx (if (< sd 0.0) (cadr xr) (car xr)))
-            (foreach sg (es:recorta-v xx yb yt (list (list (- xx 0.001) (+ xx 0.001) 0.0 hh)))
-              (es:line (list xx (car sg)) (list xx (cadr sg)) ES:LAY-CORTE))
-            (if (= tpl 1)
-              (progn
-                (es:line (list (car xr) yb) (list (cadr xr) yb) ES:LAY-CORTE)
-                (es:line (list (car xr) yt) (list (cadr xr) yt) ES:LAY-CORTE)
-                (es:txt nm (list (* 0.5 (+ (car xr) (cadr xr))) (- yb (* 1.5 c))) 0.8 0.0 ES:LAY-TXT 1 0))
-              (progn
-                (es:quebra (list (- (car xr) (* 0.3 c)) yb) (list (+ (cadr xr) (* 0.3 c)) yb) ES:LAY-CORTE)
-                (es:quebra (list (- (car xr) (* 0.3 c)) yt) (list (+ (cadr xr) (* 0.3 c)) yt) ES:LAY-CORTE)
-                (es:txt nm (list (* 0.5 (+ (car xr) (cadr xr))) (- yb (* 2.0 c))) 0.8 0.0 ES:LAY-TXT 1 0)))
-          )
-        )
-      )
-      ;; laje cortada
-      (es:line (list x0 0.0) (list x1 0.0) ES:LAY-CORTE)
-      (es:line (list x0 hh) (list x1 hh) ES:LAY-CORTE)
-      (foreach xx (list x0 x1)
-        (foreach sg (es:recorta-v xx 0.0 hh rets)
-          (es:line (list xx (car sg)) (list xx (cadr sg)) ES:LAY-CORTE)))
-      ;; degrau seguinte, visto
-      (es:line (list x0 (+ hh e)) (list x1 (+ hh e)) ES:LAY-VISTA)
-      (foreach xx (list x0 x1)
-        (foreach sg (es:recorta-v xx hh (+ hh e) rets)
-          (es:line (list xx (car sg)) (list xx (cadr sg)) ES:LAY-VISTA)))
-      ;; cotas
-      (setq bb ES:CAIXA yd (- (min 0.0 (cadr bb)) (* 2.0 c)))
-      (es:dimh x0 x1 (- (min 0.0 (cadr bb)) (* 0.5 c)) yd (es:f w))
-      (setq xr (+ (caddr bb) (* 2.0 c)))
-      (setq hv (/ (nth 8 g) (cos (atan (nth 6 g)))))
-      (if (< hv (- hh 0.5))
-        (progn
-          (es:dimv 0.0 hv (+ (caddr bb) (* 0.5 c)) xr (es:f hv))
-          (es:dimv hv hh (+ (caddr bb) (* 0.5 c)) xr (es:f (- hh hv))))
-        (es:dimv 0.0 hh (+ (caddr bb) (* 0.5 c)) xr (es:f hh)))
-      (es:dimv 0.0 hh (+ (caddr bb) (* 0.5 c)) (+ xr (* 2.5 c)) (es:f hh))
-      (es:dimv hh (+ hh e) (+ (caddr bb) (* 0.5 c)) xr (es:f e))
-      (setq bb ES:CAIXA)
-      (es:titulo "CORTE A-A" (strcat ES:NOME " - " (nth 9 g) " (h=" (es:f (nth 8 g))
-                                     ")   ESC. 1:" ES:ESC)
-                 (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c)))
-    )
-  )
-)
 
 ;;; ==========================================================================
 ;;;  5.  DADOS NO DWG (dicionario ESCADA_DADOS) E BLOCOS DOS DESENHOS
@@ -1248,29 +1175,33 @@
 ;;; desenha um desenho (grp = "PLA" "LON" "TRA") com origem o e empacota
 (defun es:desenha-view (id grp o gs)
   (foreach e (es:soltos id grp) (entdel e))
-  (setq ES:ID id ES:TAG "" ES:GRP grp ES:O (es:p2 o) ES:CAIXA nil)
+  (setq ES:ID id ES:TAG "" ES:GRP grp ES:O (es:p2 o) ES:CAIXA nil ES:REG nil)
   (cond
     ((= grp "PLA") (es:des-pla gs))
     ((= grp "LON") (es:des-lon gs))
-    ((= grp "TRA") (es:des-tra gs))
+    ((= grp "TRA") (es:des-sec gs (es:corte-aa gs)))
+    ((wcmatch grp "SEC-*")
+     (foreach ct (es:cortes-todos gs)
+       (if (= (strcat "SEC-" (car ct)) grp) (es:des-sec gs ct))))
   )
   (setq ES:ID nil ES:GRP nil)
   (es:empacota id grp)
 )
 
 ;;; ---- registro de uma escada ---------------------------------------------------
-;;; (versao  parametros  trechos  apoios  origens)   origens = (("PLA" x y) ...)
+;;; (versao  parametros  trechos  apoios  origens  cortes)
+;;; origens = (("PLA" x y) ...);  cortes = ((nome ax ay bx by) ...) em cm da planta
 (defun es:dados (origens)
-  (list ES:VERSAO (mapcar 'eval ES:PARAMS) ES:TRE ES:APO origens)
+  (list ES:VERSAO (mapcar 'eval ES:PARAMS) ES:TRE ES:APO origens ES:CORTES)
 )
 
 (defun es:carrega (d / vs)
   (setq vs (nth 1 d))
   (foreach s ES:PARAMS
     (if vs (progn (set s (car vs)) (setq vs (cdr vs)))))
-  (setq ES:TRE (nth 2 d) ES:APO (nth 3 d))
+  (setq ES:TRE (es:nth 2 d) ES:APO (es:nth 3 d) ES:CORTES (es:nth 5 d))
   (es:defaults)
-  (nth 4 d)
+  (es:nth 4 d)
 )
 
 ;;; origem guardada de um desenho
@@ -1292,7 +1223,7 @@
   (if (null ES:ESC)   (setq ES:ESC "50"))
   (if (null ES:ALT)   (setq ES:ALT "2"))
   (if (null ES:DPLA)  (setq ES:DPLA "1"))
-  (if (null ES:DLON)  (setq ES:DLON "1"))
+  (if (null ES:DLON)  (setq ES:DLON "0"))
   (if (null ES:DTRA)  (setq ES:DTRA "1"))
   (if (null ES:TRAL)  (setq ES:TRAL 0))
   (if (null ES:LATE)  (setq ES:LATE (list "0" "VL1" "14" "40")))
@@ -1313,7 +1244,7 @@
   (foreach ln
    (list
 "es_main : dialog {"
-"  label = \"ESCADA  -  FORMAS      v1.0      Baluarte\";"
+"  label = \"ESCADA  -  FORMAS      v1.1      Baluarte\";"
 "  : row {"
 "    : column {"
 "      : boxed_column {"
@@ -1339,9 +1270,12 @@
 "      : boxed_column {"
 "        label = \"Desenhos\";"
 "        : toggle { key = \"dpla\"; label = \"Planta de formas\"; }"
-"        : toggle { key = \"dlon\"; label = \"Corte longitudinal (desenvolvido)\"; }"
-"        : toggle { key = \"dtra\"; label = \"Corte transversal A-A\"; }"
+"        : toggle { key = \"dtra\"; label = \"Corte A-A automatico (transversal ao lance)\"; }"
 "        : popup_list { key = \"tral\"; label = \"Corte A-A no :\"; edit_width = 20; }"
+"        : toggle { key = \"dlon\"; label = \"Desenvolvimento (trechos em sequencia)\"; }"
+"        : text { label = \"Cortes tracados na planta (ESCADASECAO) :\"; }"
+"        : list_box { key = \"cor\"; height = 3; width = 30; }"
+"        : button { key = \"rmc\"; label = \"Remover corte\"; }"
 "      }"
 "    }"
 "    : column {"
@@ -1499,6 +1433,7 @@
   (es:lista "tre" (reverse r) ES:SEL-T)
   (es:lista "apo" (mapcar 'es:apo-linha ES:APO) ES:SEL-A)
   (es:lista "tral" (es:lances-nomes) nil)
+  (es:lista "cor" (mapcar '(lambda (c) (strcat "Corte " (car c) "-" (car c))) ES:CORTES) nil)
   (set_tile "tral" (itoa (min (es:int (es:n ES:TRAL)) (max 0 (1- (length (es:lances-nomes)))))))
   (vl-catch-all-apply 'es:prev-img nil)
   (vl-catch-all-apply 'es:main-info nil)
@@ -1664,6 +1599,9 @@
      (if (and (setq i (es:sel "tre")) (< i (1- (length ES:TRE))))
        (progn (setq ES:TRE (es:troca ES:TRE i (1+ i)) ES:SEL-T (1+ i))
               (es:apo-remapeia (list "troca" i (1+ i))) (es:main-listas))))
+    ((= a "rmc")
+     (if (setq i (es:sel "cor"))
+       (progn (setq ES:CORTES (es:remove-nth ES:CORTES i)) (es:main-listas))))
     ((= a "rma")
      (if (setq i (es:sel "apo"))
        (progn (setq ES:APO (es:remove-nth ES:APO i) ES:SEL-A (max 0 (1- i))) (es:main-listas))))
@@ -1682,7 +1620,7 @@
     0
     (progn
       (es:main-set)
-      (foreach k '("gera" "rmt" "upt" "dnt" "rma")
+      (foreach k '("gera" "rmt" "upt" "dnt" "rma" "rmc")
         (action_tile k (strcat "(vl-catch-all-apply 'es:acao (list \"" k "\"))")))
       (foreach k '("mndg" "mdes" "mpis") (action_tile k "(es:minfo)"))
       (action_tile "addl" "(es:sai 10)")
@@ -2022,6 +1960,525 @@
 )
 
 ;;; ==========================================================================
+;;;  9.  MODELO 3D E CORTES EM QUALQUER POSICAO
+;;;  Cada trecho e um SOLIDO: a planta (referencial P ang, u ao longo da
+;;;  subida, v a esquerda) vezes o perfil vertical, que so depende de u:
+;;;    lance ..... topo = degraus, fundo = laje inclinada
+;;;    patamar ... topo = nivel, fundo = nivel - espessura
+;;;    caixa ..... vigas, paredes, lajes de piso e apoios laterais
+;;;  Um CORTE e uma linha na planta (A -> B) e olha para a ESQUERDA de A->B.
+;;;  No desenho do corte: x = distancia ao longo de A->B (cm), y = nivel (cm).
+;;; ==========================================================================
+
+;;; solido: (tipo P ang umin umax vmin vmax k g dados)
+;;;   tipo "L" lance / "P" patamar / "B" caixa;  g = registro de es:geo
+;;;   dados da caixa: (topo-em-umin topo-em-umax altura tipo nome quebra-topo u-longe)
+;;;     tipo "V" viga, "W" parede, "S" laje de piso
+;;; lances prolongados ate a quebra da laje dentro do patamar vizinho (a laje
+;;; inclinada continua sob o patamar ate encontrar o fundo dele)
+(defun es:estende (sols gs / r k g ant prx sx lo hi cad)
+  (setq cad (es:intradorso gs))
+  (foreach so sols
+    (if (= (car so) "L")
+      (progn
+        (setq k (nth 7 so) g (nth 8 so) lo 0.0 hi (nth 4 so)
+              ant (es:nth (1- k) gs) prx (es:nth (1+ k) gs))
+        (if (and ant (> (abs (- (nth 6 g) (nth 6 ant))) 1e-9))
+          (progn
+            (setq sx (/ (- (nth 5 ant) (nth 5 g)) (- (nth 6 g) (nth 6 ant))))
+            (if (and (< sx (nth 1 g)) (> sx (- (nth 1 ant) 1e-6))) (setq lo (- sx (nth 1 g))))))
+        (if (and prx (> (abs (- (nth 6 g) (nth 6 prx))) 1e-9))
+          (progn
+            (setq sx (/ (- (nth 5 prx) (nth 5 g)) (- (nth 6 g) (nth 6 prx))))
+            (if (and (> sx (nth 2 g)) (< sx (+ (nth 2 prx) 1e-6))) (setq hi (- sx (nth 1 g))))))
+        (setq r (cons (list "L" (nth 1 so) (nth 2 so) lo hi (nth 5 so) (nth 6 so) k g cad) r)))
+      (setq r (cons so r))))
+  (reverse r)
+)
+
+(defun es:solidos (gs / refs k r g rf p ang l vmin vmax lat b h tp u ap kk s yt dir e pp y0 top0)
+  (setq refs (es:planta-refs gs) k 0 r nil)
+  (foreach g gs
+    (setq rf (nth k refs) p (nth 0 rf) ang (nth 1 rf) l (nth 2 rf)
+          vmin (nth 3 rf) vmax (nth 4 rf))
+    (setq r (cons (list (car g) p ang 0.0 l vmin vmax k g nil) r))
+    ;; apoios laterais dos lances (viga inclinada rente aos bocais / parede)
+    (if (= (car g) "L")
+      (foreach lat (list (list ES:LATE 1.0) (list ES:LATD -1.0))
+        (if (and (car lat) (> (es:int (es:n (car (car lat)))) 0))
+          (progn
+            (setq b (es:n (nth 2 (car lat))) h (es:n (nth 3 (car lat)))
+                  e (nth 13 g) pp (nth 14 g) y0 (nth 3 g))
+            (if (= (es:int (es:n (car (car lat)))) 1)
+              (setq top0 (+ y0 e) tp "V")
+              (setq top0 (+ y0 e 100.0) h (+ 140.0 e (/ (nth 8 g) (cos (atan (/ e pp))))) tp "W"))
+            (setq r (cons (list "B" p ang 0.0 l
+                                (if (> (cadr lat) 0.0) vmax (- vmin b))
+                                (if (> (cadr lat) 0.0) (+ vmax b) vmin)
+                                k g (list top0 (+ top0 (* l (/ e pp))) h tp (nth 1 (car lat))
+                                          (= tp "W") nil))
+                          r))))))
+    (setq k (1+ k))
+  )
+  ;; apoios
+  (foreach ap ES:APO
+    (setq kk (es:apo-k gs ap) rf (nth kk refs) g (nth kk gs)
+          p (nth 0 rf) ang (nth 1 rf) vmin (nth 3 rf) vmax (nth 4 rf)
+          b (es:n (nth 2 ap)) h (es:n (nth 3 ap)) tp (es:int (es:n (nth 1 ap)))
+          u (+ (if (es:apo-fim ap) (nth 2 rf) 0.0) (es:n (nth 5 ap)))
+          s (es:apo-s gs ap) yt (es:topo-est gs s))
+    (if (= tp 1)
+      (progn
+        (setq dir (if (es:apo-fim ap) 1.0 -1.0))
+        (setq r (cons (list "B" p ang (min u (+ u (* dir b))) (max u (+ u (* dir b))) vmin vmax kk g
+                            (list yt yt h "S" (es:apo-txt ap) nil (+ u (* dir b))))
+                      r)))
+      (setq r (cons (list "B" p ang (- u (* 0.5 b)) (+ u (* 0.5 b)) vmin vmax kk g
+                          (list yt yt h (if (= tp 2) "W" "V") (es:apo-txt ap) nil nil))
+                    r)))
+  )
+  (reverse r)
+)
+
+;;; topo e fundo de um solido na coordenada u
+(defun es:sol-top (so u / g k d)
+  (setq g (nth 8 so))
+  (cond
+    ((= (car so) "L")
+     (if (< u -1e-6)
+       (nth 3 g)
+       (+ (nth 3 g) (* (max 1 (min (1+ (fix (/ u (nth 14 g)))) (nth 12 g))) (nth 13 g)))))
+    ((= (car so) "P") (nth 11 g))
+    (t
+     (setq d (nth 9 so))
+     (if (> (- (nth 4 so) (nth 3 so)) 1e-6)
+       (+ (nth 0 d) (* (- (nth 1 d) (nth 0 d)) (/ (- u (nth 3 so)) (- (nth 4 so) (nth 3 so)))))
+       (nth 0 d))))
+)
+(defun es:sol-bot (so u / g yy)
+  (setq g (nth 8 so))
+  (cond
+    ((= (car so) "L")
+     ;; lance estendido: fundo = linha de quebra do intradorso (es:estende)
+     (if (and (nth 9 so) (setq yy (es:y-cadeia (nth 9 so) (+ (nth 1 g) u))))
+       yy
+       (es:yint g (+ (nth 1 g) u))))
+    ((= (car so) "P") (nth 5 g))
+    (t (- (es:sol-top so u) (nth 2 (nth 9 so)))))
+)
+
+;;; coordenadas locais (u v) de um ponto da planta
+(defun es:sol-u (so x) (+ (* (- (car x) (car (nth 1 so))) (cos (nth 2 so))) (* (- (cadr x) (cadr (nth 1 so))) (sin (nth 2 so)))))
+(defun es:sol-v (so x) (- (* (- (cadr x) (cadr (nth 1 so))) (cos (nth 2 so))) (* (- (car x) (car (nth 1 so))) (sin (nth 2 so)))))
+
+;;; recorte de Liang-Barsky de uma variavel p0 + t dp em [lo, hi]
+(defun es:lb (p0 dp lo hi iv / t1 t2 tx)
+  (cond
+    ((null iv) nil)
+    ((< (abs dp) 1e-12) (if (and (>= p0 (- lo 1e-6)) (<= p0 (+ hi 1e-6))) iv))
+    (t
+     (setq t1 (/ (- lo p0) dp) t2 (/ (- hi p0) dp))
+     (if (> t1 t2) (setq tx t1 t1 t2 t2 tx))
+     (setq iv (list (max (car iv) t1) (min (cadr iv) t2)))
+     (if (< (car iv) (cadr iv)) iv)))
+)
+
+;;; trecho da reta X = b0 + t dir (t0..t1) dentro da planta do solido: (ta tb) ou nil
+(defun es:sol-int (so b0 dir t0 t1 / iv c s u0 v0 du dv)
+  (setq c (cos (nth 2 so)) s (sin (nth 2 so))
+        u0 (es:sol-u so b0) v0 (es:sol-v so b0)
+        du (+ (* (car dir) c) (* (cadr dir) s))
+        dv (- (* (cadr dir) c) (* (car dir) s)))
+  (setq iv (es:lb u0 du (nth 3 so) (nth 4 so) (list t0 t1)))
+  (setq iv (es:lb v0 dv (nth 5 so) (nth 6 so) iv))
+  (if (and iv (> (- (cadr iv) (car iv)) 0.01)) iv)
+)
+
+;;; ---- cortes guardados --------------------------------------------------------
+;;; ES:CORTES = ((nome ax ay bx by) ...) em cm da planta
+;;; corte A-A automatico: transversal ao lance escolhido, atravessando a escada
+(defun es:corte-aa (gs / refs k nl i g rf q dir t1 t2 iv m)
+  (setq refs (es:planta-refs gs) k 0 nl 0 i nil)
+  (foreach g gs
+    (if (= (car g) "L")
+      (progn
+        (if (or (null i) (= nl (es:int (es:n ES:TRAL)))) (setq i k))
+        (setq nl (1+ nl))))
+    (setq k (1+ k)))
+  (if i
+    (progn
+      (setq g (nth i gs) rf (nth i refs)
+            q (es:uv (nth 0 rf) (nth 1 rf) (* (+ (fix (* 0.5 (nth 15 g))) 0.5) (nth 14 g)) 0.0)
+            dir (es:mul (es:nrm (nth 1 rf)) -1.0)
+            t1 nil t2 nil)
+      (foreach so (es:solidos gs)
+        (if (setq iv (es:sol-int so q dir -100000.0 100000.0))
+          (setq t1 (if t1 (min t1 (car iv)) (car iv)) t2 (if t2 (max t2 (cadr iv)) (cadr iv)))))
+      (setq m 40.0)
+      (list "A" (es:add q (es:mul dir (- t1 m))) (es:add q (es:mul dir (+ t2 m))))))
+)
+
+(defun es:cortes-todos (gs / r)
+  (setq r (mapcar '(lambda (c) (list (car c) (list (nth 1 c) (nth 2 c)) (list (nth 3 c) (nth 4 c))))
+                  ES:CORTES))
+  (if (= ES:DTRA "1") (setq r (cons (es:corte-aa gs) r)))
+  (vl-remove-if 'null r)
+)
+
+;;; marcacao dos cortes na planta: traco grosso nas pontas, seta e letra
+(defun es:marca-cortes (gs / c a b dc nv)
+  (setq c ES:HC)
+  (foreach ct (es:cortes-todos gs)
+    (setq a (nth 1 ct) b (nth 2 ct) dc (es:mul (es:sub b a) (/ 1.0 (max 1e-6 (es:dist a b))))
+          nv (list (- (cadr dc)) (car dc)))
+    (foreach en (list (list a dc) (list b (es:mul dc -1.0)))
+      (es:pl (list (car en) (es:add (car en) (es:mul (cadr en) (* 1.5 c)))) ES:LAY-EIXO nil nil (* 0.25 c))
+      (es:seta (car en) (es:add (car en) (es:mul nv (* 1.4 c))) (* 0.8 c) (* 0.4 c) ES:LAY-EIXO)
+      (es:txt (car ct) (es:add (es:add (car en) (es:mul nv (* 1.0 c))) (es:mul (cadr en) (* -1.2 c)))
+              1.2 0.0 ES:LAY-EIXO 1 2)))
+)
+
+;;; ---- desenho de um corte --------------------------------------------------------
+;;; pedaco cortado de um lance/patamar: (tipo ta tb nil nil a b topo k solido)
+;;; (a b = fundo em funcao de x, como em es:geo, para usar es:intradorso)
+(defun es:pedaco (so a0 dc ta tb / g c s u0 du tl k uk tk ts y0 yy pts b0 b1 um)
+  (setq g (nth 8 so) c (cos (nth 2 so)) s (sin (nth 2 so))
+        u0 (es:sol-u so a0) du (+ (* (car dc) c) (* (cadr dc) s)))
+  ;; pontos de quebra do topo (espelhos)
+  (setq ts nil)
+  (if (and (= (car so) "L") (> (abs du) 1e-9))
+    (progn
+      (setq k 1)
+      (while (< k (nth 12 g))
+        (setq uk (* k (nth 14 g)) tk (/ (- uk u0) du))
+        (if (and (> tk (+ ta 1e-6)) (< tk (- tb 1e-6))) (setq ts (cons tk ts)))
+        (setq k (1+ k)))))
+  (setq ts (append (list ta) (es:ordena ts '(lambda (v) v)) (list tb)) pts nil)
+  (while (cdr ts)
+    (setq um (+ u0 (* du (* 0.5 (+ (car ts) (cadr ts)))))
+          yy (es:sol-top so um)
+          pts (cons (list (cadr ts) yy) (cons (list (car ts) yy) pts))
+          ts (cdr ts)))
+  (setq pts (reverse pts))
+  (setq b0 (es:sol-bot so u0) b1 (es:sol-bot so (+ u0 du)))
+  (list (car so) ta tb nil nil b0 (- b1 b0) pts (nth 7 so) so)
+)
+
+;;; caixa cortada: (ta tb bot-a bot-b top-a top-b dados quebra-a quebra-b)
+(defun es:pedaco-caixa (so a0 dc ta tb / c s u0 du ua ub d)
+  (setq c (cos (nth 2 so)) s (sin (nth 2 so)) d (nth 9 so)
+        u0 (es:sol-u so a0) du (+ (* (car dc) c) (* (cadr dc) s))
+        ua (+ u0 (* du ta)) ub (+ u0 (* du tb)))
+  (list ta tb (es:sol-bot so ua) (es:sol-bot so ub) (es:sol-top so ua) (es:sol-top so ub) d
+        (and (nth 6 d) (< (abs (- ua (nth 6 d))) 0.5))
+        (and (nth 6 d) (< (abs (- ub (nth 6 d))) 0.5)))
+)
+
+;;; subtrai intervalos: [a b] menos a lista ivs -> lista de intervalos
+(defun es:menos (a b ivs / r novo)
+  (setq r (list (list a b)))
+  (foreach iv ivs
+    (setq novo nil)
+    (foreach x r
+      (if (< (car x) (car iv)) (setq novo (cons (list (car x) (min (cadr x) (car iv))) novo)))
+      (if (> (cadr x) (cadr iv)) (setq novo (cons (list (max (car x) (cadr iv)) (cadr x)) novo))))
+    (setq r (vl-remove-if '(lambda (q) (< (- (cadr q) (car q)) 0.05)) novo)))
+  r
+)
+
+;;; ponto (x y prof) escondido por algum solido entre o plano do corte e ele?
+(defun es:oculto (x y pr sols a0 dc nv / b0 r iv n i rr u)
+  (setq b0 (es:add a0 (es:mul dc x)) r nil)
+  (foreach so sols
+    (if (and (null r) (> pr 1.0) (setq iv (es:sol-int so b0 nv 0.0 (- pr 0.8))))
+      (progn
+        (setq i 0)
+        (while (and (null r) (<= i 6))
+          (setq rr (+ (car iv) (* (- (cadr iv) (car iv)) (/ i 6.0)))
+                u  (es:sol-u so (es:add b0 (es:mul nv rr))))
+          (if (and (> y (+ (es:sol-bot so u) 0.3)) (< y (- (es:sol-top so u) 0.3))) (setq r T))
+          (setq i (1+ i))))))
+  r
+)
+
+;;; pontos de quebra do intradorso dentro do lance estendido: ((u y) ...)
+(defun es:quebras-lance (so g / r uu)
+  (foreach pt (nth 9 so)
+    (setq uu (- (car pt) (nth 1 g)))
+    (if (and (> uu (+ (nth 3 so) 0.01)) (< uu (- (nth 4 so) 0.01)))
+      (setq r (cons (list uu (es:sol-bot so uu)) r))))
+  (reverse r)
+)
+
+;;; ponto 3D (usa p e ang de es:sol-arestas)
+(defun es:p3 (u v y / xy) (setq xy (es:uv p ang u v)) (list (car xy) (cadr xy) y))
+
+;;; arestas de um solido (segmentos 3D na planta: ((x y z) (x y z)))
+(defun es:sol-arestas (so / g q r p ang pt e0)
+  (setq g (nth 8 so) p (nth 1 so) ang (nth 2 so))
+  (setq q (cond
+            ((= (car so) "L")
+             (append (if (< (nth 3 so) -1e-6) (list (list (nth 3 so) (nth 3 g))))
+                     (mapcar '(lambda (pt) (list (- (car pt) (nth 1 g)) (cadr pt))) (nth 7 g))
+                     (if (> (nth 4 so) (+ (nth 18 g) 1e-6)) (list (list (nth 4 so) (nth 11 g))))
+                     (list (list (nth 4 so) (es:sol-bot so (nth 4 so))))
+                     ;; quebras do intradorso dentro do lance
+                     (reverse (es:quebras-lance so g))
+                     (list (list (nth 3 so) (es:sol-bot so (nth 3 so))))))
+            (t (list (list (nth 3 so) (es:sol-top so (nth 3 so))) (list (nth 4 so) (es:sol-top so (nth 4 so)))
+                     (list (nth 4 so) (es:sol-bot so (nth 4 so))) (list (nth 3 so) (es:sol-bot so (nth 3 so)))))))
+  (setq r nil e0 (es:ultimo q))
+  (foreach pt q
+    (foreach v (list (nth 5 so) (nth 6 so))
+      (setq r (cons (list (es:p3 (car e0) v (cadr e0)) (es:p3 (car pt) v (cadr pt))) r)))
+    (setq r (cons (list (es:p3 (car pt) (nth 5 so) (cadr pt)) (es:p3 (car pt) (nth 6 so) (cadr pt))) r))
+    (setq e0 pt))
+  r
+)
+
+;;; arestas vistas (atras do plano), sem as escondidas: lista de ((x1 y1) (x2 y2))
+(defun es:vistas (sols a0 dc nv len / r ar p q x1 x2 d1 d2 iv n i xa xb ya yb pa pb vis ini fim seg ok)
+  (setq r nil)
+  (foreach so sols
+    (foreach ar (es:sol-arestas so)
+      (setq p (car ar) q (cadr ar)
+            x1 (+ (* (- (car p) (car a0)) (car dc)) (* (- (cadr p) (cadr a0)) (cadr dc)))
+            x2 (+ (* (- (car q) (car a0)) (car dc)) (* (- (cadr q) (cadr a0)) (cadr dc)))
+            d1 (+ (* (- (car p) (car a0)) (car nv)) (* (- (cadr p) (cadr a0)) (cadr nv)))
+            d2 (+ (* (- (car q) (car a0)) (car nv)) (* (- (cadr q) (cadr a0)) (cadr nv))))
+      ;; so a parte da frente (prof > 0.5) e dentro do comprimento do corte
+      (setq iv (es:lb d1 (- d2 d1) 0.5 1e9 (list 0.0 1.0)))
+      (setq iv (es:lb x1 (- x2 x1) 0.0 len iv))
+      (if iv
+        (progn
+          (setq n 6 i 0 ini nil)
+          (repeat n
+            (setq pa (+ (car iv) (* (- (cadr iv) (car iv)) (/ i (float n))))
+                  pb (+ (car iv) (* (- (cadr iv) (car iv)) (/ (1+ i) (float n))))
+                  xa (* 0.5 (+ pa pb))
+                  vis (not (es:oculto (+ x1 (* xa (- x2 x1))) (+ (caddr p) (* xa (- (caddr q) (caddr p))))
+                                      (+ d1 (* xa (- d2 d1))) sols a0 dc nv)))
+            (cond
+              ((and vis (null ini)) (setq ini pa fim pb))
+              (vis (setq fim pb))
+              (ini (setq r (cons (list ini fim p q x1 x2) r) ini nil)))
+            (setq i (1+ i)))
+          (if ini (setq r (cons (list ini fim p q x1 x2) r)))))))
+  ;; em coordenadas do corte, sem repetidos e sem os de comprimento zero
+  (setq seg nil)
+  (foreach s r
+    (setq pa (list (+ (nth 4 s) (* (car s) (- (nth 5 s) (nth 4 s))))
+                   (+ (caddr (nth 2 s)) (* (car s) (- (caddr (nth 3 s)) (caddr (nth 2 s))))))
+          pb (list (+ (nth 4 s) (* (cadr s) (- (nth 5 s) (nth 4 s))))
+                   (+ (caddr (nth 2 s)) (* (cadr s) (- (caddr (nth 3 s)) (caddr (nth 2 s)))))))
+    (if (> (es:dist pa pb) 0.3)
+      (progn
+        (setq ok T)
+        (foreach z seg
+          (if (or (and (< (es:dist pa (car z)) 0.3) (< (es:dist pb (cadr z)) 0.3))
+                  (and (< (es:dist pa (cadr z)) 0.3) (< (es:dist pb (car z)) 0.3)))
+            (setq ok nil)))
+        (if ok (setq seg (cons (list pa pb) seg))))))
+  seg
+)
+
+;;; partes do segmento sg que nao estao sobre nenhum segmento de "cort"
+(defun es:tira-sobrepostos (sg cort / a b l u n r ivs t1 t2 d1 d2)
+  (setq a (car sg) b (cadr sg) l (es:dist a b))
+  (if (< l 1e-6)
+    nil
+    (progn
+      (setq u (es:mul (es:sub b a) (/ 1.0 l)) n (list (- (cadr u)) (car u)) ivs nil)
+      (foreach c cort
+        (setq d1 (+ (* (- (car (car c)) (car a)) (car n)) (* (- (cadr (car c)) (cadr a)) (cadr n)))
+              d2 (+ (* (- (car (cadr c)) (car a)) (car n)) (* (- (cadr (cadr c)) (cadr a)) (cadr n))))
+        (if (and (< (abs d1) 0.2) (< (abs d2) 0.2))
+          (progn
+            (setq t1 (+ (* (- (car (car c)) (car a)) (car u)) (* (- (cadr (car c)) (cadr a)) (cadr u)))
+                  t2 (+ (* (- (car (cadr c)) (car a)) (car u)) (* (- (cadr (cadr c)) (cadr a)) (cadr u))))
+            (setq ivs (cons (list (min t1 t2) (max t1 t2)) ivs)))))
+      (mapcar '(lambda (iv) (list (es:add a (es:mul u (car iv))) (es:add a (es:mul u (cadr iv)))))
+              (es:menos 0.0 l ivs))))
+)
+
+;;; desenha o corte ct = (nome A B)
+(defun es:des-sec (gs ct / c sols a0 b0 len dc nv pcs cxs iv grupos gr top bot rets cob
+                      x1 x2 y xm ang n lv lvs bb xmax ymin s0 s1 k nm so cort du ua ub txt lvl)
+  (setq c ES:HC sols (es:solidos gs) a0 (nth 1 ct) b0 (nth 2 ct) len (es:dist a0 b0))
+  (setq dc (es:mul (es:sub b0 a0) (/ 1.0 (max 1e-6 len))) nv (list (- (cadr dc)) (car dc)))
+  ;; pedacos cortados
+  (setq pcs nil cxs nil ES:REG (list (list '(0.0 0.0) '(0.0 0.0))))
+  (foreach so sols
+    (if (setq iv (es:sol-int so a0 dc 0.0 len))
+      (if (= (car so) "B")
+        (setq cxs (cons (es:pedaco-caixa so a0 dc (car iv) (cadr iv)) cxs))
+        (setq pcs (cons (es:pedaco so a0 dc (car iv) (cadr iv)) pcs)))))
+  (setq pcs (es:ordena pcs '(lambda (p) (nth 1 p))))
+  ;; grupos: trechos vizinhos (k e k+1) que se tocam no corte formam uma peca so
+  (setq grupos nil gr nil)
+  (foreach p pcs
+    (if (and gr (< (abs (- (nth 1 p) (nth 2 (car gr)))) 1.0) (= 1 (abs (- (nth 8 p) (nth 8 (car gr))))))
+      (setq gr (cons p gr))
+      (progn (if gr (setq grupos (cons (reverse gr) grupos))) (setq gr (list p)))))
+  (if gr (setq grupos (cons (reverse gr) grupos)))
+  (setq rets (mapcar '(lambda (x) (list (nth 0 x) (nth 1 x) (min (nth 2 x) (nth 3 x)) (max (nth 4 x) (nth 5 x))))
+                     cxs)
+        cob  (mapcar '(lambda (g) (list (nth 1 (car g)) (nth 2 (es:ultimo g)) (es:intradorso g))) grupos))
+  ;; ---- lajes cortadas
+  (foreach g grupos
+    (setq top nil)
+    (foreach p g (foreach q (nth 7 p) (if (not (and top (equal q (car top) 1e-6))) (setq top (cons q top)))))
+    (setq top (reverse top) bot (es:intradorso g))
+    (es:pl top ES:LAY-CORTE nil nil nil)
+    (es:pl bot ES:LAY-CORTE nil nil nil)
+    (foreach sg (es:recorta-v (car (car top)) (cadr (car bot)) (cadr (car top)) rets)
+      (es:line (list (car (car top)) (car sg)) (list (car (car top)) (cadr sg)) ES:LAY-CORTE))
+    (foreach sg (es:recorta-v (car (es:ultimo top)) (cadr (es:ultimo bot)) (cadr (es:ultimo top)) rets)
+      (es:line (list (car (es:ultimo top)) (car sg)) (list (car (es:ultimo top)) (cadr sg)) ES:LAY-CORTE)))
+  ;; ---- vigas, paredes e lajes de piso cortadas
+  (foreach x cxs
+    (setq x1 (nth 0 x) x2 (nth 1 x))
+    ;; fundo
+    (if (= (nth 3 (nth 6 x)) "W")
+      (es:quebra (list (- x1 (* 0.3 c)) (nth 2 x)) (list (+ x2 (* 0.3 c)) (nth 3 x)) ES:LAY-CORTE)
+      (es:line (list x1 (nth 2 x)) (list x2 (nth 3 x)) ES:LAY-CORTE))
+    ;; topo, onde nao ha laje por cima
+    (foreach iv (es:menos x1 x2 (mapcar '(lambda (g) (list (car g) (cadr g))) cob))
+      (setq y (list (+ (nth 4 x) (* (- (nth 5 x) (nth 4 x)) (/ (- (car iv) x1) (max 1e-6 (- x2 x1)))))
+                    (+ (nth 4 x) (* (- (nth 5 x) (nth 4 x)) (/ (- (cadr iv) x1) (max 1e-6 (- x2 x1)))))))
+      (if (nth 5 (nth 6 x))
+        (es:quebra (list (car iv) (car y)) (list (cadr iv) (cadr y)) ES:LAY-CORTE)
+        (es:line (list (car iv) (car y)) (list (cadr iv) (cadr y)) ES:LAY-CORTE)))
+    ;; faces laterais ate o fundo da laje (ou interrupcao na ponta da laje de piso)
+    (foreach fc (list (list x1 (nth 2 x) (nth 4 x) (nth 7 x)) (list x2 (nth 3 x) (nth 5 x) (nth 8 x)))
+      (setq y (caddr fc))
+      (foreach g cob
+        (if (and (>= (car fc) (- (car g) 1e-6)) (<= (car fc) (+ (cadr g) 1e-6)))
+          (setq y (min y (es:y-cadeia (caddr g) (car fc))))))
+      (if (cadddr fc)
+        (es:quebra (list (car fc) (+ (caddr fc) (* 0.3 c))) (list (car fc) (- (cadr fc) (* 0.3 c))) ES:LAY-CORTE)
+        (if (> y (+ (cadr fc) 1e-6)) (es:line (list (car fc) (cadr fc)) (list (car fc) y) ES:LAY-CORTE))))
+    (es:txt (nth 4 (nth 6 x)) (list (* 0.5 (+ x1 x2)) (- (min (nth 2 x) (nth 3 x)) (* 1.6 c)))
+            0.8 0.0 ES:LAY-TXT 1 0))
+  ;; ---- arestas vistas (menos o que coincide com o contorno cortado)
+  (setq cort ES:REG ES:REG nil)
+  (foreach sg (es:vistas (es:estende sols gs) a0 dc nv len)
+    (foreach q (es:tira-sobrepostos sg cort) (es:line (car q) (cadr q) ES:LAY-VISTA)))
+  ;; ---- nomes, espessuras e niveis dos trechos cortados
+  (setq lvs nil lvl nil)
+  (foreach p pcs
+    (setq xm (* 0.5 (+ (nth 1 p) (nth 2 p))) y (es:yint p xm) ang (atan (nth 6 p)) n (es:nrm ang)
+          so (nth 9 p) nm (nth 8 so)
+          du (+ (* (car dc) (cos (nth 2 so))) (* (cadr dc) (sin (nth 2 so))))
+          ua (+ (es:sol-u so a0) (* du (nth 1 p))) ub (+ (es:sol-u so a0) (* du (nth 2 p))))
+    (if (> (- (nth 2 p) (nth 1 p)) (* 3.0 c))
+      (es:txt (es:nome-h nm) (es:add (list xm y) (es:mul n (* -1.6 c))) 0.8 ang ES:LAY-TXT 1 0))
+    (if (= (car p) "P")
+      (progn
+        (es:nivel (list xm (nth 11 nm)) (es:nivtxt (es:nivel-m (nth 11 nm))))
+        (setq lvs (cons (nth 11 nm) lvs)))
+      (if (> (abs du) 0.5)
+        ;; lance cortado ao longo: niveis de partida e de chegada
+        (progn
+          (setq lvs (cons (nth 3 nm) (cons (nth 4 nm) lvs))
+                lvl (cons (list (nth 3 nm) (nth 4 nm) (es:txt-esp nm)) lvl))
+          ;; piso (pavimento) no inicio / fim da escada
+          (if (and (= (nth 7 so) 0) (< (min ua ub) 0.5))
+            (es:nivel (list (+ (nth 1 p) (/ (- 0.0 ua) du) (* (if (> du 0) -3.0 3.0) c)) (nth 3 nm))
+                      (es:nivtxt (es:nivel-m (nth 3 nm)))))
+          (if (and (= (nth 7 so) (1- (length gs))) (> (max ua ub) (- (nth 18 nm) 0.5)))
+            (es:nivel (list (+ (nth 1 p) (/ (- (nth 18 nm) ua) du) (* (if (> du 0) 3.0 -3.0) c)) (nth 4 nm))
+                      (es:nivtxt (es:nivel-m (nth 4 nm))))))
+        (setq lvs (cons (apply 'min (mapcar 'cadr (nth 7 p))) (cons (apply 'max (mapcar 'cadr (nth 7 p))) lvs))))))
+  ;; ---- cotas: larguras cortadas (embaixo) e niveis (a direita)
+  (if (and pcs ES:CAIXA)
+    (progn
+      (setq bb ES:CAIXA ymin (cadr bb) xmax (caddr bb))
+      (foreach p pcs
+        (setq so (nth 9 p) nm (nth 8 so)
+              du (+ (* (car dc) (cos (nth 2 so))) (* (cadr dc) (sin (nth 2 so))))
+              ua (+ (es:sol-u so a0) (* du (nth 1 p))) ub (+ (es:sol-u so a0) (* du (nth 2 p))))
+        ;; lance cortado de ponta a ponta: "8x28=224"
+        (setq txt (if (and (= (car p) "L") (< (abs (- (min ua ub) 0.0)) 0.5)
+                           (< (abs (- (max ua ub) (nth 18 nm))) 0.5) (> (abs du) 0.999))
+                    (es:txt-pisos nm)
+                    (es:f (- (nth 2 p) (nth 1 p)))))
+        (es:dimh (nth 1 p) (nth 2 p) (- ymin (* 0.5 c)) (- ymin (* 2.5 c)) txt))
+      (setq s0 (apply 'min (mapcar '(lambda (p) (nth 1 p)) pcs))
+            s1 (apply 'max (mapcar '(lambda (p) (nth 2 p)) pcs)))
+      (if (> (length pcs) 1)
+        (es:dimh s0 s1 (- ymin (* 0.5 c)) (- ymin (* 5.0 c)) (es:f (- s1 s0))))
+      ;; niveis distintos em ordem; o desnivel de um lance sai como "9x17,5=158"
+      (setq lv nil)
+      (foreach v (es:ordena lvs '(lambda (v) v))
+        (if (not (and lv (< (abs (- v (car lv))) 0.5))) (setq lv (cons v lv))))
+      (setq lv (reverse lv) k 0)
+      (if (> (length lv) 2)
+        (es:dimv (car lv) (es:ultimo lv) (+ xmax (* 0.5 c)) (+ xmax (* 4.5 c)) (es:f (- (es:ultimo lv) (car lv)))))
+      (while (cdr lv)
+        (setq txt (es:f (- (cadr lv) (car lv))))
+        (foreach z lvl
+          (if (and (< (abs (- (car z) (car lv))) 0.5) (< (abs (- (cadr z) (cadr lv))) 0.5)) (setq txt (caddr z))))
+        (es:dimv (car lv) (cadr lv) (+ xmax (* 0.5 c)) (+ xmax (* 2.0 c)) txt)
+        (setq lv (cdr lv)))))
+  (setq bb ES:CAIXA)
+  (if bb
+    (es:titulo (strcat "CORTE " (car ct) "-" (car ct)) (strcat ES:NOME "   ESC. 1:" ES:ESC)
+               (* 0.5 (+ (car bb) (caddr bb))) (- (cadr bb) (* 3.0 c))))
+  (if (null pcs) (es:aviso (strcat "o corte " (car ct) "-" (car ct) " nao atravessa nenhum lance/patamar.")))
+)
+
+;;; ---- tracar cortes na planta -------------------------------------------------------
+;;; ponto do desenho -> cm da planta (considera a planta movida/girada)
+(defun es:mundo->planta (p ins o / ip r s q)
+  (setq ip (cdr (assoc 10 (entget ins))) r (cdr (assoc 50 (entget ins)))
+        s (cdr (assoc 41 (entget ins))))
+  (if (null r) (setq r 0.0))
+  (if (or (null s) (= s 0.0)) (setq s 1.0))
+  (setq q (es:sub (es:p2 p) (es:p2 ip))
+        q (list (/ (+ (* (car q) (cos r)) (* (cadr q) (sin r))) s)
+                (/ (- (* (cadr q) (cos r)) (* (car q) (sin r))) s)))
+  (es:mul (es:sub q (es:p2 o)) ES:UC)
+)
+
+(defun es:letra-livre ( / l i usados)
+  (setq usados (mapcar 'car ES:CORTES) i 66)
+  (if (/= ES:DTRA "1") (setq i 65))
+  (while (member (chr i) usados) (setq i (1+ i)))
+  (chr i)
+)
+
+;;; laco: o usuario traca cortes na planta da escada id (ja desenhada)
+(defun es:secao-laco (id / d ors ins o p1 p2 p3 a b nm lc cr cz novo)
+  (setq novo nil)
+  (while (and (setq d (es:reg-le id)) (setq ors (es:carrega d))
+              (setq ins (es:insert-de id "PLA")) (setq o (es:origem ors "PLA"))
+              (setq p1 (es:pede-ponto "\nLINHA DE CORTE na planta - primeiro ponto <ENTER = terminar>: " nil)))
+    (setq p2 (vl-catch-all-apply 'getpoint (list p1 "\nSegundo ponto da linha de corte: ")))
+    (if (and p2 (not (vl-catch-all-error-p p2)))
+      (progn
+        (setq p3 (es:pede-ponto "\nClique do LADO para onde o corte olha: " nil))
+        (es:unidades)
+        (setq a (es:mundo->planta p1 ins o) b (es:mundo->planta p2 ins o))
+        ;; olha para a esquerda de A->B: se o lado clicado for a direita, inverte
+        (if (and p3 (< (- (* (- (car p2) (car p1)) (- (cadr p3) (cadr p1)))
+                          (* (- (cadr p2) (cadr p1)) (- (car p3) (car p1)))) 0.0))
+          (setq cz a a b b cz))
+        (setq lc (es:letra-livre)
+              nm (vl-catch-all-apply 'getstring (list (strcat "\nNome do corte <" lc ">: "))))
+        (if (or (vl-catch-all-error-p nm) (null nm) (= (vl-string-trim " " nm) "")) (setq nm lc))
+        (setq nm (strcase (vl-string-trim " " nm)))
+        (if (not (wcmatch nm "#,@,##,@@,@#,#@,@##,##@,@@#,@@@,###"))
+          (progn (princ "\nNome invalido (use ate 3 letras/numeros); usei ") (princ lc) (setq nm lc)))
+        ;; substitui um corte com o mesmo nome
+        (setq ES:CORTES (append (vl-remove-if '(lambda (x) (= (car x) nm)) ES:CORTES)
+                                (list (list nm (car a) (cadr a) (car b) (cadr b)))))
+        (es:roda 'es:gera (list id ors nil) (strcat "corte " nm))))
+  )
+  (princ)
+)
+
+;;; ==========================================================================
 ;;;  8.  COMANDOS
 ;;; ==========================================================================
 
@@ -2034,34 +2491,55 @@
 )
 
 ;;; desenha / refaz os desenhos marcados.  ors = origens guardadas (edicao);
-;;; londef = origem sugerida para o corte longitudinal (ESCADACORTE)
-(defun es:gera (id ors londef / gs novos o feitos)
+;;; londef = origem sugerida para o desenvolvimento (ESCADACORTE).
+;;; Desenho sem ponto (ENTER) e desligado; corte sem ponto e removido.
+(defun es:gera (id ors londef / gs novos o feitos vs grp cortes0 refaz)
   (setq ES:ETAPA "preparo")
   (es:prepara)
   (es:unidades)
-  (setq gs (es:geo ES:TRE) novos nil feitos nil)
-  (foreach v (list (list "PLA" ES:DPLA "\nPLANTA DE FORMAS - ponto do inicio do 1.o lance, no eixo <nao desenhar>: " nil)
-                   (list "LON" ES:DLON (if londef
-                                         "\nCORTE LONGITUDINAL - inicio da escada, no nivel inicial <ENTER = sobre o corte selecionado>: "
-                                         "\nCORTE LONGITUDINAL - inicio da escada, no nivel inicial <nao desenhar>: ")
-                         londef)
-                   (list "TRA" ES:DTRA "\nCORTE A-A - centro da face inferior da laje <nao desenhar>: " nil))
-    (setq ES:ETAPA (strcat "desenho " (car v)) o nil)
-    (if (= (cadr v) "1")
+  (setq gs (es:geo ES:TRE) novos nil feitos nil cortes0 ES:CORTES refaz nil)
+  ;; desenhos de cortes que nao existem mais
+  (foreach x ors
+    (if (and (wcmatch (car x) "SEC-*")
+             (not (member (substr (car x) 5) (mapcar 'car ES:CORTES))))
+      (es:apaga-des id (car x))))
+  (setq vs (append
+             (list (list "PLA" 'ES:DPLA "\nPLANTA DE FORMAS - ponto do inicio do 1.o lance, no eixo <nao desenhar>: " nil)
+                   (list "TRA" 'ES:DTRA "\nCORTE A-A - ponto do inicio da linha de corte, no nivel inicial <nao desenhar>: " nil)
+                   (list "LON" 'ES:DLON (if londef
+                                          "\nDESENVOLVIMENTO - inicio da escada, nivel inicial <ENTER = sobre o corte selecionado>: "
+                                          "\nDESENVOLVIMENTO - inicio da escada, nivel inicial <nao desenhar>: ")
+                         londef))
+             (mapcar '(lambda (c) (list (strcat "SEC-" (car c)) nil
+                                        (strcat "\nCORTE " (car c) "-" (car c)
+                                                " - ponto do inicio da linha de corte, no nivel inicial <remover o corte>: ")
+                                        nil))
+                     ES:CORTES)))
+  (foreach v vs
+    (setq grp (car v) ES:ETAPA (strcat "desenho " grp) o nil)
+    (if (or (null (cadr v)) (= (eval (cadr v)) "1"))
       (progn
-        (setq o (es:origem ors (car v)))
+        (setq o (es:origem ors grp))
         (if (null o) (setq o (es:pede-ponto (caddr v) (cadddr v))))
         (if o
           (progn
-            (es:desenha-view id (car v) o gs)
-            (setq novos (cons (cons (car v) (es:p2 o)) novos) feitos (cons (car v) feitos)))
-          (es:apaga-des id (car v))))
-      (es:apaga-des id (car v)))
+            (es:desenha-view id grp o gs)
+            (setq novos (cons (cons grp (es:p2 o)) novos) feitos (cons grp feitos)))
+          (progn
+            (es:apaga-des id grp)
+            (if (cadr v)
+              (set (cadr v) "0")
+              (setq ES:CORTES (vl-remove-if '(lambda (c) (= (strcat "SEC-" (car c)) grp)) ES:CORTES)
+                    refaz T)))))
+      (es:apaga-des id grp))
   )
+  ;; um corte foi removido: a planta perde a marcacao dele
+  (if (and refaz (es:origem novos "PLA"))
+    (es:desenha-view id "PLA" (es:origem novos "PLA") gs))
   (setq ES:ETAPA "gravar")
   (es:reg-grava id (es:dados (reverse novos)))
   (princ (strcat "\nESCADA " ES:NOME " (" id "): " (itoa (length feitos)) " desenho(s)."
-                 "  Para alterar: ESCADAEDIT e clique num dos desenhos."))
+                 "  Alterar: ESCADAEDIT.  Novos cortes: ESCADASECAO."))
   feitos
 )
 
@@ -2072,7 +2550,7 @@
 )
 (defun es:undo-fim (doc) (if doc (vl-catch-all-apply 'vla-EndUndoMark (list doc))))
 
-(defun c:ESCADA ( / *error* doc)
+(defun c:ESCADA ( / *error* doc id)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg (if ES:ETAPA (strcat "  [etapa: " ES:ETAPA "]") ""))))
@@ -2080,8 +2558,9 @@
   (setq ES:ETAPA "janela")
   (if (es:roda 'es:janela nil "janela")
     (progn
-      (setq doc (es:undo-ini))
-      (es:roda 'es:gera (list (es:novo-id) nil nil) "desenhando")
+      (setq doc (es:undo-ini) id (es:novo-id) ES:CORTES nil)
+      (es:roda 'es:gera (list id nil nil) "desenhando")
+      (if (es:insert-de id "PLA") (es:roda 'es:secao-laco (list id) "cortes"))
       (es:undo-fim doc))
     (princ "\nCancelado."))
   (princ)
@@ -2106,6 +2585,26 @@
          (es:undo-fim doc))
        (princ "\nSem alteracoes.")))
   )
+  (princ)
+)
+
+;;; tracar cortes numa escada existente: clique na planta de formas
+(defun c:ESCADASECAO ( / *error* doc s id x)
+  (defun *error* (msg)
+    (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
+      (princ (strcat "\n*** Erro: " msg (if ES:ETAPA (strcat "  [etapa: " ES:ETAPA "]") ""))))
+    (es:undo-fim doc) (setq ES:ID nil ES:GRP nil) (princ))
+  (setq s (entsel "\nClique na PLANTA DE FORMAS da escada: "))
+  (cond
+    ((null s) (princ "\nNada selecionado."))
+    ((null (setq x (es:id-ent (car s)))) (princ "\nIsso nao e um desenho da ESCADA."))
+    ((null (es:insert-de (setq id (car x)) "PLA"))
+     (princ "\nEssa escada nao tem planta de formas: ligue a planta no ESCADAEDIT."))
+    ((null (es:reg-le id)) (princ (strcat "\nOs dados da escada " id " nao foram encontrados.")))
+    (t
+     (setq doc (es:undo-ini))
+     (es:roda 'es:secao-laco (list id) "cortes")
+     (es:undo-fim doc)))
   (princ)
 )
 
@@ -2135,7 +2634,7 @@
         ((null r) nil)
         ((= (type r) 'STR) (alert r))
         (t
-         (setq ES:TRE (car r)
+         (setq ES:TRE (car r) ES:DLON "1" ES:CORTES nil
                ES:APO (list (list "V1" "0" "14" "40" "0" "0")
                             (list "V2" "0" "14" "40" (itoa (1- (* 2 (length ES:TRE)))) "0"))
                ES:SEL-T 0 ES:SEL-A 0)
@@ -2160,5 +2659,6 @@
 )
 
 (princ (strcat "\nESCADA v" ES:VERSAO " carregada (Baluarte).  Comandos: ESCADA (nova), "
-               "ESCADACORTE (a partir de um corte desenhado), ESCADAEDIT (editar)."))
+               "ESCADACORTE (a partir de um corte desenhado), ESCADASECAO (tracar cortes na planta), "
+               "ESCADAEDIT (editar)."))
 (princ)
