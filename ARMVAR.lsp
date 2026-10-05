@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.9
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.10
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -19,6 +19,7 @@
 ;;;    ARMVARATU .... refaz todos os detalhamentos (se os reatores estiverem
 ;;;                   desligados, ex.: desenho aberto sem a Lisp carregada)
 ;;;    ARMVARLISTA .. LISTA DE FERROS + RESUMO DE ACO de todo o desenho
+;;;                   (armadura variavel: comprimento UNITARIO = "VAR.")
 ;;;    ARMVARTESTE .. diagnostico: testa no CAD (AutoCAD/ZWCAD) cada recurso
 ;;;                   usado (xdata, xrecord, blocos, atributos, cotas, reatores)
 ;;;
@@ -1950,7 +1951,8 @@
   (strcat "LS" (itoa (1+ n)))
 )
 ;;; linha guardada em cada detalhamento ("res"):
-;;;   (rotulo bitola qtd ctot aco kgm elemento)
+;;;   (rotulo bitola qtd ctot aco kgm elemento variavel)
+;;;   variavel = "VAR" quando a posicao tem barras de comprimentos diferentes
 (defun av:lista-linhas (ids / r d vivos)
   (setq r nil)
   (foreach id (av:reg-ids)
@@ -1992,7 +1994,9 @@
 
 ;;; desenha a LISTA DE FERROS e o(s) RESUMO(S) DE ACO a partir do canto p0
 ;;;   LISTA:  N | %%c (mm) | QUANT. | COMPRIMENTOS: UNITARIO (cm) | TOTAL (cm)
-;;;           com uma linha de titulo por ELEMENTO (campo "Elemento")
+;;;           com uma linha de titulo por ELEMENTO (campo "Elemento");
+;;;           posicao com barras de comprimentos diferentes (armadura
+;;;           variavel, "C=VAR" no ferro): UNITARIO = "VAR."
 ;;;   RESUMO: um por aco -  %%c | kg/m | COMPR. (m) | PESO (kg) | PESO TOTAL
 (defun av:lista-desenha (lid ids p0 h / lns els x0 y0 y wd n el res tot
                                  k mt c ln lst cx rc ya yb yc ym yt acos ac pk)
@@ -2045,7 +2049,10 @@
         (setq k 1)
         (foreach c (list (itoa (av:num-rot (car ln))) (av:nth 1 ln)
                          (itoa (av:nth 2 ln))
-                         (itoa (av:int (/ (av:nth 3 ln) (max 1 (av:nth 2 ln)))))
+                         ;; armadura variavel: comprimento unitario "VAR."
+                         (if (= (av:nth 7 ln) "VAR")
+                           "VAR."
+                           (itoa (av:int (/ (av:nth 3 ln) (max 1 (av:nth 2 ln))))))
                          (itoa (av:int (av:nth 3 ln))))
           (av:txt-al c (- (nth k cx) (* 0.6 h)) ym h AV:LAY-TXT 2)
           (setq k (1+ k))
@@ -2447,7 +2454,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.9      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.10      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -3035,14 +3042,16 @@
                                                (if dfs " - BARRAS ALTERNADAS" ""))))
                           (setq pt1 (av:gr "t1" (if (av:rp-p) (av:rp "t1")
                                       (av:pede-canto "\nClique no canto superior esquerdo da TABELA DE FERROS VARIAVEIS (ENTER = nao gerar): "))))
-                          ;; linhas por posicao: ((pos qtd ctot) ...)
+                          ;; linhas por posicao: ((pos qtd ctot variavel) ...)
+                          ;; variavel = T quando as barras da posicao tem mais de
+                          ;; um comprimento (a LISTA geral mostra "VAR.")
                           (setq linhas
                                 (if sep
                                   (mapcar '(lambda (g / q)
                                              (setq q (* rep (cdr (assoc (car g) grupos))))
-                                             (list (strcat "N" (itoa (cdr g))) q (* 1.0 q (car g))))
+                                             (list (strcat "N" (itoa (cdr g))) q (* 1.0 q (car g)) nil))
                                           posl)
-                                  (list (list pref (* npcs rep) ctot))))
+                                  (list (list pref (* npcs rep) ctot (if (cdr grupos) T nil)))))
                           (if pt1
                             (if (= AV:P-EQU "1")
                               ;; comprimento unitario equivalente (total / qtd.)
@@ -3078,7 +3087,8 @@
                                     (list "res" (mapcar '(lambda (ln)
                                                            (list (car ln) bit (cadr ln) (caddr ln)
                                                                  (nth AV:P-ACO AV:ACOS) kgm
-                                                                 (if AV:P-ELE AV:P-ELE "")))
+                                                                 (if AV:P-ELE AV:P-ELE "")
+                                                                 (if (av:nth 3 ln) "VAR" "")))
                                                         linhas)))
                               AV:REC))
                           (princ (strcat "\n  Detalhamento " AV:ID
@@ -3311,7 +3321,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.9)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.10)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3530,7 +3540,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.9 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.10 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3603,7 +3613,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.9 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.10 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
