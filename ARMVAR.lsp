@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.10
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.11
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -937,6 +937,8 @@
 
 ;;; tabela de ferros variaveis
 ;;;   p0 = canto superior esquerdo da moldura;  nota = texto abaixo (ou nil)
+;;;   QTD. de cada linha ja multiplicada pelas REPETICOES (simetria = 2X): a
+;;;   soma das linhas e o total de barras da posicao
 ;;;   rots = rotulos das linhas (ex.: ("N1" "N2")), ou nil -> N1A, N1B, ...
 (defun av:tab-ferros (p0 h pos pref rep bit esp grupos nbar nota rots
                       / n x0 y0 wd ht y i yh xg)
@@ -968,7 +970,8 @@
   (foreach g grupos
     (av:mk-text (if rots (av:nth i rots) (strcat pref (av:letra i)))
                 (list (+ x0 (* 1.0 h)) y) h 0.0 AV:LAY-TXT nil)
-    (av:mk-text (itoa (cdr g))
+    ;; quantidade ja multiplicada pelas repeticoes (simetria: 2X)
+    (av:mk-text (itoa (* (max 1 rep) (cdr g)))
                 (list (+ x0 (* 9.0 h)) y) h 0.0 AV:LAY-TXT nil)
     (av:mk-text (itoa (car g))
                 (list (+ x0 (* 15.0 h)) y) h 0.0 AV:LAY-TXT nil)
@@ -2454,7 +2457,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.10      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.11      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -3321,7 +3324,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.10)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.11)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3540,7 +3543,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.10 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.11 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3613,7 +3616,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.10 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.11 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
