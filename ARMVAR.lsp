@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.16
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.17
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -172,7 +172,9 @@
 ;;;                    aparece na barra desenhada (ex.: o pedaco das barras
 ;;;                    de cima) ganha o desenho COMPLETO de uma barra da
 ;;;                    regiao dela (N.1 + N.3, pernas, traspasse, simetrica
-;;;                    tracejada com a alternancia, ou ALTER. ao lado).
+;;;                    tracejada com a alternancia, ou ALTER. ao lado); nela
+;;;                    o pedaco ja descrito (N.1) leva so o identificador,
+;;;                    sem comprimento nem perna.
 ;;;    Com posicoes separadas o desenho mostra o comprimento reto de cada
 ;;;    pedaco (o pedaco C=VAR mostra "VAR").
 ;;;  - NUMEROS DAS POSICOES (janela; atributo NUMEROS_POSICOES): numero de
@@ -235,7 +237,7 @@
 ;;; --------------------------------------------------------------------------
 ;;;  PARAMETROS
 ;;; --------------------------------------------------------------------------
-(setq AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil)
+(setq AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil AV:PC-CURTO nil)
 (setq AV:LAY-BAR   "EST_ArmPos"
       AV:LAY-NEG   "EST_ArmNegInt"
       AV:LAY-ESPEC "EST_ArmTexto"
@@ -1365,8 +1367,11 @@
           kb (if (= k (1- n)) tb (+ ta (/ (- b ini) uc)))
           c  (- p (if (= k 0) ini 0.0) (if (= k (1- n)) fim 0.0)))
     ;; pedaco de posicao "C=VAR" (opcao Comercial fixa + resto VAR)
-    (av:rotulo (if (member p AV:PC-VAR) "VAR" (av:fmt c))
-               (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-TXT)
+    ;; AV:PC-CURTO: pedaco ja descrito na barra principal (2.a barra):
+    ;; so a representacao grafica, sem o comprimento
+    (if (not (av:nth k AV:PC-CURTO))
+      (av:rotulo (if (member p AV:PC-VAR) "VAR" (av:fmt c))
+                 (av:tu th (/ (+ ka kb) 2.0) uu) th away h AV:LAY-TXT))
     (setq a (- b lap) k (1+ k))
   )
 )
@@ -1453,7 +1458,7 @@
     (av:rot-pedacos th uvar ta tb pcs ini fim uc lap hk h)
     (av:rotulo mtxt (av:tu th tc uvar) th hk h AV:LAY-TXT)
   )
-  (if leg1
+  (if (and leg1 (not (av:nth 0 AV:PC-CURTO)))
     (progn
       (if (cdr lp1)
         ;; gancho de 180: cota da perna na dobra, por fora (nao bate na ponta)
@@ -1470,7 +1475,7 @@
       )
     )
   )
-  (if leg2
+  (if (and leg2 (not (av:nth (1- (length pcs)) AV:PC-CURTO)))
     (progn
       (if (cdr lp2)
         (av:rotulo (av:fmt l2) (list (/ (+ (car p1) (car (av:tu th tb ud))) 2.0)
@@ -1509,7 +1514,10 @@
       (av:ferro th ualt ta tb hooks sg uc pcsa lap 0.0 (* -0.3 h sg)
                 AV:LAY-BAR nil nil)
       (if (/= mtxt "VAR")
-        (av:rot-pedacos th (+ ualt (* sg 0.3 h)) ta tb pcsa ini fim uc lap hk h)
+        (progn
+          (setq AV:PC-CURTO (reverse AV:PC-CURTO))      ; pedacos em ordem inversa
+          (av:rot-pedacos th (+ ualt (* sg 0.3 h)) ta tb pcsa ini fim uc lap hk h)
+          (setq AV:PC-CURTO (reverse AV:PC-CURTO)))
       )
       (if espl
         ;; posicoes separadas: um texto por pedaco (ordem inversa)
@@ -2634,7 +2642,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.16      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.17      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -3070,11 +3078,18 @@
                 ;; com os pedacos alternados, textos, traspasses, ALTER.), sem
                 ;; a linha de distribuicao; o ALTER. vai para o lado oposto
                 ;; ao da barra principal
-                (setq AV:SO-BARRA (if (> ub udm) (- sg) sg))
+                ;; pedacos de posicao ja descrita (ex.: N.1 C=1200): so o
+                ;; identificador "N.1", sem comprimento nem pernas
+                (setq AV:SO-BARRA (if (> ub udm) (- sg) sg)
+                      AV:PC-CURTO (mapcar '(lambda (g) (if (member (av:pos-de g posl) ps) T nil)) pcs))
                 (av:desenha th ub ta tb ub ub ta hooks lado h uc nil nil nil "PC"
                             pcs neg lap pcsa nil nil nil
-                            (mapcar '(lambda (g) (av:txt-sep rep g posl grupos nbar bit esp)) pcs))
-                (setq AV:SO-BARRA nil)
+                            (mapcar '(lambda (g)
+                                       (if (member (av:pos-de g posl) ps)
+                                         (av:ptxt (av:pos-de g posl))
+                                         (av:txt-sep rep g posl grupos nbar bit esp)))
+                                    pcs))
+                (setq AV:SO-BARRA nil AV:PC-CURTO nil)
                 ;; as posicoes desta barra ja estao desenhadas
                 (foreach g pcs (setq ps (cons (av:pos-de g posl) ps)))
               )
@@ -3235,13 +3250,13 @@
       (princ (strcat "\n*** Erro: " msg (if AV:ETAPA (strcat "  [etapa: " AV:ETAPA "]") ""))))
     (if marcou (vl-catch-all-apply 'vla-EndUndoMark (list doc)))
     (setq AV:ID nil AV:TAG nil AV:GRP nil AV:OCUP nil
-          AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil)
+          AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil AV:PC-CURTO nil)
     (vl-catch-all-apply 'redraw nil)
     (princ)
   )
   (setq doc (vla-get-ActiveDocument (vlax-get-acad-object)) marcou nil
         AV:REC nil AV:ID nil AV:TAG nil AV:ETAPA "0 janela"
-        AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil)
+        AV:SO-PEC nil AV:SO-BARRA nil AV:PC-VAR nil AV:PC-CURTO nil)
 
   (if (not (if AV:SEMDLG T (av:dialog)))
     (progn (princ "\nCancelado.") (princ))
@@ -3825,7 +3840,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.16)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.17)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -4044,7 +4059,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.16 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.17 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -4117,7 +4132,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.16 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.17 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
