@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.13
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.14
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -27,7 +27,9 @@
 ;;;  --------------------------------------------------------------------
 ;;;  Cada detalhamento e UM objeto: o bloco "ARMVAR$AVn$DET" (ferro, cotas,
 ;;;  textos), com os parametros em ATRIBUTOS: POSICAO, BITOLA, ESPACAMENTO,
-;;;  COBRIMENTO, REPETICOES, PERNA/PONTA INICIAL/FINAL, ANGULO_PERNA_INI/FIM
+;;;  COBRIMENTO, QUANTIDADE (vazio = automatica; 12 = fixa; -1 / +2 = tira /
+;;;  poe barras, o grupo fica centrado com o espacamento nominal),
+;;;  REPETICOES, PERNA/PONTA INICIAL/FINAL, ANGULO_PERNA_INI/FIM
 ;;;  (desenho da perna: 90 = no plano, 45 = entrando na tela, 135 = saindo da
 ;;;  tela, 180 = dobrada/gancho; so a representacao, comprimentos iguais),
 ;;;  GANCHOS_LADO, ACO,
@@ -250,7 +252,7 @@
                    AV:P-BIT AV:P-ESP AV:P-COB AV:P-POS AV:P-REP AV:P-ACO
                    AV:P-UNI AV:P-ESC AV:P-ALT AV:P-SIM AV:P-EMD AV:P-LCM
                    AV:P-TRA AV:P-DFS AV:P-AFS AV:P-PIN AV:P-EQU AV:P-ELE
-                   AV:P-AG1 AV:P-AG2)
+                   AV:P-AG1 AV:P-AG2 AV:P-QTD)
 )
 
 ;;; ==========================================================================
@@ -782,6 +784,44 @@
 ;;;   barras centradas, com o cobrimento respeitado nas bordas paralelas ao ferro.
 ;;;   Se n barras a "esp" nao couberem entre os cobrimentos, o espacamento e
 ;;;   reduzido (nunca aumentado).
+;;; ---- QUANTIDADE editavel ------------------------------------------------
+;;; texto do campo: "" ou AUTO = automatica;  "12" = fixa;  "-1" / "+2" = ajuste
+(defun av:qtd-ok (v / s n)
+  (setq s (strcase (vl-string-trim " " (if v v ""))))
+  (or (= s "") (= s "AUTO")
+      (and (setq n (av:num s)) (= n (fix n))
+           (if (wcmatch s "+*,-*") T (>= n 1))))
+)
+(defun av:qtd-norm (v / s)
+  (setq s (strcase (vl-string-trim " " (if v v ""))))
+  (if (= s "AUTO") "" s)
+)
+;;; quantidade desejada a partir da automatica n
+(defun av:qtd-alvo (n v / s k)
+  (setq s (av:qtd-norm v))
+  (cond
+    ((or (= s "") (null (setq k (av:num s)))) n)
+    ((wcmatch s "+*,-*") (max 1 (+ n (fix k))))
+    (t (max 1 (fix k))))
+)
+;;; posicoes com a quantidade do campo: tirando barras, mantem o espacamento
+;;; nominal e o grupo fica centrado na faixa; com mais barras do que cabem,
+;;; redistribui (o aviso mostra o espacamento real)
+(defun av:posicoes-q (umin umax cov esp v / auto n a sp off i r)
+  (setq auto (av:posicoes umin umax cov esp))
+  (if (or (null auto) (= (setq n (av:qtd-alvo (length auto) v)) (length auto)))
+    auto
+    (progn
+      (setq a (- (- umax umin) (* 2.0 cov)))
+      (if (= n 1)
+        (list (/ (+ umin umax) 2.0))
+        (progn
+          (setq sp (min esp (/ a (1- n)))
+                off (+ umin cov (/ (- a (* (1- n) sp)) 2.0)) i 0 r nil)
+          (while (< i n) (setq r (cons (+ off (* i sp)) r) i (1+ i)))
+          (reverse r)))))
+)
+
 (defun av:posicoes (umin umax cov esp / w a q n sp off i r)
   (setq w (- umax umin) a (- w (* 2.0 cov)) r nil)
   (if (and (> w 1e-9) (> a 1e-9))
@@ -1700,6 +1740,7 @@
   (setq n (length vals))
   (if (< n 25) (setq AV:P-AG1 "90"))
   (if (< n 26) (setq AV:P-AG2 "90"))
+  (if (< n 27) (setq AV:P-QTD ""))
 )
 
 ;;; atributos: (tag  prompt  variavel  tipo)
@@ -1707,6 +1748,7 @@
   '(("POSICAO"         "Posicao N"                          AV:P-POS  int)
     ("BITOLA"          "Bitola (mm)"                        AV:P-BIT  bit)
     ("ESPACAMENTO"     "Espacamento (cm)"                   AV:P-ESP  pos)
+    ("QUANTIDADE"      "Quantidade por repeticao (vazio = automatica; 12 = fixa; -1/+2 = ajuste)" AV:P-QTD qtd)
     ("COBRIMENTO"      "Cobrimento (cm)"                    AV:P-COB  num)
     ("REPETICOES"      "Repeticoes (2 = simetria)"          AV:P-REP  int)
     ("PERNA_INICIAL"   "Perna inicial (cm)"                 AV:P-PL1  num)
@@ -1756,6 +1798,7 @@
           ((= (cadddr a) 'pos)  (if (and n (> n 0)) (set (caddr a) (av:fmt n))))
           ((= (cadddr a) 'vaz)  (if (or (= v "") (and n (> n 0))) (set (caddr a) v)))
           ((= (cadddr a) 'txt)  (set (caddr a) v))
+          ((= (cadddr a) 'qtd)  (if (av:qtd-ok v) (set (caddr a) (av:qtd-norm v))))
           ((= (cadddr a) 'sn)   (set (caddr a) (if (wcmatch (strcase v) "S*,1,Y*,T*") "1" "0")))
           ((= (cadddr a) 'lado) (set (caddr a) (if (wcmatch (strcase v) "E*,L*,1") 1 0)))
           ((= (cadddr a) 'bit)
@@ -2372,7 +2415,7 @@
             tt (+ (* (car pt) (cos th)) (* (cadr pt) (sin th)))
             uu (+ (* (- (car pt)) (sin th)) (* (cadr pt) (cos th)))
             best nil)
-      (foreach u (av:posicoes (nth 0 ex) (nth 1 ex) cov esp)
+      (foreach u (av:posicoes-q (nth 0 ex) (nth 1 ex) cov esp AV:P-QTD)
         (foreach c (av:cortes edges u cov)
           (if (> (- (- (cadr c) (cadddr c)) (+ (car c) (caddr c))) 1e-9)
             (progn
@@ -2503,6 +2546,7 @@
   (if (null AV:P-PT1) (setq AV:P-PT1 "10"))
   (if (null AV:P-PL2) (setq AV:P-PL2 "20"))
   (if (null AV:P-PT2) (setq AV:P-PT2 "10"))
+  (if (null AV:P-QTD) (setq AV:P-QTD ""))         ; quantidade: automatica
   (if (null AV:P-AG1) (setq AV:P-AG1 "90"))       ; representacao das pernas
   (if (null AV:P-AG2) (setq AV:P-AG2 "90"))
   (if (null AV:P-PM)  (setq AV:P-PM  "200"))
@@ -2534,7 +2578,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.13      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.14      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2583,6 +2627,7 @@
 "      : popup_list { key = \"bit\"; label = \"Bitola (mm) :\";      edit_width = 10; }"
 "      : popup_list { key = \"aco\"; label = \"Aco :\";              edit_width = 10; }"
 "      : edit_box   { key = \"esp\"; label = \"Espacamento (cm) :\"; edit_width = 8; }"
+"      : edit_box   { key = \"qtd\"; label = \"Quantidade (vazio=auto; 12; -1; +2) :\"; edit_width = 8; }"
 "      : edit_box   { key = \"cob\"; label = \"Cobrimento (cm) :\";  edit_width = 8; }"
 "      : edit_box   { key = \"pos\"; label = \"Posicao  N :\";       edit_width = 8; }"
 "      : popup_list { key = \"num\"; label = \"Numeracao :\"; edit_width = 26; }"
@@ -2716,6 +2761,8 @@
   )
   (if (and (null msg) (or (null (av:num (get_tile "esp"))) (<= (av:num (get_tile "esp")) 0.0)))
     (setq msg (list "esp" "O espacamento deve ser maior que zero.")))
+  (if (and (null msg) (not (av:qtd-ok (get_tile "qtd"))))
+    (setq msg (list "qtd" "Quantidade: vazio = automatica;  um numero (ex.: 12) = fixa;  -1 / +2 = tira / poe barras.")))
   (if (and (null msg) (or (null (av:num (get_tile "cob"))) (< (av:num (get_tile "cob")) 0.0)))
     (setq msg (list "cob" "O cobrimento deve ser um numero maior ou igual a zero.")))
   (if (and (null msg) (or (null (av:num (get_tile "pos"))) (< (av:num (get_tile "pos")) 1.0)))
@@ -2751,6 +2798,7 @@
             AV:P-PM  (get_tile "pm")  AV:P-LADO (atoi (get_tile "lado"))
             AV:P-BIT (atoi (get_tile "bit")) AV:P-ACO (atoi (get_tile "aco"))
             AV:P-ESP (get_tile "esp") AV:P-COB (get_tile "cob")
+            AV:P-QTD (av:qtd-norm (get_tile "qtd"))
             AV:P-POS (get_tile "pos") AV:P-REP (get_tile "rep")
             AV:P-UNI (atoi (get_tile "uni")) AV:P-ESC (get_tile "esc")
             AV:P-ALT (get_tile "alt")
@@ -2787,6 +2835,7 @@
         (set_tile "bit" (itoa AV:P-BIT))
         (set_tile "aco" (itoa AV:P-ACO))
         (set_tile "esp" AV:P-ESP) (set_tile "cob" AV:P-COB)
+        (set_tile "qtd" AV:P-QTD)
         (set_tile "pos" AV:P-POS) (set_tile "rep" AV:P-REP)
         (set_tile "uni" (itoa AV:P-UNI))
         (set_tile "esc" AV:P-ESC) (set_tile "alt" AV:P-ALT)
@@ -2921,7 +2970,10 @@
               (setq AV:ETAPA "3 barras")
               ;; ---- 3) barras --------------------------------------------
               ;;      cada barra = (u  principal-cm  indice-da-posicao-u)
-              (setq bars nil iu 0 posu (av:posicoes umin umax cov esp))
+              (setq bars nil iu 0 posu (av:posicoes-q umin umax cov esp AV:P-QTD))
+              (if (/= (av:qtd-norm AV:P-QTD) "")
+                (princ (strcat "\n  Quantidade editada: " (itoa (length posu)) " posicao(oes) por repeticao"
+                               " (automatica: " (itoa (length (av:posicoes umin umax cov esp))) ").")))
               (if (and (cdr posu) (< (* (- (cadr posu) (car posu)) uc) (- espcm 0.01)))
                 (princ (strcat "
   ATENCAO: para respeitar o cobrimento o espacamento real ficou "
@@ -3411,7 +3463,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.13)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.14)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3630,7 +3682,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.13 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.14 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3703,7 +3755,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.13 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.14 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
