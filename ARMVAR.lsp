@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.14
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.15
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -34,7 +34,7 @@
 ;;;  tela, 180 = dobrada/gancho; so a representacao, comprimentos iguais),
 ;;;  GANCHOS_LADO, ACO,
 ;;;  SIMETRIA, EMENDAS, COMPR_COMERCIAL, TRASPASSE, PRIMEIRO_PEDACO,
-;;;  ALTERNAR, AFASTAMENTO, TABELA_EQUIV, ELEMENTO.
+;;;  ALTERNAR, AFASTAMENTO, POSICOES, TABELA_EQUIV, ELEMENTO.
 ;;;   - Selecione o bloco e altere um atributo na janela PROPRIEDADES (depois
 ;;;     tecle ESC) ou com DUPLO CLIQUE: o detalhamento e refeito, e tambem a
 ;;;     tabela, o resumo e a LISTA DE FERROS.
@@ -158,6 +158,19 @@
 ;;;    se nao ficarem, o 1.o pedaco e encurtado de 10 em 10 cm.
 ;;;  - A tabela de ferros variaveis lista os PEDACOS (ja com o traspasse) e
 ;;;    o resumo de aco soma o comprimento real consumido.
+;;;  - POSICOES (janela: "Posicoes"; atributo POSICOES), para barras
+;;;    emendadas de comprimento VARIAVEL (ex.: parede com quebra no fim):
+;;;      AUTOMATICA  - como antes: comprimento constante -> uma posicao por
+;;;                    pedaco (N.1 N.2); variavel -> uma posicao C=VAR;
+;;;      COMERCIAL   - os pedacos iguais em TODAS as barras (o comercial,
+;;;                    1200) viram posicao de comprimento fixo (N.1 C=1200)
+;;;                    e so o pedaco que muda fica N.2 C=VAR (tabela N2A,
+;;;                    N2B...);
+;;;      COMPRIMENTO - cada comprimento de pedaco vira uma posicao (N.1
+;;;                    C=1200, N.2 C=472, N.3 C=782).  A posicao que nao
+;;;                    aparece na barra desenhada (ex.: o pedaco das barras
+;;;                    de cima) e desenhada so com esse pedaco, numa barra
+;;;                    da regiao dela, com o seu texto.
 ;;;  - O ferro desenhado mostra as emendas (pedacos desencontrados) com a
 ;;;    cota do traspasse, se a barra representada passar do comercial.
 ;;;
@@ -215,6 +228,7 @@
 ;;; --------------------------------------------------------------------------
 ;;;  PARAMETROS
 ;;; --------------------------------------------------------------------------
+(setq AV:SO-PEC nil)
 (setq AV:LAY-BAR   "EST_ArmPos"
       AV:LAY-NEG   "EST_ArmNegInt"
       AV:LAY-ESPEC "EST_ArmTexto"
@@ -252,7 +266,11 @@
                    AV:P-BIT AV:P-ESP AV:P-COB AV:P-POS AV:P-REP AV:P-ACO
                    AV:P-UNI AV:P-ESC AV:P-ALT AV:P-SIM AV:P-EMD AV:P-LCM
                    AV:P-TRA AV:P-DFS AV:P-AFS AV:P-PIN AV:P-EQU AV:P-ELE
-                   AV:P-AG1 AV:P-AG2 AV:P-QTD)
+                   AV:P-AG1 AV:P-AG2 AV:P-QTD AV:P-SEP)
+      ;; posicoes das barras emendadas de comprimento variavel
+      AV:SEPS    '("Automatica (VAR se variar)"
+                   "Comercial fixa + resto VAR"
+                   "Uma posicao por comprimento")
 )
 
 ;;; ==========================================================================
@@ -1180,6 +1198,9 @@
           kb (if (= k (1- n)) qb (+ qa (/ (- b ini) uc)))
           uu (if (= (rem k 2) 1) (+ u off) u)
           pts (list (list (+ ka sh) uu) (list (+ kb sh) uu)))
+    ;; AV:SO-PEC = indice: desenha so esse pedaco (pecas extras)
+    (if (or (null AV:SO-PEC) (= k AV:SO-PEC))
+     (progn
     ;; gancho inicial (so no 1.o pedaco): perna no angulo de desenho + ponta
     (if (and (= k 0) (> l1 0.0))
       (progn
@@ -1202,6 +1223,7 @@
     )
     (av:mk-pl (mapcar '(lambda (q) (av:tu th (car q) (cadr q))) pts)
               lay nil lt lts nil)
+     ))
     (setq AV:TAG nil)          ; "FP" so no 1.o pedaco
     (setq a (- b lap) k (1+ k))
   )
@@ -1741,6 +1763,7 @@
   (if (< n 25) (setq AV:P-AG1 "90"))
   (if (< n 26) (setq AV:P-AG2 "90"))
   (if (< n 27) (setq AV:P-QTD ""))
+  (if (< n 28) (setq AV:P-SEP "0"))
 )
 
 ;;; atributos: (tag  prompt  variavel  tipo)
@@ -1766,6 +1789,7 @@
     ("PRIMEIRO_PEDACO" "1.o pedaco (cm, vazio = comercial)" AV:P-PIN  vaz)
     ("ALTERNAR"        "Alternar barras vizinhas (SIM/NAO)" AV:P-DFS  sn)
     ("AFASTAMENTO"     "Afastamento entre emendas (cm)"     AV:P-AFS  num)
+    ("POSICOES"        "Posicoes das emendadas (AUTOMATICA/COMERCIAL/COMPRIMENTO)" AV:P-SEP sep)
     ("TABELA_EQUIV"    "Tabela c/ compr. equivalente (SIM/NAO)" AV:P-EQU sn)
     ("ELEMENTO"        "Elemento (lista)"                   AV:P-ELE  txt))
 )
@@ -1779,6 +1803,8 @@
               ((= (cadddr a) 'aco)  (nth v AV:ACOS))
               ((= (cadddr a) 'lado) (if (= v 1) "ESQUERDA" "DIREITA"))
               ((= (cadddr a) 'sn)   (if (= v "1") "SIM" "NAO"))
+              ((= (cadddr a) 'sep)  (cond ((= v "1") "COMERCIAL") ((= v "2") "COMPRIMENTO")
+                                          (t "AUTOMATICA")))
               (t (if v v ""))))
     (setq r (cons (list (car a) (if v v "")) r))
   )
@@ -1799,6 +1825,10 @@
           ((= (cadddr a) 'vaz)  (if (or (= v "") (and n (> n 0))) (set (caddr a) v)))
           ((= (cadddr a) 'txt)  (set (caddr a) v))
           ((= (cadddr a) 'qtd)  (if (av:qtd-ok v) (set (caddr a) (av:qtd-norm v))))
+          ((= (cadddr a) 'sep)
+           (cond ((wcmatch (strcase v) "2,COMPR*,P*") (set (caddr a) "2"))
+                 ((wcmatch (strcase v) "1,COM*,F*")   (set (caddr a) "1"))
+                 ((wcmatch (strcase v) "0,A*")        (set (caddr a) "0"))))
           ((= (cadddr a) 'sn)   (set (caddr a) (if (wcmatch (strcase v) "S*,1,Y*,T*") "1" "0")))
           ((= (cadddr a) 'lado) (set (caddr a) (if (wcmatch (strcase v) "E*,L*,1") 1 0)))
           ((= (cadddr a) 'bit)
@@ -2566,6 +2596,7 @@
   (if (null AV:P-TRA) (setq AV:P-TRA (av:fmt (nth AV:P-BIT AV:TRASP))))
   (if (null AV:P-DFS) (setq AV:P-DFS "1"))        ; alterna barras vizinhas
   (if (null AV:P-AFS) (setq AV:P-AFS "20"))       ; afastamento entre emendas
+  (if (null AV:P-SEP) (setq AV:P-SEP "0"))        ; posicoes: automatica
   (if (null AV:P-PIN) (setq AV:P-PIN ""))         ; 1.o pedaco (vazio = comercial)
   (if (null AV:P-EQU) (setq AV:P-EQU "0"))        ; tabela c/ comprimento equivalente
   (if (null AV:P-NUM) (setq AV:P-NUM 0))          ; numeracao manual
@@ -2578,7 +2609,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.14      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.15      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2644,6 +2675,7 @@
 "      : edit_box { key = \"pin\"; label = \"1.o pedaco (cm, vazio = comercial) :\"; edit_width = 7; }"
 "      : toggle   { key = \"dfs\"; label = \"Alternar barras vizinhas (ALTER.)\"; }"
 "      : edit_box { key = \"afs\"; label = \"Afastamento min. entre emendas (cm) :\"; edit_width = 7; }"
+"      : popup_list { key = \"sep\"; label = \"Posicoes :\"; edit_width = 28; }"
 "      : text { label = \"L padrao: 40 (6.3 e 8), 50 (10), 60 (12.5);\"; }"
 "      : text { label = \"demais bitolas 50 x diam. - CONFERIR.\"; }"
 "    }"
@@ -2742,7 +2774,7 @@
 ;;; habilita / desabilita os campos de emenda
 (defun av:modo-emd ( / m)
   (setq m (if (= (get_tile "emd") "1") 0 1))
-  (foreach k '("lcm" "tra" "pin" "dfs") (mode_tile k m))
+  (foreach k '("lcm" "tra" "pin" "dfs" "sep") (mode_tile k m))
   (mode_tile "afs" (if (and (= m 0) (= (get_tile "dfs") "1")) 0 1))
 )
 
@@ -2805,6 +2837,7 @@
             AV:P-SIM (get_tile "sim") AV:P-EMD (get_tile "emd")
             AV:P-LCM (get_tile "lcm") AV:P-TRA (get_tile "tra")
             AV:P-DFS (get_tile "dfs") AV:P-AFS (get_tile "afs")
+            AV:P-SEP (get_tile "sep")
             AV:P-PIN (vl-string-trim " " (get_tile "pin"))
             AV:P-EQU (get_tile "equ")
             AV:P-NUM (atoi (get_tile "num"))
@@ -2842,6 +2875,8 @@
         (set_tile "sim" AV:P-SIM) (set_tile "emd" AV:P-EMD)
         (set_tile "lcm" AV:P-LCM) (set_tile "tra" AV:P-TRA)
         (set_tile "dfs" AV:P-DFS) (set_tile "afs" AV:P-AFS)
+        (start_list "sep") (mapcar 'add_list AV:SEPS) (end_list)
+        (set_tile "sep" AV:P-SEP)
         (set_tile "pin" AV:P-PIN)
         (set_tile "equ" AV:P-EQU)
         (start_list "num") (mapcar 'add_list AV:NUMS) (end_list)
@@ -2876,12 +2911,213 @@
 ;;; inteiro mais proximo
 (defun av:int (v) (fix (+ v 0.5)))
 
-;;; ((1200 . 1) (165 . 2)) -> "N.1 N.2"
+;;; ((1200 . 1) (165 . 2)) -> "N.1 N.2"   (posicao repetida aparece uma vez)
 (defun av:ptxt-lista (posl / r)
   (setq r nil)
-  (foreach g posl
-    (setq r (if r (strcat r " N." (itoa (cdr g))) (strcat "N." (itoa (cdr g))))))
+  (foreach p (av:pos-nums posl)
+    (setq r (if r (strcat r " N." (itoa p)) (strcat "N." (itoa p)))))
   r
+)
+
+;;; ---- POSICOES SEPARADAS --------------------------------------------------
+;;;  posl = ((comprimento . posicao) ...); uma posicao pode ter VARIOS
+;;;  comprimentos (o pedaco que varia: "C=VAR")
+
+;;; posicoes distintas, na ordem
+(defun av:pos-nums (posl / r)
+  (setq r nil)
+  (foreach g posl (if (not (member (cdr g) r)) (setq r (cons (cdr g) r))))
+  (reverse r)
+)
+
+;;; comprimentos de uma posicao
+(defun av:pos-comps (posl p / r)
+  (setq r nil)
+  (foreach g posl (if (= (cdr g) p) (setq r (cons (car g) r))))
+  (reverse r)
+)
+
+;;; quantidade de pedacos (por repeticao) de uma posicao
+(defun av:pos-qtd (posl p grupos / n)
+  (setq n 0)
+  (foreach c (av:pos-comps posl p)
+    (if (assoc c grupos) (setq n (+ n (cdr (assoc c grupos))))))
+  n
+)
+
+;;; posicao de um pedaco: a do comprimento igual; senao a do mais proximo
+(defun av:pos-de (g posl / r d)
+  (if (assoc g posl)
+    (cdr (assoc g posl))
+    (progn
+      (foreach e posl
+        (if (or (null d) (< (abs (- (car e) g)) d))
+          (setq d (abs (- (car e) g)) r (cdr e))))
+      r))
+)
+
+;;; barras emendadas de comprimento VARIAVEL: separa os pedacos em posicoes
+;;;   pcsl = pedacos de cada barra; pos = 1.a posicao
+;;;   cada = nil: os comprimentos presentes em TODAS as barras (o comercial,
+;;;          1200) viram posicoes de comprimento fixo e os demais (o resto,
+;;;          que muda com o contorno) ficam numa unica posicao "C=VAR";
+;;;   cada = T:   cada comprimento de pedaco vira uma posicao
+;;;   devolve posl = ((comprimento . posicao) ...)
+(defun av:sep-var (pcsl pos cada / ord fixos vars r k ok)
+  (setq ord nil fixos nil vars nil r nil k pos)
+  (foreach pcs pcsl
+    (foreach g pcs (if (not (member g ord)) (setq ord (cons g ord)))))
+  (foreach g (reverse ord)
+    (setq ok T)
+    (foreach pcs pcsl (if (not (member g pcs)) (setq ok nil)))
+    (if ok (setq fixos (cons g fixos)) (setq vars (cons g vars))))
+  ;; fixos na ordem em que aparecem; os que variam do menor ao maior
+  (foreach g (reverse fixos) (setq r (cons (cons g k) r) k (1+ k)))
+  (setq vars (vl-sort vars '<))
+  (if cada
+    (foreach g vars (setq r (cons (cons g k) r) k (1+ k)))
+    (foreach g vars (setq r (cons (cons g k) r))))
+  (reverse r)
+)
+
+;;; posicoes separadas que NAO aparecem na barra representada (ex.: o
+;;; pedaco medio, que so existe nas barras de cima): desenha so esse pedaco,
+;;; numa barra do meio da regiao dele (na posicao real), com o seu texto
+(defun av:pecas-extras (th edges cov bars pcsl posl grupos pcsr hooks lado h uc
+                        lap rep nbar bit esp
+                        / sg hk ps cand i j b c cs ta tb d dbest best txs pcs ini)
+  (setq sg  (if (= lado 0) -1.0 1.0)
+        hk  (list (* sg (- (sin th))) (* sg (cos th)))
+        ini (+ (nth 0 hooks) (nth 1 hooks))
+        ps  (mapcar '(lambda (g) (av:pos-de g posl)) pcsr))
+  (foreach p (av:pos-nums posl)
+    (if (not (member p ps))
+      (progn
+        ;; (barra . pedaco) que tem um comprimento dessa posicao
+        (setq cand nil i 0)
+        (foreach pcs pcsl
+          (setq j 0)
+          (foreach g pcs
+            (if (and (assoc g posl) (= (cdr (assoc g posl)) p))
+              (setq cand (cons (cons i j) cand)))
+            (setq j (1+ j)))
+          (setq i (1+ i)))
+        (setq cand (reverse cand))
+        (if cand
+          (progn
+            (setq c   (av:nth (/ (length cand) 2) cand)
+                  b   (av:nth (car c) bars)
+                  pcs (av:nth (car c) pcsl)
+                  best nil dbest nil)
+            ;; trecho (corda) da barra escolhida
+            (foreach cs (av:cortes edges (car b) cov)
+              (setq d (abs (- (* (- (- (cadr cs) (cadddr cs)) (+ (car cs) (caddr cs))) uc)
+                              (cadr b))))
+              (if (or (null dbest) (< d dbest)) (setq dbest d best cs)))
+            (if best
+              (progn
+                (setq ta (+ (car best) (caddr best))
+                      tb (- (cadr best) (cadddr best))
+                      txs nil j 0)
+                (foreach g pcs
+                  (setq txs (cons (if (= j (cdr c))
+                                    (av:txt-sep rep g posl grupos nbar bit esp))
+                                  txs)
+                        j (1+ j)))
+                (setq AV:TAG nil AV:SO-PEC (cdr c))
+                (av:ferro th (car b) ta tb hooks sg uc pcs lap 0.0 (* -0.3 h sg)
+                          AV:LAY-BAR nil nil)
+                (setq AV:SO-PEC nil AV:TAG "ESP")
+                (av:rot-espec th (- (car b) (* sg 0.3 h)) ta tb pcs ini uc lap
+                              (list (- (car hk)) (- (cadr hk))) h (reverse txs))
+                (setq AV:TAG nil)
+              )
+            )
+          )
+        )
+        (setq ps (cons p ps))
+      )
+    )
+  )
+)
+
+;;; textos do ferro por pedaco da barra representada (posicoes separadas)
+(defun av:espl-de (sepv pcsr posl grupos rep nbar bit esp pos)
+  (if sepv
+    (mapcar '(lambda (g) (av:txt-sep rep g posl grupos nbar bit esp)) pcsr)
+    (mapcar '(lambda (g)
+               (av:txt-ferro rep
+                 (if (assoc g posl) (cdr (assoc g posl)) pos)
+                 (if (assoc g grupos) (cdr (assoc g grupos)) nbar)
+                 bit esp (itoa g)))
+            pcsr))
+)
+
+;;; linha de distribuicao automatica com posicoes separadas: se cair em cima
+;;; de um texto de pedaco, vai para a borda livre mais proxima
+;;; x dentro de algum intervalo ((a b) ...)?
+(defun av:dentro (x ivs / r)
+  (foreach iv ivs (if (and (> x (car iv)) (< x (cadr iv))) (setq r T)))
+  r
+)
+
+(defun av:tdim-livre (tdim ta tb pcs ini uc lap h textos / n k a b ka kb c w ivs cands best)
+  (setq n (length pcs) k 0 a 0.0 ivs nil)
+  (foreach p pcs
+    (setq b  (+ a p)
+          ka (if (= k 0) ta (+ ta (/ (- a ini) uc)))
+          kb (if (= k (1- n)) tb (+ ta (/ (- b ini) uc)))
+          c  (/ (+ ka kb) 2.0)
+          w  (+ (* 0.5 h (strlen (av:nth k textos))) (* 2.0 h))
+          ivs (cons (list (- c w) (+ c w)) ivs)
+          a (- b lap) k (1+ k)))
+  (if (and (>= tdim ta) (<= tdim tb) (av:dentro tdim ivs))
+    (progn
+      (setq cands nil best nil)
+      (foreach iv ivs
+        (foreach x iv
+          (if (and (> x (+ ta h)) (< x (- tb h)) (not (av:dentro x ivs)))
+            (if (or (null best) (< (abs (- x tdim)) (abs (- best tdim))))
+              (setq best x)))))
+      (if best best tdim))
+    tdim)
+)
+
+;;; texto do ferro de um pedaco (posicoes separadas)
+(defun av:txt-sep (rep g posl grupos nbar bit esp / p cs n)
+  (setq p  (av:pos-de g posl)
+        cs (av:pos-comps posl p)
+        n  (av:pos-qtd posl p grupos))
+  (av:txt-ferro rep p (if (> n 0) n nbar) bit esp
+                (if (cdr cs) "VAR" (itoa (car cs))))
+)
+
+;;; linhas das tabelas: ((pos qtd ctot variavel) ...), uma por posicao
+(defun av:linhas-sep (posl grupos rep / r q c n)
+  (setq r nil)
+  (foreach p (av:pos-nums posl)
+    (setq q 0 c 0.0)
+    (foreach l (av:pos-comps posl p)
+      (setq n (if (assoc l grupos) (* rep (cdr (assoc l grupos))) 0)
+            q (+ q n)
+            c (+ c (* 1.0 n l))))
+    (setq r (cons (list (strcat "N" (itoa p)) q c (if (cdr (av:pos-comps posl p)) T nil)) r)))
+  (reverse r)
+)
+
+;;; rotulos da tabela de ferros: "N1"; posicao com varios comprimentos:
+;;; "N2A", "N2B", ...
+(defun av:rots-sep (posl / r p i ant)
+  (setq r nil ant nil i 0)
+  (foreach g posl
+    (setq p (cdr g))
+    (if (/= p ant) (setq i 0))
+    (setq r (cons (if (cdr (av:pos-comps posl p))
+                    (strcat "N" (itoa p) (av:letra i))
+                    (strcat "N" (itoa p)))
+                  r)
+          i (1+ i) ant p))
+  (reverse r)
 )
 
 ;;; (890 450) -> "890+450"
@@ -2896,7 +3132,7 @@
                     tot nbar ctot pk lo hi umin umax pt1 pt2 marcou g posu
                     iu ini fim emd lcom lap afs dfs pini neg pcs npcs nemd tots
                     ctxt mtxt ta tb ud tdim tc tr pcsr pcsa r ok nota chama anc k
-                    posl sep ptx espl linhas pvs pvg ocup0 idl)
+                    posl sep ptx espl linhas pvs pvg ocup0 idl pcsl sepv)
   (defun *error* (msg)
     (if (and msg (not (wcmatch (strcase msg) "*CANCEL*,*QUIT*,*EXIT*")))
       (princ (strcat "\n*** Erro: " msg (if AV:ETAPA (strcat "  [etapa: " AV:ETAPA "]") ""))))
@@ -2994,7 +3230,7 @@
                 (progn
                   ;; comprimentos totais (principal + pernas + pontas), em cm,
                   ;; ja divididos em pedacos <= comercial (com traspasse)
-                  (setq grupos nil tots nil npcs 0 nemd 0)
+                  (setq grupos nil tots nil npcs 0 nemd 0 pcsl nil)
                   (foreach b bars
                     (setq tot (av:int (+ (cadr b) hsum)))
                     (if (not (member tot tots)) (setq tots (cons tot tots)))
@@ -3003,6 +3239,7 @@
                     (if (and emd dfs (= 1 (rem (caddr b) 2)))
                       (setq pcs (av:inverte pcs ini fim)))
                     (if (cdr pcs) (setq nemd (1+ nemd)))
+                    (setq pcsl (cons pcs pcsl))
                     (foreach g pcs
                       (setq npcs (1+ npcs))
                       (if (assoc g grupos)
@@ -3028,8 +3265,9 @@
                   )
                   ;; comprimento constante e emendado: cada pedaco vira uma
                   ;; POSICAO separada (N.1, N.2, ...), como no detalhe de parede
-                  (setq posl nil sep nil)
-                  (if (and emd (= (length tots) 1))
+                  (setq posl nil sep nil sepv nil)
+                  (cond
+                   ((and emd (= (length tots) 1))
                     (progn
                       (setq pcs (av:divide (car tots) ini fim lcom lap afs pini dfs)
                             k   pos)
@@ -3042,7 +3280,15 @@
                           )
                         )
                       )
-                    )
+                    ))
+                   ;; comprimento variavel e emendado: opcao "Posicoes" -
+                   ;; comercial fixa + resto VAR, ou uma por comprimento
+                   ((and emd (> nemd 0) (member AV:P-SEP '("1" "2")))
+                    (setq posl (av:sep-var (reverse pcsl) pos (= AV:P-SEP "2"))
+                          k    (+ pos (length (av:pos-nums posl))))
+                    (if (cdr (av:pos-nums posl))
+                      (setq sep T sepv T)
+                      (setq posl nil)))
                   )
                   (princ (strcat "\n  " (itoa nbar) " barra(s) por repeticao, "
                                  (itoa (length tots)) " comprimento(s) diferente(s)"
@@ -3058,9 +3304,12 @@
                   (if sep
                     (progn
                       (princ "\n  Posicoes separadas:")
-                      (foreach g posl
-                        (princ (strcat "  N." (itoa (cdr g)) " C=" (itoa (car g))
-                                       " (" (itoa (cdr (assoc (car g) grupos))) ")")))
+                      (foreach p (av:pos-nums posl)
+                        (princ (strcat "  N." (itoa p) " C="
+                                       (if (cdr (av:pos-comps posl p))
+                                         (strcat "VAR [" (av:junta (av:pos-comps posl p)) "]")
+                                         (itoa (car (av:pos-comps posl p))))
+                                       " (" (itoa (av:pos-qtd posl p grupos)) ")")))
                       (princ (strcat "\n  Proxima posicao livre: N." (itoa k)))
                     )
                   )
@@ -3096,6 +3345,11 @@
                                     (* 1.5 h))
                             tdim (+ tc (max tr (* 0.3 (- tb ta)))))
                       (if (> tdim (- tb h)) (setq tdim (+ tb (* 3.0 h))))
+                      (if sep
+                        (progn
+                          (setq pcs (av:divide (av:int (+ (* (- tb ta) uc) hsum)) ini fim lcom lap afs pini dfs))
+                          (setq tdim (av:tdim-livre tdim ta tb pcs ini uc lap h
+                                       (av:espl-de sepv pcs posl grupos rep nbar bit espcm pos)))))
                       (if ok
                         (progn
                           (setq r (if (av:rp-p) (av:rp "pf")
@@ -3160,13 +3414,7 @@
                             (foreach e (av:soltos AV:ID g) (entdel e)))
                           ;; posicoes separadas: "N.1 N.2" e um texto por pedaco
                           (setq ptx (if sep (av:ptxt-lista posl) pos)
-                                espl (if sep
-                                       (mapcar '(lambda (g)
-                                                  (av:txt-ferro rep
-                                                    (if (assoc g posl) (cdr (assoc g posl)) pos)
-                                                    (if (assoc g grupos) (cdr (assoc g grupos)) nbar)
-                                                    bit espcm (itoa g)))
-                                               pcsr)))
+                                espl (if sep (av:espl-de sepv pcsr posl grupos rep nbar bit espcm pos)))
                           (av:desenha th ud ta tb lo hi tdim hooks lado h uc
                                       (av:txt-ferro rep pos nbar bit espcm ctxt)
                                       (av:txt-faixa rep ptx nbar bit espcm)
@@ -3175,6 +3423,11 @@
                                       (strcat (av:rep-txt rep) "N." (itoa pos) " %%c " bit
                                               " C/" (av:fmt espcm) " ALTER.")
                                       chama anc espl)
+                          ;; posicao que nao aparece na barra desenhada
+                          ;; (ex.: pedaco medio das barras de cima)
+                          (if sepv
+                            (av:pecas-extras th edges cov bars (reverse pcsl) posl grupos pcsr
+                                             hooks lado h uc lap rep nbar bit espcm))
                           (setq AV:ETAPA "8 tabelas")
                           ;; ---- 8) tabelas --------------------------------
                           (setq AV:GRP "T1")
@@ -3189,10 +3442,7 @@
                           ;; um comprimento (a LISTA geral mostra "VAR.")
                           (setq linhas
                                 (if sep
-                                  (mapcar '(lambda (g / q)
-                                             (setq q (* rep (cdr (assoc (car g) grupos))))
-                                             (list (strcat "N" (itoa (cdr g))) q (* 1.0 q (car g)) nil))
-                                          posl)
+                                  (av:linhas-sep posl grupos rep)
                                   (list (list pref (* npcs rep) ctot (if (cdr grupos) T nil)))))
                           (if pt1
                             (if (= AV:P-EQU "1")
@@ -3200,9 +3450,9 @@
                               (av:tab-equiv pt1 h ptx rep bit espcm nbar linhas nota)
                               (if sep
                                 (av:tab-ferros pt1 h ptx pref rep bit espcm
-                                               (mapcar '(lambda (g) (cons (car g) (cdr (assoc (car g) grupos)))) posl)
+                                               (mapcar '(lambda (g) (cons (car g) (if (assoc (car g) grupos) (cdr (assoc (car g) grupos)) 0))) posl)
                                                nbar nota
-                                               (mapcar '(lambda (g) (strcat "N" (itoa (cdr g)))) posl))
+                                               (av:rots-sep posl))
                                 (av:tab-ferros pt1 h pos pref rep bit espcm grupos nbar nota nil)
                               )
                             )
@@ -3246,7 +3496,7 @@
                           (if (not AV:SEMDLG) (av:reat-liga))
                           ;; a janela ja abre na proxima posicao livre
                           (if (not (av:rp-p))
-                            (setq AV:P-POS (itoa (+ pos (if sep (length posl) 1)))))
+                            (setq AV:P-POS (itoa (+ pos (if sep (length (av:pos-nums posl)) 1)))))
                           (princ (strcat "\nConcluido:  " (av:rep-txt rep) "N." (itoa pos)
                                          "  %%c" bit "  -  "
                                          (rtos (/ ctot 100.0) 2 2) " m  /  "
@@ -3463,7 +3713,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.14)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.15)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3682,7 +3932,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.14 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.15 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3755,7 +4005,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.14 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.15 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
