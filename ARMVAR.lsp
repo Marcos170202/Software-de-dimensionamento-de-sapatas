@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.11
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.12
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -27,7 +27,10 @@
 ;;;  --------------------------------------------------------------------
 ;;;  Cada detalhamento e UM objeto: o bloco "ARMVAR$AVn$DET" (ferro, cotas,
 ;;;  textos), com os parametros em ATRIBUTOS: POSICAO, BITOLA, ESPACAMENTO,
-;;;  COBRIMENTO, REPETICOES, PERNA/PONTA INICIAL/FINAL, GANCHOS_LADO, ACO,
+;;;  COBRIMENTO, REPETICOES, PERNA/PONTA INICIAL/FINAL, ANGULO_PERNA_INI/FIM
+;;;  (desenho da perna: 90 = no plano, 45 = entrando na tela, 135 = saindo da
+;;;  tela, 180 = dobrada/gancho; so a representacao, comprimentos iguais),
+;;;  GANCHOS_LADO, ACO,
 ;;;  SIMETRIA, EMENDAS, COMPR_COMERCIAL, TRASPASSE, PRIMEIRO_PEDACO,
 ;;;  ALTERNAR, AFASTAMENTO, TABELA_EQUIV, ELEMENTO.
 ;;;   - Selecione o bloco e altere um atributo na janela PROPRIEDADES (depois
@@ -246,7 +249,8 @@
       AV:PARAMS  '(AV:P-PL1 AV:P-PT1 AV:P-PL2 AV:P-PT2 AV:P-PM AV:P-LADO
                    AV:P-BIT AV:P-ESP AV:P-COB AV:P-POS AV:P-REP AV:P-ACO
                    AV:P-UNI AV:P-ESC AV:P-ALT AV:P-SIM AV:P-EMD AV:P-LCM
-                   AV:P-TRA AV:P-DFS AV:P-AFS AV:P-PIN AV:P-EQU AV:P-ELE)
+                   AV:P-TRA AV:P-DFS AV:P-AFS AV:P-PIN AV:P-EQU AV:P-ELE
+                   AV:P-AG1 AV:P-AG2)
 )
 
 ;;; ==========================================================================
@@ -1086,8 +1090,37 @@
 ;;;   sg     = +1/-1: lado (em u) para onde vao as pernas
 ;;;   sh     = deslocamento ao longo do ferro (t)
 ;;;   off    = deslocamento (u) dos pedacos de ordem impar (emendas)
+;;; pontos da PERNA desenhada a partir do canto (x u), em (t u) do desenho.
+;;;   L = comprimento desenhado; ang = angulo de REPRESENTACAO (rad) medido a
+;;;   partir do prolongamento da barra: 90 = perpendicular (no plano),
+;;;   45 = inclinada para fora (entrando na tela), 135 = inclinada para
+;;;   dentro (saindo da tela), 180 = dobrada para tras, paralela a barra, ao
+;;;   lado dela (gancho).  fim = T na extremidade final.  Devolve a lista de
+;;;   pontos do canto para fora (sem o canto).
+(defun av:perna-pts (x u L ang sg fim / s c dt g)
+  (setq s (sin ang) c (cos ang))
+  (if (< (abs c) 1e-9) (setq c 0.0 s (if (> s 0.0) 1.0 -1.0)))
+  (setq dt (* (if fim 1.0 -1.0) L c)
+        g (if AV:GAP AV:GAP (* 0.15 L)))
+  (cond
+    ((>= (abs s) 0.05) (list (list (+ x dt) (+ u (* sg L s)))))
+    ((< c 0.0)
+     ;; 180: volta paralela a barra, afastada g para o lado da perna
+     (list (list x (+ u (* sg g))) (list (+ x dt) (+ u (* sg g)))))
+    (t (list (list (+ x dt) u))))
+)
+;;; lado para afastar o texto da perna: para fora da barra (fora) se a perna
+;;; nao for paralela a barra; na de 180 (paralela), para o lado do gancho
+(defun av:fora-perna (a b fora hk / v l)
+  (setq v (list (- (car b) (car a)) (- (cadr b) (cadr a))) l (av:hyp (car v) (cadr v)))
+  (if (and (> l 1e-9) (> (abs (av:dot (list (/ (car v) l) (/ (cadr v) l)) fora)) 0.95)) hk fora)
+)
+
+;;; angulo de desenho de uma perna (rad); padrao 90
+(defun av:ang-perna (hooks i / a) (if (setq a (av:nth i hooks)) a (/ pi 2.0)))
+
 (defun av:ferro (th u qa qb hooks sg uc pcs lap sh off lay lt lts
-                 / l1 t1 l2 t2 ini n k a b ka kb uu ul pts p)
+                 / l1 t1 l2 t2 ini n k a b ka kb uu ul pts p lp)
   (setq l1 (nth 0 hooks) t1 (nth 1 hooks) l2 (nth 2 hooks) t2 (nth 3 hooks)
         ini (+ l1 t1) n (length pcs) k 0 a 0.0)
   (foreach p pcs
@@ -1096,22 +1129,24 @@
           kb (if (= k (1- n)) qb (+ qa (/ (- b ini) uc)))
           uu (if (= (rem k 2) 1) (+ u off) u)
           pts (list (list (+ ka sh) uu) (list (+ kb sh) uu)))
-    ;; gancho inicial (so no 1.o pedaco)
+    ;; gancho inicial (so no 1.o pedaco): perna no angulo de desenho + ponta
     (if (and (= k 0) (> l1 0.0))
       (progn
-        (setq ul  (+ uu (* sg (/ l1 uc)))
-              pts (cons (list (+ ka sh) ul) pts))
+        (setq lp (av:perna-pts (+ ka sh) uu (/ l1 uc) (av:ang-perna hooks 4) sg nil)
+              ul (av:ultimo lp))
         (if (> t1 0.0)
-          (setq pts (cons (list (+ ka sh (/ t1 uc)) ul) pts)))
+          (setq lp (append lp (list (list (+ (car ul) (/ t1 uc)) (cadr ul))))))
+        (setq pts (append (reverse lp) pts))
       )
     )
     ;; gancho final (so no ultimo pedaco)
     (if (and (= k (1- n)) (> l2 0.0))
       (progn
-        (setq ul  (+ uu (* sg (/ l2 uc)))
-              pts (append pts (list (list (+ kb sh) ul))))
+        (setq lp (av:perna-pts (+ kb sh) uu (/ l2 uc) (av:ang-perna hooks 5) sg T)
+              ul (av:ultimo lp))
         (if (> t2 0.0)
-          (setq pts (append pts (list (list (- (+ kb sh) (/ t2 uc)) ul)))))
+          (setq lp (append lp (list (list (- (car ul) (/ t2 uc)) (cadr ul))))))
+        (setq pts (append pts lp))
       )
     )
     (av:mk-pl (mapcar '(lambda (q) (av:tu th (car q) (cadr q))) pts)
@@ -1270,7 +1305,7 @@
 ;;;           usado quando a faixa de distribuicao NAO cruza o ferro
 (defun av:desenha (th ud ta tb lo hi tdim hooks lado h uc espec faixa wtxt
                    mtxt pcs neg lap pcsa atxt chama anc espl
-                   / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1
+                   / sg l1 t1 l2 t2 ini fim emd tc d nrm hk dneg p0 leg1 tip1 lp1 lp2
                      p1 leg2 tip2 uvar ues ualt rot up mid lts ucir tcir uq alo ahi av)
   (setq sg  (if (= lado 0) -1.0 1.0)       ; direita = -u, esquerda = +u
         l1 (nth 0 hooks) t1 (nth 1 hooks) l2 (nth 2 hooks) t2 (nth 3 hooks)
@@ -1283,7 +1318,9 @@
         hk  (list (* sg (car nrm)) (* sg (cadr nrm)))
         ;; afastamento da barra invertida: perna + folga (min. 1 texto)
         dneg (max (+ (/ (max l1 l2) uc) (* 0.35 h)) h)
-        lts (av:ltscale))
+        lts (av:ltscale)
+        ;; folga do desenho da perna dobrada a 180 graus (gancho)
+        AV:GAP (* 0.4 h))
 
   ;; --- ferro positivo (continuo) ----------------------------------------
   (setq AV:TAG "FP")
@@ -1305,18 +1342,24 @@
   ;; --- rotulos de cada trecho (geometria do positivo) --------------------
   (setq p0 (av:tu th ta ud)
         p1 (av:tu th tb ud))
+  ;; pernas no angulo de desenho: p0/p1 passam a ser o inicio do trecho da
+  ;; perna (no gancho de 180, o ponto afastado da barra)
   (if (> l1 0.0)
     (progn
-      (setq leg1 (av:tu th ta (+ ud (* sg (/ l1 uc)))))
+      (setq lp1 (av:perna-pts ta ud (/ l1 uc) (av:ang-perna hooks 4) sg nil)
+            leg1 (av:tu th (car (av:ultimo lp1)) (cadr (av:ultimo lp1))))
+      (if (cdr lp1) (setq p0 (av:tu th (car (car lp1)) (cadr (car lp1)))))
       (if (> t1 0.0)
-        (setq tip1 (av:tu th (+ ta (/ t1 uc)) (+ ud (* sg (/ l1 uc))))))
+        (setq tip1 (av:tu th (+ (car (av:ultimo lp1)) (/ t1 uc)) (cadr (av:ultimo lp1)))))
     )
   )
   (if (> l2 0.0)
     (progn
-      (setq leg2 (av:tu th tb (+ ud (* sg (/ l2 uc)))))
+      (setq lp2 (av:perna-pts tb ud (/ l2 uc) (av:ang-perna hooks 5) sg T)
+            leg2 (av:tu th (car (av:ultimo lp2)) (cadr (av:ultimo lp2))))
+      (if (cdr lp2) (setq p1 (av:tu th (car (car lp2)) (cadr (car lp2)))))
       (if (> t2 0.0)
-        (setq tip2 (av:tu th (- tb (/ t2 uc)) (+ ud (* sg (/ l2 uc))))))
+        (setq tip2 (av:tu th (- (car (av:ultimo lp2)) (/ t2 uc)) (cadr (av:ultimo lp2)))))
     )
   )
   ;; trecho principal: do lado das pernas (alem da barra invertida)
@@ -1330,9 +1373,14 @@
   )
   (if leg1
     (progn
-      (av:rotulo (av:fmt l1) (list (/ (+ (car p0) (car leg1)) 2.0)
-                                   (/ (+ (cadr p0) (cadr leg1)) 2.0))
-                 (angle '(0.0 0.0) hk) (list (- (car d)) (- (cadr d))) h AV:LAY-TXT)
+      (if (cdr lp1)
+        ;; gancho de 180: cota da perna na dobra, por fora (nao bate na ponta)
+        (av:rotulo (av:fmt l1) (list (/ (+ (car p0) (car (av:tu th ta ud))) 2.0)
+                                     (/ (+ (cadr p0) (cadr (av:tu th ta ud))) 2.0))
+                   (angle '(0.0 0.0) hk) (list (- (car d)) (- (cadr d))) h AV:LAY-TXT)
+        (av:rotulo (av:fmt l1) (list (/ (+ (car p0) (car leg1)) 2.0)
+                                     (/ (+ (cadr p0) (cadr leg1)) 2.0))
+                   (angle p0 leg1) (av:fora-perna p0 leg1 (list (- (car d)) (- (cadr d))) hk) h AV:LAY-TXT))
       (if tip1
         (av:rotulo (av:fmt t1) (list (/ (+ (car leg1) (car tip1)) 2.0)
                                      (/ (+ (cadr leg1) (cadr tip1)) 2.0))
@@ -1342,9 +1390,13 @@
   )
   (if leg2
     (progn
-      (av:rotulo (av:fmt l2) (list (/ (+ (car p1) (car leg2)) 2.0)
-                                   (/ (+ (cadr p1) (cadr leg2)) 2.0))
-                 (angle '(0.0 0.0) hk) d h AV:LAY-TXT)
+      (if (cdr lp2)
+        (av:rotulo (av:fmt l2) (list (/ (+ (car p1) (car (av:tu th tb ud))) 2.0)
+                                     (/ (+ (cadr p1) (cadr (av:tu th tb ud))) 2.0))
+                   (angle '(0.0 0.0) hk) d h AV:LAY-TXT)
+        (av:rotulo (av:fmt l2) (list (/ (+ (car p1) (car leg2)) 2.0)
+                                     (/ (+ (cadr p1) (cadr leg2)) 2.0))
+                   (angle p1 leg2) (av:fora-perna p1 leg2 d hk) h AV:LAY-TXT))
       (if tip2
         (av:rotulo (av:fmt t2) (list (/ (+ (car leg2) (car tip2)) 2.0)
                                      (/ (+ (cadr leg2) (cadr tip2)) 2.0))
@@ -1630,6 +1682,15 @@
 ;;;  0,0,0 e sao inseridos em 0,0,0: mover o bloco move o desenho; ao
 ;;;  atualizar, a definicao e refeita e a insercao continua onde estiver.
 
+;;; parametros guardados -> variaveis; detalhamento antigo (lista menor): os
+;;; campos novos voltam ao padrao (angulos das pernas = 90)
+(defun av:set-params (vals / n)
+  (mapcar 'set AV:PARAMS vals)
+  (setq n (length vals))
+  (if (< n 25) (setq AV:P-AG1 "90"))
+  (if (< n 26) (setq AV:P-AG2 "90"))
+)
+
 ;;; atributos: (tag  prompt  variavel  tipo)
 (setq AV:ATRIBS
   '(("POSICAO"         "Posicao N"                          AV:P-POS  int)
@@ -1641,6 +1702,8 @@
     ("PONTA_INICIAL"   "Ponta inicial (cm)"                 AV:P-PT1  num)
     ("PERNA_FINAL"     "Perna final (cm)"                   AV:P-PL2  num)
     ("PONTA_FINAL"     "Ponta final (cm)"                   AV:P-PT2  num)
+    ("ANGULO_PERNA_INI" "Representacao da perna inicial (graus: 90/45/135/180)" AV:P-AG1 ang)
+    ("ANGULO_PERNA_FIM" "Representacao da perna final (graus: 90/45/135/180)"   AV:P-AG2 ang)
     ("GANCHOS_LADO"    "Ganchos para o lado (DIREITA/ESQUERDA)" AV:P-LADO lado)
     ("ACO"             "Aco (CA-50/CA-60/CA-25)"            AV:P-ACO  aco)
     ("SIMETRIA"        "Barra simetrica invertida (SIM/NAO)" AV:P-SIM sn)
@@ -1678,6 +1741,7 @@
         (cond
           ((= (cadddr a) 'int)  (if (and n (>= n 1)) (set (caddr a) (itoa (fix n)))))
           ((= (cadddr a) 'num)  (if (and n (>= n 0)) (set (caddr a) (av:fmt n))))
+          ((= (cadddr a) 'ang)  (if (and n (>= n 0) (<= n 360)) (set (caddr a) (av:fmt n))))
           ((= (cadddr a) 'pos)  (if (and n (> n 0)) (set (caddr a) (av:fmt n))))
           ((= (cadddr a) 'vaz)  (if (or (= v "") (and n (> n 0))) (set (caddr a) v)))
           ((= (cadddr a) 'txt)  (set (caddr a) v))
@@ -2428,6 +2492,8 @@
   (if (null AV:P-PT1) (setq AV:P-PT1 "10"))
   (if (null AV:P-PL2) (setq AV:P-PL2 "20"))
   (if (null AV:P-PT2) (setq AV:P-PT2 "10"))
+  (if (null AV:P-AG1) (setq AV:P-AG1 "90"))       ; representacao das pernas
+  (if (null AV:P-AG2) (setq AV:P-AG2 "90"))
   (if (null AV:P-PM)  (setq AV:P-PM  "200"))
   (if (null AV:P-LADO) (setq AV:P-LADO 0))
   (if (null AV:P-BIT) (setq AV:P-BIT 3))          ; 10 mm
@@ -2457,7 +2523,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.11      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.12      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -2483,6 +2549,7 @@
 "        label = \"Extremidade INICIAL\";"
 "        : edit_box { key = \"pl1\"; label = \"Perna (perp.) :\"; edit_width = 7; }"
 "        : edit_box { key = \"pt1\"; label = \"Ponta (paral.) :\";  edit_width = 7; }"
+"        : edit_box { key = \"ag1\"; label = \"Desenho (graus) :\"; edit_width = 7; }"
 "      }"
 "      : column {"
 "        : image { key = \"prev\"; width = 40; height = 7; color = -15; }"
@@ -2492,9 +2559,11 @@
 "        label = \"Extremidade FINAL\";"
 "        : edit_box { key = \"pl2\"; label = \"Perna (perp.) :\"; edit_width = 7; }"
 "        : edit_box { key = \"pt2\"; label = \"Ponta (paral.) :\";  edit_width = 7; }"
+"        : edit_box { key = \"ag2\"; label = \"Desenho (graus) :\"; edit_width = 7; }"
 "      }"
 "    }"
 "    : text { label = \"Principal = VAR (vem do contorno); o valor acima so ajusta a previa.\"; }"
+"    : text { label = \"Desenho da perna: 90 = no plano;  45 = entrando na tela;  135 = saindo da tela;  180 = dobrada (gancho).\"; }"
 "    : popup_list { key = \"lado\"; label = \"Ganchos para o lado :\"; edit_width = 34; }"
 "  }"
 "  : row {"
@@ -2571,13 +2640,15 @@
   (vector_image (1+ x1) y1 (1+ x2) y2 cor)
 )
 
-(defun av:preview ( / w h m x1 x2 pm sc l1 t1 l2 t2 lado y0 dy p1 p2 tt)
+(defun av:preview ( / w h m x1 x2 pm sc l1 t1 l2 t2 lado y0 dy p1 p2 tt a1 a2 q)
   (setq w (dimx_tile "prev") h (dimy_tile "prev")
         m 14 x1 m x2 (- w m)
         pm (av:tile-num "pm")
         l1 (av:tile-num "pl1") t1 (av:tile-num "pt1")
         l2 (av:tile-num "pl2") t2 (av:tile-num "pt2")
-        lado (atoi (get_tile "lado")))
+        lado (atoi (get_tile "lado"))
+        a1 (* (if (av:num (get_tile "ag1")) (av:num (get_tile "ag1")) 90.0) (/ pi 180.0))
+        a2 (* (if (av:num (get_tile "ag2")) (av:num (get_tile "ag2")) 90.0) (/ pi 180.0)))
   (if (< pm 1.0) (setq pm 200.0))
   (setq sc (/ (float (- x2 x1)) (max pm (+ t1 t2) 1.0)))
   ;; a barra fica na parte de cima (ganchos para baixo) ou de baixo
@@ -2591,26 +2662,21 @@
   (fill_image 0 0 w h -15)
   ;; principal
   (av:linha-g x1 y0 x2 y0 0)
-  ;; extremidade inicial
-  (if (> l1 0.0)
-    (progn
-      (av:linha-g x1 y0 x1 (+ y0 (* dy p1)) 1)
-      (if (> t1 0.0)
-        (progn
-          (setq tt (max 4 (fix (* t1 sc))))
-          (av:linha-g x1 (+ y0 (* dy p1)) (+ x1 tt) (+ y0 (* dy p1)) 5)))
-    )
-  )
-  ;; extremidade final
-  (if (> l2 0.0)
-    (progn
-      (av:linha-g x2 y0 x2 (+ y0 (* dy p2)) 1)
-      (if (> t2 0.0)
-        (progn
-          (setq tt (max 4 (fix (* t2 sc))))
-          (av:linha-g x2 (+ y0 (* dy p2)) (- x2 tt) (+ y0 (* dy p2)) 5)))
-    )
-  )
+  ;; extremidades: perna no angulo de desenho (u da imagem = dy) + ponta
+  (foreach e (list (list x1 p1 a1 t1 nil) (list x2 p2 a2 t2 T))
+    (if (> (cadr e) 0)
+      (progn
+        (setq AV:GAP 3
+              q (av:perna-pts (car e) y0 (cadr e) (caddr e) dy (nth 4 e))
+              AV:GAP nil)
+        (setq m (list (car e) y0))
+        (foreach r q
+          (av:linha-g (fix (car m)) (fix (cadr m)) (fix (car r)) (fix (cadr r)) 1)
+          (setq m r))
+        (if (> (cadddr e) 0.0)
+          (progn
+            (setq tt (max 4 (fix (* (cadddr e) sc))))
+            (av:linha-g (fix (car m)) (fix (cadr m)) (fix (+ (car m) (if (nth 4 e) (- tt) tt))) (fix (cadr m)) 5))))))
   (end_image)
   ;; ponta so faz sentido com perna
   (mode_tile "pt1" (if (> l1 0.0) 0 1))
@@ -2630,6 +2696,11 @@
   (foreach k '("pl1" "pt1" "pl2" "pt2" "pm")
     (if (and (null msg) (or (null (av:num (get_tile k))) (< (av:num (get_tile k)) 0.0)))
       (setq msg (list k "Informe um numero maior ou igual a zero (cm)."))
+    )
+  )
+  (foreach k '("ag1" "ag2")
+    (if (and (null msg) (or (null (av:num (get_tile k))) (< (av:num (get_tile k)) 0.0) (> (av:num (get_tile k)) 360.0)))
+      (setq msg (list k "Angulo de desenho da perna em graus (0 a 360): 90, 45, 135 ou 180."))
     )
   )
   (if (and (null msg) (or (null (av:num (get_tile "esp"))) (<= (av:num (get_tile "esp")) 0.0)))
@@ -2663,6 +2734,7 @@
       nil
     )
     (progn
+      (setq AV:P-AG1 (av:fmt (av:num (get_tile "ag1"))) AV:P-AG2 (av:fmt (av:num (get_tile "ag2"))))
       (setq AV:P-PL1 (get_tile "pl1") AV:P-PT1 (get_tile "pt1")
             AV:P-PL2 (get_tile "pl2") AV:P-PT2 (get_tile "pt2")
             AV:P-PM  (get_tile "pm")  AV:P-LADO (atoi (get_tile "lado"))
@@ -2697,6 +2769,7 @@
         (start_list "uni") (mapcar 'add_list AV:UNIDADES) (end_list)
         (start_list "lado") (mapcar 'add_list AV:LADOS) (end_list)
         (set_tile "pl1" AV:P-PL1) (set_tile "pt1" AV:P-PT1)
+        (set_tile "ag1" AV:P-AG1) (set_tile "ag2" AV:P-AG2)
         (set_tile "pl2" AV:P-PL2) (set_tile "pt2" AV:P-PT2)
         (set_tile "pm"  AV:P-PM)
         (set_tile "lado" (itoa AV:P-LADO))
@@ -2719,7 +2792,7 @@
         (vl-catch-all-apply 'av:logo-desenha nil)
         (vl-catch-all-apply 'av:preview nil)
         (vl-catch-all-apply 'av:modo-emd nil)
-        (foreach k '("pl1" "pt1" "pl2" "pt2" "pm" "lado")
+        (foreach k '("pl1" "pt1" "pl2" "pt2" "pm" "lado" "ag1" "ag2")
           (action_tile k "(vl-catch-all-apply 'av:preview nil)")
         )
         ;; trocou a bitola: traspasse padrao da bitola
@@ -2792,7 +2865,10 @@
             bit  (nth AV:P-BIT AV:BITOLAS)
             kgm  (nth AV:P-BIT AV:MASSAS)
             hooks (list (av:num AV:P-PL1) (av:num AV:P-PT1)
-                        (av:num AV:P-PL2) (av:num AV:P-PT2))
+                        (av:num AV:P-PL2) (av:num AV:P-PT2)
+                        ;; angulos de DESENHO das pernas (rad): so representacao
+                        (* (if (av:num AV:P-AG1) (av:num AV:P-AG1) 90.0) (/ pi 180.0))
+                        (* (if (av:num AV:P-AG2) (av:num AV:P-AG2) 90.0) (/ pi 180.0)))
             lado AV:P-LADO
             pos  (fix (av:num AV:P-POS))
             rep  (fix (av:num AV:P-REP))
@@ -3134,7 +3210,7 @@
 ;;; parametros de um detalhamento: os guardados, corrigidos pelos ATRIBUTOS
 ;;; do bloco (que o usuario pode ter editado)
 (defun av:params-de (id rec / ins)
-  (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
+  (av:set-params (cadr (assoc "p" rec)))
   (if (setq ins (av:insert-de id "DET"))
     (av:atrs->params (av:atr-le ins)))
 )
@@ -3153,7 +3229,7 @@
   (if (setq ins (av:insert-de id "DET"))
     (progn
       (setq salvo (mapcar 'eval AV:PARAMS))
-      (mapcar 'set AV:PARAMS (cadr (assoc "p" rec)))
+      (av:set-params (cadr (assoc "p" rec)))
       (av:atr-grava ins (av:params->atrs))
       (mapcar 'set AV:PARAMS salvo)
     )
@@ -3324,7 +3400,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.11)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.12)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3543,7 +3619,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.11 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.12 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3616,7 +3692,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.11 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.12 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
