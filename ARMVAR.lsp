@@ -1,6 +1,6 @@
 ;;; ==========================================================================
 ;;;  ARMVAR.lsp
-;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.12
+;;;  Detalhamento de armadura de COMPRIMENTO VARIAVEL  --  v1.13
 ;;;
 ;;;  Desenvolvido por Baluarte Soluc,o~es Estruturais
 ;;;  Eng. Matusalem do Carmo de Oliveira
@@ -1116,6 +1116,17 @@
   (if (and (> l 1e-9) (> (abs (av:dot (list (/ (car v) l) (/ (cadr v) l)) fora)) 0.95)) hk fora)
 )
 
+;;; pernas da barra SIMETRICA (tracejada): perna inclinada desenhada PARALELA
+;;; a da barra principal (mesma direcao, girada 180 graus): angulo = 180 - a.
+;;; 90 e 180 (gancho) ficam iguais.
+(defun av:hooks-simetrica (hooks / r)
+  (setq r hooks)
+  (foreach i '(4 5)
+    (if (and (av:nth i r) (>= (abs (sin (nth i r))) 0.05) (> (abs (cos (nth i r))) 1e-9))
+      (setq r (av:setnth r i (- pi (nth i r))))))
+  r
+)
+
 ;;; angulo de desenho de uma perna (rad); padrao 90
 (defun av:ang-perna (hooks i / a) (if (setq a (av:nth i hooks)) a (/ pi 2.0)))
 
@@ -1333,7 +1344,7 @@
   ;;     Com emendas alternadas ela mostra os pedacos na ordem INVERSA
   ;;     (emendas desencontradas entre as duas barras).
   (if neg
-    (av:ferro th (+ ud (* sg dneg)) ta tb hooks (- sg) uc
+    (av:ferro th (+ ud (* sg dneg)) ta tb (av:hooks-simetrica hooks) (- sg) uc
               (if (and emd pcsa) pcsa pcs) lap
               (* 0.2 h) (* 0.3 h sg)
               AV:LAY-NEG AV:LT-NOME (/ (* 0.5 h) lts))
@@ -2523,7 +2534,7 @@
   (foreach ln
    (list
 "av_armvar : dialog {"
-"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.12      Baluarte\";"
+"  label = \"ARMADURA DE COMPRIMENTO VARIAVEL      v1.13      Baluarte\";"
 "  width = 100;"
 "  : boxed_row {"
 "    label = \"Como usar\";"
@@ -3400,7 +3411,7 @@
   )
   (cond
     ((or (null id) (av:lista-id-p id))
-     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.12)."))
+     (princ "\nEsse objeto nao e um detalhamento ARMVAR (v1.13)."))
     ((null (av:reg-le id))
      (princ "\nDados desse detalhamento nao encontrados."))
     (t
@@ -3619,7 +3630,7 @@
 )
 
 (defun c:ARMVARTESTE ( / ln bl ins dim dados id0 hh)
-  (princ (strcat "\n=== ARMVAR v1.12 - diagnostico ===  CAD: "
+  (princ (strcat "\n=== ARMVAR v1.13 - diagnostico ===  CAD: "
                  (vl-princ-to-string (getvar "ACADVER"))
                  "  " (vl-princ-to-string (getvar "PRODUCT"))))
   (setq id0 AV:ID hh 0.2)
@@ -3692,7 +3703,7 @@
   ((null AV:REAT-SEL)
    (princ "\nARMVAR: sem reator de selecao -> alteracoes feitas na janela Propriedades sao aplicadas no proximo comando (ou use ARMVARATU)."))
 )
-(princ "\nARMVAR v1.12 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
+(princ "\nARMVAR v1.13 carregado.  Comandos: ARMVAR, ARMVAREDIT, ARMVARATU, ARMVARLISTA, ARMVARTESTE.")
 (princ "\n  Para editar um detalhamento: selecione-o e altere os ATRIBUTOS na janela Propriedades (ou duplo clique).")
 (princ "\n  ARMVARLISTA: Geral (todos), Selecao (so os detalhamentos escolhidos) ou Atualizar (so a lista clicada).")
 (princ "\n  ARMVAREDIT: escolha o que editar - Parametros, Armadura, Faixa, Extensao, Indicacao, Tabelas, Desenho ou Completo.")
