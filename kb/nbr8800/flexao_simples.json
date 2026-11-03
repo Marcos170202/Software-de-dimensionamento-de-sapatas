@@ -1,0 +1,1100 @@
+{
+  "arquivo": "kb/nbr8800/flexao_simples.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Flexão simples de vigas — eixo de maior inércia, patamar plástico (Fase 0); eixo de MENOR inércia de I/H/U, FLM/FLA completas (8a rodada, Fase 1); FLT completa do eixo de MAIOR inércia (D.2.1, D.2.8-a/b/i/j), Cb integral (5.4.2.3 a 5.4.2.5) e Anexo E (10a rodada)",
+  "item_normativo_raiz": "5.4.1, 5.4.2 e Anexo D (normativo)",
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "data_extracao_8a_rodada": "2026-09-24",
+  "data_extracao_10a_rodada": "2026-09-24",
+  "sha256_arquivo_fonte": "b079b7848e9697e2c1af193a68e560b6f21392d6d007468ef1d0882d1c37cb2c",
+  "convencao_hash": "Entradas da 8a rodada: hash_trecho_sha256 = SHA-256 (UTF-8) do campo texto_transcrito, exatamente como gravado; hash_texto_pagina_pdftotext_sha256 = SHA-256 da saída de `pdftotext -layout -f P -l P <pdf> -` (poppler 24.02.0) por página do PDF citada. As 8 entradas da 1a rodada NÃO têm hash (formato da época) e não foram alteradas. Entradas da 10a rodada: mesma convenção da 8a (hash_trecho_sha256 do texto_transcrito; hash por página do pdftotext -layout, poppler 24.02.0). Os hashes de página das PDF 154, 155, 161, 162, 163 e 164 recalculados na 10a rodada CONFEREM com os da 8a.",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "ESCOPO DESTA EXTRAÇÃO (conforme a Fase 0 do projeto): apenas o patamar plastificado (lambda <= lambda_p) das vigas de alma NÃO esbelta, ou seja, MRd = Mpl / gamma_a1. Os trechos inelástico (lambda_p < lambda <= lambda_r) e elástico (lambda > lambda_r) da FLT/FLM/FLA, bem como o Anexo E (vigas de alma esbelta), NÃO foram extraídos nesta rodada — ficam para a Fase 1.",
+    "A NBR 8800:2024 não traz as equações de flexão no corpo do item 5.4: o item 5.4.2.1 remete aos Anexos D (alma não esbelta) e E (alma esbelta). Por isso as fórmulas abaixo citam o Anexo D.",
+    "Para usar MRd = Mpl/gamma_a1 é obrigatório verificar SIMULTANEAMENTE lambda <= lambda_p para os três estados-limite aplicáveis (FLT, FLM e FLA), com os lambda da Tabela D.1.",
+    "8a RODADA (2026-09-24, desbloqueio de M,y,Rd para a Fase 1): acrescentadas 13 entradas ao fim de 'entradas' — linha da Tabela D.1 para 'Seções I e H e seções U fletidas em relação ao eixo de menor momento de inércia', D.2.2 completo (três trechos de FLM/FLA), D.2.8-c), -d), -e), -f), -g), -h), -k), subconjunto de D.3, D.1, D.2.5 e a notação x/y (3.5.1, 5.5.1.2). As entradas da 1a rodada não foram alteradas. Nada aqui foi adjudicado: é insumo para o A2 (ACH-05 / BLQ-03 do ruleset.yaml).",
+    "10a RODADA (2026-09-24, BLQ-01 — FLT fora do patamar plástico no eixo de MAIOR inércia): acrescentadas 15 entradas ao fim de 'entradas': D.2.1 completo (três trechos + alternativa χFLT/λLT), reconferência com hash da linha do eixo maior da Tabela D.1, linha de I/H monossimétricas da Tabela D.1, D.2.8-a), -b), -i), -j), complemento de D.3 (D.3 fica integral), 5.4.2.3 integral, 5.4.2.4 + 5.4.2.5, e o Anexo E inteiro (E.5, E.6.1 a E.6.4). As 21 entradas anteriores não foram alteradas. Nada aqui foi adjudicado: é insumo para o A2. ACHADO CENTRAL: na NBR 8800:2024, Cb NÃO multiplica nenhum trecho de D.2.1; entra só por λr e Mcr de D.2.8-a)/-b). A confirmação de que D.2.2 e D.2.8-e/-f/-h/-k servem ao eixo maior está na chave 'confirmacao_10a_rodada_D22_D28efhk_servem_ao_eixo_maior' (fim do arquivo)."
+  ],
+  "entradas": [
+    {
+      "id": "flexao_aplicabilidade",
+      "descricao": "Tipos de seção e eixos de flexão cobertos pela Subseção 5.4",
+      "lista_transcrita": [
+        "a) seções I e H com dois eixos de simetria, fletidas em relação a um desses eixos;",
+        "b) seções I e H com apenas um eixo de simetria, situado no plano médio da alma, fletidas em relação ao eixo central de inércia perpendicular à alma;",
+        "c) seções T fletidas em relação ao eixo central de inércia perpendicular à alma;",
+        "d) seções constituídas por duas cantoneiras em forma de T, fletidas em relação ao eixo central de inércia perpendicular ao eixo de simetria;",
+        "e) seções U fletidas em relação a um dos eixos centrais de inércia;",
+        "f) seções-caixão e tubulares retangulares com dois eixos de simetria fletidas em relação a um desses eixos;",
+        "g) seções sólidas circulares ou retangulares fletidas em relação a um dos eixos centrais de inércia;",
+        "h) seções tubulares circulares fletidas em relação a qualquer eixo que passe pelo centro geométrico."
+      ],
+      "condicoes_aplicabilidade": "O carregamento transversal deve sempre estar em um plano de simetria, exceto no caso de perfis U fletidos em relação ao eixo perpendicular à alma, quando a resultante do carregamento transversal deve passar pelo centro de cisalhamento da seção ou a torção deve ser impedida (5.4.1.2).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.1.1", "pagina": 53, "pagina_pdf": 70},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_condicao_dimensionamento",
+      "descricao": "Condições a serem atendidas no dimensionamento de barras submetidas a momento fletor e força cortante",
+      "formula": "M,Sd <= M,Rd   e   V,Sd <= V,Rd",
+      "variaveis": {
+        "M_Sd": "momento fletor solicitante de cálculo",
+        "V_Sd": "força cortante solicitante de cálculo",
+        "M_Rd": "momento fletor resistente de cálculo, determinado conforme 5.4.2",
+        "V_Rd": "força cortante resistente de cálculo, determinada conforme 5.4.3"
+      },
+      "condicoes_aplicabilidade": "Devem ainda ser verificados todos os estados-limite de serviço aplicáveis.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.1.3", "pagina": 53, "pagina_pdf": 70},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_remissao_anexos",
+      "descricao": "Determinação do momento fletor resistente de cálculo — remissão aos Anexos D e E",
+      "texto_transcrito": "O momento fletor resistente de cálculo, MRd, deve ser determinado de acordo com os Anexos D ou E, o que for aplicável, conforme o disposto em 5.4.2.2 a 5.4.2.6. Devem ser considerados, conforme o caso, os estados-limite últimos de flambagem lateral com torção (FLT), flambagem local da mesa comprimida (FLM), flambagem local da alma (FLA), flambagem local da aba, flambagem local da parede do tubo e escoamento da mesa tracionada.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.2.1", "pagina": 54, "pagina_pdf": 71},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_limite_superior_analise_elastica",
+      "descricao": "Limite superior de MRd para assegurar a validade da análise elástica",
+      "formula": "M,Rd <= 1,50 * W * fy / gamma_a1",
+      "variaveis": {
+        "W": "módulo de resistência elástico mínimo da seção transversal da barra em relação ao eixo de flexão",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Aplicável a qualquer viga dimensionada com base em análise elástica.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.2.2", "pagina": 54, "pagina_pdf": 71},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_secao_compacta_plastificacao",
+      "descricao": "Momento fletor resistente de cálculo no patamar de plastificação (caso da Fase 0: seção compacta, alma não esbelta, contida lateralmente)",
+      "formula": "M,Rd = Mpl / gamma_a1,  para lambda <= lambda_p",
+      "formula_momento_plastico": "Mpl = Z * fy",
+      "variaveis": {
+        "Mpl": "momento fletor de plastificação da seção transversal, igual ao produto do módulo de resistência plástico (Z) pela resistência ao escoamento do aço (fy) — definição transcrita de D.3",
+        "Z": "módulo de resistência plástico da seção em relação ao eixo de flexão",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)",
+        "lambda": "parâmetro de esbeltez do estado-limite considerado (FLT, FLM ou FLA), conforme Tabela D.1",
+        "lambda_p": "parâmetro de esbeltez correspondente à plastificação, conforme Tabela D.1"
+      },
+      "condicoes_aplicabilidade": "Vigas de alma NÃO esbelta (D.1.2). Vale simultaneamente para FLT (D.2.1) e para FLM/FLA (D.2.2): MRd = Mpl/gamma_a1 quando lambda <= lambda_p em TODOS os estados-limite aplicáveis. Deve ainda ser respeitado o limite de 5.4.2.2 (MRd <= 1,50 W fy / gamma_a1).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "D.2.1 e D.2.2 (Anexo D, normativo); definição de Mpl em D.3", "pagina": "137, 138 e 147", "pagina_pdf": "154, 155 e 164"},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_parametros_tabela_D1_I_H_duplamente_simetricas",
+      "descricao": "Tabela D.1 — parâmetros lambda, lambda_p e lambda_r para seções I e H com dois eixos de simetria (e seções U não sujeitas a momento de torção) fletidas em relação ao eixo de MAIOR momento de inércia",
+      "linhas": [
+        {
+          "estado_limite": "FLT",
+          "Mr": "(fy - sigma_r) * W  (ver D.2.8-e)",
+          "Mcr": "ver D.2.8-a)",
+          "lambda": "Lb / ry",
+          "lambda_p": "1,76 * sqrt(E / fy)",
+          "lambda_r": "ver D.2.8-a)"
+        },
+        {
+          "estado_limite": "FLM",
+          "Mr": "(fy - sigma_r) * W  (ver D.2.8-e)",
+          "Mcr": "ver D.2.8-f)",
+          "lambda": "b / t  (ver D.2.8-h)",
+          "lambda_p": "0,38 * sqrt(E / fy)",
+          "lambda_r": "ver D.2.8-f)"
+        },
+        {
+          "estado_limite": "FLA",
+          "Mr": "fy * W",
+          "Mcr": "viga de alma esbelta (Anexo E)",
+          "lambda": "h / tw",
+          "lambda_p": "3,76 * sqrt(E / fy)",
+          "lambda_r": "5,70 * sqrt(E / fy)"
+        }
+      ],
+      "variaveis": {
+        "Lb": "distância entre duas seções contidas à flambagem lateral com torção (comprimento destravado)",
+        "ry": "raio de giração da seção em relação ao eixo principal de inércia perpendicular ao eixo de flexão",
+        "b/t": "relação largura/espessura da mesa comprimida (para seções I e H laminadas, b = bf/2 e t = tf — ver Tabela 4, grupo 4, e D.2.8-h)",
+        "h": "altura da alma (distância entre as faces internas das mesas nos perfis soldados; esse valor menos os dois raios de concordância nos perfis laminados)",
+        "tw": "espessura da alma",
+        "W": "módulo de resistência elástico mínimo da seção relativo ao eixo de flexão",
+        "sigma_r": "tensão residual (ver D.2.8-e), não extraída nesta rodada)"
+      },
+      "condicoes_aplicabilidade": "Seções I e H com dois eixos de simetria e seções U não sujeitas a momento de torção, fletidas em relação ao eixo de maior momento de inércia. É a linha da Tabela D.1 aplicável aos perfis W/H da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela D.1 (Anexo D)", "pagina": 144, "pagina_pdf": 161},
+      "status": "extraido",
+      "observacao": "Os valores 'ver D.2.8-a)/-f)/-h)' correspondem a expressões extensas de lambda_r e Mcr que NÃO foram extraídas nesta rodada (pertencem ao trecho inelástico/elástico, Fase 1). Para a Fase 0 apenas os lambda_p acima são necessários."
+    },
+    {
+      "id": "flexao_fator_cb_caso_simples",
+      "descricao": "Fator de modificação para diagrama de momento fletor não uniforme (Cb) — caso simplificado permitido pela norma",
+      "formula_geral": "Cb = 12,5 * Mmax * Rm / (2,5*Mmax + 3*MA + 4*MB + 3*MC)",
+      "formula_caso_simples": "Cb = 1,0",
+      "variaveis": {
+        "Mmax": "valor do momento fletor máximo solicitante de cálculo, em módulo, no comprimento destravado",
+        "MA": "momento fletor solicitante de cálculo, em módulo, na seção situada a um quarto do comprimento destravado, medido a partir da extremidade esquerda",
+        "MB": "momento fletor solicitante de cálculo, em módulo, na seção central do comprimento destravado",
+        "MC": "momento fletor solicitante de cálculo, em módulo, na seção situada a três quartos do comprimento destravado, medido a partir da extremidade esquerda",
+        "Rm": "parâmetro de monossimetria da seção transversal, igual a 1,0 para todas as seções duplamente simétricas, para seções I com um eixo de simetria fletidas em relação ao eixo que não é de simetria submetidas à curvatura simples, e seções U fletidas em relação ao eixo de simetria; igual a 0,5 + 2*(Iy,m/Iy)^2 para seções I com um eixo de simetria fletidas em relação ao eixo que não é de simetria, submetidas à curvatura reversa"
+      },
+      "condicoes_aplicabilidade": "Cb só é necessário para o estado-limite FLT no trecho inelástico/elástico. Pela 5.4.2.3-c), adota-se Cb = 1,0 quando o carregamento é aplicado na semialtura da seção transversal, para todas as seções duplamente simétricas e para seções I com um eixo de simetria submetidas à curvatura simples e fletidas em relação ao eixo que não é de simetria. No patamar de plastificação (lambda <= lambda_p), MRd = Mpl/gamma_a1 independe de Cb.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.2.3-a) e 5.4.2.3-c)", "pagina": "54-56", "pagina_pdf": "71-73"},
+      "status": "extraido"
+    },
+    {
+      "id": "flexao_furos_na_mesa_tracionada",
+      "descricao": "Dispensa de verificação de ruptura da mesa tracionada com furos e, se não dispensada, momento resistente correspondente",
+      "formula_condicao_dispensa": "fu * Afn >= Yt * fy * Afg",
+      "formula_se_nao_atendida": "M,Rd = (1/gamma_a1) * (fu * Afn / Afg) * Wt   [transcrição literal: o PDF imprime gamma_a1]",
+      "variaveis": {
+        "Afn": "área líquida da mesa tracionada, calculada de acordo com 5.2.4",
+        "Afg": "área bruta da mesa tracionada",
+        "Yt": "coeficiente igual a 1,0 para fy/fu <= 0,8 e igual a 1,10 se fy/fu > 0,8",
+        "Wt": "módulo de resistência elástico do lado tracionado da seção, relativo ao eixo de flexão",
+        "fu": "resistência do aço à ruptura",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural para escoamento e instabilidade (Tabela 3, item 4.9.2) — é o coeficiente efetivamente impresso nesta equação"
+      },
+      "condicoes_aplicabilidade": "Barras fletidas, com ou sem chapas de reforço de mesa, com furos para parafusos nas mesas. Se a condição de dispensa é atendida, pode-se dimensionar com base nas propriedades da seção bruta.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.2.6", "pagina": 56, "pagina_pdf": 73},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "Conferido visualmente na página impressa 56 (página 73 do PDF): a norma imprime gamma_a1 nesta equação, embora o próprio texto a classifique como estado-limite último de RUPTURA por flexão (para o qual se esperaria gamma_a2). Transcrição mantida literal, sem correção. Cabe ao Agente A2 decidir a interpretação antes de congelar o ruleset.yaml."
+    },
+    {
+      "id": "flexao_anexo_D_generalidades_D1",
+      "descricao": "Anexo D — generalidades: objeto do Anexo e definição de 'viga de alma não esbelta'",
+      "texto_transcrito": "D.1.1 Este Anexo apresenta os procedimentos para determinação do momento fletor resistente de cálculo de vigas de alma não esbelta. D.1.2 Vigas de alma não esbelta são aquelas constituídas por seções I, H, U, caixão e tubulares retangulares, cujas almas, quando perpendiculares ao eixo de flexão, têm parâmetro de esbeltez λ inferior ou igual a λr (λ e λr determinados na Tabela D.1 para o estado-limite FLA), por seções tubulares circulares com relação entre diâmetro e espessura de parede não superior a 0,45 E/fy, seções T, seções formadas por duas cantoneiras em T e seções sólidas circulares ou retangulares com quaisquer dimensões. D.1.3 Para facilitar o uso deste Anexo, a simbologia utilizada se encontra detalhada em D.3.",
+      "condicoes_aplicabilidade": "Define quando se usa o Anexo D (alma não esbelta) em vez do Anexo E (alma esbelta).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.1.1, D.1.2 e D.1.3 (Anexo D, normativo)",
+        "pagina": 137,
+        "pagina_pdf": 154
+      },
+      "status": "extraido",
+      "observacao": "Registro sem interpretação: o critério de D.1.2 se refere a almas 'quando perpendiculares ao eixo de flexão'. O texto NÃO declara explicitamente como esse critério se aplica à flexão de seções I/H em torno do eixo de MENOR inércia. A única declaração explícita sobre a alma nesse eixo é D.2.8-c) (entrada flexao_D28c_aplicabilidade_FLA_FLM_eixo_menor): 'O estado-limite FLA aplica-se somente à alma da seção U, quando comprimida pelo momento fletor'. A2 decide.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "2a2ae46b8359b1e6a6c51cd738d8eff6720f2095734d02c0879863adf1485fde",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "154": "e1e538cd4f687fb46ca181d0ba3effc28c3b273bb33fcf28ef5a71fb5aeb6492"
+      }
+    },
+    {
+      "id": "flexao_FLM_FLA_momento_resistente_D22",
+      "descricao": "Momento fletor resistente de cálculo para os estados-limite FLM e FLA — os TRÊS trechos (plástico, inelástico e elástico). Vale para todos os tipos de seção e eixos de flexão da Tabela D.1, inclusive a linha do eixo de MENOR inércia.",
+      "texto_transcrito": "D.2.2 Para os tipos de seção e eixos de flexão indicados na Tabela D.1, para os estados-limite FLM e FLA, o momento fletor resistente de cálculo é calculado conforme a seguir: MRd = (1/γa1) Mpℓ, para λ ≤ λp; MRd = (1/γa1) [Mpℓ − (Mpℓ − Mr) (λ − λp)/(λr − λp)], para λp < λ ≤ λr; MRd = (1/γa1) Mcr, para λ > λr, (não aplicável à FLA – ver o Anexo E)",
+      "formula": {
+        "trecho_plastico": "M,Rd = Mpl / gamma_a1,  para lambda <= lambda_p",
+        "trecho_inelastico": "M,Rd = (1/gamma_a1) * [ Mpl - (Mpl - Mr) * (lambda - lambda_p)/(lambda_r - lambda_p) ],  para lambda_p < lambda <= lambda_r",
+        "trecho_elastico": "M,Rd = Mcr / gamma_a1,  para lambda > lambda_r  (não aplicável à FLA – ver o Anexo E)"
+      },
+      "formula_latex": {
+        "trecho_plastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}} M_{p\\ell}, \\quad \\lambda \\le \\lambda_p",
+        "trecho_inelastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}}\\left[M_{p\\ell} - (M_{p\\ell} - M_r)\\frac{\\lambda - \\lambda_p}{\\lambda_r - \\lambda_p}\\right], \\quad \\lambda_p < \\lambda \\le \\lambda_r",
+        "trecho_elastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}} M_{cr}, \\quad \\lambda > \\lambda_r \\ \\text{(não aplicável à FLA – ver o Anexo E)}"
+      },
+      "variaveis": {
+        "M_Rd": "momento fletor resistente de cálculo [força x comprimento]",
+        "Mpl": "momento fletor de plastificação da seção transversal = Z * fy (definição de D.3) [força x comprimento]",
+        "Mr": "momento fletor correspondente ao início do escoamento, incluindo a influência das tensões residuais em alguns casos (D.3); valor por estado-limite na coluna Mr da Tabela D.1 [força x comprimento]",
+        "Mcr": "momento fletor crítico (D.3); valor por estado-limite na coluna Mcr da Tabela D.1, ou por análise de estabilidade elástica (D.2.8-k)) [força x comprimento]",
+        "lambda, lambda_p, lambda_r": "parâmetros de esbeltez do estado-limite, conforme Tabela D.1 [adimensionais]",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Tipos de seção e eixos de flexão da Tabela D.1, estados-limite FLM e FLA. O trecho elástico (λ > λr) NÃO se aplica à FLA — remissão ao Anexo E (não extraído). Deve ainda ser respeitado o limite de 5.4.2.2 (entrada flexao_limite_superior_analise_elastica: MRd <= 1,50 W fy/γa1, com W relativo ao eixo de flexão).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.2 (Anexo D, normativo)",
+        "pagina": 138,
+        "pagina_pdf": 155
+      },
+      "status": "extraido",
+      "observacao": "O trecho plástico desta equação já constava de flexao_secao_compacta_plastificacao (Fase 0). Nesta rodada foram transcritos também os trechos inelástico e elástico, que são necessários para a FLM no eixo de menor inércia. Estas MESMAS equações valem para a FLM e a FLA do eixo de MAIOR inércia (linha já extraída da Tabela D.1); a remoção de BLQ-01 para FLT continua dependendo de D.2.1 (trechos inelástico/elástico e χFLT) e de D.2.8-a), que NÃO foram extraídos. Ver DIVERGENCIA registrada em flexao_parametros_tabela_D1_I_H_U_eixo_menor_inercia (FLA de seção U no eixo de menor inércia).",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "a81211260325f41f2683d386e2d0b4eb1dc8b86f313a9853b866664171b47cbc",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "155": "c106ef408fec4db653bef8add311ce3018166202f91f335d38ea41f7d64ad363"
+      }
+    },
+    {
+      "id": "flexao_parametros_tabela_D1_I_H_U_eixo_menor_inercia",
+      "descricao": "Tabela D.1 — parâmetros Mr, Mcr, λ, λp e λr para 'Seções I e H e seções U fletidas em relação ao eixo de menor momento de inércia'",
+      "texto_transcrito": "Tabela D.1 – Parâmetros referentes ao momento fletor resistente | Tipo de seção e eixo de flexão: Seções I e H e seções U fletidas em relação ao eixo de menor momento de inércia | Estados-limite aplicáveis: FLM Ver D.2.8-c) | Mr: (fy − σr)W Ver D.2.8-e) | Mcr: Ver D.2.8-f) | λ: b/t Ver D.2.8-h) | λp: 0,38 √(E/fy) | λr: Ver D.2.8-f) || Estados-limite aplicáveis: FLA Ver D.2.8-c) | Mr: fy Wef Ver D.2.8-d) | Mcr: (Wef²/W) fy Ver D.2.8-d) | λ: h/tw | λp: 1,12 √(E/fy) | λr: 1,40 √(E/fy) || Cabeçalho da coluna Mcr: Mcr Ver D.2.8-k)",
+      "notacao_do_eixo_neste_trecho": "A Tabela D.1 identifica o eixo por EXTENSO ('eixo de menor momento de inércia'), sem letra (nem x, nem y, nem z). Ver flexao_notacao_eixos_x_y para a relação com o M,y,Rd de 5.5.1.2.",
+      "linhas": [
+        {
+          "estado_limite": "FLM",
+          "remissao_estado_limite": "Ver D.2.8-c)",
+          "Mr": "(fy - sigma_r) * W   (ver D.2.8-e)",
+          "Mr_latex": "(f_y - \\sigma_r)W",
+          "Mcr": "ver D.2.8-f)",
+          "lambda": "b / t   (ver D.2.8-h)",
+          "lambda_p": "0,38 * sqrt(E / fy)",
+          "lambda_p_latex": "0{,}38\\sqrt{E/f_y}",
+          "lambda_r": "ver D.2.8-f)",
+          "escopo_software": "I/H: IMEDIATO — perfis I/H duplamente simétricos laminados (catálogo Gerdau W/HP). U: FORA DO ESCOPO IMEDIATO do software (seção U; ver BLQ-05 do ruleset: catálogo L/I/U/T sem Z, It e Cw). Extraído por estar na MESMA linha da Tabela D.1."
+        },
+        {
+          "estado_limite": "FLA",
+          "remissao_estado_limite": "Ver D.2.8-c) — que restringe a FLA à alma da seção U quando comprimida pelo momento fletor",
+          "Mr": "fy * Wef   (ver D.2.8-d)",
+          "Mr_latex": "f_y W_{ef}",
+          "Mcr": "(Wef^2 / W) * fy   (ver D.2.8-d)",
+          "Mcr_latex": "\\frac{W_{ef}^2}{W} f_y",
+          "lambda": "h / tw",
+          "lambda_p": "1,12 * sqrt(E / fy)",
+          "lambda_p_latex": "1{,}12\\sqrt{E/f_y}",
+          "lambda_r": "1,40 * sqrt(E / fy)",
+          "lambda_r_latex": "1{,}40\\sqrt{E/f_y}",
+          "escopo_software": "Somente seção U (D.2.8-c)). FORA DO ESCOPO IMEDIATO do software (seção U; ver BLQ-05 do ruleset: catálogo L/I/U/T sem Z, It e Cw). Extraído por estar na MESMA linha da Tabela D.1. NÃO se aplica a I/H (D.2.8-c))."
+        }
+      ],
+      "insumos_no_catalogo_gerdau_w_hp": "Conferido em kb/catalogos/gerdau_perfis_w_h.json (107 entradas, título 'Perfis estruturais laminados W e HP'): todas as 107 têm valor numérico em Wy_cm3, Zy_cm3, Iy_cm4, ry_cm, bf_mm, tf_mm e esbeltez_mesa_bf_2tf (coluna do fabricante 'ESBELTEZ MESA-λf = bf/2tf'). calc_core/analise/modelo.py e calc_core/analise3d/modelo.py já convertem Wy_cm3 -> Wy_mm3 e Zy_cm3 -> Zy_mm3. Para a FLM de I/H no eixo de menor inércia (laminado) os insumos da norma são: Z (Mpl), W e Wc (Mr, Mcr), b/t = (bf/2)/tf, E, fy e sigma_r — nenhum parâmetro geométrico adicional (Lb, ry, J, Cw, h/tw não entram). O catálogo NÃO traz uma coluna 'Wc' separada; D.3 define Wc distinto de W, e a identificação de um com o outro é decisão do A2, não do A1.",
+      "estados_limite_da_linha": [
+        "FLM",
+        "FLA"
+      ],
+      "FLT_nesta_linha": "AUSENTE da linha, e DISPENSADA EXPLICITAMENTE pela norma: D.2.8-g) 'O estado-limite FLT somente é aplicável quando o eixo de flexão for o de maior momento de inércia;' (entrada flexao_D28g_FLT_somente_eixo_maior). Não é mera omissão.",
+      "estados_limite_aplicaveis_a_I_H_duplamente_simetricas_neste_eixo_segundo_o_texto": "FLM — única linha da tabela que não é excluída por D.2.8-c) para seções I/H. FLA: restrita pelo texto de D.2.8-c) à alma da seção U. FLT: excluída por D.2.8-g). Transcrição das remissões; a consolidação em regra é do A2.",
+      "variaveis": {
+        "W": "módulo de resistência (mínimo) elástico da seção, relativo ao eixo de flexão (D.3) — aqui, eixo de menor inércia [comprimento^3]",
+        "Wef": "módulo de resistência mínimo elástico, relativo ao eixo de flexão, para uma seção que tenha uma mesa comprimida (ou alma comprimida, no caso de perfil U fletido em relação ao eixo de menor inércia) de largura igual a bef, obtida em 5.3.4.2, considerando χ igual a 1,0 (D.2.8-d)) [comprimento^3]",
+        "sigma_r": "tensão residual de compressão nas mesas = 30 % de fy (D.2.8-e)) [força/comprimento^2]",
+        "b/t": "relação largura/espessura aplicável à mesa do perfil; para mesas de seções I e H, b é a metade da largura total; para mesas de seções U, a largura total (D.2.8-h)) [adimensional]",
+        "h": "altura da alma (D.3): distância entre as faces internas das mesas nos perfis soldados; esse valor menos os dois raios de concordância nos perfis laminados [comprimento]",
+        "tw": "espessura da alma [comprimento]",
+        "E": "módulo de elasticidade do aço [força/comprimento^2]",
+        "fy": "resistência ao escoamento do aço [força/comprimento^2]"
+      },
+      "condicoes_aplicabilidade": "Seções I e H e seções U fletidas em relação ao eixo de menor momento de inércia. O MRd resulta de D.2.2 com os parâmetros desta linha. Não há, NESTA linha, distinção entre I/H com dois eixos de simetria e com um eixo de simetria — a linha diz apenas 'Seções I e H'.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Tabela D.1 (Anexo D), linha 'Seções I e H e seções U fletidas em relação ao eixo de menor momento de inércia'",
+        "pagina": 144,
+        "pagina_pdf": 161
+      },
+      "status": "extraido",
+      "divergencias_registradas": [
+        {
+          "id": "DIV-A1-R8-01",
+          "tipo": "DIVERGENCIA interna do texto normativo (fora do escopo imediato: só afeta seção U)",
+          "descricao": "Para a FLA desta linha (alma de seção U no eixo de menor inércia), a Tabela D.1 fornece Mcr = (Wef²/W) fy e λr = 1,40 √(E/fy), isto é, um valor para o trecho λ > λr; mas D.2.2, que é a equação que consome esses parâmetros, imprime no trecho elástico 'MRd = (1/γa1) Mcr, para λ > λr, (não aplicável à FLA – ver o Anexo E)'. O texto não diz qual das duas prevalece para esta linha.",
+          "acao_do_A1": "Transcrito literalmente dos dois lados, sem conciliar. Cabe ao A2."
+        }
+      ],
+      "observacao": "Conferido visualmente a 200 dpi e a 400 dpi (recorte da linha). A coluna Mr usa W; D.2.8-f) usa Wc no Mcr. D.3 define os dois símbolos separadamente (W = módulo elástico mínimo; Wc = do lado comprimido). O A1 não afirma a igualdade entre eles para nenhuma seção.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "b6ef53d4108d6e342eae88b4ed819871e70423510f1400cfde8af9284c6a9f40",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "161": "bb903fb7d313665a70c841c351c158d2887ef23ba3c4f6bcd16956b1ee2bf291"
+      }
+    },
+    {
+      "id": "flexao_D28c_aplicabilidade_FLA_FLM_eixo_menor",
+      "descricao": "D.2.8-c) — restrições de aplicabilidade da FLA e da FLM remetidas pela linha do eixo de menor inércia da Tabela D.1",
+      "texto_transcrito": "c) O estado-limite FLA aplica-se somente à alma da seção U, quando comprimida pelo momento fletor. Para seção U, o estado-limite FLM aplica-se somente quando a extremidade livre das mesas for comprimida pelo momento fletor;",
+      "condicoes_aplicabilidade": "Remetido pela coluna 'Estados-limite aplicáveis' (FLM e FLA) da linha do eixo de menor inércia da Tabela D.1.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-c) (Anexo D)",
+        "pagina": 145,
+        "pagina_pdf": 162
+      },
+      "status": "extraido",
+      "observacao": "Declaração EXPLÍCITA da norma: a FLA, nessa linha, aplica-se somente à alma da seção U. A restrição da FLM ('somente quando a extremidade livre das mesas for comprimida') é declarada apenas para a seção U; para I/H o texto não impõe restrição à FLM.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "0eaa7f2858f13fb71559953b247256e47c524329e5eb5af243bf5b4303dc2668",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "162": "6097561dc15c5816207a4136a37b14cf58830910b56265b8930073067b905fef"
+      }
+    },
+    {
+      "id": "flexao_D28d_modulo_efetivo_Wef",
+      "descricao": "D.2.8-d) — definição de Wef (usado na FLA da seção U no eixo de menor inércia)",
+      "texto_transcrito": "d) Wef é o módulo de resistência mínimo elástico, relativo ao eixo de flexão, para uma seção que tenha uma mesa comprimida (ou alma comprimida, no caso de perfil U fletido em relação ao eixo de menor inércia) de largura igual a bef, obtida em 5.3.4.2, considerando χ igual a 1,0. Em alma comprimida de seção U fletida em relação ao eixo de menor momento de inércia, b = h, t = tw e bef = hef;",
+      "referencias_cruzadas": [
+        "5.3.4.2 (largura efetiva bef) — já extraído em kb/nbr8800/compressao_flambagem_global.json (entrada com item '5.3.4.2 e Tabela 5')."
+      ],
+      "condicoes_aplicabilidade": "Seção U fletida em relação ao eixo de menor inércia, FLA da alma comprimida.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-d) (Anexo D)",
+        "pagina": "145-146",
+        "pagina_pdf": "162-163"
+      },
+      "status": "extraido",
+      "escopo_software": "FORA DO ESCOPO IMEDIATO do software (seção U; ver BLQ-05 do ruleset: catálogo L/I/U/T sem Z, It e Cw). Extraído por estar na MESMA linha da Tabela D.1.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "47ff2886b9668c383f0c9865e18f79e738071690676cebb4610ef6227412d537",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "162": "6097561dc15c5816207a4136a37b14cf58830910b56265b8930073067b905fef",
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28e_tensao_residual",
+      "descricao": "D.2.8-e) — tensão residual σr usada em Mr e λr",
+      "texto_transcrito": "e) A tensão residual de compressão nas mesas, σr, deve ser considerada igual a 30 % da resistência ao escoamento do aço utilizado;",
+      "formula": "sigma_r = 0,30 * fy   [transcrição do texto '30 % da resistência ao escoamento do aço utilizado']",
+      "variaveis": {
+        "sigma_r": "tensão residual de compressão nas mesas [força/comprimento^2]",
+        "fy": "resistência ao escoamento do aço [força/comprimento^2]"
+      },
+      "condicoes_aplicabilidade": "Remetido pela coluna Mr da Tabela D.1 em várias linhas, inclusive a FLM do eixo de menor inércia e a FLM/FLT do eixo de maior inércia.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-e) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "3bda15be3a2d67c910e91b7106b395b6e0da77b251a91a35998bb76faf9de47c",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28f_Mcr_lambda_r_FLM",
+      "descricao": "D.2.8-f) — Mcr e λr da FLM (perfis laminados e perfis soldados)",
+      "texto_transcrito": "f) Para perfis laminados: Mcr = (0,69E/λ²) Wc, λr = 0,83 √(E/(fy − σr)) Para perfis soldados: Mcr = (0,90E kc/λ²) Wc, λr = 0,95 √(E/((fy − σr)/kc)) com kc conforme Tabela 4, nota de rodapé a.",
+      "formula": {
+        "perfis_laminados": "Mcr = 0,69 * E * Wc / lambda^2 ;   lambda_r = 0,83 * sqrt( E / (fy - sigma_r) )",
+        "perfis_soldados": "Mcr = 0,90 * E * kc * Wc / lambda^2 ;   lambda_r = 0,95 * sqrt( E / ((fy - sigma_r)/kc) )"
+      },
+      "formula_latex": {
+        "perfis_laminados": "M_{cr} = \\frac{0{,}69E}{\\lambda^2}W_c, \\qquad \\lambda_r = 0{,}83\\sqrt{\\frac{E}{(f_y - \\sigma_r)}}",
+        "perfis_soldados": "M_{cr} = \\frac{0{,}90E k_c}{\\lambda^2}W_c, \\qquad \\lambda_r = 0{,}95\\sqrt{\\frac{E}{(f_y - \\sigma_r)/k_c}}"
+      },
+      "variaveis": {
+        "Mcr": "momento fletor crítico [força x comprimento]",
+        "E": "módulo de elasticidade do aço [força/comprimento^2]",
+        "lambda": "parâmetro de esbeltez da FLM = b/t (Tabela D.1, D.2.8-h)) [adimensional]",
+        "Wc": "módulo de resistência elástico do lado comprimido da seção, relativo ao eixo de flexão (D.3) [comprimento^3]",
+        "fy": "resistência ao escoamento do aço [força/comprimento^2]",
+        "sigma_r": "tensão residual = 30 % de fy (D.2.8-e)) [força/comprimento^2]",
+        "kc": "coeficiente da Tabela 4, nota de rodapé a (perfis soldados) [adimensional]"
+      },
+      "referencias_cruzadas": [
+        "Tabela 4, nota de rodapé a (kc) — já transcrita como nota do grupo AL-5 em kb/nbr8800/compressao_flambagem_global.json ('kc = 4/sqrt(h/tw), sendo 0,35 <= kc <= 0,76'). Não reconferida nesta rodada."
+      ],
+      "condicoes_aplicabilidade": "Remetido pelas colunas Mcr e λr da FLM em três linhas da Tabela D.1: I/H duplamente simétricas e U no eixo de maior inércia; I/H monossimétricas no eixo de maior inércia; I/H e U no eixo de MENOR inércia. Os perfis Gerdau W/HP são LAMINADOS (título do catálogo kb/catalogos/gerdau_perfis_w_h.json) — ramo 'perfis laminados'.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-f) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "observacao": "Conferido a 400 dpi (recorte): coeficientes 0,69 / 0,83 (laminados) e 0,90 / 0,95 (soldados); no ramo soldado kc multiplica E no numerador de Mcr e divide (fy − σr) dentro da raiz de λr.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "d0a74c62d14eba66bae2a383d66fba4299265cc6c39719e217a476217eae92a2",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28g_FLT_somente_eixo_maior",
+      "descricao": "D.2.8-g) — a FLT só é aplicável quando o eixo de flexão é o de MAIOR momento de inércia (dispensa explícita da FLT no eixo de menor inércia)",
+      "texto_transcrito": "g) O estado-limite FLT somente é aplicável quando o eixo de flexão for o de maior momento de inércia;",
+      "natureza_da_dispensa": "EXPLÍCITA — a norma declara textualmente. Não é inferida da ausência da FLT na linha do eixo de menor inércia da Tabela D.1.",
+      "condicoes_aplicabilidade": "Remetido pela linha 'Seções-caixão e tubulares retangulares' (coluna 'FLT Ver D.2.8-g)') da Tabela D.1; o texto do critério é geral ('quando o eixo de flexão for o de maior momento de inércia'), sem restrição de tipo de seção.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-g) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "observacao": "Registro factual: na Tabela D.1 a remissão 'Ver D.2.8-g)' aparece somente na linha FLT de seções-caixão e tubulares retangulares; a linha do eixo de menor inércia de I/H/U não lista FLT. O texto de g) não menciona tipo de seção.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "4409a7c1845bef9daf8eeb8bfce4aa3faf6b99049f0d6e763d834357f799c00e",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28h_relacao_b_t",
+      "descricao": "D.2.8-h) — definição de b/t da FLM",
+      "texto_transcrito": "h) b/t é a relação entre largura e espessura aplicável à mesa do perfil; no caso de seções I e H com um eixo de simetria, b/t refere-se à mesa comprimida (para mesas de seções I e H, b é a metade da largura total; para mesas de seções U, a largura total; para seções tubulares retangulares, a largura da parte plana; para seções-caixão, a distância livre entre almas);",
+      "variaveis": {
+        "b": "I e H: metade da largura total da mesa; U: largura total da mesa [comprimento]",
+        "t": "espessura (D.3: 'espessura em geral'); para a mesa, tf (D.3) [comprimento]"
+      },
+      "condicoes_aplicabilidade": "Remetido pela coluna λ da FLM em todas as linhas I/H/U da Tabela D.1, inclusive a do eixo de menor inércia. O texto não distingue eixo de flexão na definição de b/t.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-h) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "3df786f83c5c982e31eba786f874f86d23e73ea920a86a29abc8d5fd5cf25a69",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28k_Mcr_por_analise_de_estabilidade",
+      "descricao": "D.2.8-k) — alternativa para Mcr (remetida pelo cabeçalho da coluna Mcr da Tabela D.1)",
+      "texto_transcrito": "k) Alternativamente, Mcr pode ser obtido por análise de estabilidade elástica.",
+      "condicoes_aplicabilidade": "Cabeçalho da coluna Mcr da Tabela D.1 ('Mcr Ver D.2.8-k)') — vale para todas as linhas.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-k) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "7fbdf28bd758a1004c0e762ac204ce5f783580eeb6a1bccf213db45530824c7b",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_simbologia_D3_subconjunto",
+      "descricao": "D.3 Simbologia — SUBCONJUNTO dos símbolos usados pela linha do eixo de menor inércia e por D.2.2/D.2.8-c) a -h)",
+      "texto_transcrito": "FLA flambagem local da alma; FLM flambagem local da mesa comprimida; FLT flambagem lateral com torção; Iy momento de inércia da seção em relação ao eixo que passa pelo plano médio da alma; Mcr momento fletor crítico; Mpℓ momento fletor de plastificação da seção transversal, igual ao produto do módulo de resistência plástico (Z) pela resistência ao escoamento do aço (fy); Mr momento fletor correspondente ao início do escoamento, incluindo a influência das tensões residuais em alguns casos; W módulo de resistência (mínimo) elástico da seção, relativo ao eixo de flexão; Wc módulo de resistência elástico do lado comprimido da seção, relativo ao eixo de flexão; Wt módulo de resistência elástico do lado tracionado da seção, relativo ao eixo de flexão; d altura externa da seção, medida perpendicularmente ao eixo de flexão; h altura da alma, considerada igual à distância entre as faces internas das mesas nos perfis soldados; e igual a esse valor menos os dois raios de concordância entre a mesa e a alma nos perfis laminados; e igual ao comprimento da parte plana nas seções tubulares retangulares (ver a Tabela 4); ry raio de giração da seção em relação ao eixo principal de inércia perpendicular ao eixo de flexão; t espessura em geral; tf espessura da mesa, sendo tfs e tfi, respectivamente, as espessuras das mesas superior e inferior; λp parâmetro de esbeltez correspondente à plastificação; λr parâmetro de esbeltez correspondente ao início do escoamento.",
+      "condicoes_aplicabilidade": "Definições do Anexo D. Apenas os símbolos listados foram transcritos nesta rodada; os demais de D.3 (Cw, D, IyTc, J, Lb, bt, hc, hp, ryTc) não.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.3 (Anexo D)",
+        "pagina": "146-147",
+        "pagina_pdf": "163-164"
+      },
+      "status": "extraido",
+      "observacao": "Nota de notação: D.3 define Iy como o momento de inércia 'em relação ao eixo que passa pelo plano médio da alma' — é a única definição do Anexo D que associa a letra y a um eixo geométrico. Ver flexao_notacao_eixos_x_y.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "94b62332312b55ecd28a83768148a729100b2288aaaa8aeca0aee4bf3e59ccb1",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac",
+        "164": "326f024c9d100965741e338b7ce4514a666d1fc57c59fac95ed8ec8ba5a9bb13"
+      }
+    },
+    {
+      "id": "flexao_secoes_solidas_eixo_menor_D25",
+      "descricao": "D.2.5 — seções sólidas circulares e retangulares fletidas em relação ao eixo de menor momento de inércia (item adjacente, fora do escopo imediato)",
+      "texto_transcrito": "D.2.5 Para as seções sólidas circulares e retangulares, fletidas em relação ao eixo de menor momento de inércia: MRd = Mpℓ/γa1",
+      "formula": "M,Rd = Mpl / gamma_a1",
+      "formula_latex": "M_{Rd} = \\frac{M_{p\\ell}}{\\gamma_{a1}}",
+      "variaveis": {
+        "Mpl": "momento de plastificação = Z * fy (D.3)",
+        "gamma_a1": "Tabela 3, item 4.9.2"
+      },
+      "condicoes_aplicabilidade": "Seções sólidas circulares e retangulares, eixo de menor momento de inércia.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.5 (Anexo D)",
+        "pagina": 142,
+        "pagina_pdf": 159
+      },
+      "status": "extraido",
+      "escopo_software": "FORA DO ESCOPO IMEDIATO (barras sólidas). Extraído por ser o outro item do Anexo D específico do eixo de menor inércia.",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "7a6e4a4f37e7f14797135a3a8dab8a95ec1d24e6cd732614b88a2e0c17c203e0",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "159": "cc218ba642ecab87ab9ec248ebf1772f9e87a345808fe77ae0d6b84e78f4c908"
+      }
+    },
+    {
+      "id": "flexao_notacao_eixos_x_y",
+      "descricao": "Notação dos eixos: como a norma relaciona o 'y' de M,y,Rd (5.5.1.2) com o 'eixo de menor momento de inércia' da Tabela D.1",
+      "texto_transcrito": "3.5.1 (Símbolos subscritos — letras romanas minúsculas): x – relativo ao eixo x; y – escoamento; relativo ao eixo y. 5.5.1.2: Mx,Sd e My,Sd são os momentos fletores solicitantes de cálculo, respectivamente, em relação aos eixos x e y da seção transversal; Mx,Rd e My,Rd são os momentos fletores resistentes de cálculo, respectivamente, em relação aos eixos x e y da seção transversal, determinados de acordo com 5.4. D.3: Iy momento de inércia da seção em relação ao eixo que passa pelo plano médio da alma.",
+      "achado_de_notacao": {
+        "status": "NAO_DECLARADO",
+        "descricao": "Nem 3.5.1 nem 5.5.1.2 declaram textualmente que 'y' é o eixo de MENOR inércia. A Tabela D.1 não usa letra para o eixo (escreve 'eixo de menor momento de inércia'). No Anexo D, a letra y é associada a um eixo geométrico apenas em D.3 (Iy: eixo que passa pelo plano médio da alma). A notação 'eixo z' NÃO aparece no trecho lido nesta rodada (Anexo D, páginas impressas 137 a 147). O catálogo Gerdau W/HP rotula as colunas como 'EIXO X-X' e 'EIXO Y-Y'.",
+        "acao_do_A1": "Registrado sem interpretar. A correspondência M,y,Rd ↔ linha 'eixo de menor momento de inércia' da Tabela D.1, para perfis I/H, é decisão do A2."
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "3.5.1; 5.5.1.2; D.3",
+        "pagina": "9; 61; 147",
+        "pagina_pdf": "26; 78; 164"
+      },
+      "status": "extraido",
+      "rodada_extracao": "8a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "19e356f5a0210050b574abdf32856aaf09f4c4f4caed7649b4607531e4465c80",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "26": "443a824ab9ff0506bfa64e7cbbcf285a93b7ec22b02be08d94a0ce95a8aede8e",
+        "78": "7085539042361053e06b05d639084ac5459cd5443a407bf78663821ef5c16d0f",
+        "164": "326f024c9d100965741e338b7ce4514a666d1fc57c59fac95ed8ec8ba5a9bb13"
+      }
+    },
+    {
+      "id": "flexao_FLT_momento_resistente_D21",
+      "descricao": "D.2.1 — momento fletor resistente de cálculo para o estado-limite FLT: os TRÊS trechos (plástico, inelástico e elástico), a condição de validade (forças na semialtura) e a ALTERNATIVA com χFLT e λLT.",
+      "texto_transcrito": "D.2.1 Para os tipos de seção e eixos de flexão indicados na Tabela D.1, para o estado-limite FLT, o momento fletor resistente de cálculo é calculado conforme a seguir: MRd = (1/γa1) Mpℓ, para λ ≤ λp; MRd = (1/γa1) [Mpℓ − (Mpℓ − Mr) (λ − λp)/(λr − λp)], para λp < λ ≤ λr; MRd = (1/γa1) Mcr, para λ > λr. Os valores do momento fletor resistente de cálculo para este estado-limite são válidos para aplicação das forças transversais externas, caso existam, na semialtura da seção transversal. Alternativamente, o momento fletor resistente de cálculo pode ser calculado por: MRd = (1/γa1) χFLT Mpℓ onde χFLT = 1,0, para λLT ≤ 0,4; χFLT = 1,0 − 0,49(λLT − 0,4), para 0,4 < λLT ≤ 1,4; χFLT = 1,0/λLT², para λLT > 1,4. λLT é calculado pela seguinte equação: λLT = √(Mpℓ/Mcr)",
+      "formula": {
+        "trecho_plastico": "M,Rd = Mpl / gamma_a1,  para lambda <= lambda_p",
+        "trecho_inelastico": "M,Rd = (1/gamma_a1) * [ Mpl - (Mpl - Mr) * (lambda - lambda_p)/(lambda_r - lambda_p) ],  para lambda_p < lambda <= lambda_r",
+        "trecho_elastico": "M,Rd = Mcr / gamma_a1,  para lambda > lambda_r",
+        "alternativa_chi_FLT": "M,Rd = (1/gamma_a1) * chi_FLT * Mpl",
+        "chi_FLT": {
+          "lambda_LT <= 0,4": "chi_FLT = 1,0",
+          "0,4 < lambda_LT <= 1,4": "chi_FLT = 1,0 - 0,49 * (lambda_LT - 0,4)",
+          "lambda_LT > 1,4": "chi_FLT = 1,0 / lambda_LT^2"
+        },
+        "lambda_LT": "lambda_LT = sqrt( Mpl / Mcr )"
+      },
+      "formula_latex": {
+        "trecho_plastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}} M_{p\\ell}, \\quad \\lambda \\le \\lambda_p",
+        "trecho_inelastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}}\\left[M_{p\\ell} - (M_{p\\ell} - M_r)\\frac{\\lambda - \\lambda_p}{\\lambda_r - \\lambda_p}\\right], \\quad \\lambda_p < \\lambda \\le \\lambda_r",
+        "trecho_elastico": "M_{Rd} = \\frac{1}{\\gamma_{a1}} M_{cr}, \\quad \\lambda > \\lambda_r",
+        "alternativa_chi_FLT": "M_{Rd} = \\frac{1}{\\gamma_{a1}} \\chi_{FLT} M_{p\\ell}",
+        "chi_FLT": "\\chi_{FLT} = 1{,}0 \\ (\\lambda_{LT} \\le 0{,}4);\\quad \\chi_{FLT} = 1{,}0 - 0{,}49(\\lambda_{LT} - 0{,}4) \\ (0{,}4 < \\lambda_{LT} \\le 1{,}4);\\quad \\chi_{FLT} = \\frac{1{,}0}{\\lambda_{LT}^2} \\ (\\lambda_{LT} > 1{,}4)",
+        "lambda_LT": "\\lambda_{LT} = \\sqrt{\\frac{M_{p\\ell}}{M_{cr}}}"
+      },
+      "variaveis": {
+        "M_Rd": "momento fletor resistente de cálculo [força x comprimento]",
+        "Mpl": "momento fletor de plastificação = Z * fy (D.3) [força x comprimento]",
+        "Mr": "momento fletor correspondente ao início do escoamento (D.3); para FLT, coluna Mr da Tabela D.1: (fy − σr)W para I/H duplamente simétricas e U não sujeitas a torção, eixo de maior inércia [força x comprimento]",
+        "Mcr": "momento fletor crítico (D.3); para FLT, D.2.8-a) (dupla simetria) ou D.2.8-b) (monossimétrica), ou por análise de estabilidade elástica (D.2.8-k)) [força x comprimento]",
+        "lambda, lambda_p, lambda_r": "parâmetros de esbeltez da FLT (Tabela D.1): lambda = Lb/ry (dupla simetria) ou Lb/ryTc (monossimétrica); lambda_p = 1,76 sqrt(E/fy); lambda_r em D.2.8-a)/-b) [adimensionais]",
+        "chi_FLT": "fator de redução da alternativa — símbolo não definido em D.3; definido apenas pelas três expressões transcritas [adimensional]",
+        "lambda_LT": "esbeltez da alternativa = sqrt(Mpl/Mcr) — não definida em D.3 [adimensional]",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Tipos de seção e eixos de flexão da Tabela D.1, estado-limite FLT (que só se aplica quando o eixo de flexão é o de maior momento de inércia — D.2.8-g)). Validade declarada no próprio item: forças transversais externas, se existirem, aplicadas na semialtura da seção transversal. Deve ainda ser respeitado o limite de 5.4.2.2 (entrada flexao_limite_superior_analise_elastica).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.1 (Anexo D, normativo)",
+        "pagina": "137-138",
+        "pagina_pdf": "154-155"
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "CB NÃO APARECE NAS EQUAÇÕES DE D.2.1. Nenhum dos três trechos nem a alternativa com χFLT multiplica por Cb, e não há limitador '≤ Mpℓ/γa1' impresso em D.2.1. Na NBR 8800:2024, Cb entra SOMENTE por λr e Mcr de D.2.8-a)/-b) (e 5.4.2.3). O A1 NÃO comparou com a edição 2008 (que não está em kb/fontes_originais/normas/) e não reconstrói nada de memória: o que vale é o impresso. Conferido a 400 dpi.",
+        "A alternativa ('Alternativamente, ... pode ser calculado por') não declara se é escolha livre do projetista nem se substitui os três trechos para todas as seções da Tabela D.1. O texto não diz qual Mcr entra em λLT; por posição, é o Mcr da FLT da Tabela D.1 (D.2.8-a)/-b)/-k)), mas isso não está escrito. A2 decide.",
+        "χFLT e λLT não constam da simbologia D.3.",
+        "A frase de validade (forças na semialtura) é a mesma condição sob a qual 5.4.2.3 fornece Cb por fórmula; para forças acima da semialtura (desestabilizantes), 5.4.2.3 manda obter Cb por análise de estabilidade elástica ou procedimento da comunidade técnico-científica (entrada flexao_Cb_5423_texto_integral)."
+      ],
+      "observacao": "As fórmulas saem embaralhadas no pdftotext; transcritas das imagens a 150 dpi (página inteira) e 400 dpi (recortes das três equações, do bloco χFLT e de λLT, que fica no topo da página impressa 138). A forma do trecho inelástico é idêntica à de D.2.2 (entrada flexao_FLM_FLA_momento_resistente_D22).",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "00126dc253ad88a957365dd1969f421ba720eb8afb0492bacdf8bcdb3e04eef7",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "154": "e1e538cd4f687fb46ca181d0ba3effc28c3b273bb33fcf28ef5a71fb5aeb6492",
+        "155": "c106ef408fec4db653bef8add311ce3018166202f91f335d38ea41f7d64ad363"
+      }
+    },
+    {
+      "id": "flexao_parametros_tabela_D1_I_H_U_eixo_maior_reconferencia_10a",
+      "descricao": "Tabela D.1 — linha 'Seções I e H com dois eixos de simetria e seções U não sujeitas a momento de torção, fletidas em relação ao eixo de maior momento de inércia': reconferência da entrada antiga (1a rodada, sem hash) com transcrição literal e hash. A entrada antiga flexao_parametros_tabela_D1_I_H_duplamente_simetricas NÃO foi alterada.",
+      "texto_transcrito": "Tabela D.1 – Parâmetros referentes ao momento fletor resistente | Tipo de seção e eixo de flexão: Seções I e H com dois eixos de simetria e seções U não sujeitas a momento de torção, fletidas em relação ao eixo de maior momento de inércia | Estados-limite aplicáveis: FLT | Mr: (fy − σr)W Ver D.2.8-e) | Mcr: Ver D.2.8-a) | λ: Lb/ry | λp: 1,76 √(E/fy) | λr: Ver D.2.8-a) || Estados-limite aplicáveis: FLM | Mr: (fy − σr)W Ver D.2.8-e) | Mcr: Ver D.2.8-f) | λ: b/t Ver D.2.8-h) | λp: 0,38 √(E/fy) | λr: Ver D.2.8-f) || Estados-limite aplicáveis: FLA | Mr: fy W | Mcr: Viga de alma esbelta (Anexo E) | λ: h/tw | λp: 3,76 √(E/fy) | λr: 5,70 √(E/fy) || Cabeçalho da coluna Mcr: Mcr Ver D.2.8-k)",
+      "resultado_da_reconferencia": "CONFERE, célula a célula, com a entrada antiga flexao_parametros_tabela_D1_I_H_duplamente_simetricas (FLT: Mr (fy − σr)W, λ = Lb/ry, λp = 1,76√(E/fy); FLM: Mr (fy − σr)W, λ = b/t, λp = 0,38√(E/fy); FLA: Mr = fyW, Mcr → Anexo E, λ = h/tw, λp = 3,76√(E/fy), λr = 5,70√(E/fy)). As remissões 'Ver D.2.8-a)' (Mcr e λr da FLT) e 'Ver D.2.8-f)' (Mcr e λr da FLM) agora têm destino extraído: entradas flexao_D28a_FLT_lambda_r_Mcr_duplamente_simetricas e flexao_D28f_Mcr_lambda_r_FLM.",
+      "comparacao_FLM_com_linha_do_eixo_menor": "Na coluna FLM, as duas linhas (eixo maior e eixo menor) têm os MESMOS Mr, λ, λp e as MESMAS remissões (D.2.8-e)/-f)/-h)). Diferenças textuais: (i) a linha do eixo menor marca a FLM com 'Ver D.2.8-c)' (restrição que o texto de c) só impõe à seção U); (ii) W e Wc são definidos em D.3 'relativo ao eixo de flexão', logo cada linha usa os módulos do seu próprio eixo. Nenhum coeficiente difere.",
+      "comparacao_FLA_com_linha_do_eixo_menor": "Diferem: no eixo maior, FLA vale para I/H/U com Mr = fyW, λp = 3,76√(E/fy), λr = 5,70√(E/fy) e Mcr remetido ao Anexo E; no eixo menor, FLA só vale para a alma de U (D.2.8-c)), com λp = 1,12, λr = 1,40 e Mr/Mcr com Wef.",
+      "variaveis": {
+        "W": "módulo de resistência (mínimo) elástico da seção, relativo ao eixo de flexão (D.3) — aqui, eixo de maior inércia",
+        "Lb": "distância entre duas seções contidas à flambagem lateral com torção (D.3)",
+        "ry": "raio de giração da seção em relação ao eixo principal de inércia perpendicular ao eixo de flexão (D.3)",
+        "sigma_r": "30 % de fy (D.2.8-e))"
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Tabela D.1 (Anexo D), linha 'Seções I e H com dois eixos de simetria e seções U não sujeitas a momento de torção, fletidas em relação ao eixo de maior momento de inércia'",
+        "pagina": 144,
+        "pagina_pdf": 161
+      },
+      "status": "extraido",
+      "observacao": "Conferido a 400 dpi (recorte das duas primeiras linhas-bloco da tabela).",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "ef4f462e266c69384679e1e661a40fa69192a48a014e6458d0a7bba281901b43",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "161": "bb903fb7d313665a70c841c351c158d2887ef23ba3c4f6bcd16956b1ee2bf291"
+      }
+    },
+    {
+      "id": "flexao_parametros_tabela_D1_I_H_monossimetricas_eixo_maior",
+      "descricao": "Tabela D.1 — linha 'Seções I e H com apenas um eixo de simetria situado no plano médio da alma, fletidas em relação ao eixo de maior momento de inércia (ver D.2.8-i) e D.2.8-j))'. Extraída porque é a linha que remete a D.2.8-b), -i) e -j).",
+      "texto_transcrito": "Tabela D.1 – Parâmetros referentes ao momento fletor resistente | Tipo de seção e eixo de flexão: Seções I e H com apenas um eixo de simetria situado no plano médio da alma, fletidas em relação ao eixo de maior momento de inércia (ver D.2.8-i) e D.2.8-j)) | Estados-limite aplicáveis: FLT | Mr: (fy − σr)Wc ≤ fy Wt Ver D.2.8-e) | Mcr: Ver D.2.8-b) | λ: Lb/ryTc | λp: 1,76 √(E/fy) | λr: Ver D.2.8-b) || Estados-limite aplicáveis: FLM | Mr: (fy − σr)Wc Ver D.2.8-e) | Mcr: Ver D.2.8-f) | λ: b/t Ver D.2.8-h) | λp: 0,38 √(E/fy) | λr: Ver D.2.8-f) || Estados-limite aplicáveis: FLA | Mr: fy W | Mcr: Viga de alma esbelta (Anexo E) | λ: hc/tw | λp: ((hc/hp) √(E/fy)) / (0,54 Mpℓ/Mr − 0,09)² ≤ λr | λr: 5,70 √(E/fy)",
+      "linhas": [
+        {
+          "estado_limite": "FLT",
+          "Mr": "(fy - sigma_r) * Wc <= fy * Wt  (ver D.2.8-e)",
+          "Mcr": "ver D.2.8-b)",
+          "lambda": "Lb / ryTc",
+          "lambda_p": "1,76 * sqrt(E/fy)",
+          "lambda_r": "ver D.2.8-b)"
+        },
+        {
+          "estado_limite": "FLM",
+          "Mr": "(fy - sigma_r) * Wc  (ver D.2.8-e)",
+          "Mcr": "ver D.2.8-f)",
+          "lambda": "b / t  (ver D.2.8-h)",
+          "lambda_p": "0,38 * sqrt(E/fy)",
+          "lambda_r": "ver D.2.8-f)"
+        },
+        {
+          "estado_limite": "FLA",
+          "Mr": "fy * W",
+          "Mcr": "viga de alma esbelta (Anexo E)",
+          "lambda": "hc / tw",
+          "lambda_p": "[ (hc/hp) * sqrt(E/fy) ] / (0,54 * Mpl/Mr - 0,09)^2  <= lambda_r",
+          "lambda_p_latex": "\\frac{\\frac{h_c}{h_p}\\sqrt{\\frac{E}{f_y}}}{\\left(0{,}54\\frac{M_{p\\ell}}{M_r} - 0{,}09\\right)^2} \\le \\lambda_r",
+          "lambda_r": "5,70 * sqrt(E/fy)"
+        }
+      ],
+      "nota_sobre_Mr_no_lambda_p_da_FLA": "O λp da FLA contém 'Mr' sem índice. A célula não diz qual Mr (o da FLT, o da FLM ou fyW da própria FLA). A2 decide.",
+      "escopo_software": "FORA DO ESCOPO IMEDIATO: o catálogo Gerdau W/HP só tem perfis com dois eixos de simetria. Extraída por ser o destino das remissões D.2.8-b)/-i)/-j).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Tabela D.1 (Anexo D), linha 'Seções I e H com apenas um eixo de simetria situado no plano médio da alma, fletidas em relação ao eixo de maior momento de inércia'",
+        "pagina": 144,
+        "pagina_pdf": 161
+      },
+      "status": "extraido",
+      "observacao": "Conferido a 400 dpi.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "3101a3de7bdd4dda14b0909a664354c23a25186cb770a864d2b611b3d75f5a3c",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "161": "bb903fb7d313665a70c841c351c158d2887ef23ba3c4f6bcd16956b1ee2bf291"
+      }
+    },
+    {
+      "id": "flexao_D28a_FLT_lambda_r_Mcr_duplamente_simetricas",
+      "descricao": "D.2.8 (caput) e D.2.8-a) — λr e Mcr da FLT para a linha 'I e H com dois eixos de simetria e U não sujeitas a torção, eixo de maior inércia' da Tabela D.1; β1 e Cw (I e U).",
+      "texto_transcrito": "D.2.8 Os critérios relacionados à Tabela D.1 são indicados a seguir: a) λr = (1,38 Cb √(Iy J))/(ry J β1) √(1 + √(1 + 27 Cw β1²/(Cb² Iy))) Mcr = (Cb π² E Iy/Lb²) √((Cw/Iy)(1 + 0,039 J Lb²/Cw)) onde β1 = (fy − σr)W/(E J) Cw = Iy (d − tf)²/4, para seçõs I Cw = [tf (bf − 0,5tw)³ (d − tf)²/12] [(3(bf − 0,5tw)tf + 2(d − tf)tw)/(6(bf − 0,5tw)tf + (d − tf)tw)], para seçõs U",
+      "formula": {
+        "lambda_r": "lambda_r = ( 1,38 * Cb * sqrt(Iy * J) / (ry * J * beta1) ) * sqrt( 1 + sqrt( 1 + 27 * Cw * beta1^2 / (Cb^2 * Iy) ) )",
+        "Mcr": "Mcr = ( Cb * pi^2 * E * Iy / Lb^2 ) * sqrt( (Cw/Iy) * (1 + 0,039 * J * Lb^2 / Cw) )",
+        "beta1": "beta1 = (fy - sigma_r) * W / (E * J)",
+        "Cw_secoes_I": "Cw = Iy * (d - tf)^2 / 4",
+        "Cw_secoes_U": "Cw = [ tf * (bf - 0,5*tw)^3 * (d - tf)^2 / 12 ] * [ (3*(bf - 0,5*tw)*tf + 2*(d - tf)*tw) / (6*(bf - 0,5*tw)*tf + (d - tf)*tw) ]"
+      },
+      "formula_latex": {
+        "lambda_r": "\\lambda_r = \\frac{1{,}38 C_b \\sqrt{I_y J}}{r_y J \\beta_1}\\sqrt{1 + \\sqrt{1 + \\frac{27 C_w \\beta_1^2}{C_b^2 I_y}}}",
+        "Mcr": "M_{cr} = \\frac{C_b \\pi^2 E I_y}{L_b^2}\\sqrt{\\frac{C_w}{I_y}\\left(1 + 0{,}039\\frac{J L_b^2}{C_w}\\right)}",
+        "beta1": "\\beta_1 = \\frac{(f_y - \\sigma_r)W}{EJ}",
+        "Cw_secoes_I": "C_w = \\frac{I_y (d - t_f)^2}{4}",
+        "Cw_secoes_U": "C_w = \\frac{t_f (b_f - 0{,}5t_w)^3 (d - t_f)^2}{12}\\left[\\frac{3(b_f - 0{,}5t_w)t_f + 2(d - t_f)t_w}{6(b_f - 0{,}5t_w)t_f + (d - t_f)t_w}\\right]"
+      },
+      "variaveis": {
+        "Cb": "fator de modificação para diagrama de momento fletor não uniforme — 5.4.2.3 / 5.4.2.4 / 5.4.2.5 (NÃO definido em D.3) [adimensional]",
+        "Iy": "momento de inércia da seção em relação ao eixo que passa pelo plano médio da alma (D.3) [comprimento^4]",
+        "J": "constante de torção da seção transversal (D.3) [comprimento^4]",
+        "ry": "raio de giração da seção em relação ao eixo principal de inércia perpendicular ao eixo de flexão (D.3) [comprimento]",
+        "Cw": "constante de empenamento da seção transversal (D.3) [comprimento^6]",
+        "Lb": "distância entre duas seções contidas à flambagem lateral com torção (comprimento destravado) (D.3) [comprimento]",
+        "E": "módulo de elasticidade do aço [força/comprimento^2]",
+        "W": "módulo de resistência (mínimo) elástico da seção, relativo ao eixo de flexão (D.3) [comprimento^3]",
+        "fy, sigma_r": "resistência ao escoamento; tensão residual = 30 % fy (D.2.8-e)) [força/comprimento^2]",
+        "d": "altura externa da seção, medida perpendicularmente ao eixo de flexão (D.3) [comprimento]",
+        "tf": "espessura da mesa (D.3) [comprimento]",
+        "bf": "largura da mesa — símbolo 'bf' NÃO definido em D.3 (D.3 define 'bt' = largura total da mesa) [comprimento]",
+        "tw": "espessura da alma [comprimento]"
+      },
+      "condicoes_aplicabilidade": "Remetido pelas colunas Mcr e λr da FLT na linha 'Seções I e H com dois eixos de simetria e seções U não sujeitas a momento de torção, fletidas em relação ao eixo de maior momento de inércia' da Tabela D.1. Consumido por D.2.1.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8 (caput) e D.2.8-a) (Anexo D)",
+        "pagina": 145,
+        "pagina_pdf": 162
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "Cb aparece DENTRO de λr (duas vezes: no numerador do fator externo e em Cb² sob a raiz interna) e multiplicando Mcr. λp da FLT (1,76√(E/fy)) não depende de Cb. Consequência textual: com Cb ≠ 1, λr muda e o trecho inelástico de D.2.1 muda de extensão, sem Cb multiplicar a interpolação. Transcrito como impresso; o A1 não avalia a coerência.",
+        "Cw: a norma dá Cw por fórmula (Iy(d − tf)²/4 para seções I). O catálogo kb/catalogos/gerdau_perfis_w_h.json traz coluna Cw_cm6 nas 107 entradas. Qual das duas usar é decisão do A2; o A1 não compara valores.",
+        "J (D.3: constante de torção) corresponde, pelo nome, à coluna It_cm4 do catálogo (107 entradas com valor). A identificação é do A2.",
+        "Grafia 'seçõs' (sem o 'e') impressa duas vezes nesta alínea ('para seçõs I', 'para seçõs U'): erro tipográfico da norma, mantido literalmente; o pdftotext também devolve 'seçõ' + 's'.",
+        "O Mcr usa Lb diretamente (não λ). λr está em termos de λ = Lb/ry (Tabela D.1)."
+      ],
+      "observacao": "Conferido a 400 dpi (recortes das equações de λr e Mcr e do bloco β1/Cw). Leitura: numerador de λr '1,38Cb√(IyJ)', denominador 'ryJβ1'; raiz externa '1 + √(1 + 27Cwβ1²/(Cb²Iy))'; Mcr com coeficiente 0,039 dentro do parêntese.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "9b16e5c220a7c8f5a4e9367ab4d90ac509ffa368da7b002b637c2d122a3cfe3d",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "162": "6097561dc15c5816207a4136a37b14cf58830910b56265b8930073067b905fef"
+      }
+    },
+    {
+      "id": "flexao_D28b_FLT_lambda_r_Mcr_monossimetricas",
+      "descricao": "D.2.8-b) — λr e Mcr da FLT para a linha 'I e H com apenas um eixo de simetria, eixo de maior inércia' da Tabela D.1; β1, β2, β3 e Cw.",
+      "texto_transcrito": "b) λr = (1,38 Cb √(Iy J))/(ryTc J β1) √(β2 + √(β2² + 27 Cw β1²/(Cb² Iy))) Mcr = (Cb π² E Iy/Lb²) [β3 + √(β3² + (Cw/Iy)(1 + 0,039 J Lb²/Cw))] onde β1 = (fy − σr)Wc/(E J) ≤ fy Wt/(E J) β2 = 5,2 β1 β3/Cb + 1 β3 = 0,45 (d − (tfs + tfi)/2)(2αy − 1) Cw = (1/12)(d − (tfs + tfi)/2)² (tfi bfi³ tfs bfs³/(tfi bfi³ + tfs bfs³)) sendo αy determinado conforme D.2.8-i).",
+      "formula": {
+        "lambda_r": "lambda_r = ( 1,38 * Cb * sqrt(Iy * J) / (ryTc * J * beta1) ) * sqrt( beta2 + sqrt( beta2^2 + 27 * Cw * beta1^2 / (Cb^2 * Iy) ) )",
+        "Mcr": "Mcr = ( Cb * pi^2 * E * Iy / Lb^2 ) * [ beta3 + sqrt( beta3^2 + (Cw/Iy) * (1 + 0,039 * J * Lb^2 / Cw) ) ]",
+        "beta1": "beta1 = (fy - sigma_r) * Wc / (E * J)  <=  fy * Wt / (E * J)",
+        "beta2": "beta2 = 5,2 * beta1 * beta3 / Cb + 1",
+        "beta3": "beta3 = 0,45 * ( d - (tfs + tfi)/2 ) * (2*alpha_y - 1)",
+        "Cw": "Cw = (1/12) * ( d - (tfs + tfi)/2 )^2 * ( tfi*bfi^3 * tfs*bfs^3 / (tfi*bfi^3 + tfs*bfs^3) )"
+      },
+      "formula_latex": {
+        "lambda_r": "\\lambda_r = \\frac{1{,}38 C_b \\sqrt{I_y J}}{r_{yTc} J \\beta_1}\\sqrt{\\beta_2 + \\sqrt{\\beta_2^2 + \\frac{27 C_w \\beta_1^2}{C_b^2 I_y}}}",
+        "Mcr": "M_{cr} = \\frac{C_b \\pi^2 E I_y}{L_b^2}\\left[\\beta_3 + \\sqrt{\\beta_3^2 + \\frac{C_w}{I_y}\\left(1 + 0{,}039\\frac{J L_b^2}{C_w}\\right)}\\right]",
+        "beta1": "\\beta_1 = \\frac{(f_y - \\sigma_r)W_c}{EJ} \\le \\frac{f_y W_t}{EJ}",
+        "beta2": "\\beta_2 = \\frac{5{,}2\\beta_1\\beta_3}{C_b} + 1",
+        "beta3": "\\beta_3 = 0{,}45\\left(d - \\frac{t_{fs} + t_{fi}}{2}\\right)(2\\alpha_y - 1)",
+        "Cw": "C_w = \\frac{1}{12}\\left(d - \\frac{t_{fs} + t_{fi}}{2}\\right)^2\\left(\\frac{t_{fi} b_{fi}^3 t_{fs} b_{fs}^3}{t_{fi} b_{fi}^3 + t_{fs} b_{fs}^3}\\right)"
+      },
+      "variaveis": {
+        "ryTc": "raio de giração da seção T formada pela mesa comprimida e a parte comprimida da alma anexa, em regime elástico, em relação ao eixo que passa pelo plano médio da alma (D.3)",
+        "Wc, Wt": "módulos de resistência elásticos do lado comprimido e do lado tracionado, relativos ao eixo de flexão (D.3)",
+        "tfs, tfi": "espessuras das mesas superior e inferior (D.3, em tf)",
+        "bfs, bfi": "larguras totais das mesas superior e inferior (D.3, em bt)",
+        "alpha_y": "IyTc/Iy (D.2.8-i))",
+        "demais": "como em flexao_D28a_FLT_lambda_r_Mcr_duplamente_simetricas"
+      },
+      "condicoes_aplicabilidade": "Remetido pelas colunas Mcr e λr da FLT da linha de I/H monossimétricas (eixo de maior inércia) da Tabela D.1. Limitações em D.2.8-i); curvatura reversa em D.2.8-j).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-b) (Anexo D)",
+        "pagina": 145,
+        "pagina_pdf": 162
+      },
+      "status": "extraido",
+      "escopo_software": "FORA DO ESCOPO IMEDIATO (seções monossimétricas; catálogo W/HP só tem dupla simetria). Extraído por pertencer ao pacote D.2.8-a/b/i/j pedido.",
+      "observacao": "Conferido a 400 dpi. No Cw desta alínea, o 'd' está impresso em fonte reta ('d −'), diferente do d itálico de β3; tratado como o mesmo símbolo d (altura externa, D.3) — diferença só tipográfica, registrada.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "d54d679c92d399332772252775e99dbaddadab3f15e0bc21107a953885e37f0a",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "162": "6097561dc15c5816207a4136a37b14cf58830910b56265b8930073067b905fef"
+      }
+    },
+    {
+      "id": "flexao_D28i_limitacoes_monossimetricas",
+      "descricao": "D.2.8-i) — limitações para as seções I e H monossimétricas e definição de αy",
+      "texto_transcrito": "i) Para essas seções, devem ser atendidas as seguintes limitações: 0,1 ≤ αy ≤ 0,9 e a soma das áreas da menor mesa e da alma deve ser superior à área da maior mesa; onde αy = IyTc/Iy",
+      "formula": {
+        "limitacao_1": "0,1 <= alpha_y <= 0,9",
+        "limitacao_2": "A(menor mesa) + A(alma) > A(maior mesa)  [transcrição do texto]",
+        "alpha_y": "alpha_y = IyTc / Iy"
+      },
+      "variaveis": {
+        "IyTc": "momento de inércia da seção T formada pela mesa comprimida e pela parte comprimida da alma anexa, em regime elástico, em relação ao eixo que passa pelo plano médio da alma (D.3)",
+        "Iy": "momento de inércia da seção em relação ao eixo que passa pelo plano médio da alma (D.3)"
+      },
+      "condicoes_aplicabilidade": "'essas seções' = as remetidas pela linha 'Seções I e H com apenas um eixo de simetria...' da Tabela D.1 (que cita 'ver D.2.8-i) e D.2.8-j)'). O texto de i) não repete o nome da seção.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-i) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "escopo_software": "FORA DO ESCOPO IMEDIATO (monossimétricas).",
+      "observacao": "O referente de 'essas seções' não está escrito em i); vem da remissão da Tabela D.1. O Anexo E (E.5.3-a)) repete a mesma limitação e remete o αy 'determinado no Anexo D'.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "41d9e8c2747fea31dba7a8224d0d2535e61d01c463fd45337a0546b29d776c9a",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_D28j_curvatura_reversa",
+      "descricao": "D.2.8-j) — verificação das duas mesas sob curvatura reversa; nos demais casos, MRd constante no comprimento destravado",
+      "texto_transcrito": "j) Se houver inversão de momentos no comprimento destravado (curvatura reversa), a verificação deve ser feita para as duas mesas (cada mesa possui um momento fletor resistente de cálculo, que deve ser igual ou superior ao máximo momento solicitante de cálculo que causa compressão nessa mesa). Nos demais casos, o momento fletor resistente de cálculo é constante ao longo do comprimento destravado e deve ser igual ou superior ao máximo momento solicitante de cálculo (positivo ou negativo) nesse comprimento.",
+      "condicoes_aplicabilidade": "Remetido pela linha de I/H monossimétricas da Tabela D.1. O texto de j) em si não menciona tipo de seção.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.2.8-j) (Anexo D)",
+        "pagina": 146,
+        "pagina_pdf": 163
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "Conteúdo quase idêntico ao parágrafo final de 5.4.2.3 (pág. 54-55), que ali está escrito para 'seções I com um eixo de simetria, fletidas em relação ao eixo que não é de simetria, sujeitas à curvatura reversa' e acrescenta a regra de balanços. A segunda frase ('Nos demais casos, o momento fletor resistente de cálculo é constante ao longo do comprimento destravado e deve ser igual ou superior ao máximo momento solicitante de cálculo (positivo ou negativo) nesse comprimento') é a regra de comparação M,Sd × M,Rd da FLT por trecho destravado — relevante também para I/H duplamente simétricas via 5.4.2.3. A2 decide o alcance."
+      ],
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "e0d5f7102484e32f64a03eed6a60abfa62eea0fdf51359f428f5ad6c220df240",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "163": "3a65a5e3eb1ed6175394f64a50e0eef8e184aa7fee0f6f280aa2a8860fac6fac"
+      }
+    },
+    {
+      "id": "flexao_simbologia_D3_complemento_FLT",
+      "descricao": "D.3 Simbologia — COMPLEMENTO: os símbolos que a 8a rodada não transcreveu (Cw, D, IyTc, J, Lb, bt, hc, hp, ryTc). Com esta entrada e flexao_simbologia_D3_subconjunto, D.3 fica integralmente transcrito.",
+      "texto_transcrito": "Cw constante do empenamento da seção transversal; D diâmetro externo da seção tubular circular; IyTc momento de inércia da seção T formada pela mesa comprimida e pela parte comprimida da alma anexa, em regime elástico, em relação ao eixo que passa pelo plano médio da alma; J constante de torção da seção transversal; Lb distância entre duas seções contidas à flambagem lateral com torção (comprimento destravado); bt largura total da mesa (bfs e bfi são as larguras totais das mesas superior e inferior); hc duas vezes a distância do centro geométrico da seção transversal à face interna da mesa comprimida; hp duas vezes a distância da linha neutra plástica (LNP) da seção transversal à face interna da mesa comprimida; ryTc raio de giração da seção T formada pela mesa comprimida e a parte comprimida da alma anexa, em regime elástico, em relação ao eixo que passa pelo plano médio da alma;",
+      "condicoes_aplicabilidade": "Definições do Anexo D.",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "D.3 (Anexo D)",
+        "pagina": 147,
+        "pagina_pdf": 164
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "Cb, χFLT, λLT, β1, β2, β3 e αy NÃO estão em D.3. Cb é definido em 5.4.2.3 a 5.4.2.5; β's em D.2.8-a)/-b); αy em D.2.8-i); χFLT e λLT só pelas expressões de D.2.1.",
+        "D.3 define 'bt' (largura total da mesa); D.2.8-a) usa 'bf' e D.2.8-b) usa 'bfs'/'bfi' sem definir 'bf'."
+      ],
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "fdd232248ce7ad823d70a0437d9cfc6a584288eb137fc0e0b32a6954f2afd9cc",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "164": "326f024c9d100965741e338b7ce4514a666d1fc57c59fac95ed8ec8ba5a9bb13"
+      }
+    },
+    {
+      "id": "flexao_Cb_5423_texto_integral",
+      "descricao": "5.4.2.3 — fator Cb, TEXTO INTEGRAL (inclui os parágrafos sobre curvatura reversa, balanços e forças desestabilizantes/estabilizantes, que a entrada antiga flexao_fator_cb_caso_simples resumiu). A entrada antiga NÃO foi alterada.",
+      "texto_transcrito": "5.4.2.3 Para a determinação do momento fletor resistente de cálculo ao estado-limite FLT, pode ser necessário calcular um fator de modificação para diagrama de momento fletor não uniforme (Cb), para o comprimento destravado (Lb) analisado. Esse fator, determinado nesta Norma para o caso de atuação de forças transversais, caso existam, na semialtura da seção transversal, exceto para as situações previstas em 5.4.2.4, é calculado conforme a seguir (ver 5.4.2.5): a) em todos os casos, excluindo os descritos em 5.4.2.3-b) e 5.4.2.3-c): Cb = 12,5 Mmax Rm/(2,5 Mmax + 3 MA + 4 MB + 3 MC) onde Mmax é o valor do momento fletor máximo solicitante de cálculo, em módulo, no comprimento destravado; MA é o valor do momento fletor solicitante de cálculo, em módulo, na seção situada a um quarto do comprimento destravado, medido a partir da extremidade esquerda; MB é o valor do momento fletor solicitante de cálculo, em módulo, na seção central do comprimento destravado; MC é o valor do momento fletor solicitante de cálculo, em módulo, na seção situada a três quartos do comprimento destravado, medido a partir da extremidade esquerda; Rm é um parâmetro de monossimetria da seção transversal, igual a: 1,0 para todas as seções duplamente simétricas, para seções I com um eixo de simetria, fletidas em relação ao eixo que não é de simetria, submetidas à curvatura simples, e seções U, fletidas em relação ao eixo de simetria; 0,5 + 2(Iy,m/Iy)² para seções I com um eixo de simetria, fletidas em relação ao eixo que não é de simetria, submetidas à curvatura reversa; Iy,m é o momento de inércia, em relação ao eixo de simetria, da mesa de menor momento de inércia; Iy é o momento de inércia da seção transversal em relação ao eixo de simetria. Em seções I com um eixo de simetria, fletidas em relação ao eixo que não é de simetria, sujeitas à curvatura reversa, a verificação à FLT deve ser feita para as duas mesas (cada mesa possui um momento fletor resistente de cálculo, que deve ser igual ou superior ao máximo momento solicitante de cálculo que causa compressão nessa mesa). Nos demais casos, o momento fletor resistente de cálculo é constante ao longo do comprimento destravado e deve ser igual ou superior ao máximo momento solicitante de cálculo (positivo ou negativo) nesse comprimento. Em balanços, exceto nos casos descritos em 5.4.2.3-b), ambas as mesas das duas extremidades do comprimento destravado devem ser impedidas de se deslocar lateralmente. Para todos os casos em que, no intervalo entre duas contenções laterais, houver forças gravitacionais transversais aplicadas acima da semialtura da seção (forças desestabilizantes), cuja atuação não promova restrição lateral ou de torção à barra, Cb deve ser obtido por análise de estabilidade elástica ou por um procedimento aceito pela comunidade técnico-científica – ver 5.4.2.5. Se houver forças transversais gravitacionais aplicadas abaixo da semialtura da seção transversal (forças estabilizantes), Cb pode ser adotado, de modo conservador, como se essas forças estivessem na semialtura ou, de modo mais preciso, por análise de estabilidade elástica ou por um procedimento aceito pela comunidade técnico-científica – ver 5.4.2.5. Regras similares devem ser empregadas para outras situações de aplicação de forças na barra, cabendo ao responsável técnico pelo projeto identificar se essas forças são estabilizantes ou desestabilizantes. b) em balanços em que o empenamento for impedido no apoio e a extremidade livre não for impedida de se deslocar lateralmente e de girar em torno de seu eixo longitudinal: Cb = 1,0 Nos demais casos de balanços, em que nenhuma ou somente uma mesa seja impedida de se deslocar lateralmente, em qualquer extremidade, Cb deve ser obtido por análise da estabilidade elástica ou por um procedimento aceito pela comunidade técnico-científica (ver 5.4.2.5). c) nas demais situações, caso o carregamento seja aplicado na semialtura da seção transversal, para todas as seções duplamente simétricas e para seções I com um eixo de simetria, submetidas à curvatura simples e fletidas em relação ao eixo que não é de simetria: Cb = 1,0",
+      "formula": {
+        "a)": "Cb = 12,5 * Mmax * Rm / (2,5*Mmax + 3*MA + 4*MB + 3*MC)",
+        "b)": "Cb = 1,0  (balanços com empenamento impedido no apoio e extremidade livre não impedida)",
+        "c)": "Cb = 1,0  (demais situações, carga na semialtura, seções duplamente simétricas e I monossimétricas em curvatura simples)"
+      },
+      "achados_literais_para_o_A2": [
+        "Estrutura das alíneas como impressa: a) vale 'em todos os casos, excluindo os descritos em 5.4.2.3-b) e 5.4.2.3-c)'; c) diz 'nas demais situações, caso o carregamento seja aplicado na semialtura ...: Cb = 1,0'. O texto não esclarece explicitamente a relação entre 'todos os casos, excluindo ... c)' e 'nas demais situações' de c). A entrada antiga flexao_fator_cb_caso_simples leu c) como 'adota-se Cb = 1,0'. O A1 não resolve a leitura; A2 decide.",
+        "Forças acima da semialtura (desestabilizantes): Cb 'deve ser obtido por análise de estabilidade elástica ou por um procedimento aceito pela comunidade técnico-científica' — sem fórmula na norma. Classificar forças como estabilizantes/desestabilizantes cabe 'ao responsável técnico pelo projeto'. Isso é entrada que o software não pode inferir.",
+        "Balanços fora de b): Cb por análise de estabilidade elástica — sem fórmula.",
+        "O Iy de Rm (5.4.2.3: 'em relação ao eixo de simetria') tem redação diferente do Iy de D.3 ('eixo que passa pelo plano médio da alma'); para I monossimétrica os dois descrevem o mesmo eixo geométrico, mas a redação é diferente. Registrado."
+      ],
+      "condicoes_aplicabilidade": "Cb é usado na FLT (D.2.8-a)/-b); Anexo E, E.6.2).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "5.4.2.3 (integral)",
+        "pagina": "54-55",
+        "pagina_pdf": "71-72"
+      },
+      "status": "extraido",
+      "observacao": "Texto corrido lido na imagem a 150 dpi; fórmula de Cb conferida com a transcrição da 1a rodada (flexao_fator_cb_caso_simples), idêntica.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "956c6872476b54c8ab70e9ac4476bec4f517f4cadd2b9b4192204a93102d5741",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "71": "05d483a8edc1912efe678f04cc32abe029a5b01df50037d07c7a391a9ac8b089",
+        "72": "2fada4ea868ee4f01e9fb9213947849e220d527300c3934a61f3f27f580f40a8"
+      }
+    },
+    {
+      "id": "flexao_Cb_5424_contencao_continua_e_5425",
+      "descricao": "5.4.2.4 (Cb com uma das mesas com contenção lateral contínua) e 5.4.2.5 (remissão à Bibliografia)",
+      "texto_transcrito": "5.4.2.4 Nas barras com seções I, U e H, fletidas em relação ao eixo central de inércia perpendicular à alma, e seções-caixão e tubulares retangulares fletidas em relação a um eixo central de inércia, simétricas em relação ao eixo de flexão, em um comprimento destravado (Lb) no qual uma das mesas encontra-se livre para se deslocar lateralmente e a outra mesa possui contenção lateral contínua contra esse tipo de deslocamento, o fator de modificação para momento fletor não uniforme é calculado conforme a seguir (ver 5.4.2.5): a) quando a mesa com contenção lateral contínua estiver tracionada em pelo menos uma extremidade do comprimento destravado e as forças transversais forem orientadas no sentido da mesa livre: Cb = 3,00 − (2/3)(M2/M1) − (8/3)(MCL/(M1 + M2)) onde M1 é o valor do maior momento fletor solicitante de cálculo que comprime a mesa livre nas extremidades do comprimento destravado, considerado com sinal negativo; M2 é o valor do momento fletor solicitante de cálculo na outra extremidade do comprimento destravado. Se esse momento comprimir a mesa livre, deve ser considerado com sinal negativo nos segundo e terceiro termos da equação. Se tracionar a mesa livre, deve ser considerado com sinal positivo no segundo termo da equação e igual a zero no terceiro termo; MCL é o momento fletor solicitante de cálculo na seção central do comprimento destravado, com sinal positivo se tracionar a mesa livre e sinal negativo se tracionar a mesa com contenção lateral contínua. b) em trechos com momento nulo nas extremidades ou com momento que tracione a mesa livre em uma ou nas duas extremidades, submetidos a força transversal uniformemente distribuída, aplicada na mesa com contenção lateral contínua, orientada no sentido oposto à mesa livre: Cb = 2,0 c) em todos os outros casos, desde que as forças transversais sejam aplicadas em qualquer posição entre a mesa com contenção lateral contínua e a semialtura da seção orientadas no sentido oposto à mesa livre:: Cb = 1,0 Na verificação à FLT, deve-se considerar como momento fletor solicitante de cálculo o maior momento que comprime a mesa livre. No caso apresentado em 5.4.2.4-a), por exemplo, esse momento é M1. 5.4.2.5 Procedimentos analíticos para cálculos mais precisos de Cb ou com base em análises numéricas por computador podem ser encontrados nos textos [3] a [6] da Bibliografia.",
+      "formula": {
+        "5.4.2.4-a)": "Cb = 3,00 - (2/3)*(M2/M1) - (8/3)*MCL/(M1 + M2)",
+        "5.4.2.4-b)": "Cb = 2,0",
+        "5.4.2.4-c)": "Cb = 1,0"
+      },
+      "formula_latex": {
+        "5.4.2.4-a)": "C_b = 3{,}00 - \\frac{2}{3}\\frac{M_2}{M_1} - \\frac{8}{3}\\frac{M_{CL}}{(M_1 + M_2)}"
+      },
+      "condicoes_aplicabilidade": "Comprimento destravado com uma mesa livre e a outra com contenção lateral contínua (ex.: viga com laje/forro contínuo na mesa superior e mesa inferior comprimida junto aos apoios).",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "5.4.2.4 e 5.4.2.5",
+        "pagina": "55-56",
+        "pagina_pdf": "72-73"
+      },
+      "status": "extraido",
+      "observacao": "Fórmula de 5.4.2.4-a) conferida a 400 dpi. Pontuação dupla 'livre::' em c) impressa assim na norma, mantida. Os textos [3] a [6] da Bibliografia NÃO foram extraídos (não são normativos).",
+      "escopo_software": "Situação que exige entrada do usuário (qual mesa tem contenção contínua, sinais de M1/M2/MCL). Fora do caso básico 'Cb por 5.4.2.3-a)'.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "56829fd039e8000b4ec568d240ffc8d3dc73b3165b6ae20b83f8aa8abf023dc7",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "72": "2fada4ea868ee4f01e9fb9213947849e220d527300c3934a61f3f27f580f40a8",
+        "73": "37f54a58352802574e35a7156333e4a746f12b2be2c746beaa5e278af3cca247"
+      }
+    },
+    {
+      "id": "flexao_anexo_E_generalidades_E5",
+      "descricao": "Anexo E (normativo) — Momento fletor resistente de cálculo de vigas de alma esbelta: generalidades E.5.1 a E.5.3 (definição de viga de alma esbelta e requisitos)",
+      "texto_transcrito": "Anexo E (normativo) Momento fletor resistente de cálculo de vigas de alma esbelta E.5 Generalidades E.5.1 Este Anexo apresenta os procedimentos para determinação do momento fletor resistente de cálculo de vigas de alma esbelta. E.5.2 Vigas de alma esbelta, para os efeitos deste Anexo, são aquelas com seção I ou H soldada, com dois eixos de simetria ou um eixo de simetria no plano médio da alma, carregadas nesse plano, e com seção-caixão e seção tubular retangular com dois eixos de simetria no plano médio da seção, carregadas nesse plano, com o parâmetro de esbeltez da alma, λ = h/tw, superior a λr = 5,70√(E/fy), em que h é a distância entre as faces internas das mesas e tw, a espessura da alma. Para seção tubular, tw deve ser considerada igual a t. E.5.3 As vigas de alma esbelta tratadas neste Anexo devem atender aos seguintes requisitos: a) no caso de seções com somente um eixo de simetria, a soma das áreas da menor mesa e da alma deve ser superior à área da maior mesa, e 0,1 ≤ αy ≤ 0,9, com αy determinado no Anexo D; b) a relação h/tw não pode exceder 260 nem: 11,7√(E/fy), para a/h ≤ 1,5 0,42 E/fy, para a/h > 1,5 a e h são especificados em 5.4.3.1.1; para seções tubulares, tw deve ser considerada igual a t.",
+      "formula": {
+        "definicao": "lambda = h/tw > lambda_r = 5,70 * sqrt(E/fy)",
+        "E.5.3-b) limite 1": "h/tw <= 260",
+        "E.5.3-b) limite 2 (a/h <= 1,5)": "h/tw <= 11,7 * sqrt(E/fy)",
+        "E.5.3-b) limite 2 (a/h > 1,5)": "h/tw <= 0,42 * E/fy"
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Anexo E, E.5.1 a E.5.3",
+        "pagina": 148,
+        "pagina_pdf": 165
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "ESCOPO DO ANEXO E: só I/H SOLDADAS (e caixão/tubular retangular). Perfis LAMINADOS com h/tw > 5,70√(E/fy) não estão no Anexo D (D.1.2 exige λ ≤ λr da FLA para 'alma não esbelta') nem no Anexo E (E.5.2 exige 'seção I ou H soldada'). Para laminados, isso é uma LACUNA NORMATIVA textual. O A1 NÃO calculou se algum W/HP do catálogo, com algum aço de MAT-02, excede 5,70√(E/fy); o catálogo traz h_mm, d_linha_mm, tw_mm e esbeltez_alma_dlinha_tw para o A2 verificar.",
+        "E.5.2 define h como 'a distância entre as faces internas das mesas' (definição de perfil soldado em D.3).",
+        "NUMERAÇÃO ANÔMALA: o Anexo E começa em E.5 e segue para E.6; não existem E.1 a E.4 no PDF (páginas impressas 148-150, PDF 165-167, lidas integralmente; a página seguinte é o Anexo F).",
+        "E.5.3-b) remete 'a e h' a 5.4.3.1.1 (não reconferido nesta rodada; ver kb/nbr8800/cisalhamento.json)."
+      ],
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "4f3b7677bf1a156b24f2debe13eaf6159f7ab59350ee4cddea3a38ca33b0a12b",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "165": "0cf0314999b64e8243140995a8b04aed535358fc6cf2a94cb150562350051ce9"
+      }
+    },
+    {
+      "id": "flexao_anexo_E_E61_escoamento_mesa_tracionada",
+      "descricao": "Anexo E, E.6.1 — escoamento da mesa tracionada (vigas de alma esbelta)",
+      "texto_transcrito": "E.6 Momento fletor resistente de cálculo E.6.1 O valor do momento fletor resistente de cálculo, para o estado-limite último de escoamento da mesa tracionada, é calculado conforme a seguir: MRd = Wxt fy/γa1 onde Wxt é o módulo de resistência elástico do lado tracionado da seção, relativo ao eixo de flexão.",
+      "formula": "M,Rd = Wxt * fy / gamma_a1",
+      "formula_latex": "M_{Rd} = \\frac{W_{xt} f_y}{\\gamma_{a1}}",
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Anexo E, E.6.1",
+        "pagina": 148,
+        "pagina_pdf": 165
+      },
+      "status": "extraido",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "5a81b078cc877f86768e1300ecbbc3b18aac3a085c3e14736dc6146ce8fd8c7a",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "165": "0cf0314999b64e8243140995a8b04aed535358fc6cf2a94cb150562350051ce9"
+      }
+    },
+    {
+      "id": "flexao_anexo_E_E62_FLT",
+      "descricao": "Anexo E, E.6.2 — FLT de vigas de alma esbelta (a) perfis I ou H; b) caixão/tubular retangular remetido à Tabela D.1)",
+      "texto_transcrito": "E.6.2 O momento fletor resistente de cálculo, para o estado-limite último de flambagem lateral com torção (FLT), é calculado conforme a seguir: a) para perfis I ou H: MRd = (1/γa1) My, para λ ≤ λy MRd = (1/γa1) [My − (My − Mr)((λ − λy)/(λr − λy))], para λy < λ ≤ λr MRd = (1/γa1) Mcr, para λ > λr onde My = kpg fy Wxc Mr = kpg (fy − σr) Wxc Mcr = Cb kpg π² E Wxc/λ² onde λ = Lb/ryc λy = 1,10 √(E/fy) λr = π √(E Cb/(fy − σr)) kpg = 1 − (ar/(1200 + 300 ar)) (hc/tw − 5,70 √(E/fy)) ≤ 1,0 Lb é a distância entre duas seções contidas lateralmente; Cb é o fator de modificação para diagrama de momento fletor não uniforme, conforme 5.4.2.3, 5.4.2.4 e 5.4.2.5, o que for aplicável; ryc é o raio de giração, em relação ao eixo que passa pelo plano médio da alma, da seção formada pela mesa comprimida mais um terço da altura da alma comprimida; ar é igual à relação hc tw/Afc, que não pode ser superior a 10; Afc é a área da mesa comprimida; hc é igual a duas vezes a distância do centro geométrico da seção transversal à face interna da mesa comprimida; Wxc é o módulo de resistência elástico do lado comprimido da seção, relativo ao eixo de flexão. b) para seções-caixão e seções tubulares retangulares: ver a Tabela D.1.",
+      "formula": {
+        "trechos": "M,Rd = My/gamma_a1 (lambda <= lambda_y);  (1/gamma_a1)*[My - (My - Mr)*(lambda - lambda_y)/(lambda_r - lambda_y)] (lambda_y < lambda <= lambda_r);  Mcr/gamma_a1 (lambda > lambda_r)",
+        "My": "My = kpg * fy * Wxc",
+        "Mr": "Mr = kpg * (fy - sigma_r) * Wxc",
+        "Mcr": "Mcr = Cb * kpg * pi^2 * E * Wxc / lambda^2",
+        "lambda": "lambda = Lb / ryc",
+        "lambda_y": "lambda_y = 1,10 * sqrt(E/fy)",
+        "lambda_r": "lambda_r = pi * sqrt( E * Cb / (fy - sigma_r) )",
+        "kpg": "kpg = 1 - ( ar / (1200 + 300*ar) ) * ( hc/tw - 5,70*sqrt(E/fy) )  <= 1,0",
+        "ar": "ar = hc * tw / Afc  <= 10"
+      },
+      "formula_latex": {
+        "Mcr": "M_{cr} = \\frac{C_b k_{pg} \\pi^2 E W_{xc}}{\\lambda^2}",
+        "lambda_r": "\\lambda_r = \\pi\\sqrt{\\frac{E C_b}{(f_y - \\sigma_r)}}",
+        "kpg": "k_{pg} = 1 - \\frac{a_r}{1200 + 300 a_r}\\left(\\frac{h_c}{t_w} - 5{,}70\\sqrt{\\frac{E}{f_y}}\\right) \\le 1{,}0"
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Anexo E, E.6.2",
+        "pagina": 149,
+        "pagina_pdf": 166
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "Aqui (ao contrário de D.2.1) Cb aparece em Mcr e em λr; o primeiro trecho usa My (não Mpℓ) e o limite inferior é λy (não λp).",
+        "σr não é redefinido no Anexo E; por remissão implícita, seria o de D.2.8-e). Não escrito. A2 decide."
+      ],
+      "observacao": "Conferido a 400 dpi (três trechos, My/Mr/Mcr, λ, λy, λr, kpg).",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "36ce3c318031c4b88a12fe0eb38bcf0f47a8ca8a171253debd0374393d1b01f3",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "166": "3e60bd29ca820f0e309f30637e4152ac483b9719af0054c63df9d6370b2a40db"
+      }
+    },
+    {
+      "id": "flexao_anexo_E_E63_FLM_I_H",
+      "descricao": "Anexo E, E.6.3 — FLM de perfis I ou H de alma esbelta",
+      "texto_transcrito": "E.6.3 O momento fletor resistente de cálculo, para o estado-limite último de flambagem local da mesa comprimida (FLM) de perfis com seção I ou H, é calculado conforme a seguir: MRd = (1/γa1) My, para λ ≤ λy MRd = (1/γa1) [My − (My − Mr)((λ − λy)/(λr − λy))], para λy < λ ≤ λr MRd = (1/γa1) Mcr, para λ > λr onde My = kpg fy Wxc Mr = kpg (fy − σr) Wxc Mcr = 0,90 kpg E kc Wxc/λ² onde λ = bf/(2tf) λy = 0,38 √(E/fy) λr = 0,95 √(kc E/(fy − σr)) kc é dado na Tabela 4, nota a); bf e tf são a largura total e a espessura, respectivamente, da mesa comprimida.",
+      "formula": {
+        "My": "My = kpg * fy * Wxc",
+        "Mr": "Mr = kpg * (fy - sigma_r) * Wxc",
+        "Mcr": "Mcr = 0,90 * kpg * E * kc * Wxc / lambda^2",
+        "lambda": "lambda = bf / (2*tf)",
+        "lambda_y": "lambda_y = 0,38 * sqrt(E/fy)",
+        "lambda_r": "lambda_r = 0,95 * sqrt( kc * E / (fy - sigma_r) )"
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Anexo E, E.6.3",
+        "pagina": 150,
+        "pagina_pdf": 167
+      },
+      "status": "extraido",
+      "achados_literais_para_o_A2": [
+        "kpg em E.6.3 não é redefinido: por posição, é o de E.6.2. Não escrito.",
+        "O λr aqui é escrito '0,95√(kc E/(fy − σr))'; em D.2.8-f) (soldados) está escrito '0,95√(E/((fy − σr)/kc))'. Formas escritas diferentes; o A1 não afirma equivalência."
+      ],
+      "observacao": "Conferido a 400 dpi.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "4428d9887225723892577fb151c68fb3c43c6c340151f7fbce7fcc62f1f294f6",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "167": "f3fcaff510e4a32d73cff507b4261c63763f0d0a668ac0b580dc24f29782514a"
+      }
+    },
+    {
+      "id": "flexao_anexo_E_E64_FLM_caixao_tubular",
+      "descricao": "Anexo E, E.6.4 — FLM de seções-caixão e tubulares retangulares de alma esbelta",
+      "texto_transcrito": "E.6.4 O momento fletor resistente de cálculo, para o estado-limite último de flambagem local da mesa (FLM) de seções-caixão e tubulares retangulares, é calculado conforme a seguir: MRd = (1/γa1) Mcr ≤ (1/γa1) My onde Mcr = 0,90 kpg E kc Wxc/λ² λ = b/t My e kpg são dados em E.2.2, considerando-se ar igual a 2hc tw/Afc, e kc deve ser considerado igual a 4,0; b e t são, respectivamente, a largura e a espessura da mesa (ver a Tabela 4 para definições); para seções tubulares, tw deve ser considerada igual a t.",
+      "formula": {
+        "MRd": "M,Rd = Mcr/gamma_a1 <= My/gamma_a1",
+        "Mcr": "Mcr = 0,90 * kpg * E * kc * Wxc / lambda^2,  com kc = 4,0",
+        "lambda": "lambda = b / t",
+        "ar_neste_item": "ar = 2 * hc * tw / Afc"
+      },
+      "fonte": {
+        "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+        "item": "Anexo E, E.6.4",
+        "pagina": 150,
+        "pagina_pdf": 167
+      },
+      "status": "REVISAR_MANUALMENTE",
+      "divergencias_registradas": [
+        {
+          "id": "DIV-A1-R10-01",
+          "tipo": "REMISSÃO A ITEM INEXISTENTE no texto normativo",
+          "descricao": "E.6.4 diz 'My e kpg são dados em E.2.2'. Não existe E.2.2 no Anexo E impresso (que só tem E.5 e E.6). My e kpg estão definidos em E.6.2. O A1 não substitui a remissão.",
+          "acao_do_A1": "Transcrito literalmente. Fora do escopo imediato (caixão/tubular). Cabe ao A2."
+        },
+        {
+          "id": "DIV-A1-R10-02",
+          "tipo": "definição de ar diferente entre itens",
+          "descricao": "E.6.2: 'ar é igual à relação hc tw/Afc, que não pode ser superior a 10'. E.6.4: 'considerando-se ar igual a 2hc tw/Afc'. Pode ser intencional (caixão tem duas almas); o texto não justifica.",
+          "acao_do_A1": "Registrado sem interpretar."
+        }
+      ],
+      "escopo_software": "FORA DO ESCOPO IMEDIATO (caixão/tubular).",
+      "observacao": "Conferido a 400 dpi.",
+      "rodada_extracao": "10a rodada do A1 (2026-09-24)",
+      "conferido_visualmente": true,
+      "hash_trecho_sha256": "268fe67171fd0c0204cd16c7ae7b23b7d51b63f76327f40eb0bf82cffa8f8aed",
+      "hash_texto_pagina_pdftotext_sha256": {
+        "167": "f3fcaff510e4a32d73cff507b4261c63763f0d0a668ac0b580dc24f29782514a"
+      }
+    }
+  ],
+  "itens_nao_extraidos_nesta_rodada": [
+    {"item": "D.2.1 (trechos lambda_p < lambda <= lambda_r e lambda > lambda_r da FLT, e a alternativa com chi_FLT / lambda_LT)", "motivo": "FLT só se aplica ao eixo de MAIOR inércia (D.2.8-g)); não é necessária para M,y,Rd. Continua pendente para remover BLQ-01 (vigas com Lb/ry > 1,76 sqrt(E/fy)). Situação: pendente.", "situacao_10a_rodada": "EXTRAÍDO na 10a rodada — entrada flexao_FLT_momento_resistente_D21."},
+    {"item": "D.2.8-a), D.2.8-b), D.2.8-i), D.2.8-j)", "motivo": "lambda_r e Mcr da FLT (duplamente simétricas e monossimétricas) e limitações de seções monossimétricas — eixo de MAIOR inércia; não necessários para M,y,Rd. Situação: pendente (BLQ-01). D.2.8-c), -d), -e), -f), -g), -h) e -k) FORAM extraídos na 8a rodada.", "situacao_10a_rodada": "EXTRAÍDOS na 10a rodada — entradas flexao_D28a_FLT_lambda_r_Mcr_duplamente_simetricas, flexao_D28b_FLT_lambda_r_Mcr_monossimetricas, flexao_D28i_limitacoes_monossimetricas e flexao_D28j_curvatura_reversa. D.2.8 fica integralmente extraído (a a k)."},
+    {"item": "Tabela D.1 — linhas de I/H monossimétricas (eixo maior), seções-caixão e tubulares retangulares, seções sólidas retangulares (eixo maior)", "motivo": "não pertencem ao escopo desta rodada (eixo de menor inércia de I/H). Situação: pendente.", "situacao_10a_rodada": "PARCIAL na 10a rodada — a linha de I/H monossimétricas (eixo maior) foi extraída (flexao_parametros_tabela_D1_I_H_monossimetricas_eixo_maior). Seções-caixão/tubulares retangulares e seções sólidas retangulares (eixo maior) continuam pendentes (tipos de seção fora do escopo imediato)."},
+    {"item": "D.2.3 (seções T), D.2.4 (duas cantoneiras em T), D.2.6 (tubulares circulares), D.2.7 (tubulares retangulares e seções-caixão — cobre QUALQUER dos dois eixos de simetria paralelos a dois lados)", "motivo": "tipos de seção fora do escopo imediato do software. D.2.7 será necessário se tubos retangulares entrarem no software, inclusive para o eixo de menor inércia. Situação: pendente."},
+    {"item": "Anexo E", "titulo": "Momento fletor resistente de cálculo de vigas de alma esbelta", "motivo": "fora do escopo; D.2.2 remete a ele para a FLA com lambda > lambda_r. Situação: pendente.", "situacao_10a_rodada": "EXTRAÍDO na 10a rodada — entradas flexao_anexo_E_* (E.5, E.6.1 a E.6.4). Achados: escopo só para I/H SOLDADAS (lacuna textual para laminados de alma esbelta), numeração anômala E.5/E.6, remissão a 'E.2.2' inexistente (DIV-A1-R10-01) e ar com duas definições (DIV-A1-R10-02)."},
+    {"item": "5.4.2.4", "titulo": "Cb para mesa com contenção lateral contínua", "motivo": "Cb só é usado na FLT (eixo de maior inércia). Situação: pendente.", "situacao_10a_rodada": "EXTRAÍDO na 10a rodada — entrada flexao_Cb_5424_contencao_continua_e_5425."},
+    {"item": "5.5", "titulo": "Barras submetidas à combinação de esforços solicitantes (flexo-compressão/flexo-tração)", "motivo": "Situação: RESOLVIDO fora deste arquivo — extraído em kb/nbr8800/flexo_compressao.json (5.5.1.2 etc.). Pendência original mantida aqui só como histórico."},
+    {"item": "LACUNA NORMATIVA (não é pendência de extração): cantoneiras SIMPLES em flexão; seções T fletidas em torno do eixo contido no plano da alma; duas cantoneiras em T fletidas em torno do eixo de simetria", "motivo": "5.4.1.1 (entrada flexao_aplicabilidade) só cobre T 'em relação ao eixo central de inércia perpendicular à alma' (alínea c) e duas cantoneiras em T 'em relação ao eixo central de inércia perpendicular ao eixo de simetria' (alínea d), e NÃO lista cantoneira simples. Busca integral do texto do PDF: a única ocorrência de 'flambagem local da aba' é a lista de 5.4.2.1; o Anexo D não tem procedimento para cantoneira simples fletida. A NBR 8800:2024 não fornece M,Rd para esses casos — o software não poderá verificá-los por esta norma."},
+    {"item": "Bibliografia [3] a [6] (procedimentos para Cb mais precisos, remetidos por 5.4.2.5)", "motivo": "Não normativa; não extraída. Situação: pendente (baixa)."}
+  ],
+  "confirmacao_10a_rodada_D22_D28efhk_servem_ao_eixo_maior": {
+    "pergunta": "D.2.2 (três trechos de FLM/FLA) e D.2.8-e), -f), -h) (e -k)), extraídos na 8a rodada, são genéricos o bastante para a FLM/FLA do eixo de MAIOR inércia?",
+    "resposta_do_A1": "SIM, pelo texto. Nenhum desses itens menciona eixo de flexão, e nenhum coeficiente difere entre as linhas do eixo maior e do eixo menor da Tabela D.1 na FLM. Não há nada a re-extrair.",
+    "evidencias_textuais": [
+      "D.2.2: 'Para os tipos de seção e eixos de flexão indicados na Tabela D.1, para os estados-limite FLM e FLA' — escopo declarado por remissão à tabela inteira, não a um eixo.",
+      "D.2.8-e): 'A tensão residual de compressão nas mesas, σr, deve ser considerada igual a 30 % da resistência ao escoamento do aço utilizado' — sem eixo.",
+      "D.2.8-f): 'Para perfis laminados: Mcr = (0,69E/λ²)Wc, λr = 0,83√(E/(fy − σr)) / Para perfis soldados: ...' — sem eixo; Wc é 'relativo ao eixo de flexão' (D.3).",
+      "D.2.8-h): definição de b/t sem eixo ('para mesas de seções I e H, b é a metade da largura total').",
+      "D.2.8-k): 'Alternativamente, Mcr pode ser obtido por análise de estabilidade elástica.' — cabeçalho da coluna Mcr, todas as linhas.",
+      "Tabela D.1 (reconferida nesta rodada, entrada flexao_parametros_tabela_D1_I_H_U_eixo_maior_reconferencia_10a): FLM do eixo maior = Mr (fy − σr)W Ver D.2.8-e); Mcr Ver D.2.8-f); λ = b/t Ver D.2.8-h); λp = 0,38√(E/fy); λr Ver D.2.8-f) — idêntico à FLM do eixo menor, exceto a marca 'Ver D.2.8-c)' desta última (restrição só para U)."
+    ],
+    "unica_diferenca_de_uso": "W e Wc (e o W do teto de 5.4.2.2) são definidos 'relativo ao eixo de flexão' (D.3). No eixo maior entram, portanto, os módulos do eixo maior (no catálogo Gerdau: colunas Wx_cm3/Zx_cm3). É consequência da definição, não diferença de fórmula. W × Wc: vale a mesma observação da 8a rodada (D.3 define separadamente; o A1 não os iguala).",
+    "FLA_do_eixo_maior": "Linha do eixo maior: Mr = fyW, λ = h/tw, λp = 3,76√(E/fy), λr = 5,70√(E/fy), Mcr = 'Viga de alma esbelta (Anexo E)'. Em D.2.2, o trecho elástico é 'não aplicável à FLA – ver o Anexo E'. Por D.1.2, a viga só está no Anexo D se λ(FLA) ≤ λr. Logo, dentro do Anexo D, a FLA do eixo maior só usa os trechos plástico e inelástico de D.2.2 — que JÁ estão extraídos. Leitura textual; a consolidação é do A2.",
+    "FLT_do_eixo_maior": "Completa em kb/ a partir desta rodada: D.2.1 (três trechos e χFLT) + Tabela D.1 (λ = Lb/ry, λp = 1,76√(E/fy), Mr = (fy − σr)W) + D.2.8-a) (λr, Mcr, β1, Cw) + D.2.8-e) + 5.4.2.3 a 5.4.2.5 (Cb) + D.2.8-k) (Mcr alternativo) + D.2.8-j)/5.4.2.3 (M,Sd de comparação no trecho destravado)."
+  }
+}

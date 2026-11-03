@@ -1,0 +1,209 @@
+{
+  "arquivo": "kb/catalogos/parafusos_estruturais_hard.json",
+  "titulo": "Hard — Parafusos estruturais sextavados ASTM A325 Tipo 1 e ASTM A307 Grau A",
+  "fabricante": "Hard",
+  "arquivo_fonte": "kb/fontes_originais/catalogos/Catálogo - Hard - Parafusos Estruturais.pdf",
+  "pagina_pdf_inicial": 1,
+  "pagina_pdf_final": 4,
+  "convencao_paginacao": "O PDF tem 4 páginas e é um recorte do 'CATÁLOGO | CONSTRUÇÃO METÁLICA E PRÉ-MOLDADO' da Hard. As páginas impressas são 30, 31, 32 e 33 (numeração no rodapé). Portanto: pagina_pdf = pagina_impressa - 29.",
+  "extraido_por": "Agente A1 — Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "metodo_extracao": "ATENÇÃO — este PDF NÃO tem camada de texto (pdftotext retorna vazio nas 4 páginas). Toda a extração foi feita por LEITURA VISUAL das páginas renderizadas (pdftoppm, 170 e 300 dpi), tabela por tabela, célula por célula. Não houve extração automática de texto; consequentemente não houve mapeamento automático de colunas.",
+  "unidades": {
+    "diametro": "polegadas (in), como impresso",
+    "rosca_fpp": "fios por polegada, série UNC",
+    "chave": "polegadas (in) — abertura da chave (boca) da cabeça/porca",
+    "comprimento": "polegadas (in)",
+    "embalagem": "peças por embalagem (pç)",
+    "espessura_de_camada": "micra (µm)"
+  },
+  "observacoes_gerais": [
+    "COBERTURA DO CATÁLOGO: ASTM A325 Tipo 1 (págs. impressas 30-31) e ASTM A307 Grau A (págs. impressas 32-33). **ASTM A490 NÃO É COBERTO POR ESTE CATÁLOGO** — ver a seção 'lacunas_e_pendencias'.",
+    "ESTE CATÁLOGO NÃO TRAZ ÁREA DA SEÇÃO RESISTENTE À TRAÇÃO (Ab nem Abe), nem área bruta do fuste, nem massa por peça, nem resistências fyb/fub. Ele é um catálogo dimensional/comercial: diâmetro nominal, rosca (fios por polegada, UNC), abertura de chave, comprimento mínimo de rosca, comprimentos totais disponíveis, tipo de rosca (total/parcial) e embalagem. O A1 NÃO calculou nem estimou nenhuma área.",
+    "Onde buscar o que falta, já extraído em rodadas anteriores e SEM reabrir PDF: fub e fyb dos parafusos ASTM F3125 grau A325 / grau A490 e ASTM A307 estão em kb/nbr8800/propriedades_materiais.json (Anexo A, Tabela A.3 da NBR 8800:2024); a definição Abe = 0,75·Ab (área resistente à tração a partir da área bruta do fuste) está em kb/nbr8800/ligacoes_parafusadas_simples.json (item 6.3.2.1/6.3.2.2).",
+    "Rosca 'F.P.P.' = fios por polegada, série UNC (grossa).",
+    "'COMPRIMENTO MÍNIMO DE ROSCA' é o comprimento mínimo de rosca do parafuso, por diâmetro (linha própria do cabeçalho de cada tabela).",
+    "Nas matrizes de comprimento, cada célula traz duas informações por diâmetro: TIPO DE ROSCA (TOTAL ou PARCIAL) e EMB. (PÇ) (embalagem). Um traço '-' significa comprimento não disponível naquele diâmetro. O asterisco '*' na embalagem remete à nota de rodapé da própria tabela.",
+    "Nenhum valor deste arquivo foi calculado, convertido de unidade ou completado de memória — é transcrição literal do que está impresso nas páginas renderizadas."
+  ],
+  "lacunas_e_pendencias": [
+    {
+      "id": "a490_nao_coberto",
+      "descricao": "Este catálogo NÃO cobre parafusos ASTM A490 (nem ASTM F3125 grau A490 / F2280). Cobre apenas A325 Tipo 1 e A307 Grau A. Conforme o escopo aprovado pelo usuário para esta rodada, o A1 NÃO abriu outro catálogo para suprir essa lacuna.",
+      "acao_sugerida": "Rodada futura do A1, dentro de escopo aprovado: 'Catálogo - Rudge Ramos - Parafuso ASTM A490.pdf' (e, para cotejo, 'Catálogo - Rudge Ramos - Parafuso ASTM A325.pdf', 'Catálogo - Rudge Ramos - Parafuso ASTM A307.pdf' e 'Catálogo - Hard - Parafusos -Linha ASTM A325.pdf'), todos já presentes em kb/fontes_originais/catalogos/.",
+      "status": "PENDENTE"
+    },
+    {
+      "id": "area_resistente_a_tracao_ausente",
+      "descricao": "Nenhuma tabela deste catálogo traz a área da seção resistente à tração (Abe) nem a área bruta do fuste (Ab) por diâmetro, embora esses sejam os dados que as verificações de ligação da NBR 8800:2024 (6.3.3.1 e 6.3.3.2) consomem.",
+      "acao_sugerida": "Usar a definição normativa Abe = 0,75·Ab já extraída em kb/nbr8800/ligacoes_parafusadas_simples.json, com Ab calculado pelo código determinístico de calc_core/ a partir do diâmetro nominal. O A1 não fornece esses números porque não os calcula e o catálogo não os imprime.",
+      "status": "PENDENTE"
+    },
+    {
+      "id": "referencia_tabela_16_nbr8800",
+      "descricao": "As notas de rodapé das págs. impressas 31 (duas vezes) dizem: 'A linha ASTM A325 segue, como parâmetro de aperto, a tabela 16 da ABNT NBR 8800.' ATENÇÃO: na edição NBR 8800:2024 já extraída em kb/nbr8800/ligacoes_parafusadas_simples.json, a **Tabela 16 é a de distâncias mínimas de borda** (item 6.3.12), e não a de força de protensão mínima em parafusos — esta numeração de tabela corresponde a uma edição anterior da norma. O catálogo não indica a edição a que se refere. O A1 transcreveu a nota literalmente e NÃO a reinterpretou.",
+      "acao_sugerida": "Decisão do Agente A2: identificar em qual tabela da NBR 8800:2024 está a protensão mínima dos parafusos A325/A490 antes de usar qualquer parâmetro de aperto.",
+      "status": "REVISAR_MANUALMENTE"
+    }
+  ],
+  "linhas": [
+    {
+      "id": "astm_a325_tipo_1",
+      "linha": "LINHA ASTM A325 — Parafusos estruturais sextavados ASTM A325 – Tipo 1",
+      "aplicacao_declarada": "Fixação parafusada de estruturas metálicas com função estrutural.",
+      "paginas_impressas": [30, 31],
+      "paginas_pdf": [1, 2],
+      "status": "extraido",
+      "descricao_do_produto": "Fixadores de alta resistência, empregados em ligações parafusadas estruturais e indicados em montagens de maior responsabilidade. Fabricados em aço de alta resistência e tratados termicamente, os parafusos ASTM A325 também são diferentes dos parafusos comuns por terem um tamanho maior da cabeça sextavada, denominada \"pesada\", e o comprimento de rosca menor. As porcas são compatíveis também com chave sextavada pesada, conforme norma ASTM A194 Grau 2, e as arruelas seguem a norma ASTM F436 Tipo 1.",
+      "observacao_sobre_a_porca": "O texto descritivo (pág. 30) cita a porca como 'ASTM A194 Grau 2', enquanto o título da tabela de dados comerciais da mesma página diz 'PORCA SEXTAVADA PESADA ASTM A194 GRAU 2H'. Divergência impressa no próprio catálogo; transcrita como está, sem correção.",
+      "dimensional_por_diametro": {
+        "fonte": {"tabela": "PARAFUSO ESTRUTURAL SEXTAVADO PESADO ASTM A325 TIPO 1", "pagina_impressa": 31, "pagina_pdf": 2},
+        "cabecalho_original": ["DIÂMETRO", "ROSCA (F.P.P.)", "CHAVE", "COMPRIMENTO MÍNIMO DE ROSCA"],
+        "entradas": [
+          {"diametro_pol": "1/2\"",  "rosca_fpp": "13 UNC", "chave_pol": "7/8\"",    "comprimento_minimo_de_rosca_pol": "1.1/4\"", "status": "extraido"},
+          {"diametro_pol": "5/8\"",  "rosca_fpp": "11 UNC", "chave_pol": "1.1/16\"", "comprimento_minimo_de_rosca_pol": "1.1/2\"", "status": "extraido"},
+          {"diametro_pol": "3/4\"",  "rosca_fpp": "10 UNC", "chave_pol": "1.1/4\"",  "comprimento_minimo_de_rosca_pol": "1.1/2\"", "status": "extraido"},
+          {"diametro_pol": "7/8\"",  "rosca_fpp": "9 UNC",  "chave_pol": "1.7/16\"", "comprimento_minimo_de_rosca_pol": "2\"",     "status": "extraido"},
+          {"diametro_pol": "1\"",    "rosca_fpp": "8 UNC",  "chave_pol": "1.5/8\"",  "comprimento_minimo_de_rosca_pol": "2.1/4\"", "status": "extraido"}
+        ]
+      },
+      "comprimentos_disponiveis": {
+        "fonte": {"tabela": "PARAFUSO ESTRUTURAL SEXTAVADO PESADO ASTM A325 TIPO 1", "pagina_impressa": 31, "pagina_pdf": 2},
+        "estrutura": "Matriz: linhas = COMPRIMENTO TOTAL (pol); colunas = diâmetro. Cada célula traz TIPO DE ROSCA (TOTAL/PARCIAL) e EMB. (PÇ). '-' = não disponível. '*' = ver nota de rodapé.",
+        "nota_de_rodape": "*Todos os itens são fornecidos com revestimento zincado a fogo ou zincado branco, nas quantidades informadas nas tabelas e unitariamente. A linha ASTM A325 segue, como parâmetro de aperto, a tabela 16 da ABNT NBR 8800.",
+        "status": "extraido",
+        "linhas": [
+          {"comprimento_total_pol": "1.1/4\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 500, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 250, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 150, "asterisco": true}, "7/8\"": null, "1\"": null}},
+          {"comprimento_total_pol": "1.1/2\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 400, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 250, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 150, "asterisco": true}, "7/8\"": null, "1\"": null}},
+          {"comprimento_total_pol": "1.3/4\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 400, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 250, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 150, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 100, "asterisco": true}, "1\"": null}},
+          {"comprimento_total_pol": "2\"",     "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 100, "asterisco": true}, "1\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "2.1/4\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "1\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "2.1/2\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "2.3/4\"", "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "3\"",     "por_diametro": {"1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 250, "asterisco": true}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "3.1/4\"", "por_diametro": {"1/2\"": null, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "3.1/2\"", "por_diametro": {"1/2\"": null, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "3.3/4\"", "por_diametro": {"1/2\"": null, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "4\"",     "por_diametro": {"1/2\"": null, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100, "asterisco": true}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "4.1/4\"", "por_diametro": {"1/2\"": null, "5/8\"": null, "3/4\"": null, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": false}}},
+          {"comprimento_total_pol": "4.1/2\"", "por_diametro": {"1/2\"": null, "5/8\"": null, "3/4\"": null, "7/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 50, "asterisco": true}, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 25, "asterisco": false}}},
+          {"comprimento_total_pol": "4.3/4\"", "por_diametro": {"1/2\"": null, "5/8\"": null, "3/4\"": null, "7/8\"": null, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 25, "asterisco": false}}},
+          {"comprimento_total_pol": "5\"",     "por_diametro": {"1/2\"": null, "5/8\"": null, "3/4\"": null, "7/8\"": null, "1\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 25, "asterisco": false}}}
+        ]
+      },
+      "porca": {
+        "fonte": {"tabela": "PORCA SEXTAVADA PESADA ASTM A194 GRAU 2H", "pagina_impressa": 30, "pagina_pdf": 1},
+        "status": "extraido",
+        "entradas": [
+          {"diametro_pol": "1/2\"", "rosca_fpp": "13 UNC", "chave_pol": "7/8\"",    "embalagem_pc": 500},
+          {"diametro_pol": "5/8\"", "rosca_fpp": "11 UNC", "chave_pol": "1.1/16\"", "embalagem_pc": 250},
+          {"diametro_pol": "3/4\"", "rosca_fpp": "10 UNC", "chave_pol": "1.1/4\"",  "embalagem_pc": 250},
+          {"diametro_pol": "7/8\"", "rosca_fpp": "9 UNC",  "chave_pol": "1.7/16\"", "embalagem_pc": 100},
+          {"diametro_pol": "1\"",   "rosca_fpp": "8 UNC",  "chave_pol": "1.5/8\"",  "embalagem_pc": 100}
+        ]
+      },
+      "arruela": {
+        "fonte": {"tabela": "ARRUELA LISA ASTM F436 TIPO 1", "pagina_impressa": 30, "pagina_pdf": 1},
+        "status": "extraido",
+        "observacao": "O catálogo informa apenas diâmetro e embalagem — NÃO traz espessura, diâmetro externo nem diâmetro do furo da arruela.",
+        "entradas": [
+          {"diametro_pol": "1/2\"", "embalagem_pc": 1000},
+          {"diametro_pol": "5/8\"", "embalagem_pc": 1000},
+          {"diametro_pol": "3/4\"", "embalagem_pc": 500},
+          {"diametro_pol": "7/8\"", "embalagem_pc": 500},
+          {"diametro_pol": "1\"",   "embalagem_pc": 200}
+        ]
+      },
+      "dados_tecnicos_composicao": {
+        "fonte": {"tabela": "DADOS TÉCNICOS / COMPOSIÇÃO", "pagina_impressa": 31, "pagina_pdf": 2},
+        "status": "extraido",
+        "material": "AÇO MÉDIO CARBONO COM TÊMPERA E REVENIDO",
+        "acabamentos": [
+          {"acabamento": "ZINCADO A FOGO",  "espessura_de_camada": "50 MICRA", "salt_spray": "N/A (nota 3)", "kesternich": "N/A (nota 3)"},
+          {"acabamento": "ZINCADO BRANCO", "espessura_de_camada": "5 MICRA",  "salt_spray": "48 HORAS",     "kesternich": "N/A (nota 3)"}
+        ],
+        "notas": [
+          "1 - Normas ASTM B117, ABNT NBR 8094 e DIN 50021 (corrosão vermelha).",
+          "2 - Norma DIN 50018 (admitindo 15% de corrosão vermelha na cabeça do parafuso).",
+          "3 - Teste não aplicável.",
+          "A linha ASTM A325 segue, como parâmetro de aperto, a tabela 16 da ABNT NBR 8800."
+        ]
+      },
+      "normas_citadas_pelo_catalogo": ["ASTM A325 Tipo 1 (parafuso)", "ASTM A194 Grau 2 / Grau 2H (porca)", "ASTM F436 Tipo 1 (arruela)", "ABNT NBR 8800 (parâmetro de aperto)"]
+    },
+    {
+      "id": "astm_a307_grau_a",
+      "linha": "LINHA ASTM A307 — Parafusos estruturais sextavados ASTM A307 – Grau A",
+      "aplicacao_declarada": "Fixação parafusada de estruturas metálicas secundárias.",
+      "paginas_impressas": [32, 33],
+      "paginas_pdf": [3, 4],
+      "status": "extraido",
+      "descricao_do_produto": "Fixadores empregados em ligações secundárias e recomendados para uso em estruturas não sujeitas a impactos ou vibrações. Fabricado em aço baixo carbono e sem tratamento térmico. Os parafusos, também conhecidos como parafusos comuns, têm como principal aplicação as estruturas leves e aplicações similares, em que as forças são estáticas e relativamente baixas. Podem ser usados também em conexões provisórias. As porcas compatíveis com este fixador são especificadas conforme norma ASTM A563 Grau A e, as arruelas lisas, Narrow Tipo A.",
+      "dimensional_por_diametro": {
+        "fonte": {"tabela": "PARAFUSO SEXTAVADO ASTM A307 GRAU A", "pagina_impressa": 33, "pagina_pdf": 4},
+        "cabecalho_original": ["DIÂMETRO", "ROSCA (F.P.P.)", "CHAVE", "COMPRIMENTO MÍNIMO DE ROSCA"],
+        "entradas": [
+          {"diametro_pol": "3/8\"", "rosca_fpp": "16 UNC", "chave_pol": "9/16\"",  "comprimento_minimo_de_rosca_pol": "1\"",     "status": "extraido"},
+          {"diametro_pol": "1/2\"", "rosca_fpp": "13 UNC", "chave_pol": "3/4\"",   "comprimento_minimo_de_rosca_pol": "1.1/4\"", "status": "extraido"},
+          {"diametro_pol": "5/8\"", "rosca_fpp": "11 UNC", "chave_pol": "15/16\"", "comprimento_minimo_de_rosca_pol": "1.1/2\"", "status": "extraido"},
+          {"diametro_pol": "3/4\"", "rosca_fpp": "10 UNC", "chave_pol": "1.1/8\"", "comprimento_minimo_de_rosca_pol": "1.3/4\"", "status": "extraido"}
+        ]
+      },
+      "comprimentos_disponiveis": {
+        "fonte": {"tabela": "PARAFUSO SEXTAVADO ASTM A307 GRAU A", "pagina_impressa": 33, "pagina_pdf": 4},
+        "estrutura": "Matriz: linhas = COMPRIMENTO TOTAL (pol); colunas = diâmetro. Cada célula traz TIPO DE ROSCA (TOTAL/PARCIAL) e EMB. (PÇ). '-' = não disponível.",
+        "nota_de_rodape": "*Todos os itens são fornecidos com revestimento zincado a fogo ou zincado branco, nas quantidades informadas nas tabelas e unitariamente.",
+        "observacao": "Nesta tabela (diferente da do A325) as embalagens são impressas SEM asterisco; o asterisco aparece apenas na nota de rodapé.",
+        "status": "extraido",
+        "linhas": [
+          {"comprimento_total_pol": "1\"",     "por_diametro": {"3/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 1000}, "1/2\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 500}, "5/8\"": null, "3/4\"": null}},
+          {"comprimento_total_pol": "1.1/4\"", "por_diametro": {"3/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 1000}, "1/2\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 500}, "5/8\"": null, "3/4\"": null}},
+          {"comprimento_total_pol": "1.1/2\"", "por_diametro": {"3/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 1000}, "1/2\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 500}, "5/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 300}, "3/4\"": null}},
+          {"comprimento_total_pol": "1.3/4\"", "por_diametro": {"3/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 800}, "1/2\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 400}, "5/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 250}, "3/4\"": null}},
+          {"comprimento_total_pol": "2\"",     "por_diametro": {"3/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 800}, "1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 400}, "5/8\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 250}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 150}}},
+          {"comprimento_total_pol": "2.1/4\"", "por_diametro": {"3/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 500}, "1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 150}}},
+          {"comprimento_total_pol": "2.1/2\"", "por_diametro": {"3/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 500}, "1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200}, "3/4\"": {"tipo_de_rosca": "TOTAL", "embalagem_pc": 100}}},
+          {"comprimento_total_pol": "2.3/4\"", "por_diametro": {"3/8\"": null, "1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 300}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 200}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100}}},
+          {"comprimento_total_pol": "3\"",     "por_diametro": {"3/8\"": null, "1/2\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 250}, "5/8\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 150}, "3/4\"": {"tipo_de_rosca": "PARCIAL", "embalagem_pc": 100}}}
+        ]
+      },
+      "porca": {
+        "fonte": {"tabela": "PORCA SEXTAVADA ASTM A563 GRAU A", "pagina_impressa": 32, "pagina_pdf": 3},
+        "status": "extraido",
+        "entradas": [
+          {"diametro_pol": "3/8\"", "rosca_fpp": "16 UNC", "chave_pol": "9/16\"",  "embalagem_pc": 500},
+          {"diametro_pol": "1/2\"", "rosca_fpp": "13 UNC", "chave_pol": "3/4\"",   "embalagem_pc": 200},
+          {"diametro_pol": "5/8\"", "rosca_fpp": "11 UNC", "chave_pol": "15/16\"", "embalagem_pc": 100},
+          {"diametro_pol": "3/4\"", "rosca_fpp": "10 UNC", "chave_pol": "1.1/8\"", "embalagem_pc": 50}
+        ]
+      },
+      "arruela": {
+        "fonte": {"tabela": "ARRUELA LISA NARROW 1", "pagina_impressa": 32, "pagina_pdf": 3},
+        "status": "extraido",
+        "observacao": "O catálogo informa apenas diâmetro e embalagem — NÃO traz espessura, diâmetro externo nem diâmetro do furo. O título da tabela diz 'ARRUELA LISA NARROW 1' enquanto o texto descritivo da mesma página diz 'arruelas lisas, Narrow Tipo A'; divergência impressa no catálogo, transcrita como está.",
+        "entradas": [
+          {"diametro_pol": "3/8\"", "embalagem_pc": 500},
+          {"diametro_pol": "1/2\"", "embalagem_pc": 300},
+          {"diametro_pol": "5/8\"", "embalagem_pc": 150},
+          {"diametro_pol": "3/4\"", "embalagem_pc": 100}
+        ]
+      },
+      "dados_tecnicos_composicao": {
+        "fonte": {"tabela": "DADOS TÉCNICOS / COMPOSIÇÃO", "pagina_impressa": 33, "pagina_pdf": 4},
+        "status": "REVISAR_MANUALMENTE",
+        "material": "AÇO MÉDIO CARBONO COM TÊMPERA E REVENIDO",
+        "observacao": "CONTRADIÇÃO INTERNA DO CATÁLOGO: esta tabela de composição, na página impressa 33 (linha ASTM A307), declara 'AÇO MÉDIO CARBONO COM TÊMPERA E REVENIDO' — texto idêntico ao da tabela da linha A325 (pág. 31) — enquanto a DESCRIÇÃO DO PRODUTO da própria linha A307, na página impressa 32, diz 'Fabricado em aço baixo carbono e SEM tratamento térmico'. As duas afirmações são incompatíveis. O A1 transcreveu ambas literalmente e NÃO escolheu entre elas; a tabela de composição parece ter sido copiada da página do A325. Decisão cabe ao A2/usuário.",
+        "acabamentos": [
+          {"acabamento": "ZINCADO A FOGO",  "espessura_de_camada": "50 MICRA", "salt_spray": "N/A (nota 3)", "kesternich": "N/A (nota 3)"},
+          {"acabamento": "ZINCADO BRANCO", "espessura_de_camada": "5 MICRA",  "salt_spray": "48 HORAS",     "kesternich": "N/A (nota 3)"}
+        ],
+        "notas": [
+          "1 - Normas ASTM B117, ABNT NBR 8094 e DIN 50021 (corrosão vermelha)",
+          "2 - Norma DIN 50018 (admitindo 15% de corrosão vermelha na cabeça do parafuso)",
+          "3 - Teste não aplicável"
+        ]
+      },
+      "normas_citadas_pelo_catalogo": ["ASTM A307 Grau A (parafuso)", "ASTM A563 Grau A (porca)", "Arruela lisa Narrow Tipo A"]
+    }
+  ]
+}

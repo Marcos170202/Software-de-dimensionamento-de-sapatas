@@ -1,0 +1,87 @@
+{
+  "arquivo": "kb/nbr8800/cisalhamento.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Força cortante resistente de cálculo",
+  "item_normativo_raiz": "5.4.3",
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "Fórmulas conferidas visualmente na página impressa 57 (página 74 do PDF).",
+    "Para a Fase 0 (perfis I, H e U fletidos em torno do eixo de maior inércia, sem enrijecedores transversais) usa-se kv = 5,34 e, na esmagadora maioria dos perfis laminados, lambda <= lambda_p, resultando VRd = Vpl / gamma_a1."
+  ],
+  "entradas": [
+    {
+      "id": "cisalhamento_secoes_I_H_U_eixo_maior_inercia",
+      "descricao": "Força cortante resistente de cálculo de seções I, H e U fletidas em relação ao eixo central de inércia perpendicular à alma (eixo de maior momento de inércia)",
+      "formula": "para lambda <= lambda_p:  V,Rd = Vpl / gamma_a1   |   para lambda_p < lambda <= lambda_r:  V,Rd = (lambda_p / lambda) * Vpl / gamma_a1   |   para lambda > lambda_r:  V,Rd = 1,24 * (lambda_p / lambda)^2 * Vpl / gamma_a1",
+      "parametros": {
+        "lambda": "h / tw",
+        "lambda_p": "1,10 * sqrt( kv * E / fy )",
+        "lambda_r": "1,37 * sqrt( kv * E / fy )",
+        "kv": "5,34 para almas sem enrijecedores transversais e para a/h > 3; 5,0 + 5/(a/h)^2 para todos os outros casos"
+      },
+      "variaveis": {
+        "Vpl": "força cortante correspondente à plastificação da alma por cisalhamento, dada em 5.4.3.1.2",
+        "a": "distância entre as linhas de centro de dois enrijecedores transversais adjacentes (ver 5.4.3.1.3)",
+        "h": "altura da alma, considerada igual à distância entre as faces internas das mesas nos perfis soldados e igual a esse valor subtraindo os dois raios de concordância entre mesa e alma nos perfis laminados",
+        "tw": "espessura da alma",
+        "E": "módulo de elasticidade do aço",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural para escoamento e instabilidade (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Seções I, H e U fletidas em relação ao eixo central de inércia perpendicular à alma. Estados-limite últimos de escoamento e instabilidade por cisalhamento.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.3.1.1", "pagina": 57, "pagina_pdf": 74},
+      "status": "extraido"
+    },
+    {
+      "id": "cisalhamento_forca_plastificacao_alma",
+      "descricao": "Força cortante correspondente à plastificação da alma por cisalhamento",
+      "formula": "Vpl = 0,60 * Aw * fy",
+      "formula_area_efetiva_cisalhamento": "Aw = d * tw",
+      "variaveis": {
+        "Aw": "área efetiva de cisalhamento",
+        "d": "altura total da seção transversal",
+        "tw": "espessura da alma",
+        "fy": "resistência ao escoamento do aço"
+      },
+      "condicoes_aplicabilidade": "Seções I, H e U fletidas em relação ao eixo perpendicular à alma (5.4.3.1). Para outras seções, Aw é redefinida em 5.4.3.2 a 5.4.3.5.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.3.1.2", "pagina": "57-58", "pagina_pdf": "74-75"},
+      "status": "extraido"
+    },
+    {
+      "id": "cisalhamento_outras_secoes_aw_kv",
+      "descricao": "Aplicação do mesmo procedimento de 5.4.3.1.1 a outras seções (parâmetros kv, h, tw e Aw específicos)",
+      "casos": [
+        {"item": "5.4.3.2", "secao": "Seções tubulares retangulares e caixão", "kv": "5,0", "h": "altura da parte plana das almas nas seções tubulares retangulares; distância entre as faces internas das mesas nas seções-caixão", "Aw": "2*h*tw", "pagina": 58},
+        {"item": "5.4.3.3", "secao": "Seções T fletidas em relação ao eixo perpendicular à alma", "kv": "1,2", "h": "altura total da seção transversal (b)", "Aw": "d*tw", "restricao": "desde que a relação b/t não supere 260", "pagina": 58},
+        {"item": "5.4.3.4", "secao": "Duas cantoneiras iguais constituindo seção tipo T, fletidas em relação ao eixo perpendicular ao de simetria", "kv": "1,2", "h": "altura total da seção transversal (b)", "Aw": "2*b*t", "restricao": "desde que a relação b/t não supere 260", "pagina": "58-59"},
+        {"item": "5.4.3.5", "secao": "Seções I, H e U fletidas em relação ao eixo perpendicular às mesas (eixo de menor momento de inércia)", "kv": "1,2", "h": "metade da largura das mesas nas seções I e H (bf/2); largura total das mesas nas seções U (bf)", "tw": "espessura média das mesas (tf)", "Aw": "2*bf*tf", "pagina": 59}
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.3.2 a 5.4.3.5", "pagina": "58-59", "pagina_pdf": "75-76"},
+      "status": "extraido"
+    },
+    {
+      "id": "cisalhamento_secoes_tubulares_circulares",
+      "descricao": "Força cortante resistente de cálculo de seções tubulares circulares",
+      "formula": "V,Rd = tau_cr * Aw / gamma_a1",
+      "condicoes_aplicabilidade": "Seções tubulares circulares fletidas em relação a um eixo central de inércia. Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.3.6", "pagina": 59, "pagina_pdf": 76},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "As duas expressões de tau_cr (com Lv e D/t) não foram legíveis na extração textual (símbolos matemáticos corrompidos) e não foram conferidas visualmente, por estarem fora do escopo da Fase 0. Extrair em rodada futura, se perfis tubulares entrarem no escopo."
+    },
+    {
+      "id": "cisalhamento_enrijecedores_transversais",
+      "descricao": "Requisitos para enrijecedores transversais, quando necessários",
+      "regras_transcritas": [
+        "a) os enrijecedores transversais devem ser soldados à alma e às mesas do perfil, podendo, entretanto, do lado da mesa tracionada, ser interrompidos de forma que a distância entre os pontos mais próximos das soldas entre mesa e alma e entre enrijecedor e alma fique entre 4tw e 6tw;",
+        "b) a relação entre largura e espessura dos elementos que formam os enrijecedores não pode ultrapassar 0,56 * [EXPRESSÃO NÃO LEGÍVEL NA EXTRAÇÃO];",
+        "c) o momento de inércia da seção de um enrijecedor singelo ou de um par de enrijecedores (um de cada lado da alma) em relação ao eixo no plano médio da alma não pode ser inferior a [EXPRESSÃO NÃO LEGÍVEL NA EXTRAÇÃO], onde: j = [2,5(a/h)^2] - 2 >= 0,5"
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.4.3.1.3", "pagina": 58, "pagina_pdf": 75},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "Duas expressões matemáticas das alíneas b) e c) não foram renderizadas na extração de texto do PDF e não foram conferidas visualmente nesta rodada. Enrijecedores transversais não são necessários na Fase 0 (perfis laminados sem enrijecedores, kv = 5,34); extrair em rodada futura se vigas soldadas com enrijecedores entrarem no escopo."
+    }
+  ]
+}

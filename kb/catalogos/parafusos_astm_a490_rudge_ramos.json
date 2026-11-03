@@ -1,0 +1,240 @@
+{
+  "arquivo": "kb/catalogos/parafusos_astm_a490_rudge_ramos.json",
+  "titulo": "Rudge Ramos — Parafuso sextavado estrutural ASTM A490",
+  "fabricante": "Parafusos Rudge Ramos",
+  "arquivo_fonte": "kb/fontes_originais/catalogos/Catálogo - Rudge Ramos - Parafuso ASTM A490.pdf",
+  "pagina_pdf_inicial": 1,
+  "pagina_pdf_final": 1,
+  "convencao_paginacao": "O PDF tem 1 única página, sem numeração impressa (é uma folha avulsa do 'CATÁLOGO PARAFUSOS RUDGE RAMOS', gerada a partir de PowerPoint 2016, segundo os metadados do arquivo). Portanto pagina_pdf = 1 em todas as citações; não existe pagina_impressa.",
+  "extraido_por": "Agente A1 — Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "metodo_extracao": "Este PDF TEM camada de texto (pdftotext -layout devolve as tabelas completas), ao contrário do catálogo Hard da rodada 3. Ainda assim, TODA a página foi conferida por LEITURA VISUAL da renderização a 300 dpi (pdftoppm), tabela por tabela e célula por célula, incluindo recortes ampliados das três tabelas numéricas e do desenho cotado — porque a página tem marca d'água sobreposta ('RUDGE RAMOS FERRAMENTAS') cruzando as células, e porque há células mescladas verticalmente. Os valores do texto extraído e da leitura visual coincidem integralmente.",
+  "unidades": {
+    "diametro_nominal": "polegadas (in), como impresso",
+    "rosca_ffp": "fios por polegada, série UNC (como impresso na coluna 'FFP.')",
+    "dimensoes_e_f_g_h_r_ar_lt": "UNIDADE NÃO IMPRESSA NO CATÁLOGO — ver lacuna 'unidade_da_tabela_dimensional_nao_impressa'. Os números são compatíveis com milímetros (mm).",
+    "tolerancia_de_comprimento": "mesma unidade (não impressa) da tabela dimensional; valores negativos, como impressos",
+    "area": "polegada quadrada (in²) — unidade impressa no cabeçalho ('AREA. In²')",
+    "carga_de_tensao": "libra-força (lbf) — cabeçalhos impressos 'Ibf. Min' e 'Ibf. Máx'",
+    "tensao": "psi (libra-força por polegada quadrada), como impresso",
+    "dureza": "HRC (Rockwell C), como impresso",
+    "composicao_quimica": "percentual em massa (%), como impresso"
+  },
+  "observacoes_gerais": [
+    "COBERTURA DO CATÁLOGO: exclusivamente parafuso sextavado estrutural ASTM A490 (Tipo 1 e Tipo 3), em 9 diâmetros nominais, de 1/2\" a 1.1/2\". Esta é a bitola que faltava em kb/ e que ficou registrada como pendência nº 1 da rodada 3 do A1 (ver docs/decisoes.md, decisão nº 8).",
+    "ESTE CATÁLOGO TRAZ, SIM, UMA COLUNA DE ÁREA — 'AREA. In²' na tabela 'CARGA DE TENSÃO (FULL SIZE)'. ATENÇÃO: é a área da seção resistente à tração da rosca conforme ASTM (tensile stress area), e NÃO o produto 0,75·Ab. Ela foi transcrita literalmente por ser dado impresso, mas NÃO substitui a decisão nº 9 da rodada 3 (docs/decisoes.md): o Abe usado no dimensionamento continua vindo de cálculo determinístico em calc_core/ pela definição normativa Abe = 0,75·Ab (NBR 8800:2024, itens 6.3.2.1/6.3.2.2, já extraída em kb/nbr8800/ligacoes_parafusadas_simples.json). Ver a lacuna 'area_do_catalogo_nao_e_abe_normativo'.",
+    "ESTE CATÁLOGO NÃO TRAZ LISTA DE COMPRIMENTOS COMERCIAIS DISPONÍVEIS. Ele traz apenas (a) o comprimento de rosca 'Lt' por diâmetro e (b) a TOLERÂNCIA de comprimento 'TOL. COMP. \"L\"', em duas faixas (<6\" e >6\"). Não existe matriz comprimento × diâmetro como no catálogo Hard da rodada 3, e não há embalagem (pç) nem massa por peça. O A1 NÃO montou nem estimou lista de comprimentos.",
+    "O catálogo NÃO IMPRIME LEGENDA das letras E, F, G, H, R, Ar, Lt, L: elas aparecem apenas cotadas sobre um desenho técnico no topo da página. A posição de cada cota no desenho foi transcrita em 'legenda_do_desenho' a partir da leitura visual; o significado de engenharia de cada letra NÃO é declarado pelo catálogo e não foi inferido como dado.",
+    "Onde buscar o que falta, já extraído em rodadas anteriores e SEM reabrir PDF: fub e fyb do ASTM F3125 grau A490 estão em kb/nbr8800/propriedades_materiais.json (Anexo A, Tabela A.3 da NBR 8800:2024); a definição Abe = 0,75·Ab está em kb/nbr8800/ligacoes_parafusadas_simples.json (item 6.3.2.1/6.3.2.2). As propriedades mecânicas impressas NESTE catálogo (LR/LE em psi) são as da ASTM e não substituem os valores da norma brasileira para dimensionamento.",
+    "Nenhum valor deste arquivo foi calculado, convertido de unidade ou completado de memória — é transcrição literal do que está impresso na página."
+  ],
+  "lacunas_e_pendencias": [
+    {
+      "id": "comprimentos_disponiveis_ausentes",
+      "descricao": "O catálogo não lista os comprimentos totais (L) comercialmente disponíveis por diâmetro — só a tolerância de comprimento em duas faixas (<6\" e >6\") e o comprimento de rosca Lt. Diferente do catálogo Hard (A325/A307), que traz matriz completa de comprimentos com embalagem.",
+      "acao_sugerida": "Se a lista de comprimentos comerciais for necessária, rodada futura do A1 com escopo aprovado sobre outro catálogo (candidatos já em kb/fontes_originais/catalogos/: 'Catálogo - Hard - Parafusos -Linha ASTM A325.pdf' e os demais folhetos Rudge Ramos). O A1 não abriu nenhum outro PDF nesta rodada.",
+      "status": "PENDENTE"
+    },
+    {
+      "id": "area_do_catalogo_nao_e_abe_normativo",
+      "descricao": "A coluna 'AREA. In²' existe e foi transcrita, mas é a área resistente à tração da rosca segundo a ASTM (base do cálculo da 'CARGA DE TENSÃO (FULL SIZE)' impressa ao lado, junto com a TENSÃO/PSI de 150000 e 173000). Ela NÃO é o Abe = 0,75·Ab da NBR 8800:2024 e não deve ser usada no lugar dele.",
+      "acao_sugerida": "Manter a decisão nº 9 da rodada 3: Abe sai de calc_core/ por Abe = 0,75·Ab a partir do diâmetro nominal. Esta coluna fica em kb/ apenas como dado de catálogo/rastreabilidade, e pode servir ao A2 como referência cruzada de ordem de grandeza — nunca como entrada de dimensionamento.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "unidade_da_tabela_dimensional_nao_impressa",
+      "descricao": "A tabela dimensional (E, F, G, H, R, Ar, Lt e TOL. COMP. \"L\") não imprime unidade em nenhum cabeçalho nem em nota de rodapé. Os valores são compatíveis com milímetros (p.ex., E do diâmetro 1/2\" fica entre 12,24 e 13,08, faixa que contém 12,70 mm = 1/2\"), mas o catálogo não o declara.",
+      "acao_sugerida": "O A1 registrou a unidade como NÃO IMPRESSA e não a converteu. O A2 deve fixar 'mm' no ruleset.yaml/catalog.db somente após confirmação humana.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "lr_maximo_ausente_para_maiores_que_1_1_2",
+      "descricao": "Na tabela PROPRIEDADES MECÂNICAS, a coluna 'A490 >1.1/2\"' traz um único valor, '140 000', numa célula MESCLADA verticalmente sobre as duas linhas 'mín.' e 'máx.' de LR. - PSI. Não é possível determinar, pelo impresso, se 140 000 é o limite de resistência mínimo (e o máximo não foi impresso) ou algum outro arranjo.",
+      "acao_sugerida": "Decisão do A2/usuário. Observação de contexto registrada pelo próprio catálogo: a nota 'ASTM A354 - (especificação para Ø maiores 1.1/2\")' indica que acima de 1.1/2\" a especificação aplicável já não é a A490.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "rosca_do_diametro_1_pol_impressa_como_8_un",
+      "descricao": "Na tabela CARGA DE TENSÃO, a rosca do diâmetro 1\" está impressa como '8 UN', enquanto todas as outras oito linhas trazem sufixo 'UNC' (13 UNC, 11 UNC, 10 UNC, 9 UNC, 7 UNC, 7 UNC, 6 UNC, 6 UNC). Conferido em ampliação a 300 dpi: está impresso 'UN', sem o 'C'.",
+      "acao_sugerida": "Provável supressão tipográfica do 'C'. O A1 transcreveu literalmente e NÃO corrigiu. Decisão do A2.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "separador_decimal_inconsistente_na_area",
+      "descricao": "Na coluna 'AREA. In²', a linha do diâmetro 1.3/8\" está impressa com PONTO como separador decimal ('1.155'), enquanto todas as demais usam vírgula ('0,142', '0,226', ..., '1,405'). Conferido em ampliação a 300 dpi.",
+      "acao_sugerida": "Inconsistência tipográfica do catálogo. Transcrita literalmente no campo de texto e interpretada como 1,155 no campo numérico apenas para leitura de máquina — sem alterar o valor.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "e_minimo_do_diametro_1_1_2_fora_do_padrao",
+      "descricao": "Checagem estrutural (apenas sinaliza, não corrige, no mesmo espírito da decisão nº 5 da rodada 3): a diferença E(máx) - E(mín) é de 0,84 a 1,50 nas oito primeiras linhas e cresce monotonicamente com o diâmetro (0,84 / 0,94 / 0,99 / 1,09 / 1,16 / 1,30 / 1,37 / 1,50), mas cai para 0,55 na última linha (1.1/2\": máx. 38,88 / mín. 38,33), quebrando o padrão. Conferido em ampliação a 300 dpi: está impresso 38,33.",
+      "acao_sugerida": "Possível erro de digitação do catálogo no E mínimo de 1.1/2\". O A1 NÃO propôs valor substituto nem corrigiu. Decisão do A2/usuário; se o E mínimo dessa bitola for usado, confirmar com o fabricante.",
+      "status": "REVISAR_MANUALMENTE"
+    }
+  ],
+  "linhas": [
+    {
+      "id": "astm_a490_rudge_ramos",
+      "linha": "PARAFUSO SEXTAVADO ESTRUTURAL - A490",
+      "aplicacao_declarada": "NÃO DECLARADA — a página não traz texto descritivo de aplicação (diferente do catálogo Hard). Traz apenas o título, o desenho cotado, as tabelas e a lista de NOTAS.",
+      "paginas_pdf": [1],
+      "status": "extraido",
+      "legenda_do_desenho": {
+        "fonte": {"figura": "Desenho cotado do parafuso (vista lateral + vista da cabeça sextavada), topo da página", "pagina_pdf": 1},
+        "status": "extraido",
+        "observacao": "O catálogo NÃO imprime legenda em texto. O que segue é a descrição da POSIÇÃO de cada cota no desenho, obtida por leitura visual; o significado de engenharia não é declarado pelo catálogo e não foi inferido como dado.",
+        "cotas": [
+          {"simbolo": "E",  "posicao_no_desenho": "Cota vertical sobre o fuste liso (parte não roscada), entre as duas geratrizes do corpo do parafuso."},
+          {"simbolo": "F",  "posicao_no_desenho": "Cota horizontal na vista da cabeça sextavada, medida entre duas faces paralelas opostas (entre planos)."},
+          {"simbolo": "G",  "posicao_no_desenho": "Cota vertical na vista da cabeça sextavada, medida entre dois vértices opostos (entre quinas)."},
+          {"simbolo": "H",  "posicao_no_desenho": "Cota horizontal na vista lateral, da face superior da cabeça até a linha vertical que marca a face de apoio (onde começa a cota L)."},
+          {"simbolo": "R",  "posicao_no_desenho": "Linha de chamada apontando para o pequeno arco de concordância entre a face de apoio da cabeça e o fuste."},
+          {"simbolo": "Ar", "posicao_no_desenho": "Cota horizontal curta no topo do desenho, sobre a faixa fina imediatamente sob a cabeça (entre duas linhas verticais muito próximas), na região da face de apoio."},
+          {"simbolo": "Lt", "posicao_no_desenho": "Cota horizontal medida a partir da extremidade roscada do parafuso em direção à cabeça, abrangendo o trecho roscado."},
+          {"simbolo": "L",  "posicao_no_desenho": "Cota horizontal de maior extensão, da linha da face de apoio da cabeça até a extremidade do parafuso. NÃO tem coluna própria na tabela — só aparece em 'TOL. COMP. \"L\"'."},
+          {"simbolo": "~30°", "posicao_no_desenho": "Ângulo indicado com arco sobre o chanfro do topo da cabeça sextavada."},
+          {"simbolo": "RR / XX", "posicao_no_desenho": "Marcação em relevo no topo da cabeça, na vista frontal do sextavado (duas linhas: 'RR' e 'XX')."}
+        ]
+      },
+      "dimensional_por_diametro": {
+        "fonte": {"tabela": "Tabela dimensional (sem título impresso), logo abaixo do desenho cotado", "pagina_pdf": 1},
+        "cabecalho_original": ["DIÂMETRO NOMINAL", "E máx.", "E mín.", "F máx.", "F mín.", "G máx.", "H máx.", "H mín.", "R máx.", "R mín.", "Ar máx.", "Ar mín.", "Lt", "TOL. COMP. \"L\" <6\"", "TOL. COMP. \"L\" >6\""],
+        "estrutura": "E, F, H, R e Ar têm subcolunas máx./mín.; G tem APENAS máx. (não há G mín. impresso); Lt é valor único; TOL. COMP. \"L\" tem as subcolunas <6\" e >6\", com valores negativos.",
+        "unidade": "NÃO IMPRESSA no catálogo — ver lacuna 'unidade_da_tabela_dimensional_nao_impressa'.",
+        "status": "extraido",
+        "entradas": [
+          {"diametro_pol": "1/2\"",    "E_max": 13.08, "E_min": 12.24, "F_max": 22.22, "F_min": 21.59, "G_max": 25.65, "H_max": 8.20,  "H_min": 7.67,  "R_max": 0.78, "R_min": 0.22, "Ar_max": 0.63, "Ar_min": 0.38, "Lt": 25.40, "tol_comp_L_menor_6pol": -3.00, "tol_comp_L_maior_6pol": -4.80, "status": "extraido"},
+          {"diametro_pol": "5/8\"",    "E_max": 16.30, "E_min": 15.36, "F_max": 26.97, "F_min": 26.18, "G_max": 31.16, "H_max": 10.23, "H_min": 9.60,  "R_max": 1.57, "R_min": 0.53, "Ar_max": 0.63, "Ar_min": 0.38, "Lt": 31.75, "tol_comp_L_menor_6pol": -3.00, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "3/4\"",    "E_max": 19.50, "E_min": 18.51, "F_max": 31.75, "F_min": 30.78, "G_max": 36.65, "H_max": 12.26, "H_min": 11.55, "R_max": 1.57, "R_min": 0.53, "Ar_max": 0.63, "Ar_min": 0.38, "Lt": 35.05, "tol_comp_L_menor_6pol": -4.80, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "7/8\"",    "E_max": 22.73, "E_min": 21.64, "F_max": 36.52, "F_min": 35.40, "G_max": 42.16, "H_max": 14.30, "H_min": 13.48, "R_max": 1.57, "R_min": 0.78, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 38.10, "tol_comp_L_menor_6pol": -4.80, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "1\"",      "E_max": 25.95, "E_min": 24.79, "F_max": 41.27, "F_min": 40.00, "G_max": 47.65, "H_max": 15.92, "H_min": 15.01, "R_max": 2.36, "R_min": 1.57, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 44.45, "tol_comp_L_menor_6pol": -4.80, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "1.1/8\"",  "E_max": 29.18, "E_min": 27.88, "F_max": 46.02, "F_min": 44.60, "G_max": 53.16, "H_max": 18.23, "H_min": 16.71, "R_max": 2.36, "R_min": 1.57, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 50.80, "tol_comp_L_menor_6pol": -6.35, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "1.1/4\"",  "E_max": 32.43, "E_min": 31.06, "F_max": 50.80, "F_min": 49.22, "G_max": 58.64, "H_max": 20.65, "H_min": 19.02, "R_max": 2.36, "R_min": 1.57, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 50.80, "tol_comp_L_menor_6pol": -6.35, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "1.3/8\"",  "E_max": 35.66, "E_min": 34.16, "F_max": 55.57, "F_min": 53.82, "G_max": 64.16, "H_max": 22.30, "H_min": 20.57, "R_max": 2.36, "R_min": 1.57, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 57.15, "tol_comp_L_menor_6pol": -6.35, "tol_comp_L_maior_6pol": -6.35, "status": "extraido"},
+          {"diametro_pol": "1.1/2\"",  "E_max": 38.88, "E_min": 38.33, "F_max": 60.32, "F_min": 58.42, "G_max": 69.64, "H_max": 24.73, "H_min": 22.91, "R_max": 2.36, "R_min": 1.57, "Ar_max": 0.88, "Ar_min": 0.38, "Lt": 57.15, "tol_comp_L_menor_6pol": -6.35, "tol_comp_L_maior_6pol": -6.35, "status": "REVISAR_MANUALMENTE", "observacao": "Transcrito literalmente. O E mín. impresso (38,33) quebra o padrão de folga E máx.-E mín. das demais bitolas — ver lacuna 'e_minimo_do_diametro_1_1_2_fora_do_padrao'. Todos os demais campos desta linha estão consistentes."}
+        ]
+      },
+      "comprimentos_disponiveis": {
+        "fonte": {"tabela": "NÃO EXISTE no catálogo", "pagina_pdf": 1},
+        "status": "NAO_CONSTA_NO_CATALOGO",
+        "observacao": "O catálogo NÃO traz lista/matriz de comprimentos totais (L) disponíveis por diâmetro, nem embalagem (pç), nem tipo de rosca total/parcial. O único dado de comprimento é o comprimento de rosca 'Lt' por diâmetro (na tabela dimensional acima) e a tolerância de comprimento 'TOL. COMP. \"L\"' nas faixas <6\" e >6\". O desenho mostra o parafuso com rosca PARCIAL (fuste liso + trecho roscado Lt), o que é coerente com Lt < L, mas o catálogo não declara isso em texto. O A1 não montou lista de comprimentos.",
+        "entradas": []
+      },
+      "rosca_e_carga_de_tensao": {
+        "fonte": {"tabela": "CARGA DE TENSÃO (FULL SIZE)", "pagina_pdf": 1},
+        "cabecalho_original": ["POL.", "FFP.", "AREA. In²", "Ibf. Min", "Ibf. Máx"],
+        "status": "extraido",
+        "observacao": "'FFP.' é a rosca em fios por polegada (série UNC), equivalente ao 'F.P.P.' usado no catálogo Hard. 'AREA. In²' é a área da seção resistente à tração da rosca segundo a ASTM — NÃO é Abe = 0,75·Ab (ver lacuna 'area_do_catalogo_nao_e_abe_normativo'). A linha final 'TENSÃO / PSI' dá as tensões (150000 e 173000 psi) associadas às colunas 'Ibf. Min' e 'Ibf. Máx'.",
+        "entradas": [
+          {"diametro_pol": "1/2\"",   "rosca_ffp": "13 UNC", "area_in2_impresso": "0,142", "area_in2": 0.142, "carga_lbf_min": 21300,  "carga_lbf_max": 24600,  "status": "extraido"},
+          {"diametro_pol": "5/8\"",   "rosca_ffp": "11 UNC", "area_in2_impresso": "0,226", "area_in2": 0.226, "carga_lbf_min": 33900,  "carga_lbf_max": 39100,  "status": "extraido"},
+          {"diametro_pol": "3/4\"",   "rosca_ffp": "10 UNC", "area_in2_impresso": "0,334", "area_in2": 0.334, "carga_lbf_min": 50100,  "carga_lbf_max": 57800,  "status": "extraido"},
+          {"diametro_pol": "7/8\"",   "rosca_ffp": "9 UNC",  "area_in2_impresso": "0,462", "area_in2": 0.462, "carga_lbf_min": 69300,  "carga_lbf_max": 79950,  "status": "extraido"},
+          {"diametro_pol": "1\"",     "rosca_ffp": "8 UN",   "area_in2_impresso": "0,606", "area_in2": 0.606, "carga_lbf_min": 90900,  "carga_lbf_max": 104850, "status": "REVISAR_MANUALMENTE", "observacao": "Rosca impressa como '8 UN' (sem o 'C'), única linha sem sufixo UNC — ver lacuna 'rosca_do_diametro_1_pol_impressa_como_8_un'. Transcrita literalmente."},
+          {"diametro_pol": "1.1/8\"", "rosca_ffp": "7 UNC",  "area_in2_impresso": "0,763", "area_in2": 0.763, "carga_lbf_min": 114450, "carga_lbf_max": 132000, "status": "extraido"},
+          {"diametro_pol": "1.1/4\"", "rosca_ffp": "7 UNC",  "area_in2_impresso": "0,969", "area_in2": 0.969, "carga_lbf_min": 145350, "carga_lbf_max": 167650, "status": "extraido"},
+          {"diametro_pol": "1.3/8\"", "rosca_ffp": "6 UNC",  "area_in2_impresso": "1.155", "area_in2": 1.155, "carga_lbf_min": 173550, "carga_lbf_max": 199850, "status": "REVISAR_MANUALMENTE", "observacao": "Área impressa com PONTO decimal ('1.155'), diferente de todas as outras linhas, que usam vírgula — ver lacuna 'separador_decimal_inconsistente_na_area'. O campo 'area_in2_impresso' guarda a grafia literal."},
+          {"diametro_pol": "1.1/2\"", "rosca_ffp": "6 UNC",  "area_in2_impresso": "1,405", "area_in2": 1.405, "carga_lbf_min": 210750, "carga_lbf_max": 243100, "status": "extraido"}
+        ],
+        "linha_de_rodape_da_tabela": {
+          "rotulo": "TENSÃO / PSI",
+          "valor_sob_coluna_lbf_min_psi": 150000,
+          "valor_sob_coluna_lbf_max_psi": 173000,
+          "status": "extraido"
+        }
+      },
+      "propriedades_mecanicas": {
+        "fonte": {"tabela": "PROPRIEDADES MECÂNICAS", "pagina_pdf": 1},
+        "cabecalho_original": ["PROPRIEDADES", "", "A490 1\" - 1.1/2\"", "A490 >1.1/2\""],
+        "status": "REVISAR_MANUALMENTE",
+        "observacao": "Transcrição literal. ATENÇÃO 1: as faixas de diâmetro do cabeçalho ('1\" - 1.1/2\"' e '>1.1/2\"') NÃO cobrem os diâmetros de 1/2\" a 7/8\", que existem nas outras duas tabelas da mesma página — o catálogo não diz quais propriedades valem abaixo de 1\". ATENÇÃO 2: o valor 140 000 da coluna '>1.1/2\"' está em célula MESCLADA sobre as linhas mín. e máx. de LR. - PSI (ver lacuna 'lr_maximo_ausente_para_maiores_que_1_1_2'). Os rótulos LR., LE., AL. e RA. não são expandidos em nenhum lugar da página. Estes são valores da especificação ASTM; para dimensionamento vale a NBR 8800:2024, Anexo A (já em kb/nbr8800/propriedades_materiais.json).",
+        "entradas": [
+          {"propriedade": "LR. - PSI",   "limite": "mín.", "a490_1pol_a_1_1_2pol": "150 000", "a490_maior_1_1_2pol": "140 000", "status": "REVISAR_MANUALMENTE", "observacao": "Na coluna '>1.1/2\"' o valor 140 000 ocupa célula mesclada verticalmente sobre as linhas mín. e máx.; não é possível dizer pelo impresso a qual delas pertence. Registrado aqui em 'mín.' e como null em 'máx.', apenas para não duplicar o número — a atribuição NÃO está impressa."},
+          {"propriedade": "LR. - PSI",   "limite": "máx.", "a490_1pol_a_1_1_2pol": "173 000", "a490_maior_1_1_2pol": null,      "status": "REVISAR_MANUALMENTE", "observacao": "Célula mesclada — ver linha anterior e a lacuna 'lr_maximo_ausente_para_maiores_que_1_1_2'."},
+          {"propriedade": "LE. - PSI",   "limite": "mín.", "a490_1pol_a_1_1_2pol": "130 000", "a490_maior_1_1_2pol": "115 000", "status": "extraido"},
+          {"propriedade": "AL. - %",     "limite": "mín.", "a490_1pol_a_1_1_2pol": "14",      "a490_maior_1_1_2pol": "14",      "status": "extraido"},
+          {"propriedade": "RA. - %",     "limite": "mín.", "a490_1pol_a_1_1_2pol": "40",      "a490_maior_1_1_2pol": "40",      "status": "extraido"},
+          {"propriedade": "DUREZA HRC",  "limite": "mín.", "a490_1pol_a_1_1_2pol": "33",      "a490_maior_1_1_2pol": "31",      "status": "extraido"},
+          {"propriedade": "DUREZA HRC",  "limite": "máx.", "a490_1pol_a_1_1_2pol": "38",      "a490_maior_1_1_2pol": "39",      "status": "extraido"}
+        ]
+      },
+      "composicao_quimica": {
+        "fonte": {"tabela": "COMPOSIÇÃO QUÍMICA ASTM A490 TIPO 1 e COMPOSIÇÃO QUÍMICA ASTM A490 TIPO 3", "pagina_pdf": 1},
+        "status": "extraido",
+        "observacao": "Duas tabelas separadas. 'N /E' aparece como está impresso (não especificado). A tabela do Tipo 1 tem uma única linha de elementos (C, Mn, P, S, Si, B); a do Tipo 3 tem duas linhas de elementos (C, Mn, P, S, Si, B e depois Ni, Cu, Cr, V, Mo, Ti). A célula de B do Tipo 1 traz dois números empilhados, '0,0005' e '0,003', sem sinal de intervalo impresso entre eles.",
+        "tipo_1": {
+          "titulo_impresso": "COMPOSIÇÃO QUÍMICA ASTM A490 TIPO 1",
+          "elementos": [
+            {"elemento": "C",  "valor_impresso": "0,30 - 0,48"},
+            {"elemento": "Mn", "valor_impresso": "0,60 mín."},
+            {"elemento": "P",  "valor_impresso": "0,035 máx."},
+            {"elemento": "S",  "valor_impresso": "0,040 máx."},
+            {"elemento": "Si", "valor_impresso": "N /E"},
+            {"elemento": "B",  "valor_impresso": "0,0005 / 0,003", "status": "REVISAR_MANUALMENTE", "observacao": "Impresso em duas linhas dentro da mesma célula ('0,0005' em cima, '0,003' embaixo), sem hífen nem palavra que declare intervalo. Transcrito literalmente com barra; o A1 não interpretou como faixa."}
+          ]
+        },
+        "tipo_3": {
+          "titulo_impresso": "COMPOSIÇÃO QUÍMICA ASTM A490 TIPO 3",
+          "elementos": [
+            {"elemento": "C",  "valor_impresso": "0,30 - 0,48"},
+            {"elemento": "Mn", "valor_impresso": "0,60 mín."},
+            {"elemento": "P",  "valor_impresso": "0,035 máx."},
+            {"elemento": "S",  "valor_impresso": "0,040 máx."},
+            {"elemento": "Si", "valor_impresso": "N /E"},
+            {"elemento": "B",  "valor_impresso": "N /E"},
+            {"elemento": "Ni", "valor_impresso": "0,20 mín."},
+            {"elemento": "Cu", "valor_impresso": "0,20 - 0,60"},
+            {"elemento": "Cr", "valor_impresso": "0,45 mín."},
+            {"elemento": "V",  "valor_impresso": "N /E"},
+            {"elemento": "Mo", "valor_impresso": "0,10 mín."},
+            {"elemento": "Ti", "valor_impresso": "N /E"}
+          ]
+        }
+      },
+      "notas_do_catalogo": {
+        "fonte": {"bloco": "NOTAS:", "pagina_pdf": 1},
+        "status": "extraido",
+        "observacao": "Transcrição literal, incluindo grafias e espaçamentos do original.",
+        "notas": [
+          "ARRUELA - ASTM F 436",
+          "PORCAS - ASTM A 563 DH - (equivalente) - ASTM A 194 2H",
+          "MARCAÇÃO - A490 (TIPO 1)",
+          "REVESTIMENTO - ASTM F2833 Gr.1",
+          "ASTM A354 - (especificação para Ø maiores 1.1 /2\")",
+          "ASTM F606 - (propriedades mecânicas)",
+          "MATÉRIA PRIMA: SAE 4140 - Conf. SAE J404 / AÇO Patinavel (Tipo 3)",
+          "OBS: A ASTM F 3125-15a, substitui a especificação A490 e A325"
+        ]
+      },
+      "porca": {
+        "fonte": {"bloco": "NOTAS:", "pagina_pdf": 1},
+        "status": "SEM_TABELA_DIMENSIONAL",
+        "observacao": "O catálogo NÃO traz tabela dimensional de porca (diferente do catálogo Hard, que dá diâmetro, rosca, chave e embalagem). Cita apenas a especificação, na nota: 'PORCAS - ASTM A 563 DH - (equivalente) - ASTM A 194 2H'.",
+        "especificacao_citada": "ASTM A563 DH — (equivalente) ASTM A194 2H",
+        "entradas": []
+      },
+      "arruela": {
+        "fonte": {"bloco": "NOTAS:", "pagina_pdf": 1},
+        "status": "SEM_TABELA_DIMENSIONAL",
+        "observacao": "O catálogo NÃO traz tabela dimensional nem embalagem de arruela. Cita apenas a especificação, na nota: 'ARRUELA - ASTM F 436'.",
+        "especificacao_citada": "ASTM F436",
+        "entradas": []
+      },
+      "cabeca": {
+        "status": "extraido",
+        "observacao": "A geometria da cabeça é dada pelas colunas F (entre faces), G (entre quinas) e H (altura), na tabela dimensional acima, mais o chanfro '~30°' e a marcação em relevo 'RR / XX' indicados no desenho. O catálogo NÃO usa a palavra 'pesada' nem dá abertura de chave em polegadas (diferente do catálogo Hard, que traz coluna 'CHAVE' em polegadas).",
+        "abertura_de_chave_em_polegadas": null
+      },
+      "normas_citadas_pelo_catalogo": [
+        "ASTM A490 Tipo 1 e Tipo 3 (parafuso)",
+        "ASTM A563 DH / ASTM A194 2H (porca)",
+        "ASTM F436 (arruela)",
+        "ASTM F2833 Gr.1 (revestimento)",
+        "ASTM A354 (especificação para diâmetros maiores que 1.1/2\")",
+        "ASTM F606 (propriedades mecânicas)",
+        "ASTM F3125-15a (substitui as especificações A490 e A325)",
+        "SAE J404 / SAE 4140 (matéria-prima)"
+      ]
+    }
+  ]
+}

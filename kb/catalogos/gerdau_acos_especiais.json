@@ -1,0 +1,37 @@
+{
+  "arquivo": "kb/catalogos/gerdau_acos_especiais.json",
+  "titulo": "Gerdau — Aços Especiais Brasil: registro de triagem (NADA APLICÁVEL EXTRAÍDO)",
+  "fabricante": "Gerdau",
+  "arquivo_fonte": "kb/fontes_originais/catalogos/Catálogo - Gerdau - Catalago Aços Especiais Brasil.pdf",
+  "paginas_pdf": "1 a 13 (todas lidas)",
+  "extraido_por": "Agente A1 — Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "status": "SEM_DADOS_APLICAVEIS",
+  "resumo": "Este catálogo foi lido integralmente e NÃO contém nenhuma tabela de composição química nem de propriedades mecânicas (fy, fu, alongamento, dureza). É material institucional/comercial sobre a linha de AÇOS PARA CONSTRUÇÃO MECÂNICA da Gerdau (mercado automotivo, óleo e gás, eólico, ferroviário), não sobre aços estruturais de edifícios. Nenhum arquivo de dados foi gerado a partir dele. Este registro existe para que nenhum outro agente precise reabrir o PDF.",
+  "por_que_nada_foi_extraido": [
+    "O PDF tem camada de texto legível (pdftotext funciona nas páginas 1 a 12; a página 13 é a contracapa, só imagem). Portanto a ausência de tabelas não é uma limitação de extração: as tabelas simplesmente não existem no documento.",
+    "Os aços citados são graus de construção mecânica das normas SAE, DIN e AISI (SAE 1020, 1035, 1045, 1050, 4140, 4340, 8620, 9254, 5160, 12L14, 52100, 10B22, 10B30, 1141, 1012, 1015; DIN 38MnSiVS5, 41Cr4, 42CrMo4, 20MnCr5, 100Cr6, 15V45, 9SMn28, 11SMnPb30, 11SMn30, C70, S355NL; AISI H13, O1, D2, D6, S1, P20). Eles são citados apenas como exemplos de aplicação por produto, SEM nenhum valor numérico associado.",
+    "Nenhum desses graus é um aço estrutural de edifícios das Tabelas A.1 (ABNT) ou A.2 (ASTM) da NBR 8800:2024 já extraídas em kb/nbr8800/propriedades_materiais.json. Não há, portanto, nada a acrescentar nem a duplicar.",
+    "A única designação com parentesco estrutural é 'DIN S355NL' (citada na pág. 6 como aço comum para BLOCO RETANGULAR), mas o catálogo NÃO imprime fy, fu nem composição para ela. O A1 não completou esses valores de memória."
+  ],
+  "conteudo_pagina_a_pagina": [
+    {"pagina_pdf": 1,  "conteudo": "Capa 'AÇOS ESPECIAIS'."},
+    {"pagina_pdf": 2,  "conteudo": "Apresentação institucional da Gerdau Aços Especiais + lista de LINHAS DE PRODUTOS e TIPOS DE PRODUTOS (laminados, tarugos, arames, ferramenta, acabamentos, tratamento térmico). Somente nomes de produto, sem números."},
+    {"pagina_pdf": 3,  "conteudo": "Descrição textual dos tipos de acabamento (descascado, fresado, decapado, torneado, retificado, trefilado, polido) e dos tratamentos térmicos (alívio de tensões, normalização, esferoidização). Sem números."},
+    {"pagina_pdf": 4,  "conteudo": "APLICAÇÕES — texto de mercado (automotivo, óleo e gás, eólico, mineração, ferroviário)."},
+    {"pagina_pdf": 5,  "conteudo": "PESQUISA E DESENVOLVIMENTO + organização do portfólio em GG MAX, GG TECH, GG CUSTOM e GG Standard ('atendimento às normas AISI, ASTM, SAE, DIN e JIS'). Sem números."},
+    {"pagina_pdf": 6,  "conteudo": "LINHAS DE PRODUTOS: arames, barra laminada redonda, barra laminada quadrada, bloco retangular. Cita graus SAE/DIN como exemplo, sem propriedades."},
+    {"pagina_pdf": 7,  "conteudo": "Barra laminada sextavada, barra trefilada redonda, barra descascada redonda, fio-máquina redondo e sextavado. Cita graus SAE/DIN, sem propriedades."},
+    {"pagina_pdf": 8,  "conteudo": "Barra forjada redonda/quadrada/retangular e barra de aços-ferramenta. Cita graus SAE/AISI, sem propriedades."},
+    {"pagina_pdf": 9,  "conteudo": "Tarugo quadrado, lingote e bloco. Cita graus SAE/DIN, sem propriedades."},
+    {"pagina_pdf": 10, "conteudo": "GG TECH — marcas comerciais ECOMACHINING e INDUHEAT. Sem números."},
+    {"pagina_pdf": 11, "conteudo": "GG MAX — marcas comerciais MACHINITY, PARABOLER, CLEANITY, HIDUCTILITY. Sem números."},
+    {"pagina_pdf": 12, "conteudo": "GG CUSTOM — texto comercial. Sem números."},
+    {"pagina_pdf": 13, "conteudo": "Contracapa (imagem + logotipo Gerdau), sem texto."}
+  ],
+  "onde_estao_as_propriedades_dos_acos_de_fato_usadas_no_projeto": [
+    "kb/nbr8800/propriedades_materiais.json — NBR 8800:2024, Anexo A: Tabela A.1 (aços ABNT: MR 250, AR 350, AR 350 COR, AR 415 etc.), Tabela A.2 (aços ASTM: A36, A500, A572, A992, A242, A588, A913), Tabela A.3 (parafusos) e Tabela A.4 (metal de solda), além de E, G, ν, β e ρ do item 4.6.2.9.",
+    "kb/catalogos/gerdau_perfis_w_h.json — bloco 'propriedades_mecanicas_dos_acos_pagina_3': limites de escoamento e de resistência dos aços em que os perfis W/HP Gerdau são efetivamente produzidos (ASTM A572 Gr.50 e Gr.60, A992, AÇO COR 500, A131 AH32 e AH36), com a equivalência NBR 7007:2011 (A572 Gr.50 = AR 350; AÇO COR 500 = AR 350 COR)."
+  ],
+  "entradas": []
+}

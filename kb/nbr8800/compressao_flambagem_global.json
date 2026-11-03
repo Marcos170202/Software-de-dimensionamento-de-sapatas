@@ -1,0 +1,186 @@
+{
+  "arquivo": "kb/nbr8800/compressao_flambagem_global.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Barras prismáticas submetidas a força axial de compressão — flambagem global",
+  "item_normativo_raiz": "5.3",
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "ATENÇÃO — MUDANÇA EM RELAÇÃO À NBR 8800:2008: a edição 2024 NÃO usa o fator Q de flambagem local. A equação é Nc,Rd = chi * Aef * fy / gamma_a1, com Aef (área EFETIVA, item 5.3.4) substituindo o antigo produto Q*Ag. Qualquer fórmula de memória no formato 'chi*Q*Ag*fy/gamma_a1' é da edição 2008 e NÃO deve ser usada neste projeto.",
+    "O índice de esbeltez reduzido lambda_0 (5.3.3.2) usa Ag (área BRUTA), e não Aef — transcrição conferida visualmente na página impressa 45 (página 62 do PDF).",
+    "Os comprimentos Lx, Ly, Lz são 'comprimentos destravados' conforme impresso na norma; a edição 2024 não apresenta fator K explícito nessas equações (a estabilidade é tratada em 4.10)."
+  ],
+  "entradas": [
+    {
+      "id": "compressao_condicao_dimensionamento",
+      "descricao": "Condição a ser atendida no dimensionamento de barras comprimidas",
+      "formula": "Nc,Sd <= Nc,Rd",
+      "variaveis": {
+        "Nc_Sd": "força axial de compressão solicitante de cálculo (ver 4.10.6.5 para elementos isolados)",
+        "Nc_Rd": "força axial de compressão resistente de cálculo, determinada conforme 5.3.2"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas submetidas a força axial de compressão. Devem ainda ser observadas as condições de 5.3.7 (limitação do índice de esbeltez).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.1", "pagina": 45, "pagina_pdf": 62},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_forca_axial_resistente",
+      "descricao": "Força axial de compressão resistente de cálculo, associada aos estados-limite últimos de instabilidade por flexão, por torção ou flexo-torção, e de instabilidade local",
+      "formula": "Nc,Rd = chi * Aef * fy / gamma_a1",
+      "variaveis": {
+        "chi": "fator de redução associado à resistência à compressão, dado em 5.3.3",
+        "Aef": "área efetiva da seção transversal da barra, dada em 5.3.4",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural para escoamento e instabilidade (NBR 8800:2024, Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas comprimidas de aço.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.2", "pagina": 45, "pagina_pdf": 62},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_fator_reducao_chi",
+      "descricao": "Fator de redução associado à resistência à compressão",
+      "formula": "para lambda_0 <= 1,5:  chi = 0,658^(lambda_0^2)   |   para lambda_0 > 1,5:  chi = 0,877 / lambda_0^2",
+      "variaveis": {
+        "lambda_0": "índice de esbeltez reduzido, dado em 5.3.3.2"
+      },
+      "condicoes_aplicabilidade": "Todas as barras comprimidas tratadas em 5.3.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.3.1", "pagina": 45, "pagina_pdf": 62},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_indice_esbeltez_reduzido",
+      "descricao": "Índice de esbeltez reduzido",
+      "formula": "lambda_0 = sqrt( Ag * fy / Ne )",
+      "variaveis": {
+        "Ag": "área bruta da seção transversal (conforme impresso: Ag, e não Aef)",
+        "fy": "resistência ao escoamento do aço",
+        "Ne": "força axial de flambagem, obtida conforme 5.3.5"
+      },
+      "condicoes_aplicabilidade": "Todas as barras comprimidas tratadas em 5.3.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.3.2", "pagina": 45, "pagina_pdf": 62},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_area_efetiva_generalidades",
+      "descricao": "Área efetiva da seção transversal — condição para Aef = Ag",
+      "formula": "Aef = Ag, se todos os elementos componentes da seção possuírem b/t <= (b/t)lim (Tabela 4); caso contrário, calcular as larguras efetivas conforme 5.3.4.2",
+      "variaveis": {
+        "b": "largura do elemento componente da seção transversal (definições de b em 5.1.2.2.3 e 5.1.2.2.4)",
+        "t": "espessura do elemento",
+        "(b/t)lim": "valor-limite dado na Tabela 4"
+      },
+      "condicoes_aplicabilidade": "Seções transversais usuais, exceto seções tubulares circulares (estas em 5.3.4.3). Elementos classificados em AA (duas bordas longitudinais apoiadas — grupos 1 e 2 da Tabela 4) e AL (uma borda apoiada e outra livre — grupos 3 a 6).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.4.1", "pagina": 46, "pagina_pdf": 63},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_tabela4_bt_lim",
+      "descricao": "Tabela 4 — Valores de (b/t)lim",
+      "tabela": [
+        {"elemento": "AA", "grupo": 1, "descricao": "Mesas ou almas de seções tubulares retangulares (ver 5.1.3); lamelas e chapas de diafragmas entre linhas de parafusos ou soldas", "bt_lim": "1,40*sqrt(E/fy)"},
+        {"elemento": "AA", "grupo": 2, "descricao": "Almas de seções I, H ou U; mesas ou almas de seção-caixão; todos os demais elementos que não integram o Grupo 1", "bt_lim": "1,49*sqrt(E/fy)"},
+        {"elemento": "AL", "grupo": 3, "descricao": "Abas de cantoneiras simples ou múltiplas providas de chapas espaçadoras", "bt_lim": "0,45*sqrt(E/fy)"},
+        {"elemento": "AL", "grupo": 4, "descricao": "Mesas de seções I, H, T ou U laminadas; abas de cantoneiras ligadas continuamente ou projetadas de seções I, H, T ou U laminadas ou soldadas; chapas projetadas de seções I, H, T ou U laminadas ou soldadas", "bt_lim": "0,56*sqrt(E/fy)"},
+        {"elemento": "AL", "grupo": 5, "descricao": "Mesas de seções I, H, T ou U soldadas", "bt_lim": "0,64*sqrt(E/(fy/kc))", "nota": "kc = 4/sqrt(h/tw), sendo 0,35 <= kc <= 0,76"},
+        {"elemento": "AL", "grupo": 6, "descricao": "Almas de seções T", "bt_lim": "0,75*sqrt(E/fy)"}
+      ],
+      "condicoes_aplicabilidade": "Classificação dos elementos comprimidos componentes da seção transversal para efeito de flambagem local.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela 4 (item 5.3.4.1)", "pagina": 47, "pagina_pdf": 64},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_largura_efetiva",
+      "descricao": "Largura efetiva dos elementos da seção (flambagem local)",
+      "formula": "para b/t <= (b/t)lim / sqrt(chi):  bef = b   |   para b/t > (b/t)lim / sqrt(chi):  bef = b * [1 - c1*sqrt(sigma_el/(chi*fy))] * sqrt(sigma_el/(chi*fy))",
+      "formula_tensao_flambagem_local": "sigma_el = [ c2 * (b/t)lim / (b/t) ]^2 * fy",
+      "variaveis": {
+        "b": "largura do elemento",
+        "bef": "largura efetiva do elemento",
+        "sigma_el": "tensão de flambagem local (pode ser calculada pela equação acima ou por análise de estabilidade)",
+        "c1": "fator dado na Tabela 5",
+        "c2": "fator dado na Tabela 5",
+        "chi": "fator de redução associado à resistência à compressão (5.3.3)"
+      },
+      "tabela5_fatores": [
+        {"elemento": "AA (exceto paredes de seções tubulares retangulares)", "c1": 0.18, "c2": 1.31},
+        {"elemento": "Paredes de seções tubulares retangulares", "c1": 0.20, "c2": 1.38},
+        {"elemento": "AL", "c1": 0.22, "c2": 1.49}
+      ],
+      "condicoes_aplicabilidade": "Barras em que um ou mais elementos componentes da seção transversal possuam b/t maior que (b/t)lim (Tabela 4). Para a Fase 0 (perfis laminados compactos/semicompactos) normalmente resulta Aef = Ag.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.4.2 e Tabela 5", "pagina": "46-48", "pagina_pdf": "63-65"},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_area_efetiva_tubulares_circulares",
+      "descricao": "Área efetiva de seções tubulares circulares",
+      "formula": "para D/t <= 0,11*E/fy:  Aef = Ag   |   para 0,11*E/fy < D/t <= 0,45*E/fy:  Aef = [ 0,038/(D/t) * (E/fy) + 2/3 ] * Ag",
+      "variaveis": {
+        "D": "diâmetro externo da seção tubular circular",
+        "t": "espessura da parede do tubo"
+      },
+      "condicoes_aplicabilidade": "Seções tubulares circulares. Não é prevista a utilização de seções tubulares circulares com relação D/t superior a 0,45*E/fy. Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.4.3", "pagina": 48, "pagina_pdf": 65},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_forca_axial_flambagem_dupla_simetria",
+      "descricao": "Força axial de flambagem Ne — seções com dupla simetria ou simétricas em relação a um ponto (menor dos três valores)",
+      "formula_flexao_x": "Ne,x = pi^2 * E * Ix / Lx^2",
+      "formula_flexao_y": "Ne,y = pi^2 * E * Iy / Ly^2",
+      "formula_torcao_z": "Ne,z = (1/r0^2) * [ pi^2 * E * Cw / Lz^2 + G * J ]",
+      "formula_raio_giracao_polar": "r0 = sqrt( rx^2 + ry^2 + x0^2 + y0^2 )",
+      "variaveis": {
+        "Lx": "comprimento destravado associado à flexão em relação ao eixo x",
+        "Ix": "momento de inércia da seção transversal em relação ao eixo x",
+        "Ly": "comprimento destravado associado à flexão em relação ao eixo y",
+        "Iy": "momento de inércia da seção transversal em relação ao eixo y",
+        "Lz": "comprimento destravado associado à torção",
+        "E": "módulo de elasticidade do aço",
+        "Cw": "constante de empenamento da seção transversal",
+        "G": "módulo de elasticidade transversal do aço",
+        "J": "constante de torção da seção transversal",
+        "r0": "raio de giração polar da seção bruta em relação ao centro de cisalhamento",
+        "rx, ry": "raios de giração em relação aos eixos centrais x e y",
+        "x0, y0": "coordenadas do centro de cisalhamento na direção dos eixos centrais x e y, em relação ao centro geométrico da seção. Para seções com dupla simetria ou simétricas em relação a um ponto, x0 = y0 = 0"
+      },
+      "condicoes_aplicabilidade": "Barra com seção transversal duplamente simétrica (caso típico dos perfis W/H da Fase 0) ou simétrica em relação a um ponto. Ne é o MENOR dos três valores.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.5.1", "pagina": "48-49", "pagina_pdf": "65-66"},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_forca_axial_flambagem_monossimetrica",
+      "descricao": "Força axial de flambagem Ne — seções monossimétricas (eixo y é o eixo de simetria), exceto cantoneiras simples de 5.3.5.4 (menor dos dois valores)",
+      "formula_flexao_x": "Ne,x = pi^2 * E * Ix / Lx^2",
+      "formula_flexo_torcao": "Ne,yz = { (Ne,y + Ne,z) / (2*[1 - (y0/r0)^2]) } * { 1 - sqrt( 1 - 4*Ne,y*Ne,z*[1 - (y0/r0)^2] / (Ne,y + Ne,z)^2 ) }",
+      "variaveis": {
+        "Ne_y": "força axial de flambagem conforme 5.3.5.1-b)",
+        "Ne_z": "força axial de flambagem conforme 5.3.5.1-c)",
+        "y0": "coordenada do centro de cisalhamento na direção do eixo y",
+        "r0": "raio de giração polar da seção bruta em relação ao centro de cisalhamento"
+      },
+      "condicoes_aplicabilidade": "Seções monossimétricas cujo eixo y é o eixo de simetria (ex.: perfis U). Caso o eixo x seja o eixo de simetria, substituir os índices subscritos x por y em 5.3.5.2-a) e os índices y por x e y0 por x0 em 5.3.5.2-b).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.5.2", "pagina": 49, "pagina_pdf": 66},
+      "status": "extraido"
+    },
+    {
+      "id": "compressao_limitacao_esbeltez",
+      "descricao": "Limitação recomendada do índice de esbeltez de barras comprimidas",
+      "formula": "L / r <= 200 (recomendação)",
+      "variaveis": {
+        "L": "comprimento destravado associado à flexão",
+        "r": "raio de giração correspondente"
+      },
+      "condicoes_aplicabilidade": "Barras comprimidas, incluindo as barras compostas atuando como uma unidade. No caso da recomendação não ser atendida, o responsável técnico pelo projeto estrutural deve estabelecer novos limites (5.3.7.2).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.3.7.1", "pagina": 52, "pagina_pdf": 69},
+      "status": "extraido"
+    }
+  ],
+  "itens_nao_extraidos_nesta_rodada": [
+    {"item": "5.3.5.3", "titulo": "Seções assimétricas (equação cúbica para Ne)", "pagina": 49, "motivo": "fora do escopo da Fase 0"},
+    {"item": "5.3.5.4", "titulo": "Cantoneiras simples conectadas por uma aba (comprimentos equivalentes Lx1,eq)", "pagina": "50-51", "motivo": "fora do escopo da Fase 0; extrair em rodada futura se cantoneiras isoladas comprimidas forem contempladas"},
+    {"item": "5.3.6", "titulo": "Requisitos específicos para barras compostas (Ne,m)", "pagina": "51-52", "motivo": "fora do escopo da Fase 0"}
+  ]
+}
