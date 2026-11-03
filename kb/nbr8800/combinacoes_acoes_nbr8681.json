@@ -1,0 +1,261 @@
+{
+  "arquivo": "kb/nbr8800/combinacoes_acoes_nbr8681.json",
+  "titulo": "Combinações de ações (ELU e ELS) e coeficientes de ponderação",
+  "normas_fonte": [
+    {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "offset_pagina": "pagina_pdf = pagina + 6"},
+    {"norma": "ABNT NBR 8800:2024", "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "offset_pagina": "pagina_pdf = pagina + 17"}
+  ],
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "observacoes_gerais": [
+    "As duas normas foram extraídas em paralelo porque a NBR 8800:2024 reproduz (itens 4.8.6 e 4.8.7) as combinações e coeficientes da NBR 8681, com pequenas diferenças de apresentação. Para estruturas metálicas, a NBR 8800 é a norma de projeto específica e a NBR 8681 é explícita (5.1.4) ao dizer que seus valores 'são indicativos, podendo ser alterados ou complementados nas normas de projeto específicas'.",
+    "Cotejo feito nesta rodada: os valores de gamma_g, gamma_q, psi_0, psi_1 e psi_2 conferidos nas duas normas COINCIDEM para todos os casos comuns a ambas (ver entrada 'cotejo_8681_x_8800'). A NBR 8800 traz linhas adicionais (temperatura gerada por equipamentos; pilares que suportam vigas de rolamento) e a NBR 8681 traz linhas adicionais (pontes rodoviárias e ferroviárias).",
+    "Nenhum valor foi calculado ou completado de memória; todas as tabelas foram conferidas na página renderizada do PDF."
+  ],
+  "entradas": [
+    {
+      "id": "elu_combinacao_ultima_normal_8681",
+      "descricao": "Combinação última normal de ações (ELU)",
+      "formula": "Fd = SOMA(i=1..m) [ gamma_gi * FGi,k ] + gamma_q1 * FQ1,k + SOMA(j=2..n) [ gamma_qj * psi_0j * FQj,k ]",
+      "variaveis": {
+        "FGi_k": "valor característico das ações permanentes (diretas e indiretas)",
+        "FQ1_k": "valor característico da ação variável considerada a ação principal para a combinação",
+        "psi_0j_FQj_k": "valores reduzidos de combinação de cada uma das demais ações variáveis",
+        "gamma_gi": "coeficientes de ponderação para as ações permanentes (Tabelas 1, 2 e 3 da NBR 8681)",
+        "gamma_qj": "coeficientes de ponderação para as ações variáveis (Tabelas 4 e 5 da NBR 8681)"
+      },
+      "condicoes_aplicabilidade": "Combinações últimas normais, decorrentes do uso previsto da edificação. Em casos específicos, devem ser considerados dois conjuntos de combinações: em um admite-se que as ações permanentes sejam desfavoráveis e, no outro, que sejam favoráveis à segurança da estrutura.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.3.1", "pagina": 12, "pagina_pdf": 18},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.2.1", "pagina": 22, "pagina_pdf": 39},
+      "status": "extraido"
+    },
+    {
+      "id": "elu_combinacao_ultima_especial_ou_construcao_8681",
+      "descricao": "Combinação última especial ou de construção (ELU)",
+      "formula": "Fd = SOMA(i=1..m) [ gamma_gi * FGi,k ] + gamma_q1 * FQ1,k + SOMA(j=2..n) [ gamma_qj * psi_0j,ef * FQj,k ]",
+      "variaveis": {
+        "FQ1_k": "valor característico da ação variável admitida como especial para a situação transitória considerada",
+        "psi_0j_ef": "fator de combinação efetivo de cada uma das demais ações variáveis que podem atuar concomitantemente com a ação especial FQ1 durante a situação transitória"
+      },
+      "regra_psi0ef": "O fator psi_0j,ef pode ser considerado igual ao fator psi_0j adotado nas combinações normais, exceto quando a ação especial FQ1 tiver um tempo de atuação muito curto, caso em que psi_0j,ef pode ser tomado com o correspondente psi_2j.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.3.2", "pagina": "12-13", "pagina_pdf": "18-19"},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.2.2 e 4.8.7.2.3", "pagina": "22-23", "pagina_pdf": "39-40"},
+      "status": "extraido"
+    },
+    {
+      "id": "elu_combinacao_ultima_excepcional_8681",
+      "descricao": "Combinação última excepcional (ELU)",
+      "formula": "Fd = SOMA(i=1..m) [ gamma_gi * FGi,k ] + gamma_q,exc * FQ,exc + SOMA(j=1..n) [ gamma_qj * psi_0j,ef * FQj,k ]",
+      "variaveis": {
+        "FQ_exc": "valor da ação transitória excepcional",
+        "gamma_q_exc": "coeficiente de ponderação para a ação transitória excepcional; valor básico gamma_q,exc = 1,0 (NBR 8681, 5.1.4.3)"
+      },
+      "condicoes_aplicabilidade": "Ações excepcionais que podem provocar efeitos catastróficos. Nos casos de ações sísmicas, deve ser utilizada a ABNT NBR 15421 (NBR 8800, 4.8.7.2.4).",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.3.3", "pagina": 13, "pagina_pdf": 19},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.2.4", "pagina": 23, "pagina_pdf": 40},
+      "status": "extraido"
+    },
+    {
+      "id": "els_combinacao_quase_permanente_8681",
+      "descricao": "Combinação quase permanente de serviço (ELS)",
+      "formula": "Fd,ser = SOMA(i=1..m) FGi,k + SOMA(j=1..n) [ psi_2j * FQj,k ]",
+      "condicoes_aplicabilidade": "Combinações que podem atuar durante grande parte do período de vida da estrutura; utilizadas para os efeitos de longa duração e para o aspecto da edificação. Todas as ações variáveis são consideradas com seus valores quase permanentes psi_2*FQ,k. Nas combinações de serviço, gamma_f = 1,0 (NBR 8800, 4.8.6.3.1) e gamma_m = 1,00 (NBR 8800, 4.9.3).",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.5.2", "pagina": 18, "pagina_pdf": 24},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.3.2", "pagina": 23, "pagina_pdf": 40},
+      "status": "extraido"
+    },
+    {
+      "id": "els_combinacao_frequente_8681",
+      "descricao": "Combinação frequente de serviço (ELS)",
+      "formula": "Fd,ser = SOMA(i=1..m) FGi,k + psi_1 * FQ1,k + SOMA(j=2..n) [ psi_2j * FQj,k ]",
+      "condicoes_aplicabilidade": "Combinações que se repetem muitas vezes durante o período de vida da estrutura; utilizadas para os estados-limite reversíveis (vibrações excessivas, movimentos laterais excessivos que comprometam a vedação, empoçamentos em coberturas, aberturas de fissuras). A ação variável principal FQ1 é tomada com seu valor frequente psi_1*FQ1,k e as demais com seus valores quase permanentes psi_2*FQ,k.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.5.3", "pagina": 18, "pagina_pdf": 24},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.3.3", "pagina": 24, "pagina_pdf": 41},
+      "status": "extraido"
+    },
+    {
+      "id": "els_combinacao_rara_8681",
+      "descricao": "Combinação rara de serviço (ELS)",
+      "formula": "Fd,ser = SOMA(i=1..m) FGi,k + FQ1,k + SOMA(j=2..n) [ psi_1j * FQj,k ]",
+      "condicoes_aplicabilidade": "Combinações que podem atuar no máximo algumas horas durante o período de vida da estrutura; utilizadas para os estados-limite irreversíveis (formação de fissuras, danos aos fechamentos). A ação variável principal FQ1 é tomada com seu valor característico FQ1,k e as demais com seus valores frequentes psi_1j*FQj,k.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "5.1.5.4", "pagina": 18, "pagina_pdf": 24},
+      "fonte_equivalente_nbr8800": {"item": "4.8.7.3.4", "pagina": 24, "pagina_pdf": 41},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_g_acoes_permanentes_diretas_separadas_8681",
+      "descricao": "Tabela 1 (NBR 8681) — coeficientes gamma_g para ações permanentes diretas consideradas separadamente",
+      "tabela": [
+        {"combinacao": "Normal", "tipo_acao": "Peso próprio de estruturas de aço e equipamentos", "desfavoravel": 1.25, "favoravel": 1.0},
+        {"combinacao": "Normal", "tipo_acao": "Peso próprio de estruturas pré-moldadas, de madeira e elementos construtivos industrializados", "desfavoravel": 1.30, "favoravel": 1.0},
+        {"combinacao": "Normal", "tipo_acao": "Peso próprio de estruturas moldadas no local", "desfavoravel": 1.35, "favoravel": 1.0},
+        {"combinacao": "Normal", "tipo_acao": "Elementos construtivos industrializados com adições in loco", "desfavoravel": 1.40, "favoravel": 1.0},
+        {"combinacao": "Normal", "tipo_acao": "Elementos construtivos em geral", "desfavoravel": 1.50, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Peso próprio de estruturas de aço e equipamentos", "desfavoravel": 1.15, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Peso próprio de estruturas pré-moldadas, de madeira e elementos construtivos industrializados", "desfavoravel": 1.20, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Peso próprio de estruturas moldadas no local", "desfavoravel": 1.25, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Elementos construtivos industrializados com adições in loco", "desfavoravel": 1.30, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Elementos construtivos em geral", "desfavoravel": 1.40, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "tipo_acao": "Peso próprio de estruturas de aço e equipamentos", "desfavoravel": 1.10, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "tipo_acao": "Peso próprio de estruturas pré-moldadas, de madeira e elementos construtivos industrializados", "desfavoravel": 1.15, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "tipo_acao": "Peso próprio de estruturas moldadas no local", "desfavoravel": 1.15, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "tipo_acao": "Elementos construtivos industrializados com adições in loco", "desfavoravel": 1.20, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "tipo_acao": "Elementos construtivos em geral", "desfavoravel": 1.30, "favoravel": 1.0}
+      ],
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 1 (item 5.1.4.1)", "pagina": 14, "pagina_pdf": 20},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_g_acoes_permanentes_diretas_agrupadas_8681",
+      "descricao": "Tabela 2 (NBR 8681) — coeficientes gamma_g para ações permanentes diretas agrupadas",
+      "tabela": [
+        {"combinacao": "Normal", "desfavoravel": 1.35, "favoravel": 1.0},
+        {"combinacao": "Especial ou de construção", "desfavoravel": 1.25, "favoravel": 1.0},
+        {"combinacao": "Excepcional", "desfavoravel": 1.15, "favoravel": 1.0}
+      ],
+      "condicoes_aplicabilidade": "O projetista deve optar pelo descrito ou na Tabela 1 ou na Tabela 2.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 2 (item 5.1.4.1)", "pagina": 14, "pagina_pdf": 20},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_protensao_recalques_retracao_8681",
+      "descricao": "Tabela 3 (NBR 8681) — protensão, efeitos de recalques de apoio e de retração dos materiais",
+      "tabela": [
+        {"combinacao": "Normal", "protensao_desfavoravel": 1.20, "protensao_favoravel": 0.90, "recalque_retracao_desfavoravel": 1.20, "recalque_retracao_favoravel": 0},
+        {"combinacao": "Especial ou de construção", "protensao_desfavoravel": 1.20, "protensao_favoravel": 0.90, "recalque_retracao_desfavoravel": 1.20, "recalque_retracao_favoravel": 0},
+        {"combinacao": "Excepcional", "protensao_desfavoravel": 1.20, "protensao_favoravel": 0.90, "recalque_retracao_desfavoravel": 0, "recalque_retracao_favoravel": 0}
+      ],
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 3 (item 5.1.4.1)", "pagina": 15, "pagina_pdf": 21},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_q_acoes_variaveis_separadas_8681",
+      "descricao": "Tabela 4 (NBR 8681) — coeficientes gamma_q para ações variáveis consideradas separadamente",
+      "tabela": [
+        {"combinacao": "Normal", "tipo_acao": "Ações truncadas", "gamma_q": 1.2},
+        {"combinacao": "Normal", "tipo_acao": "Efeitos de temperatura devidos à variação térmica da atmosfera", "gamma_q": 1.2},
+        {"combinacao": "Normal", "tipo_acao": "Ação do vento", "gamma_q": 1.4},
+        {"combinacao": "Normal", "tipo_acao": "Demais ações e efeitos de temperatura gerados por equipamentos", "gamma_q": 1.5},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Ações truncadas", "gamma_q": 1.1},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Efeitos de temperatura devidos à variação térmica da atmosfera", "gamma_q": 1.0},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Ação do vento", "gamma_q": 1.2},
+        {"combinacao": "Especial ou de construção", "tipo_acao": "Demais ações e efeitos de temperatura gerados por equipamentos", "gamma_q": 1.3},
+        {"combinacao": "Excepcional", "tipo_acao": "Ações e efeitos em geral", "gamma_q": 1.0}
+      ],
+      "nota": "Ações truncadas são ações variáveis cuja distribuição de máximos é truncada por um dispositivo físico, de modo que o valor dessa ação não possa superar o limite correspondente; o coeficiente se aplica a esse valor-limite.",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 4 (item 5.1.4.2)", "pagina": 15, "pagina_pdf": 21},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_q_acoes_variaveis_agrupadas_8681",
+      "descricao": "Tabela 5 (NBR 8681) — coeficientes gamma_q para ações variáveis consideradas conjuntamente",
+      "tabela": [
+        {"combinacao": "Normal", "gamma_q": 1.5},
+        {"combinacao": "Especial ou de construção", "gamma_q": 1.3},
+        {"combinacao": "Excepcional", "gamma_q": 1.0}
+      ],
+      "nota": "Quando as ações variáveis forem consideradas conjuntamente, o coeficiente se aplica a todas as ações, devendo ser consideradas também conjuntamente as ações permanentes diretas. Nesse caso, permite-se considerar separadamente as ações indiretas (recalques de apoio e retração, Tabela 3) e o efeito de temperatura (Tabela 4).",
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 5 (item 5.1.4.2)", "pagina": 16, "pagina_pdf": 22},
+      "status": "extraido"
+    },
+    {
+      "id": "psi_fatores_combinacao_reducao_8681",
+      "descricao": "Tabela 6 (NBR 8681) — fatores de combinação psi_0 e de redução psi_1 e psi_2 para as ações variáveis",
+      "tabela": [
+        {"grupo": "Cargas de utilização de edifícios", "acao": "Locais em que não há predominância de pesos e de equipamentos que permaneçam fixos por longos períodos de tempo, nem de elevadas concentrações de pessoas (edificações residenciais, de acesso restrito)", "psi_0": 0.5, "psi_1": 0.4, "psi_2": 0.3},
+        {"grupo": "Cargas de utilização de edifícios", "acao": "Locais em que há predominância de pesos de equipamentos que permaneçam fixos por longos períodos de tempo, ou de elevadas concentrações de pessoas (edificações comerciais, de escritórios e de acesso público)", "psi_0": 0.7, "psi_1": 0.6, "psi_2": 0.4},
+        {"grupo": "Cargas de utilização de edifícios", "acao": "Bibliotecas, arquivos, depósitos, oficinas, garagens e coberturas", "psi_0": 0.8, "psi_1": 0.7, "psi_2": 0.6},
+        {"grupo": "Vento", "acao": "Pressão dinâmica do vento nas estruturas em geral", "psi_0": 0.6, "psi_1": 0.3, "psi_2": 0},
+        {"grupo": "Temperatura", "acao": "Variações uniformes de temperatura em relação à média anual local", "psi_0": 0.6, "psi_1": 0.5, "psi_2": 0.3},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Passarelas de pedestres", "psi_0": 0.6, "psi_1": 0.4, "psi_2": 0.3},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Pontes rodoviárias", "psi_0": 0.7, "psi_1": 0.5, "psi_2": 0.3},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Pontes ferroviárias", "psi_0": 1.0, "psi_1": 1.0, "psi_2": 0.6},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Vigas de rolamentos de pontes rolantes", "psi_0": 1.0, "psi_1": 0.8, "psi_2": 0.5}
+      ],
+      "notas": [
+        "Para combinações excepcionais em que a ação transitória excepcional seja o fogo, o fator de redução psi_2 pode ser reduzido, multiplicando-o por 0,7.",
+        "No caso de silos e reservatórios, os fatores de combinação e redução devem ser considerados iguais a 1,0."
+      ],
+      "fonte": {"norma": "ABNT NBR 8681:2025", "arquivo": "NBR 08681 - 2025 - Ações e Segurança nas Estruturas - Procedimento.pdf", "item": "Tabela 6 (itens 5.1.4.4 e 5.1.6)", "pagina": "16-17", "pagina_pdf": "22-23"},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_f_acoes_nbr8800_tabela1",
+      "descricao": "Tabela 1 (NBR 8800:2024) — coeficientes de ponderação das ações gamma_f = gamma_f1 * gamma_f3 (valores entre parênteses = ações permanentes favoráveis à segurança)",
+      "acoes_permanentes_gamma_g": [
+        {"combinacao": "Normais", "peso_proprio_estruturas_aco_e_equipamentos": "1,25 (1,00)", "peso_proprio_pre_moldadas_madeira_industrializados": "1,30 (1,00)", "peso_proprio_moldadas_in_loco_e_empuxos": "1,35 (1,00)", "elementos_industrializados_com_adicoes_in_loco": "1,40 (1,00)", "elementos_construtivos_em_geral": "1,50 (1,00)", "diretas_agrupadas": "1,35 (1,00)", "indiretas": "1,20 (0)"},
+        {"combinacao": "Especiais ou de construção", "peso_proprio_estruturas_aco_e_equipamentos": "1,15 (1,00)", "peso_proprio_pre_moldadas_madeira_industrializados": "1,20 (1,00)", "peso_proprio_moldadas_in_loco_e_empuxos": "1,25 (1,00)", "elementos_industrializados_com_adicoes_in_loco": "1,30 (1,00)", "elementos_construtivos_em_geral": "1,40 (1,00)", "diretas_agrupadas": "1,25 (1,00)", "indiretas": "1,20 (0)"},
+        {"combinacao": "Excepcionais", "peso_proprio_estruturas_aco_e_equipamentos": "1,10 (1,00)", "peso_proprio_pre_moldadas_madeira_industrializados": "1,15 (1,00)", "peso_proprio_moldadas_in_loco_e_empuxos": "1,15 (1,00)", "elementos_industrializados_com_adicoes_in_loco": "1,20 (1,00)", "elementos_construtivos_em_geral": "1,30 (1,00)", "diretas_agrupadas": "1,15 (1,00)", "indiretas": "0 (0)"}
+      ],
+      "acoes_variaveis_gamma_q": [
+        {"combinacao": "Normais", "temperatura_variacao_termica_atmosfera": 1.20, "temperatura_gerada_por_equipamentos": 1.50, "acao_do_vento": 1.40, "acoes_truncadas": 1.20, "demais_acoes_variaveis": 1.50, "agrupadas": 1.50},
+        {"combinacao": "Especiais ou de construção", "temperatura_variacao_termica_atmosfera": 1.00, "temperatura_gerada_por_equipamentos": 1.30, "acao_do_vento": 1.20, "acoes_truncadas": 1.10, "demais_acoes_variaveis": 1.30, "agrupadas": 1.30},
+        {"combinacao": "Excepcionais", "temperatura_variacao_termica_atmosfera": 1.00, "temperatura_gerada_por_equipamentos": 1.00, "acao_do_vento": 1.00, "acoes_truncadas": 1.00, "demais_acoes_variaveis": 1.00, "agrupadas": 1.00}
+      ],
+      "notas": [
+        "Ações variáveis e excepcionais favoráveis à segurança não podem ser incluídas nas combinações.",
+        "O valor do coeficiente de ponderação de cargas permanentes de mesma origem, em um dado carregamento, deve ser o mesmo ao longo de toda a estrutura (4.8.6.2).",
+        "No caso de equipamentos (móveis ou fixos) que suportam ou içam cargas, o peso próprio do equipamento deve ser considerado como ação permanente e a carga suportada ou içada, como ação variável."
+      ],
+      "fonte": {"norma": "ABNT NBR 8800:2024", "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela 1 (item 4.8.6.2)", "pagina": 20, "pagina_pdf": 37},
+      "status": "extraido"
+    },
+    {
+      "id": "psi_fatores_nbr8800_tabela2",
+      "descricao": "Tabela 2 (NBR 8800:2024) — fatores de combinação psi_0 e de redução psi_1 e psi_2 para as ações variáveis",
+      "tabela": [
+        {"grupo": "Ações variáveis causadas pelo uso e ocupação", "acao": "Locais em que não há predominância de pesos e de equipamentos que permanecem fixos por longos períodos de tempo nem de elevadas concentrações de pessoas (edificações residenciais de acesso restrito)", "psi_0": 0.5, "psi_1": 0.4, "psi_2": 0.3},
+        {"grupo": "Ações variáveis causadas pelo uso e ocupação", "acao": "Locais em que há predominância de pesos e de equipamentos que permanecem fixos por longos períodos de tempo ou de elevadas concentrações de pessoas (edificações industriais, comerciais, de escritórios e de acesso ao público)", "psi_0": 0.7, "psi_1": 0.6, "psi_2": 0.4},
+        {"grupo": "Ações variáveis causadas pelo uso e ocupação", "acao": "Bibliotecas, arquivos, depósitos, oficinas, garagens e coberturas", "psi_0": 0.8, "psi_1": 0.7, "psi_2": 0.6},
+        {"grupo": "Vento", "acao": "Pressão dinâmica do vento nas estruturas em geral", "psi_0": 0.6, "psi_1": 0.3, "psi_2": 0},
+        {"grupo": "Temperatura", "acao": "Variações uniformes de temperatura em relação à média anual local", "psi_0": 0.6, "psi_1": 0.5, "psi_2": 0.3},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Passarelas de pedestres", "psi_0": 0.6, "psi_1": 0.4, "psi_2": 0.3},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Vigas de rolamento de pontes rolantes", "psi_0": 1.0, "psi_1": 0.8, "psi_2": 0.5},
+        {"grupo": "Cargas móveis e seus efeitos dinâmicos", "acao": "Pilares e outros elementos ou subestruturas que suportam vigas de rolamento de pontes rolantes", "psi_0": 0.7, "psi_1": 0.6, "psi_2": 0.4}
+      ],
+      "notas": [
+        "Para estado-limite de fadiga (ver o Anexo H), usar psi_1 igual a 1,0.",
+        "Para combinações excepcionais em que a ação principal for sismo, admite-se adotar para psi_2 o valor zero.",
+        "Para ações truncadas, adotar psi_0 = psi_1 = psi_2 = 1,0."
+      ],
+      "fonte": {"norma": "ABNT NBR 8800:2024", "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela 2 (item 4.8.6.2)", "pagina": 21, "pagina_pdf": 38},
+      "status": "extraido"
+    },
+    {
+      "id": "gamma_m_resistencias_nbr8800_tabela3",
+      "descricao": "Tabela 3 (NBR 8800:2024) — coeficientes de ponderação das resistências dos materiais gamma_m no ELU",
+      "tabela": [
+        {"combinacoes_ultimas": "Normais", "gamma_a1_escoamento_e_instabilidade": 1.10, "gamma_a2_ruptura": 1.35, "gamma_c_concreto": 1.40, "gamma_s_aco_armaduras": 1.15},
+        {"combinacoes_ultimas": "Especiais ou de construção", "gamma_a1_escoamento_e_instabilidade": 1.10, "gamma_a2_ruptura": 1.35, "gamma_c_concreto": 1.20, "gamma_s_aco_armaduras": 1.15},
+        {"combinacoes_ultimas": "Excepcionais", "gamma_a1_escoamento_e_instabilidade": 1.00, "gamma_a2_ruptura": 1.15, "gamma_c_concreto": 1.20, "gamma_s_aco_armaduras": 1.00}
+      ],
+      "notas": [
+        "O aço estrutural inclui o aço de fôrma incorporada, usado nas lajes mistas de aço e concreto, de pinos e parafusos.",
+        "gamma_a1 aplica-se a estados-limite últimos relacionados a escoamento e instabilidade; gamma_a2, à ruptura (4.9.2.1).",
+        "Outros valores de coeficientes de ponderação de resistências (conectores de cisalhamento, metal de solda) são fornecidos nas seções pertinentes da Norma (4.9.2.3).",
+        "No estado-limite de serviço (ELS), gamma_m = 1,00 (4.9.3)."
+      ],
+      "fonte": {"norma": "ABNT NBR 8800:2024", "arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela 3 (item 4.9.2)", "pagina": 25, "pagina_pdf": 42},
+      "status": "extraido"
+    },
+    {
+      "id": "cotejo_8681_x_8800",
+      "descricao": "Cotejo entre NBR 8681:2025 e NBR 8800:2024 quanto a coeficientes e fatores",
+      "conclusoes": [
+        "gamma_g (permanentes, separadas e agrupadas): valores IDÊNTICOS nas duas normas para os cinco tipos de ação permanente e as três classes de combinação.",
+        "gamma_q (variáveis): valores IDÊNTICOS para ações truncadas, temperatura por variação térmica da atmosfera, vento e demais ações; a NBR 8800 desdobra 'efeito da temperatura gerada por equipamentos' em coluna própria (1,50 / 1,30 / 1,00), enquanto a NBR 8681 a inclui em 'Demais ações'.",
+        "psi_0, psi_1, psi_2: valores IDÊNTICOS para cargas de utilização de edifícios, vento, temperatura, passarelas de pedestres e vigas de rolamento de pontes rolantes. A NBR 8681 traz adicionalmente pontes rodoviárias e ferroviárias; a NBR 8800 traz adicionalmente 'pilares e outros elementos que suportam vigas de rolamento' (0,7 / 0,6 / 0,4).",
+        "Ações permanentes indiretas: a NBR 8800 (Tabela 1) atribui gamma_g = 1,20 (normais e especiais) e 0 (excepcionais); a NBR 8681 trata protensão/recalques/retração em tabela própria (Tabela 3).",
+        "RECOMENDAÇÃO AO AGENTE A2: para o software (estruturas de aço), adotar como fonte primária a NBR 8800:2024 (itens 4.8.6, 4.8.7 e 4.9.2), citando a NBR 8681:2025 como norma de base."
+      ],
+      "fonte": {"observacao": "Cotejo elaborado pelo Agente A1 a partir das tabelas transcritas acima; NÃO é texto normativo."},
+      "status": "extraido"
+    }
+  ],
+  "itens_nao_extraidos_nesta_rodada": [
+    {"norma": "NBR 8681:2025", "item": "5.1.4.5 e Tabela 7", "titulo": "Fatores de redução para combinação frequente de fadiga", "motivo": "fadiga está fora do escopo da Fase 0"},
+    {"norma": "NBR 8681:2025", "item": "5.1.7", "titulo": "Segurança relativa à perda de equilíbrio como corpo rígido", "motivo": "não solicitado nesta rodada"},
+    {"norma": "NBR 8681:2025", "item": "5.3", "titulo": "Alteração dos coeficientes de ponderação e coeficientes de ajustamento/importância", "motivo": "não solicitado nesta rodada"},
+    {"norma": "NBR 8800:2024", "item": "Anexo B", "titulo": "Deslocamentos máximos (limites de ELS)", "motivo": "NÃO SOLICITADO nesta rodada, mas NECESSÁRIO para fechar a Fase 0 (verificação de flecha). Extrair na próxima rodada — páginas impressas 131 a 133."}
+  ]
+}

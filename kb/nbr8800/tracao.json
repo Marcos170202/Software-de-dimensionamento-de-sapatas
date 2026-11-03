@@ -1,0 +1,173 @@
+{
+  "arquivo": "kb/nbr8800/tracao.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Barras prismáticas submetidas a força axial de tração",
+  "item_normativo_raiz": "5.2",
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "Transcrição literal das equações; nenhum valor foi calculado, completado de memória ou inferido.",
+    "Fase 0 do projeto usa apenas 5.2.1.2, 5.2.2, 5.2.3, 5.2.4, 5.2.5-a)/c) e 5.2.8.1 (perfis laminados/soldados ligados por parafusos)."
+  ],
+  "entradas": [
+    {
+      "id": "tracao_condicao_dimensionamento",
+      "descricao": "Condição a ser atendida no dimensionamento de barras tracionadas",
+      "formula": "Nt,Sd <= Nt,Rd",
+      "variaveis": {
+        "Nt_Sd": "força axial de tração solicitante de cálculo",
+        "Nt_Rd": "força axial de tração resistente de cálculo, determinada conforme 5.2.2, 5.2.6 ou 5.2.7, o que for aplicável"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas submetidas a força axial de tração, incluindo barras ligadas por pinos e barras redondas com extremidades rosqueadas (5.2.1.1). Devem ainda ser observadas as considerações de 5.2.8 (limitação do índice de esbeltez).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.1.2", "pagina": 39, "pagina_pdf": 56},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_escoamento_secao_bruta",
+      "descricao": "Força axial de tração resistente de cálculo para o estado-limite último de escoamento da seção bruta",
+      "formula": "Nt,Rd = Ag * fy / gamma_a1",
+      "variaveis": {
+        "Ag": "área bruta da seção transversal da barra",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural para escoamento e instabilidade (ver NBR 8800:2024, Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas tracionadas, exceto barras redondas com extremidades rosqueadas e barras ligadas por pinos. Nt,Rd é o MENOR entre este valor e o de 'tracao_ruptura_secao_liquida'.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.2-a)", "pagina": 39, "pagina_pdf": 56},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_ruptura_secao_liquida",
+      "descricao": "Força axial de tração resistente de cálculo para o estado-limite último de ruptura da seção líquida",
+      "formula": "Nt,Rd = Ae * fu / gamma_a2",
+      "variaveis": {
+        "Ae": "área líquida efetiva da seção transversal da barra, determinada conforme 5.2.3",
+        "fu": "resistência do aço à ruptura",
+        "gamma_a2": "coeficiente de ponderação da resistência do aço estrutural para ruptura (ver NBR 8800:2024, Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas tracionadas, exceto barras redondas com extremidades rosqueadas e barras ligadas por pinos. Nt,Rd é o MENOR entre este valor e o de 'tracao_escoamento_secao_bruta'.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.2-b)", "pagina": 39, "pagina_pdf": 56},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_area_liquida_efetiva",
+      "descricao": "Área líquida efetiva da seção transversal",
+      "formula": "Ae = Ct * An",
+      "variaveis": {
+        "An": "área líquida da barra, determinada conforme 5.2.4",
+        "Ct": "coeficiente de redução da área líquida, determinado conforme 5.2.5"
+      },
+      "condicoes_aplicabilidade": "Aplicável ao cálculo de Nt,Rd por ruptura da seção líquida (5.2.2-b).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.3", "pagina": 39, "pagina_pdf": 56},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_area_liquida",
+      "descricao": "Regras para determinação da área líquida An em regiões com furos",
+      "formula": "An = soma dos produtos (espessura x largura líquida) de cada elemento; para cadeias de furos em diagonal/zigue-zague, soma-se s^2/(4*g) para cada linha ligando dois furos",
+      "regras_transcritas": [
+        "a) em ligações parafusadas, a largura dos furos deve ser considerada 2,0 mm maior que a dimensão máxima desses furos, especificada em 6.3.6, perpendicular à direção da força aplicada. Se o furo for feito com broca, a largura dos furos pode ser considerada igual à dimensão máxima desses furos, perpendicular à direção da força aplicada;",
+        "b) no caso de uma série de furos distribuídos transversalmente ao eixo da barra, em diagonal a esse eixo ou em zigue-zague, a largura líquida dessa parte da barra deve ser calculada deduzindo-se da largura bruta a soma das larguras de todos os furos em cadeia, e somando-se para cada linha ligando dois furos a quantidade s^2/(4g), sendo s e g, respectivamente, os espaçamentos longitudinal e transversal (gabarito) entre esses dois furos (ver a Figura 3);",
+        "c) a largura líquida crítica daquela parte da barra é obtida pela cadeia de furos que produza a menor das larguras líquidas, para as diferentes possibilidades de linhas de ruptura;",
+        "d) para cantoneiras, o gabarito g dos furos em abas opostas deve ser considerado igual à soma dos gabaritos, medidos a partir da aresta da cantoneira, subtraída de sua espessura;",
+        "e) na determinação da área líquida de seção que compreenda soldas de tampão ou soldas de filete em furos, a área do metal da solda deve ser desprezada.",
+        "5.2.4.2: Em regiões em que não existam furos, a área líquida An deve ser considerada igual à área bruta da seção transversal, Ag."
+      ],
+      "variaveis": {
+        "s": "espaçamento longitudinal entre dois furos",
+        "g": "espaçamento transversal (gabarito) entre dois furos"
+      },
+      "condicoes_aplicabilidade": "Regiões com furos, feitos para ligação ou para qualquer outra finalidade.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.4", "pagina": 40, "pagina_pdf": 57},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_ct_forca_transmitida_a_todos_elementos",
+      "descricao": "Coeficiente de redução Ct — força de tração transmitida diretamente a cada um dos elementos da seção transversal, por soldas ou parafusos",
+      "formula": "Ct = 100 [TRANSCRIÇÃO LITERAL DO PDF]",
+      "condicoes_aplicabilidade": "Quando a força de tração for transmitida diretamente para cada um dos elementos da seção transversal da barra, por soldas ou parafusos.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5-a)", "pagina": 40, "pagina_pdf": 57},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "O PDF imprime literalmente 'Ct = 100' (página impressa 40 / página 57 do PDF), sem vírgula decimal. Fisicamente Ct é um coeficiente de redução <= 1,0, o que sugere erro tipográfico da edição 2024 para 'Ct = 1,00'. O Bibliotecário NÃO corrigiu o valor: cabe ao Agente A2 (Verificador Normativo) decidir e registrar a interpretação antes de congelar o ruleset.yaml."
+    },
+    {
+      "id": "tracao_ct_soldas_transversais",
+      "descricao": "Coeficiente de redução Ct — força transmitida somente por soldas transversais",
+      "formula": "Ct = Ac / Ag",
+      "variaveis": {
+        "Ac": "área da seção transversal dos elementos conectados",
+        "Ag": "área bruta da seção transversal da barra"
+      },
+      "condicoes_aplicabilidade": "Quando a força de tração for transmitida somente por soldas transversais. (Fora do escopo da Fase 0 — ligações soldadas são Fase 1.)",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5-b)", "pagina": 40, "pagina_pdf": 57},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_ct_secoes_abertas_parafusos",
+      "descricao": "Coeficiente de redução Ct — seções abertas com força transmitida somente por parafusos (ou somente por soldas longitudinais, ou combinação de soldas longitudinais e transversais) para alguns (não todos) elementos da seção",
+      "formula": "Ct = 1 - ec / lc",
+      "variaveis": {
+        "ec": "excentricidade da ligação, igual à distância do centro geométrico da seção da barra (G) ao plano de cisalhamento da ligação (em perfis com um plano de simetria, a ligação deve ser simétrica em relação a ele e são consideradas, para cálculo de Ct, duas barras fictícias e simétricas, cada uma correspondente a um plano de cisalhamento da ligação — ver a Figura 4)",
+        "lc": "comprimento efetivo da ligação (nas ligações soldadas é igual ao comprimento da solda na direção da força axial; nas ligações parafusadas é igual à distância do primeiro ao último parafuso da linha de furação com maior número de parafusos, na direção da força axial)"
+      },
+      "condicoes_aplicabilidade": "Barras com seções transversais abertas (I, H, U, cantoneiras). É o caso típico da Fase 0 (ligações parafusadas). Aplica-se ainda o limite inferior de 5.2.5 (ver 'tracao_ct_limite_inferior').",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5-c)", "pagina": 41, "pagina_pdf": 58},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_ct_chapas_planas_soldas_longitudinais",
+      "descricao": "Coeficiente de redução Ct — chapas planas com força transmitida somente por soldas longitudinais ao longo de ambas as bordas",
+      "formula": "Ct = [3*lc^2 / (3*lc^2 + b^2)] * (1 - t / (2*lc))",
+      "variaveis": {
+        "lc": "(lw1 + lw2)/2 — valor médio dos comprimentos dos cordões de solda",
+        "b": "largura da chapa (distância entre as soldas situadas nas duas bordas)",
+        "t": "espessura da chapa"
+      },
+      "condicoes_aplicabilidade": "Chapas planas soldadas longitudinalmente nas duas bordas, conforme a Figura 5 (ver 6.2.6.2.3). Fora do escopo da Fase 0 (ligações soldadas são Fase 1).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5-d)", "pagina": 41, "pagina_pdf": 58},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_ct_perfis_tubulares_chapa_concentrica",
+      "descricao": "Coeficiente de redução Ct — perfis tubulares circulares e retangulares com chapa de ligação concêntrica",
+      "formula": "Ct = [1 + (ec/lc)^3,2]^(-10)  [expoente conforme impresso no PDF]",
+      "variaveis": {
+        "ec": "excentricidade da ligação (ver Figuras 6 e 7; ec = h^2/(4(h+b)) ou D/pi - tc/2 conforme o caso ilustrado)",
+        "lc": "comprimento efetivo da ligação"
+      },
+      "condicoes_aplicabilidade": "Perfis tubulares circulares e retangulares, com e sem costura, em que a força de tração for transmitida por uma chapa de ligação concêntrica. Fora do escopo da Fase 0 (perfis tubulares não integram o MVP).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5-e)", "pagina": 42, "pagina_pdf": 59},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "O expoente externo é impresso como '-10'. Não foi possível distinguir com segurança se é '-10' ou '-1,0' (vírgula decimal possivelmente não renderizada). Item fora do escopo da Fase 0; revisar antes de qualquer uso com perfis tubulares."
+    },
+    {
+      "id": "tracao_ct_limite_inferior",
+      "descricao": "Limite inferior do coeficiente Ct",
+      "formula": "Ct >= Ac / Ag",
+      "variaveis": {
+        "Ac": "área bruta dos elementos conectados da seção transversal",
+        "Ag": "área bruta da barra"
+      },
+      "condicoes_aplicabilidade": "Aplica-se a todos os casos, EXCETO seções tubulares retangulares e circulares e chapas.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.5 (parágrafo final)", "pagina": 42, "pagina_pdf": 59},
+      "status": "extraido"
+    },
+    {
+      "id": "tracao_limitacao_esbeltez",
+      "descricao": "Limitação recomendada do índice de esbeltez de barras tracionadas",
+      "formula": "L / r <= 300 (recomendação)",
+      "variaveis": {
+        "L": "comprimento destravado",
+        "r": "raio de giração correspondente"
+      },
+      "condicoes_aplicabilidade": "Recomenda-se que o índice de esbeltez das barras tracionadas, considerado como a maior relação entre o comprimento destravado e o raio de giração correspondente, não supere 300, excetuando-se tirantes de barras redondas pré-tensionadas ou outras barras montadas com pré-tensão. Em barras compostas, o índice l/rmin de qualquer perfil componente entre duas ligações adjacentes também não deve superar 300 (5.2.8.2). Caso a recomendação não seja adotada, o responsável técnico deve estabelecer novos limites (5.2.8.3).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.2.8.1", "pagina": 44, "pagina_pdf": 61},
+      "status": "extraido"
+    }
+  ],
+  "itens_nao_extraidos_nesta_rodada": [
+    {"item": "5.2.6", "titulo": "Chapas ligadas por pino", "pagina": 43, "motivo": "fora do escopo da Fase 0"},
+    {"item": "5.2.7", "titulo": "Barras redondas com extremidades rosqueadas", "pagina": 44, "motivo": "fora do escopo da Fase 0"}
+  ]
+}

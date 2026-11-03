@@ -1,0 +1,4246 @@
+{
+  "arquivo": "kb/catalogos/gerdau_perfis_l_i_u_t_barras.json",
+  "titulo": "Gerdau — Barras e Perfis: cantoneiras (L), perfis I, U, T, estrela e barras",
+  "fabricante": "Gerdau",
+  "arquivo_fonte": "kb/fontes_originais/catalogos/Catálogo - Gerdau - Perfis L, I, U, T, Barras.pdf",
+  "pagina_pdf_inicial": 1,
+  "pagina_pdf_final": 14,
+  "observacao_paginacao": "PDF de 14 páginas, sem numeração impressa. p.1 capa 'BARRAS E PERFIS'; p.2 aviso sobre pesos nominais; p.3 CANTONEIRA DE ABAS IGUAIS; p.4 PERFIL I; p.5 PERFIL U; p.6 PERFIL T; p.7 PERFIL ESTRELA; p.8 BARRA REDONDA; p.9 BARRA CHATA; p.10 BARRA QUADRADA; p.11 BARRA QUADRADA TREFILADA; p.12 BARRA REDONDA TREFILADA; p.13 BARRA SEXTAVADA TREFILADA; p.14 contracapa (carimbo '03/19').",
+  "revisao_impressa_no_pdf": "03/19",
+  "extraido_por": "Agente A1 — Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "metodo_extracao": "pdftotext -bbox-layout (poppler) — cada palavra foi mapeada à sua coluna pela coordenada x, e não pelo espaçamento do texto, porque estas tabelas usam células mescladas na coluna de bitola. As fronteiras dos grupos mesclados da tabela de cantoneiras e as tabelas de perfis I, U e T foram conferidas na renderização das páginas (pdftoppm 300 dpi).",
+  "aviso_do_catalogo_pagina_2": "Todos os pesos e dimensões constantes dessas tabelas são nominais, podendo apresentar diferenças de acordo com as tolerâncias estabelecidas nas especificações ou em normas.",
+  "observacao_tolerancia_comprimento": "Nas páginas 3, 4, 5 e 6 o catálogo repete: 'OBS.: As barras são fornecidas com tolerância de comprimento -0+10 cm.'",
+  "convencao_numerica": "Vírgula = separador decimal no PDF; neste JSON os números estão em notação JSON (ponto decimal). Nenhum valor foi calculado ou corrigido.",
+  "cotejo_com_catalogo_complementar": {
+    "arquivo_cotejado": "kb/fontes_originais/catalogos/Catalogo - Gerdau - Perfis I e U.pdf",
+    "paginas_pdf_cotejadas": [
+      2
+    ],
+    "escopo_do_cotejo": "As tabelas PERFIL I GERDAU (8 linhas) e PERFIL U GERDAU (12 linhas) do catálogo complementar foram comparadas célula a célula com as deste arquivo — todos os 13 campos numéricos de cada linha de I e os 12 de cada linha de U.",
+    "resultado": "Perfil I: 8 de 8 linhas idênticas, sem nenhuma divergência. Perfil U: 11 de 12 linhas idênticas; UMA divergência — bf da bitola U 3\" x 7,44 kg/m (38,05 mm neste catálogo contra 35,05 mm no complementar). A entrada correspondente está marcada REVISAR_MANUALMENTE.",
+    "observacao_sobre_o_aco": "O catálogo complementar acrescenta a informação de material, ausente neste: 'Produzidos normalmente em aço ASTM A36, podem também ser fabricados em ASTM A572 ou ASTM A588 sob encomenda.' (pág. 2). Esses três aços já constam da Tabela A.2 da NBR 8800:2024 em kb/nbr8800/propriedades_materiais.json.",
+    "observacao_do_complementar": "'OBS.: Todos os pesos e dimensões constantes dessas tabelas são nominais, podendo apresentar diferenças de acordo com as tolerâncias estabelecidas nas especificações ou em norma. As barras são fornecidas com tolerância de comprimento -0+10 cm.'",
+    "nao_extraido_separadamente": "O catálogo complementar NÃO traz nenhuma coluna, bitola ou propriedade que já não esteja neste arquivo; por isso não foi gerado um JSON próprio para ele. Nenhum agente precisa reabri-lo."
+  },
+  "cotejo_com_folder_tecnico": {
+    "arquivo_cotejado": "kb/fontes_originais/catalogos/Catálogo - Gerdau - Folder Técnico - Perfis e Barras.pdf",
+    "paginas_pdf": "8 páginas (tabelas de aços na pág. 6)",
+    "resultado_do_cotejo": "O folder técnico NÃO contém tabela de bitolas nem propriedades geométricas de perfis — não há o que cotejar linha a linha com este arquivo, e por isso não foi gerado um JSON próprio para ele. O que ele acrescenta são as propriedades dos AÇOS em que os perfis L, I, U, T e as barras são produzidos, transcritas abaixo. Nenhum agente precisa reabri-lo.",
+    "acos_da_linha_astm": {
+      "tabela_fonte": "Tabela de Propriedades Mecânicas Referencial (pág. 6)",
+      "cabecalho_original": [
+        "Especificação",
+        "Equivalência NBR 7007",
+        "Limite de Escoamento Mín. (MPa)",
+        "Limite de Resistência (MPa)",
+        "Alongamento 200 mm (%)",
+        "Alongamento 50 mm (%)"
+      ],
+      "status": "extraido",
+      "entradas": [
+        {
+          "especificacao": "ASTM A36",
+          "equivalencia_nbr7007": "MR 250",
+          "limite_escoamento_min_MPa": "250",
+          "limite_resistencia_MPa": "400-550",
+          "alongamento_200mm_pct": "20",
+          "alongamento_50mm_pct": "21"
+        },
+        {
+          "especificacao": "ASTM A572 Grau 50",
+          "equivalencia_nbr7007": "AR 350",
+          "limite_escoamento_min_MPa": "350",
+          "limite_resistencia_MPa": "450 mín.",
+          "alongamento_200mm_pct": "18",
+          "alongamento_50mm_pct": "21"
+        },
+        {
+          "especificacao": "ASTM A572 Grau 60",
+          "equivalencia_nbr7007": "AR 415",
+          "limite_escoamento_min_MPa": "415",
+          "limite_resistencia_MPa": "520 mín.",
+          "alongamento_200mm_pct": "16",
+          "alongamento_50mm_pct": "18"
+        },
+        {
+          "especificacao": "ASTM A588",
+          "equivalencia_nbr7007": "AR 350 COR",
+          "limite_escoamento_min_MPa": "350",
+          "limite_resistencia_MPa": "485 mín.",
+          "alongamento_200mm_pct": "18",
+          "alongamento_50mm_pct": "21",
+          "nota": "marcado '*Sob consulta' no folder"
+        }
+      ],
+      "observacoes_do_folder": [
+        "São descartados os ensaios de propriedades mecânicas nas seguintes situações: 1. Perfis de área de seção transversal inferior a 645 mm². 2. Barras com espessura ou diâmetro inferior a 12,5 mm (excluindo barras chatas). Nessas situações, a garantia é provida pela composição química.",
+        "*Sob consulta."
+      ],
+      "ATENCAO_COTEJO_COM_A_NORMA": "O folder tabula ASTM A572 Grau 50 e ASTM A588 com fy = 350 MPa, ou seja, usa o valor da equivalência NBR 7007 (AR 350 / AR 350 COR). A NBR 8800:2024 tabula esses mesmos aços ASTM com fy = 345 MPa na Tabela A.2 (ver kb/nbr8800/propriedades_materiais.json) e reserva 350 MPa para as denominações brasileiras da Tabela A.1. Não é errata do catálogo nem da norma — são designações diferentes. Para dimensionamento vale o valor da NORMA, não o do catálogo. Registrado para o A2 decidir e travar no ruleset.yaml."
+    },
+    "acos_da_linha_sae": {
+      "tabela_fonte": "Tabela de Composição Química Referencial (pág. 6)",
+      "cabecalho_original": [
+        "Norma",
+        "C (%)",
+        "Mn (%)",
+        "P (%)",
+        "S (%)"
+      ],
+      "status": "extraido",
+      "observacao": "Aços de construção mecânica (não estruturais de edifícios); o folder NÃO dá fy nem fu para eles, apenas composição química. Nenhum dos dois consta do Anexo A da NBR 8800:2024.",
+      "entradas": [
+        {
+          "norma": "SAE 1020",
+          "C_pct": "0,18-0,23",
+          "Mn_pct": "0,30-0,60",
+          "P_pct": "0,030 máx.",
+          "S_pct": "0,050 máx.",
+          "caracteristicas": "Aço baixo carbono de uso geral.",
+          "principais_produtos": "Barra Redonda, Barra Quadrada, Barras Trefiladas e Fio-Máquina."
+        },
+        {
+          "norma": "SAE 1045",
+          "C_pct": "0,43-0,50",
+          "Mn_pct": "0,60-0,90",
+          "P_pct": "0,030 máx.",
+          "S_pct": "0,050 máx.",
+          "caracteristicas": "Aço médio carbono.",
+          "principais_produtos": "Barra Redonda, Barras Trefiladas e Barra Chata."
+        }
+      ],
+      "nota_final_do_folder": "Além dos aços citados das linhas ASTM e SAE, podemos produzir outras qualidades mediante consulta."
+    }
+  },
+  "observacao_ausencia_de_modulos_plasticos": "Nenhuma das tabelas deste catálogo traz módulos resistentes plásticos (Zx, Zy), constante de torção It/J, Cw ou perímetro u — essas colunas simplesmente não existem aqui. O A1 não as calculou.",
+  "secoes": {
+    "cantoneiras_abas_iguais": {
+      "tabela_fonte": "CANTONEIRA DE ABAS IGUAIS GERDAU — 'Cantoneira em Polegadas'",
+      "pagina_pdf": 3,
+      "cabecalho_original": [
+        "b (pol)",
+        "b (mm)",
+        "Peso Nominal (kg/m)",
+        "t (pol)",
+        "t (mm)",
+        "Área (cm²)",
+        "Ix=Iy (cm⁴)",
+        "Wx=Wy (cm³)",
+        "rx=ry (cm)",
+        "rz mín. (cm)",
+        "x (cm)"
+      ],
+      "unidades": {
+        "b_mm": "mm — aba",
+        "t_mm": "mm — espessura",
+        "peso_nominal_kg_m": "kg/m",
+        "area_cm2": "cm²",
+        "Ix_igual_Iy_cm4": "cm⁴",
+        "Wx_igual_Wy_cm3": "cm³",
+        "rx_igual_ry_cm": "cm",
+        "rz_min_cm": "cm — raio de giração mínimo (eixo z, principal)",
+        "x_cm": "cm — distância do centro geométrico à face externa da aba (ver figura da pág. 3)"
+      },
+      "observacoes": [
+        "Coluna 'b' impressa em célula mesclada abrangendo várias espessuras; os 18 grupos foram conferidos um a um na página renderizada.",
+        "A linha de b=5\" com t=7/16\" (11,11 mm) aparece IMPRESSA FORA DE ORDEM, depois da linha de t=5/8\", dentro do mesmo bloco mesclado de b=5\" — conferido visualmente. Foi mantida no grupo de 5\", como impressa.",
+        "As duas primeiras linhas (b=5/8\" e b=3/4\", t=2,50 mm) não têm propriedades geométricas no catálogo (células em branco) e não trazem espessura em polegadas.",
+        "Cobertura: abas de 5/8\" (15,88 mm) a 8\" (203,20 mm)."
+      ],
+      "total_entradas": 52,
+      "entradas": [
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5/8”",
+          "b_mm": 15.88,
+          "t_pol": null,
+          "t_mm": 2.5,
+          "designacao": "L 5/8” x 5/8” x 2,50 mm",
+          "peso_nominal_kg_m": 0.57,
+          "area_cm2": null,
+          "Ix_igual_Iy_cm4": null,
+          "Wx_igual_Wy_cm3": null,
+          "rx_igual_ry_cm": null,
+          "rz_min_cm": null,
+          "x_cm": null,
+          "pagina_pdf": 3,
+          "status": "extraido",
+          "observacao": "Linha impressa no catálogo apenas com b, peso nominal e espessura t (mm); as colunas Área, Ix=Iy, Wx=Wy, rx=ry, rz mín. e x estão EM BRANCO no catálogo e a espessura não traz equivalente em polegadas. Conferido na página renderizada."
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3/4”",
+          "b_mm": 19.05,
+          "t_pol": null,
+          "t_mm": 2.5,
+          "designacao": "L 3/4” x 3/4” x 2,50 mm",
+          "peso_nominal_kg_m": 0.71,
+          "area_cm2": null,
+          "Ix_igual_Iy_cm4": null,
+          "Wx_igual_Wy_cm3": null,
+          "rx_igual_ry_cm": null,
+          "rz_min_cm": null,
+          "x_cm": null,
+          "pagina_pdf": 3,
+          "status": "extraido",
+          "observacao": "Linha impressa no catálogo apenas com b, peso nominal e espessura t (mm); as colunas Área, Ix=Iy, Wx=Wy, rx=ry, rz mín. e x estão EM BRANCO no catálogo e a espessura não traz equivalente em polegadas. Conferido na página renderizada."
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1/2”",
+          "b_mm": 12.7,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 1/2” x 1/2” x 1/8”",
+          "peso_nominal_kg_m": 0.55,
+          "area_cm2": 0.7,
+          "Ix_igual_Iy_cm4": 0.1,
+          "Wx_igual_Wy_cm3": 0.11,
+          "rx_igual_ry_cm": 0.37,
+          "rz_min_cm": 0.25,
+          "x_cm": 0.43,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5/8”",
+          "b_mm": 15.88,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 5/8” x 5/8” x 1/8”",
+          "peso_nominal_kg_m": 0.71,
+          "area_cm2": 0.9,
+          "Ix_igual_Iy_cm4": 0.2,
+          "Wx_igual_Wy_cm3": 0.19,
+          "rx_igual_ry_cm": 0.47,
+          "rz_min_cm": 0.32,
+          "x_cm": 0.51,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3/4”",
+          "b_mm": 19.05,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 3/4” x 3/4” x 1/8”",
+          "peso_nominal_kg_m": 0.87,
+          "area_cm2": 1.11,
+          "Ix_igual_Iy_cm4": 0.36,
+          "Wx_igual_Wy_cm3": 0.27,
+          "rx_igual_ry_cm": 0.57,
+          "rz_min_cm": 0.38,
+          "x_cm": 0.59,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "7/8”",
+          "b_mm": 22.2,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 7/8” x 7/8” x 1/8”",
+          "peso_nominal_kg_m": 1.04,
+          "area_cm2": 1.32,
+          "Ix_igual_Iy_cm4": 0.58,
+          "Wx_igual_Wy_cm3": 0.38,
+          "rx_igual_ry_cm": 0.66,
+          "rz_min_cm": 0.46,
+          "x_cm": 0.66,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1”",
+          "b_mm": 25.4,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 1” x 1” x 1/8”",
+          "peso_nominal_kg_m": 1.19,
+          "area_cm2": 1.48,
+          "Ix_igual_Iy_cm4": 0.83,
+          "Wx_igual_Wy_cm3": 0.49,
+          "rx_igual_ry_cm": 0.79,
+          "rz_min_cm": 0.48,
+          "x_cm": 0.76,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1”",
+          "b_mm": 25.4,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 1” x 1” x 3/16”",
+          "peso_nominal_kg_m": 1.73,
+          "area_cm2": 2.19,
+          "Ix_igual_Iy_cm4": 1.25,
+          "Wx_igual_Wy_cm3": 0.66,
+          "rx_igual_ry_cm": 0.76,
+          "rz_min_cm": 0.48,
+          "x_cm": 0.81,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1”",
+          "b_mm": 25.4,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 1” x 1” x 1/4”",
+          "peso_nominal_kg_m": 2.22,
+          "area_cm2": 2.84,
+          "Ix_igual_Iy_cm4": 1.66,
+          "Wx_igual_Wy_cm3": 0.98,
+          "rx_igual_ry_cm": 0.76,
+          "rz_min_cm": 0.48,
+          "x_cm": 0.86,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/4”",
+          "b_mm": 31.75,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 1.1/4” x 1.1/4” x 1/8”",
+          "peso_nominal_kg_m": 1.5,
+          "area_cm2": 1.93,
+          "Ix_igual_Iy_cm4": 1.67,
+          "Wx_igual_Wy_cm3": 0.82,
+          "rx_igual_ry_cm": 0.97,
+          "rz_min_cm": 0.64,
+          "x_cm": 0.89,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/4”",
+          "b_mm": 31.75,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 1.1/4” x 1.1/4” x 3/16”",
+          "peso_nominal_kg_m": 2.2,
+          "area_cm2": 2.77,
+          "Ix_igual_Iy_cm4": 2.5,
+          "Wx_igual_Wy_cm3": 1.15,
+          "rx_igual_ry_cm": 0.97,
+          "rz_min_cm": 0.61,
+          "x_cm": 0.97,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/4”",
+          "b_mm": 31.75,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 1.1/4” x 1.1/4” x 1/4”",
+          "peso_nominal_kg_m": 2.86,
+          "area_cm2": 3.62,
+          "Ix_igual_Iy_cm4": 3.33,
+          "Wx_igual_Wy_cm3": 1.47,
+          "rx_igual_ry_cm": 0.94,
+          "rz_min_cm": 0.61,
+          "x_cm": 1.02,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/2”",
+          "b_mm": 38.1,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 1.1/2” x 1.1/2” x 1/8”",
+          "peso_nominal_kg_m": 1.83,
+          "area_cm2": 2.32,
+          "Ix_igual_Iy_cm4": 3.33,
+          "Wx_igual_Wy_cm3": 1.15,
+          "rx_igual_ry_cm": 1.17,
+          "rz_min_cm": 0.76,
+          "x_cm": 1.07,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/2”",
+          "b_mm": 38.1,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 1.1/2” x 1.1/2” x 3/16”",
+          "peso_nominal_kg_m": 2.68,
+          "area_cm2": 3.42,
+          "Ix_igual_Iy_cm4": 4.58,
+          "Wx_igual_Wy_cm3": 1.64,
+          "rx_igual_ry_cm": 1.17,
+          "rz_min_cm": 0.74,
+          "x_cm": 1.12,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.1/2”",
+          "b_mm": 38.1,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 1.1/2” x 1.1/2” x 1/4”",
+          "peso_nominal_kg_m": 3.48,
+          "area_cm2": 4.45,
+          "Ix_igual_Iy_cm4": 5.83,
+          "Wx_igual_Wy_cm3": 2.13,
+          "rx_igual_ry_cm": 1.15,
+          "rz_min_cm": 0.74,
+          "x_cm": 1.19,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.3/4”",
+          "b_mm": 44.45,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 1.3/4” x 1.3/4” x 1/8”",
+          "peso_nominal_kg_m": 2.14,
+          "area_cm2": 2.71,
+          "Ix_igual_Iy_cm4": 5.41,
+          "Wx_igual_Wy_cm3": 1.64,
+          "rx_igual_ry_cm": 1.4,
+          "rz_min_cm": 0.89,
+          "x_cm": 1.22,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.3/4”",
+          "b_mm": 44.45,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 1.3/4” x 1.3/4” x 3/16”",
+          "peso_nominal_kg_m": 3.15,
+          "area_cm2": 4.0,
+          "Ix_igual_Iy_cm4": 7.5,
+          "Wx_igual_Wy_cm3": 2.3,
+          "rx_igual_ry_cm": 1.37,
+          "rz_min_cm": 0.89,
+          "x_cm": 1.3,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "1.3/4”",
+          "b_mm": 44.45,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 1.3/4” x 1.3/4” x 1/4”",
+          "peso_nominal_kg_m": 4.12,
+          "area_cm2": 5.22,
+          "Ix_igual_Iy_cm4": 9.57,
+          "Wx_igual_Wy_cm3": 3.13,
+          "rx_igual_ry_cm": 1.35,
+          "rz_min_cm": 0.86,
+          "x_cm": 1.35,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2”",
+          "b_mm": 50.8,
+          "t_pol": "1/8”",
+          "t_mm": 3.18,
+          "designacao": "L 2” x 2” x 1/8”",
+          "peso_nominal_kg_m": 2.46,
+          "area_cm2": 3.1,
+          "Ix_igual_Iy_cm4": 7.91,
+          "Wx_igual_Wy_cm3": 2.13,
+          "rx_igual_ry_cm": 1.6,
+          "rz_min_cm": 1.02,
+          "x_cm": 1.4,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2”",
+          "b_mm": 50.8,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 2” x 2” x 3/16”",
+          "peso_nominal_kg_m": 3.63,
+          "area_cm2": 4.58,
+          "Ix_igual_Iy_cm4": 11.7,
+          "Wx_igual_Wy_cm3": 3.13,
+          "rx_igual_ry_cm": 1.58,
+          "rz_min_cm": 1.02,
+          "x_cm": 1.45,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2”",
+          "b_mm": 50.8,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 2” x 2” x 1/4”",
+          "peso_nominal_kg_m": 4.74,
+          "area_cm2": 6.06,
+          "Ix_igual_Iy_cm4": 14.6,
+          "Wx_igual_Wy_cm3": 4.1,
+          "rx_igual_ry_cm": 1.55,
+          "rz_min_cm": 0.99,
+          "x_cm": 1.5,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2”",
+          "b_mm": 50.8,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 2” x 2” x 5/16”",
+          "peso_nominal_kg_m": 5.83,
+          "area_cm2": 7.42,
+          "Ix_igual_Iy_cm4": 17.5,
+          "Wx_igual_Wy_cm3": 4.91,
+          "rx_igual_ry_cm": 1.53,
+          "rz_min_cm": 0.99,
+          "x_cm": 1.55,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2”",
+          "b_mm": 50.8,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 2” x 2” x 3/8”",
+          "peso_nominal_kg_m": 6.99,
+          "area_cm2": 8.76,
+          "Ix_igual_Iy_cm4": 20.0,
+          "Wx_igual_Wy_cm3": 5.73,
+          "rx_igual_ry_cm": 1.5,
+          "rz_min_cm": 0.99,
+          "x_cm": 1.63,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2.1/2”",
+          "b_mm": 63.5,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 2.1/2” x 2.1/2” x 3/16”",
+          "peso_nominal_kg_m": 4.57,
+          "area_cm2": 5.8,
+          "Ix_igual_Iy_cm4": 23.0,
+          "Wx_igual_Wy_cm3": 4.91,
+          "rx_igual_ry_cm": 1.98,
+          "rz_min_cm": 1.24,
+          "x_cm": 1.75,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2.1/2”",
+          "b_mm": 63.5,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 2.1/2” x 2.1/2” x 1/4”",
+          "peso_nominal_kg_m": 6.1,
+          "area_cm2": 7.67,
+          "Ix_igual_Iy_cm4": 29.0,
+          "Wx_igual_Wy_cm3": 6.4,
+          "rx_igual_ry_cm": 1.96,
+          "rz_min_cm": 1.24,
+          "x_cm": 1.83,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2.1/2”",
+          "b_mm": 63.5,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 2.1/2” x 2.1/2” x 5/16”",
+          "peso_nominal_kg_m": 7.44,
+          "area_cm2": 9.48,
+          "Ix_igual_Iy_cm4": 35.0,
+          "Wx_igual_Wy_cm3": 7.87,
+          "rx_igual_ry_cm": 1.93,
+          "rz_min_cm": 1.24,
+          "x_cm": 1.88,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "2.1/2”",
+          "b_mm": 63.5,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 2.1/2” x 2.1/2” x 3/8”",
+          "peso_nominal_kg_m": 8.78,
+          "area_cm2": 11.16,
+          "Ix_igual_Iy_cm4": 41.0,
+          "Wx_igual_Wy_cm3": 9.35,
+          "rx_igual_ry_cm": 1.91,
+          "rz_min_cm": 1.22,
+          "x_cm": 1.93,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3”",
+          "b_mm": 76.2,
+          "t_pol": "3/16”",
+          "t_mm": 4.76,
+          "designacao": "L 3” x 3” x 3/16”",
+          "peso_nominal_kg_m": 5.52,
+          "area_cm2": 7.03,
+          "Ix_igual_Iy_cm4": 40.0,
+          "Wx_igual_Wy_cm3": 7.21,
+          "rx_igual_ry_cm": 2.39,
+          "rz_min_cm": 1.5,
+          "x_cm": 2.08,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3”",
+          "b_mm": 76.2,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 3” x 3” x 1/4”",
+          "peso_nominal_kg_m": 7.29,
+          "area_cm2": 9.29,
+          "Ix_igual_Iy_cm4": 50.0,
+          "Wx_igual_Wy_cm3": 9.5,
+          "rx_igual_ry_cm": 2.36,
+          "rz_min_cm": 1.5,
+          "x_cm": 2.13,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3”",
+          "b_mm": 76.2,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 3” x 3” x 5/16”",
+          "peso_nominal_kg_m": 9.07,
+          "area_cm2": 11.48,
+          "Ix_igual_Iy_cm4": 62.0,
+          "Wx_igual_Wy_cm3": 11.6,
+          "rx_igual_ry_cm": 2.34,
+          "rz_min_cm": 1.5,
+          "x_cm": 2.21,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3”",
+          "b_mm": 76.2,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 3” x 3” x 3/8”",
+          "peso_nominal_kg_m": 10.71,
+          "area_cm2": 13.61,
+          "Ix_igual_Iy_cm4": 75.0,
+          "Wx_igual_Wy_cm3": 13.6,
+          "rx_igual_ry_cm": 2.31,
+          "rz_min_cm": 1.47,
+          "x_cm": 2.26,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3”",
+          "b_mm": 76.2,
+          "t_pol": "1/2”",
+          "t_mm": 12.7,
+          "designacao": "L 3” x 3” x 1/2”",
+          "peso_nominal_kg_m": 14.0,
+          "area_cm2": 17.74,
+          "Ix_igual_Iy_cm4": 91.0,
+          "Wx_igual_Wy_cm3": 18.0,
+          "rx_igual_ry_cm": 2.29,
+          "rz_min_cm": 1.47,
+          "x_cm": 2.36,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3.1/2”",
+          "b_mm": 88.9,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 3.1/2” x 3.1/2” x 1/4”",
+          "peso_nominal_kg_m": 8.56,
+          "area_cm2": 10.9,
+          "Ix_igual_Iy_cm4": 83.7,
+          "Wx_igual_Wy_cm3": 13.0,
+          "rx_igual_ry_cm": 2.77,
+          "rz_min_cm": 1.76,
+          "x_cm": 2.46,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3.1/2”",
+          "b_mm": 88.9,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 3.1/2” x 3.1/2” x 5/16”",
+          "peso_nominal_kg_m": 10.59,
+          "area_cm2": 13.5,
+          "Ix_igual_Iy_cm4": 102.0,
+          "Wx_igual_Wy_cm3": 16.0,
+          "rx_igual_ry_cm": 2.75,
+          "rz_min_cm": 1.75,
+          "x_cm": 2.52,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "3.1/2”",
+          "b_mm": 88.9,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 3.1/2” x 3.1/2” x 3/8”",
+          "peso_nominal_kg_m": 12.58,
+          "area_cm2": 16.0,
+          "Ix_igual_Iy_cm4": 121.0,
+          "Wx_igual_Wy_cm3": 19.2,
+          "rx_igual_ry_cm": 2.75,
+          "rz_min_cm": 1.75,
+          "x_cm": 2.58,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "4”",
+          "b_mm": 101.6,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 4” x 4” x 1/4”",
+          "peso_nominal_kg_m": 9.81,
+          "area_cm2": 12.51,
+          "Ix_igual_Iy_cm4": 125.0,
+          "Wx_igual_Wy_cm3": 16.4,
+          "rx_igual_ry_cm": 3.17,
+          "rz_min_cm": 2.0,
+          "x_cm": 2.77,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "4”",
+          "b_mm": 101.6,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 4” x 4” x 5/16”",
+          "peso_nominal_kg_m": 12.19,
+          "area_cm2": 15.48,
+          "Ix_igual_Iy_cm4": 154.0,
+          "Wx_igual_Wy_cm3": 21.3,
+          "rx_igual_ry_cm": 3.15,
+          "rz_min_cm": 2.0,
+          "x_cm": 2.84,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "4”",
+          "b_mm": 101.6,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 4” x 4” x 3/8”",
+          "peso_nominal_kg_m": 14.57,
+          "area_cm2": 18.45,
+          "Ix_igual_Iy_cm4": 183.0,
+          "Wx_igual_Wy_cm3": 24.6,
+          "rx_igual_ry_cm": 3.12,
+          "rz_min_cm": 2.0,
+          "x_cm": 2.9,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "4”",
+          "b_mm": 101.6,
+          "t_pol": "7/16”",
+          "t_mm": 11.11,
+          "designacao": "L 4” x 4” x 7/16”",
+          "peso_nominal_kg_m": 16.8,
+          "area_cm2": 21.35,
+          "Ix_igual_Iy_cm4": 208.0,
+          "Wx_igual_Wy_cm3": 29.5,
+          "rx_igual_ry_cm": 3.12,
+          "rz_min_cm": 1.98,
+          "x_cm": 2.95,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "4”",
+          "b_mm": 101.6,
+          "t_pol": "1/2”",
+          "t_mm": 12.7,
+          "designacao": "L 4” x 4” x 1/2”",
+          "peso_nominal_kg_m": 19.03,
+          "area_cm2": 24.19,
+          "Ix_igual_Iy_cm4": 233.0,
+          "Wx_igual_Wy_cm3": 32.8,
+          "rx_igual_ry_cm": 3.1,
+          "rz_min_cm": 1.98,
+          "x_cm": 3.0,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "1/4”",
+          "t_mm": 6.35,
+          "designacao": "L 5” x 5” x 1/4”",
+          "peso_nominal_kg_m": 12.34,
+          "area_cm2": 15.73,
+          "Ix_igual_Iy_cm4": 251.63,
+          "Wx_igual_Wy_cm3": 27.09,
+          "rx_igual_ry_cm": 4.0,
+          "rz_min_cm": 2.53,
+          "x_cm": 3.41,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "5/16”",
+          "t_mm": 7.94,
+          "designacao": "L 5” x 5” x 5/16”",
+          "peso_nominal_kg_m": 15.31,
+          "area_cm2": 19.5,
+          "Ix_igual_Iy_cm4": 308.0,
+          "Wx_igual_Wy_cm3": 33.4,
+          "rx_igual_ry_cm": 3.97,
+          "rz_min_cm": 2.53,
+          "x_cm": 3.47,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 5” x 5” x 3/8”",
+          "peso_nominal_kg_m": 18.3,
+          "area_cm2": 23.29,
+          "Ix_igual_Iy_cm4": 362.0,
+          "Wx_igual_Wy_cm3": 39.5,
+          "rx_igual_ry_cm": 3.94,
+          "rz_min_cm": 2.51,
+          "x_cm": 3.53,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "1/2”",
+          "t_mm": 12.7,
+          "designacao": "L 5” x 5” x 1/2”",
+          "peso_nominal_kg_m": 24.1,
+          "area_cm2": 30.64,
+          "Ix_igual_Iy_cm4": 470.0,
+          "Wx_igual_Wy_cm3": 52.5,
+          "rx_igual_ry_cm": 3.91,
+          "rz_min_cm": 2.49,
+          "x_cm": 3.63,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "5/8”",
+          "t_mm": 15.88,
+          "designacao": "L 5” x 5” x 5/8”",
+          "peso_nominal_kg_m": 29.8,
+          "area_cm2": 37.8,
+          "Ix_igual_Iy_cm4": 566.0,
+          "Wx_igual_Wy_cm3": 64.0,
+          "rx_igual_ry_cm": 3.86,
+          "rz_min_cm": 2.46,
+          "x_cm": 3.76,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "5”",
+          "b_mm": 127.0,
+          "t_pol": "7/16”",
+          "t_mm": 11.11,
+          "designacao": "L 5” x 5” x 7/16”",
+          "peso_nominal_kg_m": 23.52,
+          "area_cm2": 26.96,
+          "Ix_igual_Iy_cm4": 416.68,
+          "Wx_igual_Wy_cm3": 45.71,
+          "rx_igual_ry_cm": 3.93,
+          "rz_min_cm": 2.5,
+          "x_cm": 3.58,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "6”",
+          "b_mm": 152.4,
+          "t_pol": "3/8”",
+          "t_mm": 9.52,
+          "designacao": "L 6” x 6” x 3/8”",
+          "peso_nominal_kg_m": 22.2,
+          "area_cm2": 28.1,
+          "Ix_igual_Iy_cm4": 641.0,
+          "Wx_igual_Wy_cm3": 57.4,
+          "rx_igual_ry_cm": 4.78,
+          "rz_min_cm": 3.02,
+          "x_cm": 4.17,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "6”",
+          "b_mm": 152.4,
+          "t_pol": "1/2”",
+          "t_mm": 12.7,
+          "designacao": "L 6” x 6” x 1/2”",
+          "peso_nominal_kg_m": 29.2,
+          "area_cm2": 37.09,
+          "Ix_igual_Iy_cm4": 828.0,
+          "Wx_igual_Wy_cm3": 75.4,
+          "rx_igual_ry_cm": 4.72,
+          "rz_min_cm": 3.0,
+          "x_cm": 4.27,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "6”",
+          "b_mm": 152.4,
+          "t_pol": "5/8”",
+          "t_mm": 15.88,
+          "designacao": "L 6” x 6” x 5/8”",
+          "peso_nominal_kg_m": 36.0,
+          "area_cm2": 45.86,
+          "Ix_igual_Iy_cm4": 1007.0,
+          "Wx_igual_Wy_cm3": 93.5,
+          "rx_igual_ry_cm": 4.67,
+          "rz_min_cm": 2.97,
+          "x_cm": 4.39,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "6”",
+          "b_mm": 152.4,
+          "t_pol": "3/4”",
+          "t_mm": 19.05,
+          "designacao": "L 6” x 6” x 3/4”",
+          "peso_nominal_kg_m": 42.7,
+          "area_cm2": 54.44,
+          "Ix_igual_Iy_cm4": 1173.0,
+          "Wx_igual_Wy_cm3": 109.9,
+          "rx_igual_ry_cm": 4.65,
+          "rz_min_cm": 2.97,
+          "x_cm": 4.52,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "8”",
+          "b_mm": 203.2,
+          "t_pol": "5/8”",
+          "t_mm": 15.88,
+          "designacao": "L 8” x 8” x 5/8”",
+          "peso_nominal_kg_m": 48.7,
+          "area_cm2": 62.9,
+          "Ix_igual_Iy_cm4": 2472.4,
+          "Wx_igual_Wy_cm3": 168.9,
+          "rx_igual_ry_cm": 6.31,
+          "rz_min_cm": 4.01,
+          "x_cm": 5.66,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Cantoneira de abas iguais (L)",
+          "b_pol": "8”",
+          "b_mm": 203.2,
+          "t_pol": "3/4”",
+          "t_mm": 19.05,
+          "designacao": "L 8” x 8” x 3/4”",
+          "peso_nominal_kg_m": 57.9,
+          "area_cm2": 73.81,
+          "Ix_igual_Iy_cm4": 2901.1,
+          "Wx_igual_Wy_cm3": 199.9,
+          "rx_igual_ry_cm": 6.27,
+          "rz_min_cm": 3.99,
+          "x_cm": 5.79,
+          "pagina_pdf": 3,
+          "status": "extraido"
+        }
+      ]
+    },
+    "perfil_i": {
+      "tabela_fonte": "PERFIL I GERDAU",
+      "pagina_pdf": 4,
+      "cabecalho_original": [
+        "Bitola (pol)",
+        "Peso Nominal (kg/m)",
+        "ALMA d (mm)",
+        "ALMA tw (mm)",
+        "MESA bf (mm)",
+        "MESA tf (mm)",
+        "Área (cm²)",
+        "EIXO X I (cm⁴)",
+        "EIXO X W (cm³)",
+        "EIXO X r (cm)",
+        "EIXO Y I (cm⁴)",
+        "EIXO Y W (cm³)",
+        "EIXO Y r (cm)",
+        "rt (cm)"
+      ],
+      "observacoes": [
+        "Perfil I de abas inclinadas (padrão americano S). Cobertura: 3\" (76,20 mm) a 6\" (152,40 mm), duas massas por bitola.",
+        "A coluna 'Bitola (pol)' é célula mesclada cobrindo as duas linhas de cada altura — conferido na página renderizada."
+      ],
+      "total_entradas": 8,
+      "entradas": [
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "3”",
+          "designacao": "I 3” x 8,48 kg/m",
+          "peso_nominal_kg_m": 8.48,
+          "d_mm": 76.2,
+          "tw_mm": 4.32,
+          "bf_mm": 59.18,
+          "tf_mm": 6.6,
+          "area_cm2": 10.8,
+          "Ix_cm4": 105.1,
+          "Wx_cm3": 27.6,
+          "rx_cm": 3.12,
+          "Iy_cm4": 18.9,
+          "Wy_cm3": 6.4,
+          "ry_cm": 1.33,
+          "rt_cm": 1.45,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "3”",
+          "designacao": "I 3” x 9,68 kg/m",
+          "peso_nominal_kg_m": 9.68,
+          "d_mm": 76.2,
+          "tw_mm": 6.38,
+          "bf_mm": 61.24,
+          "tf_mm": 6.6,
+          "area_cm2": 12.32,
+          "Ix_cm4": 115.0,
+          "Wx_cm3": 30.18,
+          "rx_cm": 3.06,
+          "Iy_cm4": 45.6,
+          "Wy_cm3": 11.48,
+          "ry_cm": 1.92,
+          "rt_cm": 1.98,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "4”",
+          "designacao": "I 4” x 11,46 kg/m",
+          "peso_nominal_kg_m": 11.46,
+          "d_mm": 101.6,
+          "tw_mm": 4.9,
+          "bf_mm": 67.6,
+          "tf_mm": 7.44,
+          "area_cm2": 14.5,
+          "Ix_cm4": 252.0,
+          "Wx_cm3": 49.7,
+          "rx_cm": 4.17,
+          "Iy_cm4": 31.7,
+          "Wy_cm3": 9.4,
+          "ry_cm": 1.48,
+          "rt_cm": 1.68,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "4”",
+          "designacao": "I 4” x 12,65 kg/m",
+          "peso_nominal_kg_m": 12.65,
+          "d_mm": 101.6,
+          "tw_mm": 6.43,
+          "bf_mm": 69.2,
+          "tf_mm": 7.44,
+          "area_cm2": 16.11,
+          "Ix_cm4": 266.0,
+          "Wx_cm3": 52.4,
+          "rx_cm": 4.06,
+          "Iy_cm4": 34.3,
+          "Wy_cm3": 9.9,
+          "ry_cm": 1.46,
+          "rt_cm": 1.83,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "5”",
+          "designacao": "I 5” x 14,88 kg/m",
+          "peso_nominal_kg_m": 14.88,
+          "d_mm": 127.0,
+          "tw_mm": 5.44,
+          "bf_mm": 76.3,
+          "tf_mm": 8.28,
+          "area_cm2": 18.8,
+          "Ix_cm4": 511.0,
+          "Wx_cm3": 80.4,
+          "rx_cm": 5.21,
+          "Iy_cm4": 50.2,
+          "Wy_cm3": 13.2,
+          "ry_cm": 1.63,
+          "rt_cm": 1.88,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "5”",
+          "designacao": "I 5” x 18,24 kg/m",
+          "peso_nominal_kg_m": 18.24,
+          "d_mm": 127.0,
+          "tw_mm": 8.81,
+          "bf_mm": 79.7,
+          "tf_mm": 8.28,
+          "area_cm2": 23.24,
+          "Ix_cm4": 570.0,
+          "Wx_cm3": 89.8,
+          "rx_cm": 4.95,
+          "Iy_cm4": 58.6,
+          "Wy_cm3": 14.7,
+          "ry_cm": 1.59,
+          "rt_cm": 1.92,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "6”",
+          "designacao": "I 6” x 18,60 kg/m",
+          "peso_nominal_kg_m": 18.6,
+          "d_mm": 152.4,
+          "tw_mm": 5.89,
+          "bf_mm": 84.63,
+          "tf_mm": 9.12,
+          "area_cm2": 23.6,
+          "Ix_cm4": 919.0,
+          "Wx_cm3": 120.6,
+          "rx_cm": 6.24,
+          "Iy_cm4": 75.7,
+          "Wy_cm3": 17.9,
+          "ry_cm": 1.79,
+          "rt_cm": 2.08,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil I (abas inclinadas)",
+          "bitola_pol": "6”",
+          "designacao": "I 6” x 22,00 kg/m",
+          "peso_nominal_kg_m": 22.0,
+          "d_mm": 152.4,
+          "tw_mm": 8.71,
+          "bf_mm": 87.5,
+          "tf_mm": 9.12,
+          "area_cm2": 27.97,
+          "Ix_cm4": 1003.0,
+          "Wx_cm3": 131.7,
+          "rx_cm": 5.99,
+          "Iy_cm4": 84.9,
+          "Wy_cm3": 19.4,
+          "ry_cm": 1.74,
+          "rt_cm": 2.26,
+          "pagina_pdf": 4,
+          "status": "extraido"
+        }
+      ]
+    },
+    "perfil_u": {
+      "tabela_fonte": "PERFIL U GERDAU",
+      "pagina_pdf": 5,
+      "cabecalho_original": [
+        "Bitola (pol)",
+        "Peso Nominal (kg/m)",
+        "ALMA d (mm)",
+        "ALMA tw (mm)",
+        "ABA bf (mm)",
+        "ABA tf (mm)",
+        "area (cm²)",
+        "EIXO X I (cm⁴)",
+        "EIXO X W (cm³)",
+        "EIXO X r (cm)",
+        "EIXO Y I (cm⁴)",
+        "EIXO Y W (cm³)",
+        "EIXO Y r (cm)",
+        "x (cm)"
+      ],
+      "observacoes": [
+        "Perfil U de abas inclinadas (padrão americano C). Cobertura: 3\" (76,20 mm), 4\", 6\", 8\", 10\" e 12\" (305,00 mm), duas massas por bitola. NÃO há bitola de 5\" nesta tabela — conferido na página renderizada.",
+        "As colunas 'Bitola (pol)' e 'ALMA d (mm)' são células mescladas cobrindo as duas linhas de cada altura.",
+        "'x' é a distância do centro geométrico à face externa da alma (ver figura da pág. 5)."
+      ],
+      "total_entradas": 12,
+      "entradas": [
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "3”",
+          "designacao": "U 3” x 6,10 kg/m",
+          "peso_nominal_kg_m": 6.1,
+          "d_mm": 76.2,
+          "tw_mm": 4.32,
+          "bf_mm": 35.81,
+          "tf_mm": 6.93,
+          "area_cm2": 7.78,
+          "Ix_cm4": 68.9,
+          "Wx_cm3": 18.1,
+          "rx_cm": 2.98,
+          "Iy_cm4": 8.2,
+          "Wy_cm3": 3.32,
+          "ry_cm": 1.03,
+          "x_cm": 1.11,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "3”",
+          "designacao": "U 3” x 7,44 kg/m",
+          "peso_nominal_kg_m": 7.44,
+          "d_mm": 76.2,
+          "tw_mm": 6.55,
+          "bf_mm": 38.05,
+          "tf_mm": 6.93,
+          "area_cm2": 9.48,
+          "Ix_cm4": 77.2,
+          "Wx_cm3": 20.3,
+          "rx_cm": 2.85,
+          "Iy_cm4": 10.3,
+          "Wy_cm3": 3.82,
+          "ry_cm": 1.04,
+          "x_cm": 1.11,
+          "pagina_pdf": 5,
+          "status": "REVISAR_MANUALMENTE",
+          "valor_divergente_no_catalogo_complementar": {
+            "campo": "bf_mm",
+            "valor_neste_catalogo": 38.05,
+            "valor_em_Catalogo_Gerdau_Perfis_I_e_U_pdf": 35.05,
+            "pagina_pdf_do_complementar": 2
+          },
+          "observacao": "DIVERGÊNCIA ENTRE DOIS CATÁLOGOS GERDAU, conferida visualmente nas páginas renderizadas dos dois PDFs: 'Catálogo - Gerdau - Perfis L, I, U, T, Barras.pdf' (pág. 5) imprime bf = 38,05 mm, enquanto 'Catalogo - Gerdau - Perfis I e U.pdf' (pág. 2) imprime bf = 35,05 mm para a MESMA bitola U 3\" x 7,44 kg/m. Todos os demais valores das tabelas de perfil I (8 linhas) e de perfil U (12 linhas) COINCIDEM exatamente entre os dois catálogos — esta é a única divergência. O A1 manteve o valor da fonte primária desta rodada (38,05) no campo bf_mm e NÃO escolheu entre os dois: decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "4”",
+          "designacao": "U 4” x 8,04 kg/m",
+          "peso_nominal_kg_m": 8.04,
+          "d_mm": 101.6,
+          "tw_mm": 4.67,
+          "bf_mm": 40.23,
+          "tf_mm": 7.52,
+          "area_cm2": 10.1,
+          "Ix_cm4": 159.5,
+          "Wx_cm3": 31.4,
+          "rx_cm": 3.97,
+          "Iy_cm4": 13.1,
+          "Wy_cm3": 4.61,
+          "ry_cm": 1.14,
+          "x_cm": 1.16,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "4”",
+          "designacao": "U 4” x 9,30 kg/m",
+          "peso_nominal_kg_m": 9.3,
+          "d_mm": 101.6,
+          "tw_mm": 6.27,
+          "bf_mm": 41.83,
+          "tf_mm": 7.52,
+          "area_cm2": 11.9,
+          "Ix_cm4": 174.4,
+          "Wx_cm3": 34.3,
+          "rx_cm": 3.84,
+          "Iy_cm4": 15.5,
+          "Wy_cm3": 5.1,
+          "ry_cm": 1.14,
+          "x_cm": 1.15,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "6”",
+          "designacao": "U 6” x 12,20 kg/m",
+          "peso_nominal_kg_m": 12.2,
+          "d_mm": 152.4,
+          "tw_mm": 5.08,
+          "bf_mm": 48.77,
+          "tf_mm": 8.71,
+          "area_cm2": 15.5,
+          "Ix_cm4": 546.0,
+          "Wx_cm3": 71.7,
+          "rx_cm": 5.94,
+          "Iy_cm4": 28.8,
+          "Wy_cm3": 8.16,
+          "ry_cm": 1.36,
+          "x_cm": 1.3,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "6”",
+          "designacao": "U 6” x 15,62 kg/m",
+          "peso_nominal_kg_m": 15.62,
+          "d_mm": 152.4,
+          "tw_mm": 7.98,
+          "bf_mm": 51.66,
+          "tf_mm": 8.71,
+          "area_cm2": 19.9,
+          "Ix_cm4": 632.0,
+          "Wx_cm3": 82.9,
+          "rx_cm": 5.63,
+          "Iy_cm4": 36.0,
+          "Wy_cm3": 9.24,
+          "ry_cm": 1.34,
+          "x_cm": 1.27,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "8”",
+          "designacao": "U 8” x 17,10 kg/m",
+          "peso_nominal_kg_m": 17.1,
+          "d_mm": 203.2,
+          "tw_mm": 5.59,
+          "bf_mm": 57.4,
+          "tf_mm": 9.5,
+          "area_cm2": 21.68,
+          "Ix_cm4": 1344.3,
+          "Wx_cm3": 132.7,
+          "rx_cm": 7.87,
+          "Iy_cm4": 54.1,
+          "Wy_cm3": 12.94,
+          "ry_cm": 1.42,
+          "x_cm": 1.47,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "8”",
+          "designacao": "U 8” x 20,50 kg/m",
+          "peso_nominal_kg_m": 20.5,
+          "d_mm": 203.2,
+          "tw_mm": 7.7,
+          "bf_mm": 59.51,
+          "tf_mm": 9.5,
+          "area_cm2": 25.93,
+          "Ix_cm4": 1490.0,
+          "Wx_cm3": 147.5,
+          "rx_cm": 7.59,
+          "Iy_cm4": 62.4,
+          "Wy_cm3": 14.09,
+          "ry_cm": 1.42,
+          "x_cm": 1.42,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "10”",
+          "designacao": "U 10” x 22,77 kg/m",
+          "peso_nominal_kg_m": 22.77,
+          "d_mm": 254.0,
+          "tw_mm": 6.1,
+          "bf_mm": 66.04,
+          "tf_mm": 11.1,
+          "area_cm2": 29.0,
+          "Ix_cm4": 2800.0,
+          "Wx_cm3": 221.0,
+          "rx_cm": 9.84,
+          "Iy_cm4": 95.0,
+          "Wy_cm3": 19.0,
+          "ry_cm": 1.81,
+          "x_cm": 1.61,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "10”",
+          "designacao": "U 10” x 29,76 kg/m",
+          "peso_nominal_kg_m": 29.76,
+          "d_mm": 254.0,
+          "tw_mm": 9.63,
+          "bf_mm": 69.57,
+          "tf_mm": 11.1,
+          "area_cm2": 37.9,
+          "Ix_cm4": 3290.0,
+          "Wx_cm3": 259.0,
+          "rx_cm": 9.31,
+          "Iy_cm4": 117.0,
+          "Wy_cm3": 21.6,
+          "ry_cm": 1.76,
+          "x_cm": 1.54,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "12”",
+          "designacao": "U 12” x 30,80 kg/m",
+          "peso_nominal_kg_m": 30.8,
+          "d_mm": 305.0,
+          "tw_mm": 7.2,
+          "bf_mm": 74.0,
+          "tf_mm": 12.7,
+          "area_cm2": 39.3,
+          "Ix_cm4": 5370.0,
+          "Wx_cm3": 352.0,
+          "rx_cm": 11.7,
+          "Iy_cm4": 161.0,
+          "Wy_cm3": 28.3,
+          "ry_cm": 2.03,
+          "x_cm": 1.77,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil U (abas inclinadas)",
+          "bitola_pol": "12”",
+          "designacao": "U 12” x 37,00 kg/m",
+          "peso_nominal_kg_m": 37.0,
+          "d_mm": 305.0,
+          "tw_mm": 9.8,
+          "bf_mm": 77.0,
+          "tf_mm": 12.7,
+          "area_cm2": 47.4,
+          "Ix_cm4": 6010.0,
+          "Wx_cm3": 394.0,
+          "rx_cm": 11.3,
+          "Iy_cm4": 186.0,
+          "Wy_cm3": 30.9,
+          "ry_cm": 1.98,
+          "x_cm": 1.71,
+          "pagina_pdf": 5,
+          "status": "extraido"
+        }
+      ]
+    },
+    "perfil_t": {
+      "tabela_fonte": "PERFIL T GERDAU",
+      "pagina_pdf": 6,
+      "cabecalho_original": [
+        "Bitola (pol)",
+        "Mesa d=bf (mm)",
+        "Espessura tf=tw (mm)",
+        "Peso Nominal (kg/m)",
+        "Área (cm²)",
+        "Eixo X I (cm⁴)",
+        "Eixo X W (cm³)",
+        "Eixo X r (cm)",
+        "Eixo Y I (cm⁴)",
+        "Eixo Y W (cm³)",
+        "Eixo Y r (cm)",
+        "x (cm)"
+      ],
+      "observacoes": [
+        "Cobertura: 3/4\" serrilhada e de 5/8 x 1/8\" a 2 x 1/4\".",
+        "No perfil T deste catálogo d = bf e tf = tw (colunas únicas, como impresso)."
+      ],
+      "total_entradas": 11,
+      "entradas": [
+        {
+          "perfil": "Perfil T",
+          "bitola": "3/4\" serr.",
+          "designacao": "T 3/4\" serr.",
+          "mesa_d_igual_bf_mm": 19.05,
+          "espessura_tf_igual_tw_mm": 2.5,
+          "peso_nominal_kg_m": 0.69,
+          "area_cm2": null,
+          "Ix_cm4": null,
+          "Wx_cm3": null,
+          "rx_cm": null,
+          "Iy_cm4": null,
+          "Wy_cm3": null,
+          "ry_cm": null,
+          "x_cm": null,
+          "pagina_pdf": 6,
+          "status": "extraido",
+          "observacao": "Linha '3/4\" serr.' (serrilhada): o catálogo imprime apenas mesa, espessura e peso nominal; Área, Eixo X e Eixo Y estão EM BRANCO. Conferido na página renderizada."
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "5/8 x 1/8\"",
+          "designacao": "T 5/8 x 1/8\"",
+          "mesa_d_igual_bf_mm": 15.88,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 0.71,
+          "area_cm2": 0.9,
+          "Ix_cm4": 0.2,
+          "Wx_cm3": 0.19,
+          "rx_cm": 0.47,
+          "Iy_cm4": 0.11,
+          "Wy_cm3": 0.14,
+          "ry_cm": 0.35,
+          "x_cm": 0.51,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "3/4 x 1/8\"",
+          "designacao": "T 3/4 x 1/8\"",
+          "mesa_d_igual_bf_mm": 19.05,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 0.86,
+          "area_cm2": 1.13,
+          "Ix_cm4": 0.36,
+          "Wx_cm3": 0.27,
+          "rx_cm": 0.57,
+          "Iy_cm4": 0.19,
+          "Wy_cm3": 0.2,
+          "ry_cm": 0.41,
+          "x_cm": 0.59,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "7/8 x 1/8\"",
+          "designacao": "T 7/8 x 1/8\"",
+          "mesa_d_igual_bf_mm": 22.22,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 0.99,
+          "area_cm2": 1.34,
+          "Ix_cm4": 0.59,
+          "Wx_cm3": 0.38,
+          "rx_cm": 0.67,
+          "Iy_cm4": 0.33,
+          "Wy_cm3": 0.27,
+          "ry_cm": 0.48,
+          "x_cm": 0.67,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "1 x 1/8\"",
+          "designacao": "T 1 x 1/8\"",
+          "mesa_d_igual_bf_mm": 25.4,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 1.18,
+          "area_cm2": 1.54,
+          "Ix_cm4": 0.9,
+          "Wx_cm3": 0.5,
+          "rx_cm": 0.77,
+          "Iy_cm4": 0.44,
+          "Wy_cm3": 0.35,
+          "ry_cm": 0.54,
+          "x_cm": 0.75,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "1.1/4 x 1/8\"",
+          "designacao": "T 1.1/4 x 1/8\"",
+          "mesa_d_igual_bf_mm": 31.75,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 1.5,
+          "area_cm2": 1.92,
+          "Ix_cm4": 1.84,
+          "Wx_cm3": 0.81,
+          "rx_cm": 0.98,
+          "Iy_cm4": 0.86,
+          "Wy_cm3": 0.54,
+          "ry_cm": 0.67,
+          "x_cm": 0.91,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "1.1/2 x 1/8\"",
+          "designacao": "T 1.1/2 x 1/8\"",
+          "mesa_d_igual_bf_mm": 38.1,
+          "espessura_tf_igual_tw_mm": 3.18,
+          "peso_nominal_kg_m": 1.82,
+          "area_cm2": 2.32,
+          "Ix_cm4": 3.24,
+          "Wx_cm3": 1.18,
+          "rx_cm": 1.18,
+          "Iy_cm4": 1.47,
+          "Wy_cm3": 0.77,
+          "ry_cm": 0.8,
+          "x_cm": 1.07,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "1.1/4 x 3/16\"",
+          "designacao": "T 1.1/4 x 3/16\"",
+          "mesa_d_igual_bf_mm": 31.75,
+          "espessura_tf_igual_tw_mm": 4.76,
+          "peso_nominal_kg_m": 2.16,
+          "area_cm2": 2.79,
+          "Ix_cm4": 2.56,
+          "Wx_cm3": 1.16,
+          "rx_cm": 0.96,
+          "Iy_cm4": 1.29,
+          "Wy_cm3": 0.82,
+          "ry_cm": 0.68,
+          "x_cm": 0.97,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "1.1/2 x 3/16\"",
+          "designacao": "T 1.1/2 x 3/16\"",
+          "mesa_d_igual_bf_mm": 38.1,
+          "espessura_tf_igual_tw_mm": 4.76,
+          "peso_nominal_kg_m": 2.65,
+          "area_cm2": 3.4,
+          "Ix_cm4": 4.56,
+          "Wx_cm3": 1.7,
+          "rx_cm": 1.16,
+          "Iy_cm4": 2.22,
+          "Wy_cm3": 1.17,
+          "ry_cm": 0.81,
+          "x_cm": 1.13,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "2 x 3/16\"",
+          "designacao": "T 2 x 3/16\"",
+          "mesa_d_igual_bf_mm": 50.8,
+          "espessura_tf_igual_tw_mm": 4.76,
+          "peso_nominal_kg_m": 3.62,
+          "area_cm2": 4.61,
+          "Ix_cm4": 11.33,
+          "Wx_cm3": 3.12,
+          "rx_cm": 1.57,
+          "Iy_cm4": 5.24,
+          "Wy_cm3": 2.06,
+          "ry_cm": 1.07,
+          "x_cm": 1.45,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil T",
+          "bitola": "2 x 1/4\"",
+          "designacao": "T 2 x 1/4\"",
+          "mesa_d_igual_bf_mm": 50.8,
+          "espessura_tf_igual_tw_mm": 6.35,
+          "peso_nominal_kg_m": 4.74,
+          "area_cm2": 6.05,
+          "Ix_cm4": 14.47,
+          "Wx_cm3": 4.04,
+          "rx_cm": 1.55,
+          "Iy_cm4": 7.03,
+          "Wy_cm3": 2.77,
+          "ry_cm": 1.08,
+          "x_cm": 1.5,
+          "pagina_pdf": 6,
+          "status": "extraido"
+        }
+      ]
+    },
+    "perfil_estrela": {
+      "tabela_fonte": "PERFIL ESTRELA GERDAU",
+      "pagina_pdf": 7,
+      "cabecalho_original": [
+        "Bitola h (mm)",
+        "Bitola d (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "observacoes": [
+        "Tabela com apenas duas bitolas; sem propriedades geométricas no catálogo."
+      ],
+      "total_entradas": 2,
+      "entradas": [
+        {
+          "perfil": "Perfil estrela",
+          "h_mm": 12.1,
+          "d_mm": 15.3,
+          "peso_nominal_kg_m": 0.909,
+          "pagina_pdf": 7,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Perfil estrela",
+          "h_mm": 10.5,
+          "d_mm": 13.2,
+          "peso_nominal_kg_m": 0.694,
+          "pagina_pdf": 7,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_redonda": {
+      "tabela_fonte": "BARRA REDONDA GERDAU",
+      "pagina_pdf": 8,
+      "cabecalho_original": [
+        "Bitolas (pol)",
+        "Bitolas (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "observacoes": [
+        "Impressa em 3 blocos lado a lado com as mesmas colunas; os blocos foram reunidos em uma única lista. Sem propriedades geométricas no catálogo.",
+        "Cobertura: 1/4\" (6,35 mm) a 4.1/16\" (103,19 mm)."
+      ],
+      "total_entradas": 48,
+      "entradas": [
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1/4”",
+          "diametro_mm": 6.35,
+          "peso_nominal_kg_m": 0.25,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.5/16”",
+          "diametro_mm": 33.34,
+          "peso_nominal_kg_m": 6.85,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.7/16”",
+          "diametro_mm": 61.91,
+          "peso_nominal_kg_m": 23.63,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "5/16”",
+          "diametro_mm": 7.94,
+          "peso_nominal_kg_m": 0.39,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.3/8”",
+          "diametro_mm": 34.93,
+          "peso_nominal_kg_m": 7.52,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.1/2”",
+          "diametro_mm": 63.5,
+          "peso_nominal_kg_m": 24.86,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3/8”",
+          "diametro_mm": 9.53,
+          "peso_nominal_kg_m": 0.56,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.7/16”",
+          "diametro_mm": 36.51,
+          "peso_nominal_kg_m": 8.22,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.9/16”",
+          "diametro_mm": 65.08,
+          "peso_nominal_kg_m": 26.11,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1/2”",
+          "diametro_mm": 12.7,
+          "peso_nominal_kg_m": 0.99,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.1/2”",
+          "diametro_mm": 38.1,
+          "peso_nominal_kg_m": 8.95,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.5/8”",
+          "diametro_mm": 66.68,
+          "peso_nominal_kg_m": 27.4,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "9/16”",
+          "diametro_mm": 14.29,
+          "peso_nominal_kg_m": 1.26,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.9/16”",
+          "diametro_mm": 39.69,
+          "peso_nominal_kg_m": 9.71,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.3/4”",
+          "diametro_mm": 69.85,
+          "peso_nominal_kg_m": 30.08,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "5/8”",
+          "diametro_mm": 15.88,
+          "peso_nominal_kg_m": 1.56,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.5/8”",
+          "diametro_mm": 41.28,
+          "peso_nominal_kg_m": 10.5,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.13/16”",
+          "diametro_mm": 71.44,
+          "peso_nominal_kg_m": 31.45,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "11/16”",
+          "diametro_mm": 17.46,
+          "peso_nominal_kg_m": 1.88,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.11/16”",
+          "diametro_mm": 42.86,
+          "peso_nominal_kg_m": 11.32,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.7/8”",
+          "diametro_mm": 73.03,
+          "peso_nominal_kg_m": 32.87,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3/4”",
+          "diametro_mm": 19.05,
+          "peso_nominal_kg_m": 2.24,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.3/4”",
+          "diametro_mm": 44.45,
+          "peso_nominal_kg_m": 12.18,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3”",
+          "diametro_mm": 76.2,
+          "peso_nominal_kg_m": 35.79,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "13/16”",
+          "diametro_mm": 20.64,
+          "peso_nominal_kg_m": 2.63,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.13/16”",
+          "diametro_mm": 46.4,
+          "peso_nominal_kg_m": 13.06,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.1/16\"",
+          "diametro_mm": 77.79,
+          "peso_nominal_kg_m": 37.3,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "7/8”",
+          "diametro_mm": 22.23,
+          "peso_nominal_kg_m": 3.05,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.7/8”",
+          "diametro_mm": 47.63,
+          "peso_nominal_kg_m": 13.98,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.1/8”",
+          "diametro_mm": 79.38,
+          "peso_nominal_kg_m": 38.84,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "15/16”",
+          "diametro_mm": 23.81,
+          "peso_nominal_kg_m": 3.49,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2”",
+          "diametro_mm": 50.8,
+          "peso_nominal_kg_m": 15.91,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.1/4”",
+          "diametro_mm": 82.55,
+          "peso_nominal_kg_m": 42.01,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1”",
+          "diametro_mm": 25.4,
+          "peso_nominal_kg_m": 3.98,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.1/16”",
+          "diametro_mm": 52.39,
+          "peso_nominal_kg_m": 16.92,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.7/16\"",
+          "diametro_mm": 87.31,
+          "peso_nominal_kg_m": 46.99,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.1/16”",
+          "diametro_mm": 26.99,
+          "peso_nominal_kg_m": 4.49,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.1/8”",
+          "diametro_mm": 53.98,
+          "peso_nominal_kg_m": 17.96,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.1/2”",
+          "diametro_mm": 88.9,
+          "peso_nominal_kg_m": 48.73,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.1/8”",
+          "diametro_mm": 28.58,
+          "peso_nominal_kg_m": 5.04,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.1/4”",
+          "diametro_mm": 57.15,
+          "peso_nominal_kg_m": 20.14,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "3.3/4”",
+          "diametro_mm": 95.35,
+          "peso_nominal_kg_m": 55.94,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.3/16”",
+          "diametro_mm": 30.16,
+          "peso_nominal_kg_m": 5.6,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.5/16”",
+          "diametro_mm": 58.74,
+          "peso_nominal_kg_m": 21.27,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "4”",
+          "diametro_mm": 101.6,
+          "peso_nominal_kg_m": 63.64,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "1.1/4”",
+          "diametro_mm": 31.75,
+          "peso_nominal_kg_m": 6.21,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "2.3/8”",
+          "diametro_mm": 60.33,
+          "peso_nominal_kg_m": 22.43,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda",
+          "bitola_pol": "4.1/16”",
+          "diametro_mm": 103.19,
+          "peso_nominal_kg_m": 65.65,
+          "pagina_pdf": 8,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_quadrada": {
+      "tabela_fonte": "BARRA QUADRADA GERDAU",
+      "pagina_pdf": 10,
+      "cabecalho_original": [
+        "Bitolas (pol)",
+        "Bitolas (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "observacoes": [
+        "Impressa em 3 blocos lado a lado. Cobertura: 1/4\" (6,35 mm) a 2\" (50,80 mm).",
+        "Nas linhas de 1.1/8\" e 1.1/4\" o catálogo imprime as aspas fora de lugar ('1.1/8' e '”1.1/4”'); a transcrição preserva o texto como extraído."
+      ],
+      "total_entradas": 13,
+      "entradas": [
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1/4”",
+          "lado_mm": 6.35,
+          "peso_nominal_kg_m": 0.31,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "3/4”",
+          "lado_mm": 19.05,
+          "peso_nominal_kg_m": 2.85,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1.1/2”",
+          "lado_mm": 38.1,
+          "peso_nominal_kg_m": 11.15,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "5/16”",
+          "lado_mm": 7.94,
+          "peso_nominal_kg_m": 0.5,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "7/8”",
+          "lado_mm": 22.23,
+          "peso_nominal_kg_m": 3.88,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1.3/4”",
+          "lado_mm": 44.45,
+          "peso_nominal_kg_m": 15.19,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "3/8”",
+          "lado_mm": 9.53,
+          "peso_nominal_kg_m": 0.71,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1”",
+          "lado_mm": 25.4,
+          "peso_nominal_kg_m": 5.06,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "2”",
+          "lado_mm": 50.8,
+          "peso_nominal_kg_m": 20.26,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1/2”",
+          "lado_mm": 12.7,
+          "peso_nominal_kg_m": 1.27,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "1.1/8",
+          "lado_mm": 28.58,
+          "peso_nominal_kg_m": 6.41,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "5/8”",
+          "lado_mm": 15.88,
+          "peso_nominal_kg_m": 1.98,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada",
+          "bitola_pol": "”1.1/4”",
+          "lado_mm": 31.75,
+          "peso_nominal_kg_m": 7.91,
+          "pagina_pdf": 10,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_chata": {
+      "tabela_fonte": "BARRA CHATA GERDAU — 'Tabela de Peso Nominal (kg/m)'",
+      "pagina_pdf": 9,
+      "estrutura": "Matriz esparsa: linhas = espessura (e) em pol e mm; colunas = largura (l) em pol e mm; célula = peso nominal em kg/m. Só existem células nas combinações fabricadas.",
+      "larguras_das_colunas": [
+        {
+          "largura_pol": "3/8”",
+          "largura_mm": 9.53
+        },
+        {
+          "largura_pol": "1/2”",
+          "largura_mm": 12.7
+        },
+        {
+          "largura_pol": "5/8”",
+          "largura_mm": 15.88
+        },
+        {
+          "largura_pol": "3/4”",
+          "largura_mm": 19.05
+        },
+        {
+          "largura_pol": "7/8”",
+          "largura_mm": 22.23
+        },
+        {
+          "largura_pol": "1”",
+          "largura_mm": 25.4
+        },
+        {
+          "largura_pol": "1.1/4”",
+          "largura_mm": 31.75
+        },
+        {
+          "largura_pol": "1.1/2”",
+          "largura_mm": 38.1
+        },
+        {
+          "largura_pol": "1.3/4”",
+          "largura_mm": 44.45
+        },
+        {
+          "largura_pol": "2”",
+          "largura_mm": 50.8
+        },
+        {
+          "largura_pol": "2.1/2”",
+          "largura_mm": 63.5
+        },
+        {
+          "largura_pol": "3”",
+          "largura_mm": 76.2
+        },
+        {
+          "largura_pol": "3.1/2”",
+          "largura_mm": 88.9
+        },
+        {
+          "largura_pol": "4”",
+          "largura_mm": 101.6
+        },
+        {
+          "largura_pol": "4.1/4”",
+          "largura_mm": 107.95
+        },
+        {
+          "largura_pol": "4.1/2”",
+          "largura_mm": 114.3
+        },
+        {
+          "largura_pol": "4.3/4”",
+          "largura_mm": 120.65
+        },
+        {
+          "largura_pol": "6”",
+          "largura_mm": 152.4
+        }
+      ],
+      "observacoes": [
+        "Cada célula foi atribuída à coluna de largura pelo centro horizontal da palavra (tolerância 6 pt). Nenhuma linha excedeu a tolerância.",
+        "Checagem de integridade aplicada: dentro de cada coluna de largura, a razão peso/espessura tem de ser praticamente constante. De 88 células, apenas UMA destoa (espessura 1.1/2\" = 38,10 mm na coluna de largura 3\" = 76,20 mm, impressa como 15,19 kg/m) — marcada REVISAR_MANUALMENTE, não corrigida. O fato de todas as demais células fecharem confirma que o mapeamento coluna↔valor está correto.",
+        "Cobertura: espessuras de 2,50 mm a 2\" (50,80 mm); larguras de 3/8\" (9,53 mm) a 6\" (152,40 mm)."
+      ],
+      "total_entradas": 15,
+      "entradas": [
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": null,
+          "espessura_e_mm": 2.5,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1/2”",
+              "largura_mm": 12.7,
+              "peso_nominal_kg_m": 0.25
+            },
+            {
+              "largura_pol": "5/8”",
+              "largura_mm": 15.88,
+              "peso_nominal_kg_m": 0.31
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1/8”",
+          "espessura_e_mm": 3.18,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "3/8”",
+              "largura_mm": 9.53,
+              "peso_nominal_kg_m": 0.24
+            },
+            {
+              "largura_pol": "1/2”",
+              "largura_mm": 12.7,
+              "peso_nominal_kg_m": 0.32
+            },
+            {
+              "largura_pol": "5/8”",
+              "largura_mm": 15.88,
+              "peso_nominal_kg_m": 0.4
+            },
+            {
+              "largura_pol": "3/4”",
+              "largura_mm": 19.05,
+              "peso_nominal_kg_m": 0.48
+            },
+            {
+              "largura_pol": "7/8”",
+              "largura_mm": 22.23,
+              "peso_nominal_kg_m": 0.55
+            },
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 0.63
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 0.79
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 0.95
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 1.27
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "5/32”",
+          "espessura_e_mm": 3.96,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1/2”",
+              "largura_mm": 12.7,
+              "peso_nominal_kg_m": 0.39
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "3/16”",
+          "espessura_e_mm": 4.76,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1/2”",
+              "largura_mm": 12.7,
+              "peso_nominal_kg_m": 0.47
+            },
+            {
+              "largura_pol": "5/8”",
+              "largura_mm": 15.88,
+              "peso_nominal_kg_m": 0.59
+            },
+            {
+              "largura_pol": "3/4”",
+              "largura_mm": 19.05,
+              "peso_nominal_kg_m": 0.71
+            },
+            {
+              "largura_pol": "7/8”",
+              "largura_mm": 22.23,
+              "peso_nominal_kg_m": 0.83
+            },
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 0.95
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 1.19
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 1.42
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 1.9
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1/4”",
+          "espessura_e_mm": 6.35,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1/2”",
+              "largura_mm": 12.7,
+              "peso_nominal_kg_m": 0.63
+            },
+            {
+              "largura_pol": "5/8”",
+              "largura_mm": 15.88,
+              "peso_nominal_kg_m": 0.79
+            },
+            {
+              "largura_pol": "3/4”",
+              "largura_mm": 19.05,
+              "peso_nominal_kg_m": 0.95
+            },
+            {
+              "largura_pol": "7/8”",
+              "largura_mm": 22.23,
+              "peso_nominal_kg_m": 1.11
+            },
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 1.27
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 1.58
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 1.9
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 2.53
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 3.17
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 3.8
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 5.06
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 7.6
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "5/16”",
+          "espessura_e_mm": 7.94,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 1.58
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 1.98
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 2.37
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 3.17
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 3.96
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 4.75
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 6.33
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 9.5
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "3/8”",
+          "espessura_e_mm": 9.53,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 1.9
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 2.38
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 2.85
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 3.8
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 4.75
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 5.7
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 7.6
+            },
+            {
+              "largura_pol": "4.3/4”",
+              "largura_mm": 120.65,
+              "peso_nominal_kg_m": 9.03
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 11.4
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1/2”",
+          "espessura_e_mm": 12.7,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "7/8”",
+              "largura_mm": 22.23,
+              "peso_nominal_kg_m": 2.22
+            },
+            {
+              "largura_pol": "1”",
+              "largura_mm": 25.4,
+              "peso_nominal_kg_m": 2.53
+            },
+            {
+              "largura_pol": "1.1/4”",
+              "largura_mm": 31.75,
+              "peso_nominal_kg_m": 3.17
+            },
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 3.8
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 5.06
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 6.33
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 7.6
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 10.13
+            },
+            {
+              "largura_pol": "4.1/2”",
+              "largura_mm": 114.3,
+              "peso_nominal_kg_m": 11.4
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 15.19
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "5/8”",
+          "espessura_e_mm": 15.88,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "1.1/2”",
+              "largura_mm": 38.1,
+              "peso_nominal_kg_m": 4.75
+            },
+            {
+              "largura_pol": "1.3/4”",
+              "largura_mm": 44.45,
+              "peso_nominal_kg_m": 5.54
+            },
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 6.33
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 7.92
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 9.5
+            },
+            {
+              "largura_pol": "3.1/2”",
+              "largura_mm": 88.9,
+              "peso_nominal_kg_m": 11.08
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 12.67
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 19.0
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "11/16”",
+          "espessura_e_mm": 17.46,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "3.1/2”",
+              "largura_mm": 88.9,
+              "peso_nominal_kg_m": 12.18
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "3/4”",
+          "espessura_e_mm": 19.05,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 7.6
+            },
+            {
+              "largura_pol": "2.1/2”",
+              "largura_mm": 63.5,
+              "peso_nominal_kg_m": 9.5
+            },
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 11.4
+            },
+            {
+              "largura_pol": "3.1/2”",
+              "largura_mm": 88.9,
+              "peso_nominal_kg_m": 13.29
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 15.19
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 22.79
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1”",
+          "espessura_e_mm": 25.4,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "2”",
+              "largura_mm": 50.8,
+              "peso_nominal_kg_m": 10.13
+            },
+            {
+              "largura_pol": "3.1/2”",
+              "largura_mm": 88.9,
+              "peso_nominal_kg_m": 17.73
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 20.26
+            },
+            {
+              "largura_pol": "6”",
+              "largura_mm": 152.4,
+              "peso_nominal_kg_m": 30.39
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1.1/4”",
+          "espessura_e_mm": 31.75,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 25.32
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "1.1/2”",
+          "espessura_e_mm": 38.1,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 15.19,
+              "status": "REVISAR_MANUALMENTE",
+              "observacao": "Inconsistência interna do catálogo nesta célula: para uma barra chata (seção retangular) a razão peso/espessura tem de ser praticamente constante ao longo de uma mesma coluna de largura; nesta coluna (3”) a razão mediana é 0.5982 kg/m por mm de espessura e esta célula dá 0.3987. Valor 15.19 kg/m transcrito LITERALMENTE como impresso (conferido na página renderizada); o A1 NÃO corrigiu."
+            },
+            {
+              "largura_pol": "4”",
+              "largura_mm": 101.6,
+              "peso_nominal_kg_m": 30.39
+            },
+            {
+              "largura_pol": "4.1/4”",
+              "largura_mm": 107.95,
+              "peso_nominal_kg_m": 32.29
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Contém célula marcada REVISAR_MANUALMENTE (largura 3”). As demais células da linha estão consistentes."
+        },
+        {
+          "perfil": "Barra chata",
+          "espessura_e_pol": "2”",
+          "espessura_e_mm": 50.8,
+          "pesos_por_largura": [
+            {
+              "largura_pol": "3”",
+              "largura_mm": 76.2,
+              "peso_nominal_kg_m": 30.39
+            }
+          ],
+          "pagina_pdf": 9,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_quadrada_trefilada": {
+      "tabela_fonte": "BARRA QUADRADA TREFILADA GERDAU",
+      "pagina_pdf": 11,
+      "cabecalho_original": [
+        "Bitola Dn (mm)",
+        "Tolerância (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "observacoes": [
+        "ATENÇÃO: esta tabela do catálogo contém valores de Peso Nominal internamente inconsistentes (a massa linear não cresce monotonicamente com Dn). As linhas envolvidas estão marcadas 'REVISAR_MANUALMENTE'. Os valores foram conferidos na página renderizada: são exatamente o que está impresso. O A1 NÃO corrigiu."
+      ],
+      "total_entradas": 30,
+      "entradas": [
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 4.76,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.18,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 20.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.14,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 36.51,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 10.464,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 6.35,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.32,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 20.64,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.344,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 38.1,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 11.395,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 7.94,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.488,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 22.22,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.876,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 39.68,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 12.36,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 9.53,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.706,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 9.53 mm → 0.706 kg/m seguido de 11.11 mm → 0.696 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 23.81,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 4.45,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 41.28,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 13.377,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 11.11,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.696,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 9.53 mm → 0.706 kg/m seguido de 11.11 mm → 0.696 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 25.4,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 4.49,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 42.86,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 18.74,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 42.86 mm → 18.74 kg/m seguido de 44.45 mm → 15.51 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 12.7,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.266,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 29.85,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 6.995,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 44.45,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 15.51,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 42.86 mm → 18.74 kg/m seguido de 44.45 mm → 15.51 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 14.28,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.601,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 30.16,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.141,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 46.04,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 16.64,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: Peso Nominal (16.64 kg/m) menor que o de bitolas menores desta mesma tabela (máximo anterior 18.74 kg/m). Valor transcrito LITERALMENTE como impresso; o A1 NÃO corrigiu."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 15.88,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.98,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 15.88 mm → 1.98 kg/m seguido de 17.46 mm → 0.499 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 31.75,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.913,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 31.75 mm → 7.913 kg/m seguido de 33.34 mm → 2.984 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 47.62,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 17.801,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: Peso Nominal (17.801 kg/m) menor que o de bitolas menores desta mesma tabela (máximo anterior 18.74 kg/m). Valor transcrito LITERALMENTE como impresso; o A1 NÃO corrigiu."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 17.46,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.499,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 15.88 mm → 1.98 kg/m seguido de 17.46 mm → 0.499 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 33.34,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 2.984,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 31.75 mm → 7.913 kg/m seguido de 33.34 mm → 2.984 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 49.21,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 19.01,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 19.05,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 0.559,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: Peso Nominal (0.559 kg/m) menor que o de bitolas menores desta mesma tabela (máximo anterior 1.98 kg/m). Valor transcrito LITERALMENTE como impresso; o A1 NÃO corrigiu."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 34.92,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 3.044,
+          "pagina_pdf": 11,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: Peso Nominal (3.044 kg/m) menor que o de bitolas menores desta mesma tabela (máximo anterior 7.913 kg/m). Valor transcrito LITERALMENTE como impresso; o A1 NÃO corrigiu."
+        },
+        {
+          "perfil": "Barra quadrada trefilada",
+          "lado_Dn_mm": 50.8,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 20.258,
+          "pagina_pdf": 11,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_redonda_trefilada": {
+      "tabela_fonte": "BARRA REDONDA TREFILADA GERDAU",
+      "pagina_pdf": 12,
+      "cabecalho_original": [
+        "Bitola Dn (mm)",
+        "Tolerância (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "total_entradas": 78,
+      "entradas": [
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 3.97,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.097,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 22.22,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.044,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 60.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 22.195,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 4.76,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.14,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 23.81,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.495,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 60.32,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 22.433,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 6.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,08",
+          "peso_nominal_kg_m": 0.222,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 24.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.551,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 61.91,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 23.631,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 6.35,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.249,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 25.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.853,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 63.5,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 24.86,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 7.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.302,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 25.2,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.915,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 65.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 26.049,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 7.3,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.329,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 25.4,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.978,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 65.08,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 26.113,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 7.94,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.389,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 26.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 4.168,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 66.68,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 27.413,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 8.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.395,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 28.58,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 5.036,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 69.85,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 30.081,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 9.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.499,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 30.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 5.549,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 70.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 30.21,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 9.52,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.559,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 30.16,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 5.608,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 71.44,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 31.466,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 10.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.617,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 30.2,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 5.623,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 73.02,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 32.873,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 11.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.746,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 31.75,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 6.215,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 74.61,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 34.321,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 11.11,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.761,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 33.34,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 6.853,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 75.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 34.68,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 12.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.888,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 34.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.127,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 76.2,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 35.799,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 12.7,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.994,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 34.92,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.518,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 80.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 39.458,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 12.77,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.005,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 35.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.553,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 80.96,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 40.411,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 14.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.208,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 36.51,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 8.218,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 82.55,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 42.014,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 14.28,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.257,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 38.1,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 8.95,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 84.14,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 43.648,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 14.91,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.371,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 39.68,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 9.707,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 85.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 44.545,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 15.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.387,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 40.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 9.865,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 85.72,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 45.303,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 15.88,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.555,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 41.28,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 10.506,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 87.31,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 46.999,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 16.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.578,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 42.86,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 11.326,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 88.9,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 48.726,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 17.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.762,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 44.45,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 12.182,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 90.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 49.94,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 17.2,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.824,
+          "pagina_pdf": 12,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 17.2 mm → 1.824 kg/m seguido de 17.46 mm → 1.8 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 45.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 12.485,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 90.48,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 50.474,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 17.46,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.8,
+          "pagina_pdf": 12,
+          "status": "REVISAR_MANUALMENTE",
+          "observacao": "Inconsistência interna do catálogo: o Peso Nominal impresso não cresce monotonicamente com a bitola nesta tabela — 17.2 mm → 1.824 kg/m seguido de 17.46 mm → 1.8 kg/m. Valores transcritos LITERALMENTE como impressos (conferido na página renderizada); o A1 NÃO corrigiu. Decisão cabe ao A2/usuário."
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 46.04,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 13.069,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 92.08,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 52.275,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 17.97,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.991,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 47.62,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 13.981,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra redonda trefilada",
+          "diametro_Dn_mm": 93.66,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,22",
+          "peso_nominal_kg_m": 54.084,
+          "pagina_pdf": 12,
+          "status": "extraido"
+        }
+      ]
+    },
+    "barra_sextavada_trefilada": {
+      "tabela_fonte": "BARRA SEXTAVADA TREFILADA GERDAU",
+      "pagina_pdf": 13,
+      "cabecalho_original": [
+        "Bitola Dn (mm)",
+        "Tolerância (mm)",
+        "Peso Nominal (kg/m)"
+      ],
+      "observacoes": [
+        "Algumas bitolas trazem um '*' antes do valor de Dn (campo marcador_asterisco_no_catalogo). O catálogo NÃO imprime legenda para esse asterisco em nenhuma página — significado desconhecido, não inferido pelo A1."
+      ],
+      "total_entradas": 33,
+      "entradas": [
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 6.35,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.274,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 22.22,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.36,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 36.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 8.821,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 7.94,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.429,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 23.81,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 3.859,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 36.51,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 9.073,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 9.53,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,09",
+          "peso_nominal_kg_m": 0.618,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 25.4,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 4.391,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 38.1,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 9.88,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 11.11,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 0.84,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 26.99,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 4.958,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 39.68,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 10.717,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 12.7,
+          "marcador_asterisco_no_catalogo": true,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.098,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 28.58,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 5.56,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 41.28,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 11.598,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 14.28,
+          "marcador_asterisco_no_catalogo": true,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.388,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 29.85,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 6.065,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 42.86,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 12.503,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 15.88,
+          "marcador_asterisco_no_catalogo": true,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 1.716,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 30.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 6.126,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 44.45,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 13.448,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 17.46,
+          "marcador_asterisco_no_catalogo": true,
+          "tolerancia_mm": "+0/-0,11",
+          "peso_nominal_kg_m": 2.075,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 30.16,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 6.191,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 46.04,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 14.427,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 19.05,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 2.47,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 31.75,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 6.861,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 47.62,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 15.435,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 20.0,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 2.723,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 33.34,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 7.566,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 49.21,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 16.482,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 20.64,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,13",
+          "peso_nominal_kg_m": 2.9,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 34.92,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,16",
+          "peso_nominal_kg_m": 8.3,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        },
+        {
+          "perfil": "Barra sextavada trefilada",
+          "entre_faces_Dn_mm": 50.8,
+          "marcador_asterisco_no_catalogo": false,
+          "tolerancia_mm": "+0/-0,19",
+          "peso_nominal_kg_m": 17.565,
+          "pagina_pdf": 13,
+          "status": "extraido"
+        }
+      ]
+    }
+  },
+  "total_entradas_no_arquivo": 302
+}

@@ -1,0 +1,2075 @@
+{
+ "arquivo": "kb/livros/pfeil_adjudicacao_a2.json",
+ "tipo": "adjudicacao_normativa_de_exemplos_de_livro",
+ "titulo": "Adjudicação A2 dos exemplos de Pfeil & Pfeil (8.ª ed., 2009) para uso pelo A7 — 13 exemplos na 1.ª rodada de adjudicação (2026-09-20) + 7 na 2.ª (2026-09-21, COM-06 e capítulo 7 de flexo-compressão) + 2 na 3.ª (2026-09-24, FLT do eixo maior: PFEIL-FLT-01/02). Total 22.",
+ "adjudicado_por": "Agente A2 — Verificador Normativo (rodada de adjudicação)",
+ "data": "2026-09-20",
+ "insumo_auditado": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 6.ª rodada, 2026-09-20)",
+ "contrato_normativo_de_referencia": "ruleset.yaml v1.1.0-congelado (GATE 1 fechado)",
+ "natureza_deste_arquivo": [
+  "Este arquivo NÃO altera o ruleset.yaml e NÃO é fonte normativa. Ele decide, com autoridade do Verificador Normativo, QUAIS passos de QUAIS exemplos do livro podem servir de referência independente de validação, e SOB QUE TOLERÂNCIA.",
+  "Todos os valores de referência recalculados abaixo foram obtidos APLICANDO as regras congeladas do ruleset.yaml v1.1.0 (NBR 8800:2024) à geometria e ao carregamento do exemplo — nunca copiando o número impresso no livro.",
+  "Nada aqui autoriza o A7 a afrouxar as tolerâncias gerais do projeto (GATE 3: esforço ±1 %, deslocamento ±5 %, D/C ±2 %). Onde o próprio livro erra ou arredonda além dessa faixa, a decisão foi EXCLUIR o passo ou substituir a referência por valor recalculado — nunca alargar a tolerância do projeto."
+ ],
+ "metodo_de_validacao_congelado_para_o_A7": {
+  "principio": "Comparar o código do A5 contra o LIVRO é comparar contra a NBR 8800:2008. O que o A7 valida é o código contra o valor RECALCULADO pela NBR 8800:2024 a partir dos MESMOS dados de entrada do livro; o número impresso no livro entra apenas como aferição de ordem de grandeza e como detector de erro grosseiro.",
+  "camada_L1_recalculo_integral": {
+   "o_que_e": "Recalcular do zero pela regra de 2024, partindo só da geometria/carregamento do enunciado (nada de valores intermediários do livro).",
+   "papel": "É a referência de APROVAÇÃO/REPROVAÇÃO do A7, contra o valor recalculado registrado neste arquivo, com a tolerância do campo 'tolerancia' de cada exemplo.",
+   "comparacao_com_o_livro": "INFORMATIVA e NÃO bloqueante. A diferença esperada em relação ao número impresso está registrada em 'desvio_esperado_vs_livro' de cada exemplo, com a causa identificada."
+  },
+  "camada_L2_reproducao_controlada": {
+   "o_que_e": "Alimentar o código com os valores INTERMEDIÁRIOS impressos no livro (ex.: o lambda_0 arredondado a duas casas) e exigir que a fórmula de 2024 reproduza o valor do livro.",
+   "papel": "Isola a FÓRMULA do arredondamento da fonte. Obrigatória para a família compressão, onde o livro lê f_c/f_y numa tabela (Tabela A2) a partir de um lambda_0 já arredondado. Tolerância L2: ±0,5 %.",
+   "justificativa": "Sem a camada L2, o arredondamento de lambda_0 do livro (2 casas) apareceria como erro do código do A5. Com ela, obtêm-se desvios de 0,006 % a 0,40 % — MAIS APERTADO que o padrão ±1 % do projeto."
+  },
+  "regra_de_ouro": "Passo marcado 'excluido' NÃO pode ser convertido em teste com tolerância larga. Ou o passo entra com a tolerância declarada, ou não entra.",
+  "camada_L3_convergencia_inter_edicao": {
+   "acrescentada_em": "2.ª rodada de adjudicação (2026-09-21)",
+   "o_que_e": "Comparar o valor produzido pela regra de 2024 com o valor impresso pelo livro (2008) quando as DUAS formulações, embora escritas de forma diferente, são reparametrizações da MESMA curva física. Não é reprodução (L2) nem recálculo de referência (L1): é uma terceira leitura, de CONVERGÊNCIA.",
+   "papel": "ESTRITAMENTE INFORMATIVA E NÃO BLOQUEANTE. Nunca vira assert de aprovação/reprovação. Serve para o relatório do A7 registrar que a implementação de 2024 não se afastou do resultado físico consagrado na literatura — um erro grosseiro de implementação (fórmula trocada, coeficiente errado, unidade errada) rompe a convergência por dezenas de por cento, muito acima da diferença legítima entre edições.",
+   "quando_se_aplica": "Só quando o A2 demonstrar ALGEBRICAMENTE que as duas formulações são reparametrizações da mesma curva. Sem essa demonstração, não há camada L3 — há apenas divergência de edição, e o passo é excluído.",
+   "unico_caso_demonstrado_ate_agora": "PFEIL-COM06-01, elemento ALMA (AA grupo 2). Ver 'decisao_7_COM06_largura_efetiva_2008_x_2024.demonstracao_algebrica_da_convergencia'.",
+   "proibicao_explicita": "É PROIBIDO usar a camada L3 para 'salvar' um exemplo que o A2 declarou não comparável. Se o A7 encontrar divergência na L3, isso é MATÉRIA DE RELATÓRIO e de nova adjudicação do A2 — nunca motivo para reprovar o código, nem para aprová-lo."
+  }
+ },
+ "decisao_1_compressao": {
+  "pergunta_do_A1": "Probl. 5.8.1, 5.8.2 e 5.8.3 são reaproveitáveis para validar Nc,Rd de 2024 (mesma geometria/carregamento, recalculando do zero) ou não?",
+  "decisao": "SIM, os três são reaproveitáveis com RECÁLCULO INTEGRAL — com as restrições de escopo do item 'restricoes' abaixo.",
+  "verificacao_independente_de_Aef_igual_Ag": {
+   "por_que_foi_feita": "O A1 registrou que o livro verifica ausência de flambagem local em 2008 (mesa 6,6 < 15,8; alma 17,2 < 42,1). O A2 NÃO aceitou essa verificação como válida para 2024: as tabelas de esbeltez-limite podem diferir entre edições, e a edição 2024 substituiu o fator Q por redução de ÁREA (COM-02/COM-05/COM-06).",
+   "calculo_do_A2_limites_2024": {
+    "fonte": "ruleset.yaml COM-05 (NBR 8800:2024, item 5.3.4.1 + Tabela 4)",
+    "mesa_de_perfil_I_H_LAMINADO_grupo_AL_4": "(b/t)lim = 0,56*sqrt(E/fy) = 0,56*28,2843 = 15,839 para fy = 250 MPa",
+    "alma_de_perfil_I_H_U_grupo_AA_2": "(b/t)lim = 1,49*sqrt(E/fy) = 1,49*28,2843 = 42,144 para fy = 250 MPa",
+    "achado": "Os limites da edição 2024 (15,839 e 42,144) são NUMERICAMENTE IDÊNTICOS aos 15,8 e 42,1 que o livro imprime pela edição 2008. A coincidência não foi presumida: foi recalculada a partir da Tabela 4 congelada em COM-05.",
+    "criterio_mais_permissivo_de_5_3_4_2": "COM-06 admite ainda bef = b para b/t <= (b/t)lim/sqrt(chi), que é sempre MAIOR que (b/t)lim. Satisfeito (b/t)lim, está satisfeito também 5.3.4.2."
+   },
+   "W_150_x_37_1_Probl_5_8_1_e_5_8_2": {
+    "dados": "Catálogo kb/catalogos/gerdau_perfis_w_h.json: bf = 154 mm, tf = 11,6 mm, tw = 8,1 mm, h = 139 mm, d' = 119 mm, Ag = 47,8 cm², rx = 6,85 cm, ry = 3,84 cm — TODOS coincidem com os do livro.",
+    "mesa": "bf/(2*tf) = 154/(2*11,6) = 6,638 <= 15,839  OK",
+    "alma": "h/tw = 139/8,1 = 17,16 (e d'/tw = 119/8,1 = 14,69) <= 42,144  OK em qualquer das duas leituras de b",
+    "veredito": "Aef = Ag CONFIRMADO pela NBR 8800:2024 (não apenas pela verificação de 2008 do livro)."
+   },
+   "H_152_x_40_9_Probl_5_8_3": {
+    "problema": "O livro NÃO verifica flambagem local deste perfil, e o perfil NÃO existe em nenhum dos dois catálogos do projeto (o Gerdau W/HP tem 107 entradas, a menor HP é HP 200 x 53; o catálogo L/I/U/T não tem perfis H). Não havia, portanto, como confiar nem no livro nem no catálogo.",
+    "metodo_do_A2": "Resolução do sistema geométrico de um perfil I/H de chapas a partir das TRÊS propriedades que o livro fornece (Ag = 52,1 cm²; Iy = 664 cm⁴; Ix = Ag*ix² = 52,1*6,27² = 2048,2 cm⁴), varrendo a altura total d em toda a faixa fisicamente plausível para um perfil designado 'H 152 (6\")'.",
+    "resultado_da_varredura": [
+     {
+      "d_cm": 15.0,
+      "bf_cm": 13.64,
+      "tf_cm": 1.57,
+      "tw_cm": 0.783,
+      "bf_sobre_2tf": 4.34,
+      "hw_sobre_tw": 15.14
+     },
+     {
+      "d_cm": 15.2,
+      "bf_cm": 14.22,
+      "tf_cm": 1.383,
+      "tw_cm": 1.026,
+      "bf_sobre_2tf": 5.14,
+      "hw_sobre_tw": 12.12
+     },
+     {
+      "d_cm": 15.7,
+      "bf_cm": 15.66,
+      "tf_cm": 1.033,
+      "tw_cm": 1.449,
+      "bf_sobre_2tf": 7.58,
+      "hw_sobre_tw": 9.41
+     },
+     {
+      "d_cm": 16.2,
+      "bf_cm": 17.14,
+      "tf_cm": 0.784,
+      "tw_cm": 1.724,
+      "bf_sobre_2tf": 10.93,
+      "hw_sobre_tw": 8.49
+     },
+     {
+      "d_cm": 16.5,
+      "bf_cm": 18.07,
+      "tf_cm": 0.667,
+      "tw_cm": 1.846,
+      "bf_sobre_2tf": 13.55,
+      "hw_sobre_tw": 8.22
+     }
+    ],
+    "conclusao": "Em TODA a faixa plausível (d de 150 a 165 mm), bf/(2*tf) fica entre 4,3 e 13,6 (limite 15,84) e hw/tw entre 8,2 e 15,1 (limite 42,14). Nenhuma combinação geométrica compatível com Ag, Ix e Iy do livro produz elemento esbelto. Aef = Ag CONFIRMADO para o H 152 x 40,9 pela NBR 8800:2024, por demonstração quantitativa e não por confiança na fonte.",
+    "nota_de_honestidade": "As soluções com d >= 16,5 cm já exigem bf > d, o que é geometricamente incompatível com a designação 'H 152'; foram incluídas apenas para mostrar a margem. O caso de projeto real está na vizinhança de d = 152-157 mm."
+   }
+  },
+  "restricoes": [
+   "Probl. 5.8.2 — os fatores K = 2,0 (engaste-livre) e K = 0,70 (engaste-rótula) são do item 5.3.2 do LIVRO (edição 2008). A NBR 8800:2024 NÃO traz fator K explícito em 5.3.5.1 (ver COM-07: Lx, Ly, Lz são comprimentos DESTRAVADOS e a estabilidade é tratada em 4.10). Portanto o A7 deve entrar com l_fl = K*l = 600 cm e 210 cm como DADO DE ENTRADA do exemplo, e o exemplo NÃO valida nenhuma regra de escolha de K — o projeto não tem regra congelada de K.",
+   "Probl. 5.8.3 caso b) (dois H ligados por solda longitudinal) — NÃO USAR para validar Nc,Rd. A aplicabilidade de COM-07 exclui explicitamente barras compostas (item 5.3.6), que não foi extraído em kb/. Não é possível afirmar, com o material disponível, se um par continuamente soldado é ou não abrangido por 5.3.6. Na dúvida, o Verificador Normativo veta o uso normativo. Os passos 8 e 9 (teorema dos eixos paralelos, Iy = 7506 cm⁴ e iy = 8,49 cm) PODEM ser usados como teste de PROPRIEDADES GEOMÉTRICAS (recalculados: Iy = 7506,0 cm⁴, iy = 8,487 cm — batem exatamente), sem nenhuma pretensão normativa.",
+   "Todos os três: o livro lê f_c/f_y na Tabela A2 do Anexo A a partir de um lambda_0 já arredondado a duas casas. Daí a obrigatoriedade da camada L2."
+  ],
+  "pendencia_gerada_para_o_A1": "Extrair o item 5.3.6 (barras compostas) da NBR 8800:2024, para que o Probl. 5.8.3 caso b) possa ser reabilitado em rodada futura."
+ },
+ "decisao_2_cisalhamento_kv": {
+  "pergunta_do_A1": "kv = 5,0 (livro) ou 5,34 (ruleset 2024)? Qual o veredito de cada um dos 3 exemplos?",
+  "conferencia_exata_do_ruleset": {
+   "regra": "CIS-01-forca-cortante-resistente-secoes-I-H-U (NBR 8800:2024, item 5.4.3.1.1, pág. impressa 57 / PDF 74)",
+   "texto_congelado_de_kv": "kv = 5,34 para almas SEM enrijecedores transversais e para a/h > 3; kv = 5,0 + 5/(a/h)^2 nos demais casos",
+   "lambda_p": "1,10*sqrt(kv*E/fy)",
+   "lambda_r": "1,37*sqrt(kv*E/fy)",
+   "tres_trechos": "lambda <= lambda_p: V,Rd = Vpl/gamma_a1 | lambda_p < lambda <= lambda_r: V,Rd = (lambda_p/lambda)*Vpl/gamma_a1 | lambda > lambda_r: V,Rd = 1,24*(lambda_p/lambda)^2*Vpl/gamma_a1",
+   "Vpl": "CIS-02: Vpl = 0,60*Aw*fy com Aw = d*tw, d = ALTURA TOTAL da seção",
+   "lambda": "h/tw, com h = altura da ALMA (entre faces internas das mesas nos soldados; menos os dois raios de concordância nos laminados) — 'convencoes_de_simbolos' do ruleset",
+   "CONFIRMADO": "kv = 5,34 é o valor correto pela edição 2024 para alma sem enrijecedores. A condição de aplicabilidade 'a/h > 3' está congelada e NÃO pode ser omitida: com enrijecedores declarados, kv = 5,0 + 5/(a/h)^2 é obrigatório (decisão de auditoria de CIS-01)."
+  },
+  "valores_numericos_dos_limites": {
+   "fy_250_MPa": {
+    "kv_5_34_lambda_p": 71.897,
+    "kv_5_34_lambda_r": 89.544,
+    "kv_5_0_livro_lambda_p": 69.57,
+    "kv_5_0_livro_lambda_r": 86.646
+   },
+   "fy_345_MPa": {
+    "kv_5_34_lambda_p": 61.202,
+    "kv_5_34_lambda_r": 76.225,
+    "kv_5_0_livro_lambda_p": 59.222
+   }
+  },
+  "veredito_por_exemplo": {
+   "PFEIL-CIS-02_Probl_6_5_9": "USAR DIRETO. lambda = 478/10,2 = 46,86 (o livro imprime 46,6) está 35 % abaixo de lambda_p em QUALQUER kv. Regime de plastificação nas duas edições e fórmula idêntica. É o único exemplo de cisalhamento livre de ambiguidade de edição.",
+   "PFEIL-CIS-01_Probl_6_5_3": "USAR COM RECÁLCULO. O A2 NÃO assumiu o regime: recalculou. lambda = hw/tw = 468/6,3 = 74,286 (perfil SOLDADO, h = distância entre faces internas das mesas). Com kv = 5,34: lambda_p = 71,897 e lambda_r = 89,544, logo 71,897 < 74,286 <= 89,544 -> REGIME INELÁSTICO também em 2024. A mudança de fronteira 69,6 -> 71,9 NÃO reclassifica esta alma (74,286 continua acima do novo lambda_p); o que muda é o VALOR de (lambda_p/lambda). V,Rd(2024) = (71,897/74,286)*0,60*(50,0*0,63)*25/1,10 = 415,73 kN, contra 404 kN do livro (+2,90 %). O valor do livro NÃO é referência.",
+   "PFEIL-CIS-03_Probl_6_5_11": "USAR COM RECÁLCULO, e apenas para a CLASSIFICAÇÃO DE REGIME e para o kv com enrijecedores. Ver bloco próprio abaixo."
+  },
+  "achado_adicional_do_A2_sobre_o_Probl_6_5_11": {
+   "kv_com_enrijecedores_coincide": "Para a = 95 cm: a/h0 = 0,475 -> kv(2024) = 5,0 + 5/0,475² = 27,161, contra k = 27,2 impresso pelo livro. A FÓRMULA de kv com enrijecedores é a mesma nas duas edições; a diferença 5,0/5,34 só existe no caso SEM enrijecedores.",
+   "regime_em_2024": "a = 95 cm: lambda_p = 162,15 > lambda = 157,48 -> PLASTIFICAÇÃO (mesma conclusão do livro). a = 130 cm: kv = 16,834, lambda_p = 127,65 < 157,48 <= lambda_r = 158,99 -> INELÁSTICO (mesma conclusão do livro). Item g) sem enrijecedores: lambda = 157,48 > lambda_r = 89,544 -> ELÁSTICO (mesma conclusão do livro).",
+   "as_tres_classificacoes_de_regime_do_livro_sao_confirmadas_por_2024": true,
+   "os_valores_numericos_NAO_sao": "843 kN (item g) e 3464 kN (item h, a = 95) carregam simultaneamente kv = 5,0 e a definição errada de Aw (ver decisão 4, RM-07). Valores 2024: 929,5 kN e 3596,5 kN."
+  }
+ },
+ "decisao_3_tracao_piso_do_Ct": {
+  "pergunta_do_A1": "O piso 0,60 (livro) vs Ct >= Ac/Ag (2024) afeta os 4 exemplos extraídos? O A1 afirma que não, com Ct = 0,73 no pior caso.",
+  "decisao": "AFIRMAÇÃO DO A1 CONFIRMADA — mas só depois de recalculada pelo A2, não aceita de palavra.",
+  "verificacao_feita_pelo_A2": {
+   "unico_exemplo_com_Ct": "PFEIL-TRAC-04 (Probl. 2.3.7), perfil U 381 (15\") x 50,4 kg/m ligado pela ALMA.",
+   "Ct_de_5_2_5_c": "Ct = 1 - ec/lc = 1 - 2,0/7,5 = 0,73333",
+   "piso_de_2024_Ac_sobre_Ag": {
+    "definicao": "Ac = área bruta dos elementos CONECTADOS da seção (ruleset TRA-05, NBR 8800:2024, parágrafo final de 5.2.5). Elemento conectado = a alma do U.",
+    "cenario_mais_desfavoravel_Ac_igual_d_x_tw": "Ac = 38,1 * 1,02 = 38,86 cm²  ->  Ac/Ag = 38,86/64,2 = 0,6053",
+    "cenario_Ac_igual_alma_livre_tf_16_5mm": "Ac = (38,1 - 2*1,65)*1,02 = 35,50 cm²  ->  Ac/Ag = 0,5529",
+    "cenario_Ac_igual_alma_livre_tf_20mm_figura_do_livro": "Ac = (38,1 - 2*2,0)*1,02 = 34,78 cm²  ->  Ac/Ag = 0,5418"
+   },
+   "conclusao": "Em TODAS as interpretações de Ac, Ct = 0,7333 > Ac/Ag (máx. 0,6053). O piso de 2024 fica INATIVO, tal como o piso fixo 0,60 de 2008. O número de tração do Probl. 2.3.7 é, neste aspecto, independente da edição. Margem: 0,7333/0,6053 = 1,21 — folga de 21 %, não é caso de fronteira.",
+   "demais_tres_exemplos": "PFEIL-TRAC-01 (chapa sem furos, Ct não se aplica); PFEIL-TRAC-02 e PFEIL-TRAC-03 (CHAPAS — explicitamente EXCLUÍDAS do piso Ac/Ag pela aplicabilidade congelada em TRA-05; e o livro trata An como já efetiva, caso 5.2.5-a) com Ct = 1,00). Nenhum é afetado."
+  },
+  "achado_do_A2_que_o_A1_nao_registrou": {
+   "id": "A2-TRAC-BLQ04",
+   "descricao": "O A1 registrou 'diâmetro de furo para cálculo = d + 3,5 mm — tudo idêntico' entre as duas edições. ISSO NÃO É REAPROVEITÁVEL COMO REGRA. O ruleset (TRA-04 + bloqueio BLQ-04) NÃO congela d + 3,5 mm: a dimensão do furo remete ao item 6.3.6 da NBR 8800:2024, que não foi extraído, e é ENTRADA EXTERNA OBRIGATÓRIA.",
+   "instrucao": "O A7 deve alimentar o código com o diâmetro de furo do exemplo (25,5 mm no Probl. 2.3.3 e 2.3.7; 23,5 mm no Probl. 2.3.4) como DADO DE ENTRADA. Nenhum dos quatro exemplos de tração valida uma regra de 'd + 3,5 mm', e um teste que a validasse estaria validando regra que não existe no contrato congelado."
+  },
+  "escopo_do_Probl_2_3_7": "Os passos 7 a 11 (cisalhamento de bloco) estão FORA do escopo do ruleset v1.1.0 — não há regra congelada de rasgamento/bloco (o Cts de 6.5.6 é citado em 'convencoes_de_simbolos' como NÃO congelado). Excluídos da validação, sem que isso desqualifique os passos 1 a 6."
+ },
+ "decisao_4_erros_de_aritmetica_do_livro": {
+  "principio_geral": "Erro do livro não vira tolerância do projeto. Para cada RM, ou (i) o passo é EXCLUÍDO da validação e os demais passos do mesmo problema seguem valendo, ou (ii) a referência de comparação passa a ser o valor RECALCULADO pelo A2, e o número impresso fica registrado como erratum com a tolerância do recálculo — que é sempre IGUAL OU MAIS APERTADA que o padrão do projeto.",
+  "RM-01": {
+   "onde": "PFEIL-FLEX-02 (Probl. 6.5.4), passo 3",
+   "diagnostico_do_A2": "O ERRO ESTÁ NO NUMERADOR IMPRESSO, NÃO NO RESULTADO. O valor 659,0 cm³ é correto: 1,10 * 20.672 kNcm / 34,5 kN/cm² = 659,11 cm³ (recalculado). O numerador impresso '206.700 x 100' é lapso tipográfico.",
+   "decisao": "MANTER o passo. A comparação é contra o RESULTADO 659,1 cm³ recalculado, nunca contra a expressão impressa.",
+   "tolerancia": "±0,5 %",
+   "instrucao_ao_A7": "Registrar no relatório que o numerador impresso é erratum do livro; não transcrever a expressão impressa em nenhum teste."
+  },
+  "RM-02": {
+   "onde": "PFEIL-FLEX-02 (Probl. 6.5.4), passo 9",
+   "diagnostico_do_A2": "O limite impresso 69,6 é o valor de MR250 usado indevidamente num problema em A572 Gr. 50. Pela edição 2024 o limite correto é lambda_p = 1,10*sqrt(5,34*200.000/345) = 61,202 (o valor 2008 seria 59,222; nenhum é 69,6).",
+   "decisao": "EXCLUIR o valor-limite impresso. MANTER o passo apenas como verificação QUALITATIVA de regime: lambda = 308/6,9 = 44,64 < 61,202 -> plastificação, portanto V,Rd = Vpl/gamma_a1 e enrijecedores intermediários dispensáveis — mesma conclusão do livro, por caminho correto.",
+   "tolerancia": "não se aplica (teste booleano de regime)",
+   "instrucao_ao_A7": "Assertar o REGIME ('plastificacao'), não o número 69,6."
+  },
+  "RM-03": {
+   "onde": "PFEIL-FLEX-03 (Probl. 6.5.6), passo 10 — interpolação da alma semicompacta",
+   "diagnostico_do_A2": "Além de não fechar aritmeticamente (744,35 x 750,4 kNm), o passo pertence ao trecho de transição do Anexo D, que NÃO está congelado e aciona o bloqueio BLQ-01 do ruleset. Há, portanto, duas razões independentes para não usá-lo.",
+   "decisao": "PASSO EXCLUÍDO — e com ele os passos 8 a 17 do mesmo problema (alma semicompacta e alma esbelta). O PROBLEMA INTEIRO NÃO É DESCARTADO: o passo 7 (alma compacta, t0 = 10 mm) permanece válido.",
+   "tolerancia": "não se aplica (excluído)",
+   "instrucao_ao_A7": "Se o código do A5 for exercitado com t0 = 8 mm ou t0 = 5 mm, o comportamento ESPERADO e CORRETO é acionar BLQ-01 e RECUSAR o dimensionamento. Isso pode virar teste positivo de bloqueio — mas nunca teste de valor de M,Rd."
+  },
+  "RM-04": {
+   "onde": "PFEIL-CIS-02 (Probl. 6.5.9), passo 3 — M,Rd = 2359,8 x 25/1,10",
+   "diagnostico_do_A2": "O produto correto é 53.631,8 kNcm = 536,318 kNm; o livro imprime 53.611 kNcm = 536,1 kNm. Erro de 0,039 %, de digitação. O insumo Z = 2359,8 cm³ é CONFIRMADO EXATAMENTE pelo catálogo do projeto (kb/catalogos/gerdau_perfis_w_h.json, W 530 x 92,0, Zx = 2359,8 cm³), o que remove qualquer dúvida sobre a entrada.",
+   "decisao": "SUBSTITUIR a referência. O valor de comparação é o RECALCULADO 536,318 kNm, e a tolerância é APERTADA, não afrouxada — porque a entrada é exata e a fórmula é uma multiplicação.",
+   "tolerancia": "±0,1 % contra 536,318 kNm — mais rigorosa que o padrão ±1 % do projeto.",
+   "instrucao_ao_A7": "Os passos 4 e 5 CONSOMEM o 536,1 errado. Recalcular a cadeia inteira: q_d = 8*536,318/5,0² = 171,62 kN/m (livro 171,5) e V_d = 171,62*2,5 = 429,05 kN (livro 429). Comparar o código contra 171,62 e 429,05 com ±0,5 %. Registrar no relatório a discrepância de 0,04 % do livro como erratum documentado, JAMAIS como justificativa para alargar a tolerância de qualquer outro teste."
+  },
+  "RM-05": {
+   "onde": "PFEIL-CIS-03 (Probl. 6.5.11, item g), passo 3 — C_v = (7,55/157,5²)*(200.000/250)",
+   "diagnostico_do_A2": "A constante 7,55 e o denominador 157,5² são ambos da formulação de 2008, que a edição 2024 SUBSTITUI integralmente pelo trecho elástico V,Rd = 1,24*(lambda_p/lambda)²*Vpl/gamma_a1. A divergência interna do livro torna-se irrelevante porque a expressão inteira sai da validação. O A2 encontrou ainda um TERCEIRO valor: h0/t0 = 200/1,27 = 157,48, e não os 157,7 que o próprio livro calcula no passo 1 nem os 157,5 do passo 3 (ver RM-11 novo).",
+   "decisao": "EXPRESSÃO DE C_v EXCLUÍDA. O passo é substituído pela verificação de REGIME (elástico) e pelo V,Rd recalculado de 2024.",
+   "tolerancia": "não se aplica (excluído)",
+   "instrucao_ao_A7": "Usar lambda = 200/1,27 = 157,48 (valor exato), nunca 157,7 nem 157,5."
+  },
+  "RM-06": {
+   "onde": "PFEIL-FLEX-01 x PFEIL-CIS-01 — Z do VS 500 x 86",
+   "decisao": "RESOLVIDO. Ver bloco 'decisao_5_RM06_modulo_plastico_do_VS_500x86'."
+  },
+  "RM-07": {
+   "onde": "Definição de A_w — Eq. (6.35) e Probl. 6.5.3/6.5.9 usam a altura TOTAL; o Probl. 6.5.11 usa a altura da ALMA",
+   "diagnostico_do_A2": "A NBR 8800:2024 é inequívoca (ruleset CIS-02, item 5.4.3.1.2): Aw = d*tw com d = ALTURA TOTAL da seção. A própria Eq. (6.35) do livro diz o mesmo. O Probl. 6.5.11 é que está errado. Confirmação numérica decisiva: no item h) com a = 95 cm, V,Rd(2024, Aw = d*tw = 207,67*1,27 = 263,74 cm²) = 3596,5 kN, enquanto V,Rd(2024, Aw = h0*tw = 254,00 cm²) = 3464 kN — EXATAMENTE o número impresso pelo livro. Ou seja, a única divergência desse passo é a definição de Aw, e ela se resolve a favor de 2024.",
+   "decisao": "CONFLITO RESOLVIDO A FAVOR DE Aw = d*tw (altura total). O Probl. 6.5.11 tem os DOIS passos numéricos de V,Rd (843 e 3464 kN) removidos como referência; a classificação de regime e o kv permanecem válidos.",
+   "tolerancia": "não se aplica aos valores removidos; o restante segue a tolerância do exemplo.",
+   "instrucao_ao_A7": "Este par (Aw usa d, lambda usa h) já é alvo de teste unitário obrigatório pela decisão de auditoria de CIS-02. O Probl. 6.5.11 é a MELHOR evidência bibliográfica de que o erro é real e fácil de cometer — usar como caso de regressão documentado."
+  }
+ },
+ "decisao_5_RM06_modulo_plastico_do_VS_500x86": {
+  "pergunta_do_A1": "Z = 2281 cm³ (calculado das chapas, Probl. 6.5.1) ou Z ≅ 2330 cm³ (tabela, Probl. 6.5.3)?",
+  "decisao": "Z = 2281 cm³ (mais precisamente 2280,96 cm³) É O VALOR CORRETO. O valor 2330 cm³ é ERRADO e deve ser descartado.",
+  "demonstracao": {
+   "geometria": "VS 500 x 86 (soldado, duplamente simétrico): h = 500 mm, bf = 250 mm, tf = 16 mm, tw = 6,3 mm, hw = h - 2*tf = 468 mm",
+   "Z_exato": "Z = bf*tf*(h - tf) + tw*hw²/4 = 25*1,6*(50 - 1,6) + 0,63*46,8²/4 = 1936,00 + 344,96 = 2280,96 cm³",
+   "origem_identificada_do_2330": "Z' = bf*tf*(h - tf) + tw*h²/4 = 1936,00 + 0,63*50²/4 = 1936,00 + 393,75 = 2329,75 cm³ ≈ 2330 cm³. Isto é: o valor 2330 é exatamente o que se obtém usando a ALTURA TOTAL (500 mm) no termo plástico da alma em lugar da altura livre da alma (468 mm) — contando duas vezes a faixa ocupada pelas mesas.",
+   "conclusao": "Não são 'dois valores de tabela divergentes': 2330 é um erro identificável e reproduzível, com causa determinada. A diferença de 2,15 % é inteiramente explicada."
+  },
+  "cotejo_com_os_catalogos_do_projeto": {
+   "gerdau_perfis_w_h_json": "107 entradas, TODAS da série laminada W/HP (W 150 a W 610, HP 200 a HP 310). Nenhuma entrada 'VS'. Não cobre o perfil.",
+   "gerdau_perfis_l_i_u_t_barras_json": "Cantoneiras, I, U, T, estrela e barras. Nenhum perfil soldado VS, e o arquivo NÃO traz módulo plástico em nenhuma família (bloqueio BLQ-05 do ruleset). Não cobre o perfil.",
+   "veredito": "CONFIRMADO: nenhum dos dois catálogos do projeto cobre o VS 500 x 86 — é perfil SOLDADO da série brasileira VS, e os catálogos do projeto são de perfis laminados Gerdau. A decisão sobre Z não pôde ser tomada por cotejo de catálogo e foi tomada por RECÁLCULO EXATO a partir da geometria das chapas, que é autossuficiente e verificável."
+  },
+  "consequencias_obrigatorias": {
+   "PFEIL-FLEX-01_caso_b": "M,Rd = 2280,96*25/1,10 = 51.840 kNcm = 518,40 kNm — o número do livro (518,4 kNm) está CORRETO e vira referência com tolerância ±0,2 %.",
+   "PFEIL-CIS-01_passo_2": "M,Rd do livro (529,5 kNm, com Z = 2330) está ERRADO. Referência corrigida: 518,40 kNm.",
+   "PFEIL-CIS-01_passos_4_e_13": "A coluna 'flexão' da tabela final precisa ser recalculada: g_max = 518,40*8/(2,05*L²) = 2023,0/L² (o livro imprime 2066,3/L²). Valores corrigidos: L = 4,0 m -> 126,4 kN/m (livro 129); L = 6,5 m -> 47,9 (livro 48,9); L = 10,0 m -> 20,2 (livro 20,7).",
+   "conclusao_qualitativa_preservada": "Recalculando TAMBÉM o cortante por 2024 (V,Rd = 415,73 kN -> g = 405,6/L), a tabela fica: L = 4,0 m cortante 101,4 / flexão 126,4 / desloc. 298,6 -> governa CORTANTE; L = 6,5 m cortante 62,4 / flexão 47,9 / desloc. 69,6 -> governa FLEXÃO; L = 10,0 m cortante 40,6 / flexão 20,2 / desloc. 19,1 -> governa DESLOCAMENTO. A conclusão pedagógica do livro (baixo L/h -> cortante; L/h intermediário -> flexão; alto L/h -> deslocamento) é INTEIRAMENTE PRESERVADA pela edição 2024. Isso é, por si, uma validação qualitativa forte."
+  }
+ },
+ "decisao_6_RM08_paginacao": {
+  "pergunta_do_A1": "Confirmar que os pagina_pdf registrados já refletem a correção das páginas fora de ordem.",
+  "decisao": "CONFIRMADO. Não é necessário reabrir o PDF nem re-extrair.",
+  "conferencia_de_consistencia_feita_pelo_A2": [
+   "PFEIL-COMP-01: impressas 138-140 -> PDF 159, 160, 161. Offset +21 em todas — faixa normal, não afetada por RM-08. Coerente.",
+   "PFEIL-COMP-02: impressa 140 -> PDF 161. Offset +21. Coerente e consistente com o COMP-01 (a pág. 140 é compartilhada pelos dois exemplos).",
+   "PFEIL-COMP-03: impressas 141-142 -> PDF 166 e 163. A pág. 141 fora do offset (+25) e a 142 no offset normal (+21) — exatamente o que RM-08 descreve. O campo ATENCAO_PAGINACAO do exemplo repete a advertência. Coerente.",
+   "A outra página trocada (impressa 145, no PDF 162) NÃO é citada por nenhum dos 13 exemplos — nenhum exemplo depende dela.",
+   "Todas as demais famílias (tração págs. 76-80, flexão 205-212, cisalhamento 207-223) obedecem ao offset +21 e estão fora da faixa afetada."
+  ],
+  "acao": "Nenhuma. Registrar apenas que o campo 'convencao_paginacao.offset_geral' (+21) NÃO pode ser usado para os exemplos de compressão — a advertência do A1 é correta e suficiente."
+ },
+ "novos_achados_do_A2_nao_registrados_pelo_A1": [
+  {
+   "id": "RM-10",
+   "tipo": "inconsistência aritmética do livro (NOVA — não detectada pelo A1)",
+   "onde": "PFEIL-FLEX-02 (Probl. 6.5.4), passo 5 — 'incluindo o peso próprio: M_d = 218,2 kNm; Z > 685,7 cm³'",
+   "descricao": "Os dois números do passo 5 são inconsistentes ENTRE SI e nenhum é reproduzível a partir do passo 1. (a) M_d = 218,2 kNm exigiria Z > 1,10*21.820/34,5 = 695,7 cm³, e não 685,7. (b) Z > 685,7 cm³ corresponderia a M_d = 215,1 kNm, e não 218,2. (c) Incluindo o peso próprio de 0,44 kN/m do W 360 x 44,6 com o mesmo gamma = 1,4 do passo 1, obtém-se q_d = 30,016 kN/m e M_d = 211,05 kNm — nem 215,1 nem 218,2. Nenhuma hipótese de peso próprio reconcilia os três números.",
+   "decisao_do_A2": "PASSO 5 EXCLUÍDO da validação. Ele é apenas uma iteração de ESCOLHA DE PERFIL (heurística de projeto), não uma verificação normativa; sua exclusão não custa cobertura. Os passos 1-4 e 6-12 do mesmo problema permanecem válidos.",
+   "tolerancia": "não se aplica (excluído)"
+  },
+  {
+   "id": "RM-11",
+   "tipo": "inconsistência aritmética do livro (NOVA)",
+   "onde": "PFEIL-CIS-03 (Probl. 6.5.11), passo 1 — 'h_0/t_0 = 200/1,27 = 157,7'",
+   "descricao": "200/1,27 = 157,480. O livro imprime 157,7 no passo 1 e 157,5 no passo 3 (este já registrado em RM-05). Nenhum dos dois é o quociente correto. Erro de 0,14 %, sem efeito na conclusão.",
+   "decisao_do_A2": "Usar lambda = 157,48 (valor exato) em toda a validação deste exemplo. Nem 157,7 nem 157,5 entram em qualquer teste."
+  },
+  {
+   "id": "RM-12",
+   "tipo": "inconsistência aritmética do livro (NOVA)",
+   "onde": "PFEIL-TRAC-02 (Probl. 2.3.3), passo 2 — 'A_n = (30 - 4 x 2,55) x 2,22 = 44,04 cm²'",
+   "descricao": "O produto correto é 19,8 * 2,22 = 43,956 cm². O livro imprime 44,04 cm² (erro de 0,19 %). Sem efeito no resultado final, porque o passo 5 do próprio livro reentra com o valor arredondado 44,0 cm².",
+   "decisao_do_A2": "A referência do passo 2 é o valor RECALCULADO 43,956 cm², com tolerância ±0,2 %. O passo 5 é validado com A_n = 43,956 cm² -> N,Rd = 1302,4 kN (o livro imprime 1304 kN, diferença de 0,12 %, dentro de ±0,5 %)."
+  },
+  {
+   "id": "A2-COMB-01",
+   "tipo": "incompatibilidade de escopo (não é erro do livro)",
+   "onde": "PFEIL-FLEX-02 passo 1 (gamma = 1,4 e 1,4) e PFEIL-CIS-01 passo 1 (P_d = 1,3g + 1,5q) e passo 9 (p = g + 0,4q)",
+   "descricao": "Nenhuma dessas combinações corresponde ao que o ruleset congela. ACO-02 (NBR 8800:2024, Tabela 1) dá gamma_g = 1,25 para peso próprio de estruturas de AÇO, 1,50 para elementos construtivos em geral e 1,35 para 'diretas agrupadas'; ACO-03 dá gamma_q = 1,50 para demais ações variáveis. O livro usa 1,4/1,4 num exemplo e 1,3/1,5 no outro — inconsistente até consigo mesmo. Da mesma forma, o psi_2 = 0,3 do Probl. 6.5.4 e o psi_2 = 0,4 do Probl. 6.5.3 divergem entre si para o mesmo tipo de uso (piso de edifício).",
+   "decisao_do_A2": "NENHUM exemplo deste conjunto valida as regras ACO-01 a ACO-05. Os carregamentos de cálculo (q_d, P_d, p) e o psi_2 devem ser injetados no código do A7 como DADOS DE ENTRADA do exemplo. Validar ACO-* contra o livro produziria REPROVAÇÃO FALSA do A5, que está correto segundo a edição 2024.",
+   "o_que_permanece_validavel": "A estática (M = qL²/8, V = qL/2) e a flecha (delta = 5qL⁴/384EI) são independentes da edição e permanecem válidas como referência — e a estática já foi validada pelo A7 na rodada 1 contra solução analítica."
+  }
+ ],
+ "adjudicacao_por_exemplo": [
+  {
+   "id": "PFEIL-TRAC-01",
+   "referencia": "Probl. 2.3.2",
+   "veredito": "usar_direto",
+   "motivo": "Escoamento da seção bruta puro (TRA-02). A fórmula Nt,Rd = Ag*fy/gamma_a1 e gamma_a1 = 1,10 são IDÊNTICOS nas edições 2008 e 2024. Nenhum furo, nenhum Ct, nenhuma dimensão de furo envolvida.",
+   "passos_usaveis": [
+    1,
+    2,
+    3
+   ],
+   "passos_excluidos": [],
+   "tolerancia": "±0,5 % (valores recalculados: Ag = 6,600 cm²; t = 0,6600 cm)",
+   "instrucoes_para_o_A7": [
+    "O gamma_q = 1,5 do passo 1 é coerente com ACO-03 ('demais ações variáveis', combinações normais) — este é o ÚNICO passo de combinação de todo o conjunto que bate com o ruleset e pode ser usado como teste de ACO-03.",
+    "Exercício INVERSO (dimensionamento a partir da resistência). Se o A5 não expõe API inversa, validar na forma direta: Nt,Rd(Ag = 6,60 cm²) = 150,0 kN."
+   ]
+  },
+  {
+   "id": "PFEIL-TRAC-02",
+   "referencia": "Probl. 2.3.3",
+   "veredito": "usar_com_recalculo",
+   "motivo": "TRA-02 e TRA-03 são idênticos entre as edições, mas o passo 2 tem erro aritmético do livro (RM-12) e o diâmetro de furo não é derivável do ruleset (BLQ-04).",
+   "passos_usaveis": [
+    1,
+    3,
+    4,
+    5
+   ],
+   "passos_com_referencia_recalculada": {
+    "2": "An = 43,956 cm² (livro imprime 44,04)",
+    "5": "Nt,Rd = 1302,4 kN com An exata (livro imprime 1304 kN, obtido com An = 44,0)"
+   },
+   "passos_excluidos": [],
+   "tolerancia": "±0,5 % contra os valores recalculados (Ag = 66,60 cm²; An = 43,956 cm²; Nt,Rd,escoamento = 1513,6 kN; Nt,Rd,ruptura = 1302,4 kN; Nt,Rd = 1302,4 kN governante)",
+   "instrucoes_para_o_A7": [
+    "Injetar o diâmetro de furo de cálculo 25,5 mm como ENTRADA (BLQ-04). Não testar nenhuma regra 'd + 3,5 mm'.",
+    "Usar t = 2,22 cm (valor das contas do livro), não os 22 mm do enunciado — a divergência é do enunciado do livro e está registrada pelo A1.",
+    "Ct = 1,00 por 5.2.5-a) (emenda de chapa com talas nos dois lados, força transmitida a todos os elementos). Este é um bom caso de teste da errata 'Ct = 100 -> 1,00' decidida em TRA-05.",
+    "Chapas são EXCLUÍDAS do piso Ac/Ag (aplicabilidade de TRA-05) — assertar que o código não aplica o piso aqui."
+   ]
+  },
+  {
+   "id": "PFEIL-TRAC-03",
+   "referencia": "Probl. 2.3.4",
+   "veredito": "usar_direto",
+   "motivo": "É o melhor exemplo do conjunto para TRA-04 (pesquisa de percursos de ruptura, inclusive enviesados com s²/4g). A regra de An e o termo s²/(4g) são IDÊNTICOS nas duas edições (confirmado no cotejo do A1 e conferido contra TRA-04). Toda a aritmética do livro fecha.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "passos_excluidos": [],
+   "tolerancia": "±0,2 % (todos os valores do livro reproduzidos exatamente: An(1-1-1) = 46,600; An(2-2-2) = 48,450; An(3-3-3) = 55,000 cm²; Nt,Rd,bruta = 1272,7 kN; Nt,Rd,liquida = 1380,7 kN; governante 1272,7 kN)",
+   "instrucoes_para_o_A7": [
+    "Injetar o diâmetro de furo de cálculo 23,5 mm como ENTRADA (BLQ-04).",
+    "É o único exemplo que exercita a MINIMIZAÇÃO entre percursos de TRA-04. Testar que o código escolhe o percurso 1-1-1 e não simplesmente o percurso com mais furos — erro clássico.",
+    "Ct = 1,00 (chapa; o livro trata An como já efetiva). Piso Ac/Ag não se aplica a chapas.",
+    "Este exemplo tem a tolerância mais apertada do conjunto justamente por ser aritmeticamente limpo — não relaxar."
+   ]
+  },
+  {
+   "id": "PFEIL-TRAC-04",
+   "referencia": "Probl. 2.3.7",
+   "veredito": "usar_com_recalculo",
+   "motivo": "É o exemplo mais completo de tração e o ÚNICO que exercita Ct. O piso de 2024 foi verificado pelo A2 e está inativo (decisão 3). O recálculo é necessário porque o livro imprime Ct arredondado (0,73) mas usa o valor cheio (0,7333) no produto, e porque os passos de cisalhamento de bloco estão fora de escopo.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "passos_excluidos": [
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "motivo_da_exclusao": "Cisalhamento de bloco (rasgamento) NÃO tem regra congelada no ruleset v1.1.0. Validar o A5 contra ele seria validar capacidade inexistente. Consequência: o resultado final do livro (879 kN, governado por bloco) NÃO é a referência; a referência é o menor entre os passos 1 e 6.",
+   "tolerancia": "±0,5 % contra: Nt,Rd,escoamento = 1459,1 kN; An = 53,796 cm²; Ct = 0,73333; Ae = 39,45 cm²; Nt,Rd,ruptura = 1168,9 kN; Nt,Rd = 1168,9 kN (governante DENTRO DO ESCOPO)",
+   "instrucoes_para_o_A7": [
+    "Injetar como ENTRADAS: Ag = 64,2 cm²; tw = 1,02 cm; diâmetro de furo de cálculo 25,5 mm; ec = 2,0 cm; lc = 7,5 cm. O perfil U 381 (15\") x 50,4 NÃO está nos catálogos do projeto (o catálogo Gerdau de U vai só até 12\"), portanto nenhum dado pode vir de kb/catalogos/.",
+    "Usar Ct = 1 - 2,0/7,5 SEM arredondar (0,73333). Se o código arredondar para 0,73, o Ae cai para 39,27 cm² e o Nt,Rd para 1163,6 kN — 0,45 % abaixo, ainda dentro de ±0,5 %, mas o teste deve usar o valor cheio.",
+    "ASSERTAR EXPLICITAMENTE que o piso Ct >= Ac/Ag NÃO é ativado: Ac/Ag = 0,6053 no cenário mais desfavorável (Ac = d*tw) < 0,73333. Este é o único teste do conjunto que exercita o piso variável de 2024.",
+    "Se o A5 implementar cisalhamento de bloco em rodada futura, os passos 7-11 poderão ser reabilitados: os valores do livro (Agv = 30,60; Anv = 22,797; Ant = 18,207 cm²; R1 = 944,6; R2 = 879,3 kN) foram todos conferidos pelo A2 e fecham aritmeticamente."
+   ]
+  },
+  {
+   "id": "PFEIL-COMP-01",
+   "referencia": "Probl. 5.8.1",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Mudança de formulação entre edições (Q -> área efetiva). Reaproveitável porque o A2 CONFIRMOU Aef = Ag pelos limites de 2024 (decisão 1), tornando as duas formulações numericamente coincidentes neste caso, e porque a curva chi é idêntica.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "passos_excluidos": [],
+   "valores_de_referencia_recalculados_2024": {
+    "caso_a_L1": "KL/r = 43,796; lambda_0 = 0,49294; chi = 0,90332; Nc,Rd = 981,3 kN",
+    "caso_b_L1": "KL/r = 78,125; lambda_0 = 0,87921; chi = 0,72358; Nc,Rd = 786,1 kN",
+    "caso_a_L2": "com lambda_0 = 0,49 (impresso): chi = 0,90439 contra 0,904 do livro (+0,043 %)",
+    "caso_b_L2": "com lambda_0 = 0,88 (impresso): chi = 0,72316 contra 0,723 do livro (+0,022 %)",
+    "flambagem_local_2024": "mesa 6,638 <= 15,839; alma 17,16 <= 42,144  ->  Aef = Ag = 47,8 cm²"
+   },
+   "desvio_esperado_vs_livro": "L1: -0,08 % (caso a) e +0,01 % (caso b). L2: <= 0,05 %.",
+   "tolerancia": "L2 (bloqueante): ±0,5 %. L1 (informativa): ±1,0 %.",
+   "instrucoes_para_o_A7": [
+    "Entrar com Ag, rx, ry do CATÁLOGO (kb/catalogos/gerdau_perfis_w_h.json, W 150 x 37,1) — todos coincidem com o livro. Este é um dos poucos exemplos totalmente cobertos pelo catálogo do projeto.",
+    "Calcular Ne por COM-07 (Ne,x = pi²*E*Ix/Lx², Ne,y = pi²*E*Iy/Ly²) e lambda_0 por COM-04 (sqrt(Ag*fy/Ne) com Ag BRUTA). Confirmar que resulta o mesmo lambda_0 do atalho (KL/r)/pi*sqrt(fy/E) do livro.",
+    "ATENÇÃO: o caso a) declara contenção lateral impedindo a flambagem em y. Isso significa Ly < Lx, não Ly = 0. Modelar como Ly tal que Ne,y > Ne,x; o exemplo NÃO fornece Ly, logo o A7 deve forçar o modo x diretamente, e NÃO tentar validar a escolha do menor Ne.",
+    "NÃO validar Ne,z (torção) com este exemplo: o livro não considera flambagem por torção, e o Cw/It do catálogo dariam um Ne,z que o livro simplesmente não tem. Se o código do A5 tomar o mínimo incluindo Ne,z, o A7 deve desabilitar o modo z para reproduzir o exemplo — e registrar isso como limitação da comparação, não como erro do A5.",
+    "Assertar que Aef = Ag e que o código NÃO aplica nenhum fator Q (COM-02 proíbe explicitamente a forma de 2008)."
+   ]
+  },
+  {
+   "id": "PFEIL-COMP-02",
+   "referencia": "Probl. 5.8.2",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Mesmo perfil e mesma justificativa do COMP-01 (Aef = Ag confirmado). Acrescenta a variação de comprimento de flambagem.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "passos_excluidos": [],
+   "valores_de_referencia_recalculados_2024": {
+    "engaste_livre_L1": "l_fl = 600 cm; KL/r = 156,250; lambda_0 = 1,75842 (> 1,5, ramo 0,877/lambda_0²); chi = 0,28363; Nc,Rd = 308,1 kN",
+    "engaste_rotula_L1": "l_fl = 210 cm; KL/r = 54,688; lambda_0 = 0,61548; chi = 0,85339; Nc,Rd = 927,1 kN",
+    "engaste_livre_L2": "com lambda_0 = 1,76 (impresso): chi = 0,28312 -> f_c = 70,78 MPa contra 71 do livro (-0,31 %)",
+    "engaste_rotula_L2": "com lambda_0 = 0,62 (impresso): chi = 0,85139 -> f_c = 212,85 MPa contra 212 do livro (+0,40 %)"
+   },
+   "desvio_esperado_vs_livro": "L1: +0,04 % (engaste-livre) e +0,66 % (engaste-rótula). O +0,66 % é integralmente explicado pelo livro truncar f_c = 212,85 -> 212 MPa; está dentro do padrão ±1 % do projeto e NÃO exige exceção.",
+   "tolerancia": "L2 (bloqueante): ±0,5 %. L1 (informativa): ±1,0 %.",
+   "instrucoes_para_o_A7": [
+    "É o ÚNICO exemplo do conjunto que exercita o ramo ELÁSTICO da curva (lambda_0 = 1,758 > 1,5, chi = 0,877/lambda_0²). Teste obrigatório: se o código aplicasse 0,658^(lambda_0²) fora de faixa daria chi = 0,2246 (-21 %). Assertar o ramo, não só o valor.",
+    "Os comprimentos de flambagem 600 cm e 210 cm entram como DADO DE ENTRADA. O projeto não tem regra congelada de fator K (COM-07 trabalha com comprimentos destravados); este exemplo NÃO valida K = 2,0 nem K = 0,70.",
+    "Mesma ressalva do COMP-01 sobre Ne,z."
+   ]
+  },
+  {
+   "id": "PFEIL-COMP-03",
+   "referencia": "Probl. 5.8.3",
+   "veredito": "usar_com_recalculo",
+   "motivo": "O caso a) (dois perfis H isolados) é válido: o A2 demonstrou Aef = Ag por varredura geométrica (decisão 1), suprindo a verificação de flambagem local que o livro OMITE. O caso b) é barra composta e está fora do escopo congelado.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "passos_usaveis_apenas_como_geometria": [
+    7,
+    8,
+    9
+   ],
+   "passos_excluidos": [
+    10,
+    11,
+    12,
+    13,
+    14
+   ],
+   "motivo_da_exclusao": "Caso b) — dois H ligados por solda longitudinal é barra composta; a aplicabilidade de COM-07 exclui o item 5.3.6, que não foi extraído em kb/. Veto do Verificador Normativo por impossibilidade de confirmar a aplicabilidade, não por erro do livro.",
+   "valores_de_referencia_recalculados_2024": {
+    "caso_a_L1": "KL/r = 400/3,57 = 112,045; lambda_0 = 1,26088; chi = 0,51402; Nc,Rd = 2*0,51402*52,1*25/1,10 = 1217,3 kN",
+    "caso_a_L2": "com lambda_0 = 1,27 (impresso): chi = 0,50912 contra 0,509 do livro (+0,023 %); Nc,Rd = 1205,7 kN",
+    "geometria_passos_8_e_9": "Iy = 2*(664 + 52,1*7,7²) = 7506,0 cm⁴ (livro 7506) ; iy = sqrt(7506/(2*52,1)) = 8,487 cm (livro 8,49) — ambos reproduzidos exatamente",
+    "flambagem_local_2024": "varredura d = 150 a 165 mm: bf/(2tf) entre 4,3 e 13,6 (< 15,839) e hw/tw entre 8,2 e 15,1 (< 42,144)  ->  Aef = Ag = 52,1 cm²"
+   },
+   "desvio_esperado_vs_livro": "L1 caso a): +1,19 % — ACIMA do padrão ±1 %. Causa determinada: o livro arredonda lambda_0 = 1,2609 para 1,27 ANTES de entrar na Tabela A2, e chi(1,27) = 0,50912 contra chi(1,2609) = 0,51402 (-0,95 %). L2: +0,02 %.",
+   "tolerancia": "L2 (BLOQUEANTE, obrigatória neste exemplo): ±0,5 % contra 1205,7 kN. L1 (informativa, NÃO bloqueante): faixa esperada +1,0 % a +1,4 % contra os 1203 kN do livro — registrar o desvio e sua causa no relatório, sem tratá-lo como reprovação e sem alterar a tolerância de nenhum outro teste.",
+   "instrucoes_para_o_A7": [
+    "Entrar com Ag = 52,1 cm² e i_min = 3,57 cm como DADOS DO LIVRO. O H 152 x 40,9 NÃO existe em kb/catalogos/ — não tentar mapear para W 150 x 37,1 (Ag = 47,8 cm², perfil diferente).",
+    "Como as dimensões de chapa do H 152 não estão em kb/, o A7 NÃO deve exercitar a rotina de área efetiva do A5 com este perfil (faltam bf, tf, tw). Deve injetar Aef = Ag = 52,1 cm² com base na demonstração do A2 registrada neste arquivo, e assertar apenas a cadeia Ne -> lambda_0 -> chi -> Nc,Rd.",
+    "Se, em rodada futura, o A1 extrair a Tabela A6.1 do Anexo A do livro (dimensões do H 152), o A7 deve RECONFERIR bf/(2tf) e hw/tw contra 15,839 e 42,144 antes de manter este veredito.",
+    "Caso b): usar SOMENTE como teste de propriedades geométricas (teorema dos eixos paralelos). Nenhuma asserção sobre Nc,Rd."
+   ]
+  },
+  {
+   "id": "PFEIL-FLEX-01",
+   "referencia": "Probl. 6.5.1",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Caso a) (W 530 x 85,0) é puro FLE-02/FLE-03 e bate direto. Caso b) exige o Z corrigido pela decisão 5 — mas o valor do livro NESTE problema (2281 cm³) é justamente o CORRETO, e portanto o M,Rd de 518,4 kNm do livro é referência válida.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "passos_excluidos": [],
+   "valores_de_referencia_recalculados_2024": {
+    "caso_a_classificacao": "FLM: bf/(2tf) = 5,03 <= 0,38*sqrt(E/fy) = 10,748 ; FLA: d'/tw = 478/10,3 = 46,41 <= 3,76*sqrt(E/fy) = 106,349  ->  compacta",
+    "caso_a_M_Rd": "Z = 2099,8 cm³ (catálogo Gerdau; o livro imprime 2100) -> M,Rd = 477,23 kNm (livro 477,3 kNm)",
+    "caso_a_FLE_04": "1,50*W*fy/gamma_a1 = 1,50*1811,3*25/1,10 = 617,5 kNm > 477,2 kNm  ->  limite NÃO ativo",
+    "caso_b_Z": "Z = bf*tf*(h-tf) + tw*hw²/4 = 2280,96 cm³ (livro 2281) — CORRETO, ver decisão 5",
+    "caso_b_classificacao": "FLM: 250/(2*16) = 7,81 <= 10,748 ; FLA: 468/6,3 = 74,29 <= 106,349  ->  compacta",
+    "caso_b_M_Rd": "2280,96*25/1,10 = 518,40 kNm (livro 518,4 kNm)",
+    "caso_b_FLE_04": "W = 52.250/25 = 2090 cm³ -> 1,50*2090*25/1,10 = 712,5 kNm > 518,4 kNm  ->  limite NÃO ativo"
+   },
+   "tolerancia": "±0,2 %",
+   "instrucoes_para_o_A7": [
+    "Caso a): usar o catálogo (W 530 x 85,0: Zx = 2099,8; Wx = 1811,3; d' = 478; tw = 10,3; bf = 166; tf = 16,5 cm/mm conforme unidade do arquivo).",
+    "Caso b): o VS 500 x 86 não está em nenhum catálogo do projeto; injetar a geometria de chapas (h = 500, bf = 250, tf = 16, tw = 6,3 mm) e deixar o A5 calcular Z. Este é o melhor teste do cálculo de Z a partir de chapas — assertar Z = 2280,96 cm³, NUNCA 2330.",
+    "Verificar EXPLICITAMENTE o limite FLE-04 (M,Rd <= 1,50*W*fy/gamma_a1) nos dois casos. O livro não o traz (é item de 2024); o A7 deve confirmar que não é ativado, senão o M,Rd de 2024 seria MENOR que o do livro e a comparação mudaria de natureza.",
+    "As duas vigas são declaradas contidas lateralmente -> Lb = 0 e FLT satisfeita por hipótese. Não usar este exemplo para validar FLT."
+   ]
+  },
+  {
+   "id": "PFEIL-FLEX-02",
+   "referencia": "Probl. 6.5.4",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Dimensionamento de piso com quatro famílias (flexão, flambagem local, cisalhamento, ELS). Reaproveitável em boa parte, mas contém RM-01, RM-02 e RM-10, além da incompatibilidade de combinação A2-COMB-01.",
+   "passos_usaveis": [
+    2,
+    3,
+    4,
+    6,
+    7,
+    8,
+    9,
+    11,
+    12
+   ],
+   "passos_usaveis_apenas_como_entrada": [
+    1,
+    10
+   ],
+   "passos_excluidos": [
+    5
+   ],
+   "motivo_da_exclusao": "Passo 5 (RM-10): os dois números impressos (M_d = 218,2 kNm e Z > 685,7 cm³) são inconsistentes entre si e não reproduzíveis. Passos 1 e 10: combinações do livro incompatíveis com ACO-02/03/04 (A2-COMB-01) — entram como dado, não como referência.",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_2": "M_d = 29,4*7,5²/8 = 206,72 kNm (dado q_d = 29,4 kN/m como ENTRADA)",
+    "passo_3_RM01": "Z necessário = 1,10*20.672/34,5 = 659,11 cm³ (livro imprime 659,0; o numerador impresso é erratum)",
+    "passo_4": "W 360 x 39,0 tem Zx = 667,7 cm³ (catálogo, coincide com o livro)",
+    "passo_6": "W 360 x 44,6 tem Zx = 784,3 cm³ (catálogo; o livro designa 'W360 x 44,0')",
+    "passo_7_FLM": "bf/(2tf) = 171/(2*9,8) = 8,72 <= 0,38*sqrt(200.000/345) = 9,149  ->  compacta (o livro imprime 8,76 e 9,1)",
+    "passo_8_FLA": "d'/tw = 308/6,9 = 44,64 <= 3,76*sqrt(200.000/345) = 90,530  ->  compacta (o livro imprime 44,70 e 90,0)",
+    "passo_9_RM02": "limite CORRETO de 2024: lambda_p = 1,10*sqrt(5,34*200.000/345) = 61,202. 44,64 < 61,202 -> plastificação. O 69,6 impresso é erratum (valor de MR250).",
+    "passo_11_ELS": "delta = 5*0,151*750⁴/(384*20.000*12.258) = 2,5375 cm (livro 2,54; I = 12.258 cm⁴ confirmado no catálogo)",
+    "passo_12_ELS": "L/350 = 750/350 = 2,1429 cm -> 2,5375 > 2,1429, NÃO atende (ELS-02, linha 'vigas de piso')",
+    "FLE_04": "1,50*696,5*34,5/1,10 = 32.774 kNcm = 327,7 kNm > M,Rd = 784,3*34,5/1,10/100 = 246,0 kNm  ->  limite NÃO ativo"
+   },
+   "tolerancia": "±0,5 % para flexão e flambagem local; ±1,0 % para a flecha (o livro imprime q = 0,15 kN/cm onde usou 0,151 — ver observação do A1 no passo 11; contra o valor RECALCULADO 2,5375 cm a tolerância é ±0,2 %)",
+   "instrucoes_para_o_A7": [
+    "Injetar q_d = 29,4 kN/m e q_serv = 15,1 kN/m como DADOS DE ENTRADA. NÃO validar ACO-01/02/03/04/05 com este exemplo (A2-COMB-01): o livro usa gamma = 1,4/1,4 e psi_2 = 0,3, e a NBR 8800:2024 daria outros valores.",
+    "É o ÚNICO exemplo do conjunto em aço A572 Gr. 50 (fy = 345 MPa). Teste obrigatório de que os limites de esbeltez do A5 escalam com sqrt(E/fy) e não estão fixados em MR250 — exatamente o erro que o próprio livro cometeu em RM-02.",
+    "É também o único que exercita ELS-02 (vigas de piso, L/350) com resultado de REPROVAÇÃO. Assertar que o código reprova, e não só que calcula a flecha.",
+    "Verificar o limite FLE-04 (não existe no livro).",
+    "Não usar o passo 5 em nenhuma forma."
+   ]
+  },
+  {
+   "id": "PFEIL-FLEX-03",
+   "referencia": "Probl. 6.5.6",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Apenas o passo 7 (alma compacta, t0 = 10 mm) é utilizável, e ainda assim como verificação ARITMÉTICA de FLE-02, não de classificação: a seção é MONOSSIMÉTRICA (mesa superior 200x9,5, inferior 150x9,5) e a linha da Tabela D.1 congelada em FLE-03 cobre apenas seções I e H com DOIS eixos de simetria (aplicabilidade de FLE-01/FLE-03).",
+   "passos_usaveis": [
+    7
+   ],
+   "passos_usaveis_apenas_como_geometria": [
+    6
+   ],
+   "passos_excluidos": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17
+   ],
+   "motivo_da_exclusao": "Passos 1-5: classificação por Tabela D.1 fora do escopo para seção monossimétrica. Passos 8-11: alma semicompacta — BLQ-01 (trecho inelástico do Anexo D não congelado) somado ao erro aritmético RM-03. Passos 12-17: alma esbelta — fora do escopo e usa o coeficiente k de 2008 sem equivalente congelado.",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_6_verificacao_de_Z": "O A2 recalculou Z do caso t0 = 10 mm a partir da geometria (LNP a 47,375 cm da base, A = 121,35 cm²): Z = 3415,2 cm³ contra 3415,4 cm³ do livro (-0,006 %). O Z do livro está CORRETO e pode ser usado como entrada confiável.",
+    "passo_7": "M,Rd = 3415,4*25/1,10 = 77.622,7 kNcm = 776,23 kNm (livro 776,2 kNm)"
+   },
+   "tolerancia": "±0,2 % contra 776,23 kNm",
+   "instrucoes_para_o_A7": [
+    "Este exemplo vale POUCO: apenas uma multiplicação (FLE-02) e uma checagem de Z. Não inflar seu peso no relatório do GATE 3.",
+    "Registrar EXPLICITAMENTE no relatório que a seção é monossimétrica e que a classificação está fora do escopo congelado. Não deduzir do 'acerto' do passo 7 nenhuma validação de FLE-03.",
+    "Valor positivo alternativo: os casos t0 = 8 mm e t0 = 5 mm podem virar TESTE DE BLOQUEIO — o comportamento correto do A5 é acionar BLQ-01 e recusar, e o livro fornece o contexto que prova que esses casos existem na prática.",
+    "Se o A5 calcular Z internamente para seção monossimétrica, assertar Z = 3415,2 cm³ (LNP fora do meio da altura) — é um bom teste de que o código não assume simetria."
+   ]
+  },
+  {
+   "id": "PFEIL-CIS-01",
+   "referencia": "Probl. 6.5.3",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Diferença de edição ATIVA (kv) e erro de Z (RM-06) no mesmo exemplo. Nenhum número final do livro é referência direta, mas a estrutura do problema é excelente e o recálculo integral foi feito pelo A2.",
+   "passos_usaveis": [
+    2,
+    4,
+    5,
+    6,
+    7,
+    8,
+    11,
+    12,
+    13
+   ],
+   "passos_usaveis_apenas_como_entrada": [
+    1,
+    9,
+    10
+   ],
+   "passos_excluidos": [
+    3
+   ],
+   "motivo_da_exclusao": "Passo 3 é apenas a forma simbólica de M_d,sol (estática já validada na rodada 1 do A7). Passos 1, 9 e 10: combinações do livro (1,3g+1,5q e g+0,4q) incompatíveis com ACO-02/03/04 (A2-COMB-01) — entram como dado.",
+   "valores_de_referencia_recalculados_2024": {
+    "Z_corrigido": "2280,96 cm³ (decisão 5); o livro usa 2330 cm³, que é ERRADO",
+    "passo_2_M_Rd": "518,40 kNm (livro 529,5 kNm)  — diferença de -2,10 %, integralmente atribuída ao Z errado do livro",
+    "passo_4_g_max_flexao": "518,40*8/(2,05*L²) = 2023,0/L²  (livro 2066,3/L²)",
+    "passo_5_classificacao": "lambda = hw/tw = 468/6,3 = 74,286 ; kv = 5,34 (alma sem enrijecedores) ; lambda_p = 71,897 ; lambda_r = 89,544  ->  71,897 < 74,286 <= 89,544  ->  REGIME INELÁSTICO (recalculado, não assumido)",
+    "passo_6_fator_de_reducao": "(lambda_p/lambda) = 71,897/74,286 = 0,96784  (o C_v do livro é 0,94, com kv = 5,0)",
+    "passo_7_V_Rd": "Vpl = 0,60*Aw*fy com Aw = d*tw = 50,0*0,63 = 31,5 cm²  ->  Vpl = 472,5 kN ; V,Rd = 0,96784*472,5/1,10 = 415,73 kN  (livro 404 kN, +2,90 %)",
+    "passo_8_g_max_cortante": "415,73*2/(2,05*L) = 405,6/L  (livro 394/L)",
+    "passo_11_12_ELS": "delta = (5/384)*1,2g*L⁴/(20.000*52.250) = 1,49521e-11*g*L⁴  (livro 1,49e-11) ; g_max = 1,9113e8/L³ kN/cm  (livro 1,91e8)",
+    "tabela_final_recalculada_2024": [
+     {
+      "L_sobre_h": 8,
+      "L_m": 4.0,
+      "cortante": 101.4,
+      "flexao": 126.4,
+      "deslocamento": 298.6,
+      "governa": "cortante"
+     },
+     {
+      "L_sobre_h": 13,
+      "L_m": 6.5,
+      "cortante": 62.4,
+      "flexao": 47.9,
+      "deslocamento": 69.6,
+      "governa": "flexao"
+     },
+     {
+      "L_sobre_h": 20,
+      "L_m": 10.0,
+      "cortante": 40.6,
+      "flexao": 20.2,
+      "deslocamento": 19.1,
+      "governa": "deslocamento"
+     }
+    ],
+    "conclusao_qualitativa": "PRESERVADA integralmente pela edição 2024: baixo L/h -> cortante; L/h intermediário -> flexão; alto L/h -> deslocamento."
+   },
+   "desvio_esperado_vs_livro": "M,Rd -2,10 % (Z errado do livro) ; V,Rd +2,90 % (kv 5,0 -> 5,34). AMBOS os desvios têm causa identificada e quantificada; nenhum é tolerância.",
+   "tolerancia": "±0,5 % contra os valores RECALCULADOS acima. O número impresso pelo livro NÃO é referência em nenhum passo deste exemplo.",
+   "instrucoes_para_o_A7": [
+    "É o exemplo mais valioso do conjunto para cisalhamento — o único que exercita o TRECHO INELÁSTICO de CIS-01. Não descartar por causa das duas divergências: as duas foram resolvidas.",
+    "Assertar o REGIME antes do valor: se o código classificar como plastificação (o que aconteceria se usasse kv = 5,34 mas comparasse contra 69,6, ou se usasse lambda = d/tw em vez de hw/tw), V,Rd saltaria para 429,5 kN. O teste de regime é o mais informativo.",
+    "Perfil SOLDADO: h = distância entre faces internas das mesas = 468 mm (sem subtrair raio de concordância, que não existe em soldado). Aw usa a altura TOTAL d = 500 mm. Este exemplo, junto com o 6.5.9, é o par de regressão do alerta de CIS-02 (Aw com d, lambda com h).",
+    "Injetar Z = 2280,96 cm³, NÃO os 2330 do livro.",
+    "Injetar as combinações do livro como dado (A2-COMB-01)."
+   ]
+  },
+  {
+   "id": "PFEIL-CIS-02",
+   "referencia": "Probl. 6.5.9",
+   "veredito": "usar_direto",
+   "motivo": "É o exemplo de REFERÊNCIA do conjunto para cisalhamento. lambda = 46,86 está 35 % abaixo de lambda_p em qualquer kv; a fórmula V,Rd = 0,60*d*tw*fy/gamma_a1 é literalmente idêntica em 2008 e 2024; o perfil está integralmente no catálogo do projeto (W 530 x 92,0), inclusive com Zx = 2359,8 cm³ COINCIDENTE com o livro.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "passos_excluidos": [
+    8
+   ],
+   "motivo_da_exclusao": "Passo 8 abre a verificação de enrijecedores de apoio, fora do escopo da Fase 0 e não transcrito pelo A1.",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_1_FLM": "bf/(2tf) = 209/(2*15,6) = 6,70 (catálogo) ou 6,57 (tf = 15,9 do livro) <= 10,748  ->  compacta",
+    "passo_2_FLA": "d'/tw = 478/10,2 = 46,86 <= 106,349  ->  compacta",
+    "passo_3_M_Rd_RM04": "2359,8*25/1,10 = 53.631,8 kNcm = 536,318 kNm. O livro imprime 53.611 kNcm = 536,1 kNm (erratum de 0,039 %).",
+    "FLE_04": "1,50*2069,7*25/1,10 = 70.558 kNcm > 53.632 kNcm  ->  limite NÃO ativo",
+    "passo_4_q_d": "8*536,318/5,0² = 171,62 kN/m (livro 171,5, propagado do 536,1)",
+    "passo_5_V_d": "171,62*2,5 = 429,05 kN (livro 429)",
+    "passo_6_classificacao": "lambda = 46,86 ; kv = 5,34 ; lambda_p = 71,897  ->  46,86 <= 71,897  ->  PLASTIFICAÇÃO (idem em kv = 5,0, lambda_p = 69,570)",
+    "passo_7_V_Rd": "Aw = d*tw = 53,3*1,02 = 54,366 cm² ; Vpl = 0,60*54,366*25 = 815,49 kN ; V,Rd = 815,49/1,10 = 741,35 kN (livro 741 kN, +0,05 %)"
+   },
+   "tolerancia": "±0,1 % no passo 3 (contra 536,318 kNm recalculado — mais apertada que o padrão, porque a entrada Z vem confirmada do catálogo) ; ±0,5 % nos demais passos contra os valores recalculados",
+   "instrucoes_para_o_A7": [
+    "Este é o caso-base obrigatório de CIS-01+CIS-02. Se ele falhar, nenhum outro resultado de cisalhamento do A5 é confiável.",
+    "Assertar explicitamente que Aw usa d = 533 mm (altura total) e lambda usa d' = 478 mm. Trocar um pelo outro dá V,Rd = 664,8 kN (-10,3 %) — é o teste unitário que a decisão de auditoria de CIS-02 exige, e este exemplo é a evidência bibliográfica dele.",
+    "Entrar com todos os dados do catálogo (W 530 x 92,0). O livro imprime tf = 15,9 mm e o catálogo 15,6 mm — usar o CATÁLOGO, e registrar a divergência; ela não afeta V,Rd (que não depende de tf) e afeta o FLM em 2 % com folga de 38 % até o limite.",
+    "Recalcular a cadeia 3 -> 4 -> 5 a partir de 536,318 kNm; NÃO reutilizar os 536,1 / 171,5 / 429 do livro (RM-04).",
+    "O livro imprime o limite de FLM como '11' neste problema e como '10,7' nos demais; o valor de 2024 é 10,748. Usar 10,748, registrar a divergência editorial."
+   ]
+  },
+  {
+   "id": "PFEIL-CIS-03",
+   "referencia": "Probl. 6.5.11, itens g) e h)",
+   "veredito": "usar_com_recalculo",
+   "motivo": "Único exemplo que exercita o TRECHO ELÁSTICO de CIS-01 e o ramo kv = 5,0 + 5/(a/h)² com enrijecedores. Utilizável para CLASSIFICAÇÃO DE REGIME e para o kv, nunca para os valores de V,Rd — que carregam simultaneamente kv = 5,0 (edição 2008) e a definição errada de Aw (RM-07).",
+   "passos_usaveis": [
+    1,
+    2,
+    5,
+    6,
+    8,
+    10,
+    11
+   ],
+   "passos_excluidos": [
+    3,
+    4,
+    9
+   ],
+   "motivo_da_exclusao": "Passo 3: expressão de C_v de 2008 com constante divergente (RM-05) — substituída integralmente pela forma de 2024. Passos 4 e 9: V,Rd numéricos calculados com Aw = h0*tw, contrário a CIS-02 e à própria Eq. (6.35) do livro (RM-07).",
+   "valores_de_referencia_recalculados_2024": {
+    "lambda": "h/tw = 200/1,27 = 157,48 (o livro imprime 157,7 no passo 1 e 157,5 no passo 3 — ambos errados, ver RM-11)",
+    "Aw_correta": "d*tw = (200 + 4,5 + 3,17)*1,27 = 207,67*1,27 = 263,74 cm² (o livro usa 254,00 cm²) ; Vpl = 0,60*263,74*25 = 3956,1 kN",
+    "item_g_sem_enrijecedores": "kv = 5,34 ; lambda_p = 71,897 ; lambda_r = 89,544 ; 157,48 > 89,544  ->  REGIME ELÁSTICO (mesma classe do livro). V,Rd = 1,24*(71,897/157,48)²*3956,1/1,10 = 929,5 kN (livro 843 kN). V_d = 1780 kN > 929,5 kN  ->  enrijecedores OBRIGATÓRIOS: mesma conclusão do livro.",
+    "item_h_a_95cm": "a/h = 95/200 = 0,475 ; kv = 5,0 + 5/0,475² = 27,161 (livro k = 27,2 — MESMA fórmula em 2024) ; lambda_p = 162,15 ; 157,48 <= 162,15  ->  PLASTIFICAÇÃO (mesma conclusão do livro). V,Rd = 3956,1/1,10 = 3596,5 kN. Com o Aw errado do livro dá exatamente 3464 kN — prova numérica de que RM-07 é a única causa da divergência.",
+    "item_h_a_130cm": "kv = 5,0 + 5/0,650² = 16,834 (livro k = 16,8) ; lambda_p = 127,65 ; lambda_r = 158,99 ; 127,65 < 157,48 <= 158,99  ->  INELÁSTICO (mesma conclusão do livro: 129 < 157,7 < 159). V,Rd = (127,65/157,48)*3956,1/1,10 = 2915,3 kN (o livro não transcreveu o valor)."
+   },
+   "desvio_esperado_vs_livro": "item g): +10,3 % (kv e Aw combinados) ; item h) a = 95 cm: +3,8 % (apenas Aw). Ambos com causa identificada e decomposta.",
+   "tolerancia": "±0,5 % contra os valores recalculados. As três CLASSIFICAÇÕES DE REGIME são asserções booleanas contra o livro e devem bater 3/3 — é aí que está o valor probatório deste exemplo.",
+   "instrucoes_para_o_A7": [
+    "Prioridade: assertar os TRÊS regimes (elástico sem enrijecedores; plastificação com a = 95 cm; inelástico com a = 130 cm) e os DOIS valores de kv com enrijecedores (27,161 e 16,834 contra 27,2 e 16,8 do livro). Esses cinco pontos são validação bibliográfica genuína e independente.",
+    "Fornecer a = 95 cm e a = 130 cm como ENTRADA declarada pelo usuário — CIS-01 proíbe fixar kv = 5,34 quando há enrijecedores, e exige 'a'. Este exemplo é o único teste dessa condição de aplicabilidade.",
+    "NÃO validar o dimensionamento dos enrijecedores (5.4.3.1.3 está marcado REVISAR_MANUALMENTE em kb/ e fora do ruleset).",
+    "Usar Aw = 263,74 cm² (altura total 207,67 cm). Registrar no relatório que o livro usa 254,00 cm² aqui e 'altura total' nos Probl. 6.5.3/6.5.9 e na própria Eq. (6.35), e que 2024 resolve a favor da altura total.",
+    "O V_d = 1780 kN vem de página não integralmente transcrita (confiança MÉDIA declarada pelo A1). Usá-lo apenas na comparação qualitativa 'V_d > V,Rd sem enrijecedores', nunca como referência numérica."
+   ]
+  },
+  {
+   "id": "PFEIL-COM06-01",
+   "referencia": "Probl. 5.8.10",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo_parcial",
+   "veredito_detalhado": "Veredito DIVIDIDO por elemento e por regra — ver decisao_7. usar_direto para os coeficientes da Tabela 4 (COM-05); usar_com_recalculo para COM-03/COM-04 e para a largura efetiva da ALMA (COM-06); INUTILIZÁVEL para a saída final Nc,Rd (COM-02); teste NEGATIVO para o caminho da MESA.",
+   "motivo": "Mudança REAL de formulação entre edições (fator Q multiplicativo em 2008 x área efetiva acoplada a chi em 2024), confirmada pelo recálculo integral do A2: Nc,Rd = 1383,0 kN (2024) contra 1284 kN (livro), +7,71 %. Mas a ressalva do A1 ('só geometria, limiares e conclusão qualitativa') é CONSERVADORA DEMAIS: o A2 demonstrou algebricamente que, para o elemento ENRIJECIDO, as duas fórmulas são reparametrizações da mesma curva de Winter, e que os coeficientes da Tabela 4 não mudaram de edição.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    8,
+    9,
+    10,
+    14
+   ],
+   "passos_excluidos": [
+    6,
+    7,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21
+   ],
+   "motivo_dos_excluidos": "Passos 11, 12, 16, 17, 18, 19, 20 e 21: formulação de 2008 (Qs, Qa, Q, lambda_0 modificado por Q, f_c com Q, N_d,res com Q) — sem contrapartida em 2024, que não tem fator Q (a decisão de auditoria da COM-02 o PROÍBE explicitamente). Passo 13: a tensão sigma iterativa não existe em 2024 (o acoplamento é com chi*fy, fechado). Passo 15: A_ef = 77,9 cm² reduz APENAS a alma, porque em 2008 a mesa entra por Qs (tensão) e não por área; o A_ef de 2024 é 71,983 cm² e inclui a redução das mesas. Passos 6 e 7: f_c = 210,5 MPa e N_d,res = 1527 kN são o caso 'sem flambagem local', usáveis só em L1 e apenas para COM-03 (ver abaixo), não como Nc,Rd da seção, que é Classe 4 pelos dois critérios.",
+   "valores_de_referencia_recalculados_2024": {
+    "geometria_L1": "Ag = 80,000 cm²; Ix = 24.242,35 cm⁴; ix = 17,40774 cm; KL/ix = 56,2975",
+    "COM-07_L1": "Ne = pi²*E*Ix/L² = 4982,56 kN",
+    "COM-04_L1": "lambda_0 = sqrt(Ag*fy/Ne) = 0,633562",
+    "COM-03_L1": "chi = 0,658^(lambda_0²) = 0,845349",
+    "COM-05_tabela_4_L1": "(b/t)lim alma AA_grupo_2 = 42,14356 (livro imprime 42,1); kc = 4/sqrt(h/tw) = 0,565685 (livro 0,56); (b/t)lim mesa AL_grupo_5 = 13,61484 (livro imprime 13,5, com kc = 0,56)",
+    "COM-06_limiar_5_3_4_2_L1": "alma: (b/t)lim/sqrt(chi) = 45,83670 < 50 -> esbelta; mesa: 14,80814 < 18,75 -> esbelta",
+    "COM-06_alma_L1": "sigma_el = 304,7931 MPa; bef = 37,65293 cm (de b = 40 cm; fator 0,941323)",
+    "COM-06_mesa_L1": "sigma_el = 292,6438 MPa; bef = 13,08146 cm (de b = 15 cm; fator 0,872097) — NÃO EXECUTÁVEL no código (ver A2-ESC-01)",
+    "COM-02_L1": "Aef = 71,983 cm²; Nc,Rd = 1383,0 kN — INFORMATIVO, ver 'desvio_esperado_vs_livro'",
+    "caso_b_Aef_igual_Ag_L1": "Nc,Rd = chi*Ag*fy/gamma_a1 = 1536,997 kN (livro 1527 kN, +0,65 % — o livro arredonda f_c de 21,13 para 21 kN/cm²)",
+    "camada_L3_alma": "bef 2024 = 37,65293 cm contra bef 2008 impresso = 37,4 cm: +0,68 %. CONVERGÊNCIA — informativa, não bloqueante. Ver decisao_7.demonstracao_algebrica_da_convergencia."
+   },
+   "desvio_esperado_vs_livro": "Tabela 4 (limites): < 0,9 %, com a diferença inteiramente explicada pelo arredondamento de kc do livro. COM-03/04: < 0,5 %. Largura efetiva da alma: +0,68 % (L3). Nc,Rd final: +7,71 % — FORA de tolerância, por mudança legítima de edição; NÃO É ERRO DE NINGUÉM e não pode virar assert.",
+   "tolerancia": "L1 bloqueante sobre lambda_0, chi, (b/t)lim, kc, sigma_el e bef: ±0,5 %. L3 sobre bef contra o livro: informativa, sem limite. Nc,Rd final: PROIBIDO como assert.",
+   "instrucoes_para_o_A7": [
+    "Entrar com a geometria do enunciado (mesas 2 x 8 x 300 mm; alma 8 x 400 mm), NUNCA com Ag/Ix/ix já prontos: a seção é um H SOLDADO e não está em nenhum dos dois catálogos Gerdau do projeto. Mesmo precedente do VS 500 x 86 (decisao_5, 1.ª rodada).",
+    "UNIDADES: o calc_core trabalha em N, mm e MPa. O livro está em kN, cm e kN/cm². Converter na entrada do teste e conferir Ag = 8000 mm², Ix = 2,424235e8 mm⁴.",
+    "COM-05 — este é o ganho mais sólido do exemplo: assertar coeficiente_bt_limite('AA_grupo_2') == 1,49 e bt_limite('AA_grupo_2', E, fy) == 42,14356, contra os 42,1 IMPRESSOS NO LIVRO. É validação bibliográfica DIRETA, sem ressalva de edição, de um coeficiente que até agora não tinha segunda fonte.",
+    "COM-05 / grupo 5 — TESTE NEGATIVO OBRIGATÓRIO: bt_limite('AL_grupo_5', ...) deve LEVANTAR ErroDeDimensionamento (a Fase 0 é restrita a W/HP laminados; ver A2-ESC-01). Assertar a exceção, não o valor. Em teste SEPARADO e claramente rotulado, registrar como INFORMATIVO que a fórmula congelada 0,64*sqrt(E/(fy/kc)) com kc = 4/sqrt(h/tw) reproduz os 13,5 impressos (13,61484 com kc exato; 13,546 com o kc = 0,56 do livro). Não misturar os dois testes: um valida o ruleset, o outro valida a fronteira de escopo do código.",
+    "COM-06 — chamar largura_efetiva(b=400, t=8, bt_lim=42,14356, chi=0,845349, fy=250, c1=0,18, c2=1,31) e conferir 376,5293 mm. Os c1/c2 devem vir de coeficientes_c1_c2('AA_grupo_2'), lidos do ruleset, nunca escritos no teste.",
+    "NÃO chamar area_efetiva() nesta seção: ela itera sobre os elementos e vai esbarrar no grupo 5 da mesa. Só largura_efetiva() sobre a alma.",
+    "PROIBIDO assertar 1284 kN, ou qualquer número derivado de Q, Qa ou Qs. Se aparecer um fator Q em qualquer lugar do caminho, é BUG — a decisão de auditoria da COM-02 proíbe a forma de 2008 explicitamente.",
+    "Registrar no relatório a camada L3 (bef 37,65293 contra 37,4 do livro, +0,68 %) COM a demonstração algébrica de decisao_7, e com a advertência de que a coincidência decorre de o autor ter adotado sigma = f_c(Q=1) = 211 MPa, numericamente igual a chi*fy = 211,34 MPa neste exemplo — não é propriedade geral das duas edições."
+   ],
+   "cobertura_declarada": [
+    "COM-03",
+    "COM-04",
+    "COM-05",
+    "COM-06 (só elemento AA)",
+    "COM-07"
+   ],
+   "nao_cobre": [
+    "COM-02 (saída Nc,Rd de seção Classe 4 — divergência de edição de 7,71 %)"
+   ]
+  },
+  {
+   "id": "PFEIL-FCO-01",
+   "referencia": "Probl. 7.6.1",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo",
+   "veredito_detalhado": "O MAIS VALIOSO dos sete exemplos desta rodada, e o único da família FCO-* inteiramente DENTRO do envelope da Fase 0. Verificação feita item a item pelo A2: contenção lateral contínua -> sem FLT; mesa b/t = 9,4 < lambda_p = 10,75 -> sem FLM; alma 33,4 < 42,14 -> sem FLA, logo BLQ-01 NÃO dispara; M_y,Sd = 0, logo BLQ-03 não dispara; extremidades indeslocáveis, logo B2 = 1,0 e BLQ-06 não dispara; N_d/N_d,res = 0,35 >= 0,2, exercitando o ramo 5.5.1.2-a) com o fator 8/9.",
+   "motivo": "As fórmulas de resistência e o B1 são algebricamente idênticos entre 2008 e 2024. O ÚNICO obstáculo é o valor final impresso da equação de interação (0,47), que o próprio livro calculou sem o fator 8/9 (RM-10) — e dois erros aritméticos, um deles novo (A2-RM-13). Nenhum deles é obstáculo à reutilização: todos se resolvem por recálculo, que é o que DEC-08 manda fazer.",
+   "passos_usaveis": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "passos_excluidos": [],
+   "passos_com_referencia_substituida": [
+    11,
+    12
+   ],
+   "valores_de_referencia_recalculados_2024": {
+    "N_Sd_L1": "1120,000 kN (1,4 x 800; conferido)",
+    "FCO-05_Cm_L1": "curvatura SIMPLES (momento constante) -> M1/M2 = -1,0 -> C,m = 0,60 - 0,40*(-1,0) = 1,000000",
+    "FCO-05_Ne_L1": "N,e = pi²*E*Ix/L_real² = 28.984,938 kN, com Ix = A*ix² = 52.862,19 cm⁴ e L_real = 600 cm (livro 28.948 kN, -0,13 %, por arredondar (Kl/i)_x para 31,8)",
+    "FCO-05_B1_L1": "B1 = 1,000000/(1 - 1120/28.984,938) = 1,040194 (livro 1,039)",
+    "M_x_Sd_L1": "M,Sd = B1*M,nt = 1,040194 * 70,0 = 72,8136 kNm (livro 72,7)",
+    "COM-04_L1": "lambda_0 = 0,357647",
+    "COM-03_L1": "chi = 0,947871 (livro 0,947)",
+    "COM-02_L1": "N,Rd = A*chi*fy/gamma_a1 = 3194,755 kN (livro 3192 kN, +0,09 %)",
+    "FLE-02_L1": "M,Rd = Z*fy/gamma_a1 = 597,500 kNm — O LIVRO IMPRIME 591,7 kNm, QUE ESTÁ ERRADO. Ver A2-RM-13.",
+    "FCO-01_L1": "N,Sd/N,Rd = 0,350575 >= 0,2 -> ramo 5.5.1.2-a). TAXA = 0,350575 + (8/9)*(72,8136/597,500) = 0,458898. O LIVRO IMPRIME 0,47, sem o fator 8/9 e com o M,Rd errado. PROIBIDO como referência.",
+    "conclusao_qualitativa": "0,458898 < 1,0 -> aprovado. Coincide com a conclusão do livro."
+   },
+   "desvio_esperado_vs_livro": "<= 0,2 % em tudo, EXCETO M,Rd (+0,98 %, erro do livro) e a taxa final (-2,4 %, soma dos dois erros do livro: falta do 8/9 e M,Rd errado).",
+   "tolerancia": "±0,5 % contra os valores L1 recalculados. Para M,Rd: ±0,1 % contra 597,500 kNm. Para a taxa de interação: ±0,5 % contra 0,458898.",
+   "instrucoes_para_o_A7": [
+    "Perfil CVS 450 x 116 SOLDADO, ausente dos catálogos do projeto: entrar com A = 148,3 cm², Zx = 2629 cm³, ix = 18,88 cm diretamente, como já se fez com o VS 500 x 86 (decisao_5).",
+    "SINAL DE C,m — o ponto mais delicado do teste. Momento CONSTANTE é curvatura SIMPLES. Na convenção de razao_m1_m2(), curvatura simples exige os dois momentos de extremidade com o MESMO sinal: razao_m1_m2(+50,0, +50,0) = -1,0, e coeficiente_cm(..., ha_forcas_transversais=False) = 1,0. Se o teste passar os sinais opostos, C,m sai 0,20 e B1 some — é o erro de 5x que a decisão de auditoria da FCO-05 antecipa. Este exemplo é a guarda contra ele.",
+    "N,e: usar ne_plano_flexao_b1(E, I_plano=Ix, L_real=6000 mm) — NUNCA forca_axial_de_flambagem_global(), que é o Ne de 5.3.5 (COM-07). Neste exemplo há contenção lateral contínua e o mínimo de 5.3.5 poderia vir do eixo y ou da torção, produzindo B1 espúrio.",
+    "B1 com N,Sd1 de PRIMEIRA ordem = 1120 kN (não há amplificação prévia; B2 = 1,0 por extremidades indeslocáveis).",
+    "Composição: compor_momento(m_nt=70,0 kNm, m_lt=0, b1=B1, b2=1,0) -> 72,8136 kNm.",
+    "FCO-01: taxa_de_interacao(n_sd=1120 kN, n_rd=3194,755 kN, m_x_sd=72,8136 kNm, m_x_rd=597,500 kNm, m_y_sd=0) deve devolver taxa = 0,458898 E a string do ramo '5.5.1.2-a) (N,Sd/N,Rd >= 0,2)'. ASSERTAR TAMBÉM O RAMO, não só o número: um código que escolhesse o ramo errado ainda daria valor < 1,0 e passaria num assert só de conclusão.",
+    "PROIBIDO assertar 0,47 (falta o 8/9 — RM-10) e PROIBIDO assertar 591,7 kNm (erro aritmético — A2-RM-13). Registrar ambos no relatório, com a prova interna de A2-RM-13 (o próprio livro imprime M_p = 657,3 kNm no problema seguinte).",
+    "Verificação unilateral extra, autorizada por A2-RM-19: a taxa calculada tem de ser <= a soma simples 0,473457 (recalculada com os MESMOS N,Rd e M,Rd corrigidos, não com os impressos)."
+   ],
+   "cobertura_declarada": [
+    "FCO-01",
+    "FCO-05",
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "COM-07",
+    "FLE-02"
+   ],
+   "nao_cobre": [
+    "FCO-03",
+    "FCO-06 (estrutura indeslocável: B2 não é exercitado)",
+    "FCO-07"
+   ]
+  },
+  {
+   "id": "PFEIL-FCO-02",
+   "referencia": "Probl. 7.6.2",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo_parcial",
+   "veredito_detalhado": "Metade do exemplo é utilizável (a compressão no eixo y), metade está bloqueada por escopo (a FLT). O bloqueio não é defeito do exemplo: é a fronteira declarada da Fase 0 funcionando, e por isso a metade bloqueada vira teste NEGATIVO.",
+   "motivo": "O exemplo remove a contenção lateral do Probl. 7.6.1 e resolve M_d,res por INTERPOLAÇÃO de flambagem lateral torcional (l_b = 600 cm > l_bp = 348 cm impresso (50 x 6,97 = 348,5 literal — RM-20)). O escopo congelado admite 'flexão simples, APENAS patamar de plastificação' e o BLQ-01 manda recusar lambda > lambda_p em FLT. Todo o trecho de FLT está fora. Sobra a compressão no eixo fraco — que, por acaso, é onde o A2 encontrou o erro A2-RM-14.",
+   "passos_usaveis": [
+    1,
+    2
+   ],
+   "passos_excluidos": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "motivo_dos_excluidos": "Passos 3 a 8: l_b, l_bp, l_br, M_r, M_p e a interpolação de M_n por FLT — trecho inelástico do Anexo D, não extraído, BLQ-01. Passo 9: equação de interação que (i) consome o M_d,res bloqueado e (ii) está impressa sem o fator 8/9 apesar de N/N_res = 0,485 (RM-10). Precedente idêntico ao RM-03 da 1.ª rodada.",
+   "valores_de_referencia_recalculados_2024": {
+    "COM-07_L1": "N,e,y = pi²*E*Iy/Ly² = 3951,680 kN, com Iy = 7207 cm⁴ (tabelado no enunciado) e Ly = 600 cm. Variante com Iy = A*iy² = 7204,55 cm⁴: 3950,335 kN (-0,03 %). O livro imprime 3958 kN no Probl. 7.6.3, por arredondar (Kl/i)_y para 86,0.",
+    "COM-04_L1": "lambda_0,y = sqrt(Ag*fy/Ne,y) = 0,968612 (0,968777 pela variante A*iy²)",
+    "COM-03_L1": "chi = 0,658^(lambda_0²) = 0,675240 (0,675149 pela variante) — O LIVRO USA 0,685, QUE É INCONSISTENTE COM SEU PRÓPRIO lambda_0. Ver A2-RM-14.",
+    "COM-02_L1": "N,Rd = 148,3*0,675240*25/1,10 = 2275,865 kN (2275,561 kN pela variante A*iy²) — O LIVRO IMPRIME 2309 kN (+1,45 %, FORA da tolerância do projeto). PROIBIDO como referência.",
+    "M_d_res_FLT": "EXCLUÍDO — BLQ-01. Nem 594,7 kNm nem 540,6 kNm são produzíveis pelo código.",
+    "interacao": "EXCLUÍDA — consome M_d,res bloqueado."
+   },
+   "desvio_esperado_vs_livro": "chi e N,Rd: -1,44 % e -1,45 %, por erro do livro (A2-RM-14), não por edição. Demais grandezas usáveis: < 0,2 %.",
+   "tolerancia": "±0,5 % contra 2275,865 kN e 0,675240 — faixa que cobre com folga a variante A*iy² (2275,561 kN), cuja diferença é de 0,03 %. O valor 2309 kN fica PROIBIDO: usá-lo REPROVARIA um código correto.",
+   "instrucoes_para_o_A7": [
+    "Mesmo perfil e mesmas propriedades do PFEIL-FCO-01 (entrada manual, CVS soldado).",
+    "TESTE POSITIVO: chi e N,Rd para flambagem no eixo y, com Ly = 600 cm. Conferir contra 0,675149 e 2275,561 kN, NUNCA contra 0,685 e 2309 kN.",
+    "TESTE NEGATIVO OBRIGATÓRIO: verificar_flexao() para esta barra com l_b = 600 cm e l_bp = 348 cm (impresso; o código calcula o próprio lambda_p: 1,76*sqrt(E/fy)*ry = 346,97 cm — RM-20) deve RECUSAR citando BLQ-01, e não devolver 540,6 kNm. Conferir que o id 'BLQ-01' aparece no texto da recusa (ids_de_bloqueio_no_texto).",
+    "TESTE NEGATIVO ENCADEADO: verificar_flexo_compressao() com m_x_rd=None (porque a flexão foi recusada) deve TAMBÉM recusar, herdando os motivos — nunca calcular a interação com um dos termos ausente. É o cenário de 'aprovação por omissão' que o docstring da própria função descreve; este exemplo é o caso real que o exercita.",
+    "Registrar no relatório o achado A2-RM-14, com o descarte das hipóteses alternativas (não é edição: o mesmo livro acerta chi no Probl. 7.6.1 e no 7.6.5)."
+   ],
+   "cobertura_declarada": [
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "COM-07",
+    "BLQ-01 (teste negativo)"
+   ],
+   "nao_cobre": [
+    "FLE-02 fora do patamar (BLQ-01)",
+    "FCO-01 (consome M,Rd bloqueado)"
+   ],
+   "errata_RM_20_3a_rodada": {
+    "o_que_mudou": "Só texto: em 'motivo' e em 'instrucoes_para_o_A7'[2], 'l_bp = 348,5 cm' virou 348 cm impresso. Veredito, passos usáveis e excluídos, valores de referência, tolerância e testes NÃO mudaram.",
+    "texto_original_motivo": "O exemplo remove a contenção lateral do Probl. 7.6.1 e resolve M_d,res por INTERPOLAÇÃO de flambagem lateral torcional (l_b = 600 cm > l_bp = 348,5 cm). O escopo congelado admite 'flexão simples, APENAS patamar de plastificação' e o BLQ-01 manda recusar lambda > lambda_p em FLT. Todo o trecho de FLT está fora. Sobra a compressão no eixo fraco — que, por acaso, é onde o A2 encontrou o erro A2-RM-14.",
+    "texto_original_instrucao_2": "TESTE NEGATIVO OBRIGATÓRIO: verificar_flexao() para esta barra com l_b = 600 cm e l_bp = 348,5 cm deve RECUSAR citando BLQ-01, e não devolver 540,6 kNm. Conferir que o id 'BLQ-01' aparece no texto da recusa (ids_de_bloqueio_no_texto).",
+    "verificacao_do_A2": "Página PDF 242 relida pelo A2 (110 dpi). O livro imprime 'lbp = 50 × iy = 50 × 6,97 = 348 cm' e o denominador '13,4 − 3,48'. O hash do trecho T11-09 e o da página conferem. Com 348/13,4, a Eq. (6.20) dá Mn = 594,706 e Md = 540,642, que batem com os 594,7 e 540,6 impressos. Com 348,5/13,42, os valores transcritos na 7.ª rodada, daria 594,925 e 540,841. O valor impresso é, portanto, internamente consistente, e o 348,5 era o produto literal, não o impresso.",
+    "efeito_numerico": "NENHUM. Os passos 3 a 9 de PFEIL-FCO-02 (toda a FLT) estão EXCLUÍDOS desde a 2.ª rodada (BLQ-01 e, desde a v1.3.0, BLQ-01 (a), porque o CVS é soldado, mais o ACH-16). Nenhum teste usa 348,5 como número: o teste negativo do A7 passa Lb = 6000 mm e deixa o código calcular lambda_p. O 348,5 só aparece no docstring de tests/exemplos_resolvidos/test_a7_validacao_bibliografica_pfeil_fco.py (linha 747), onde a correção é cosmética e fica com o dono (A7).",
+    "pedido_ao_A1": "NENHUM pedido de reabertura. O valor impresso já está registrado com hash no trecho T11-09 e em RM-20, no mesmo arquivo. Corrigir os passos 4 e 7 da entrada PFEIL-FCO-02 é só edição textual de dois campos, e fica como pendência BAIXA e opcional do A1, sem bloquear nada."
+   }
+  },
+  {
+   "id": "PFEIL-FCO-03",
+   "referencia": "Probl. 7.6.3",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo_muito_restrito",
+   "veredito_detalhado": "IRONIA REGISTRADA: o A1 identificou este como 'o ÚNICO exemplo do acervo com M_dx e M_dy simultâneos, portanto o único que exercitaria de fato os dois termos da Eq. (7.17a)'. É verdade — e é exatamente por isso que ele NÃO pode validar a interação: M_y,Sd diferente de zero é a condição de disparo do BLQ-03, porque M,y,Rd (flexão no eixo de menor inércia) NÃO está congelado no ruleset. O exemplo que melhor exercitaria a regra é o que o software é obrigado a recusar.",
+   "motivo": "Dois bloqueios independentes. (1) BLQ-03: M_y,Sd = 31,2 kNm != 0. (2) O próprio escopo congelado lista 'flexão em torno do eixo de menor inércia (M,y,Rd)' em 'fora_do_escopo_desta_versao'. O passo 6 (M_d,res,y = Z_y*fy/gamma_a1 = 163,6 kNm) é aritmeticamente correto mas não tem regra congelada que o produza. Herda ainda, do Probl. 7.6.2, o N_d,res errado (A2-RM-14).",
+   "passos_usaveis": [
+    1,
+    3,
+    4
+   ],
+   "passos_excluidos": [
+    2,
+    5,
+    6,
+    7
+   ],
+   "motivo_dos_excluidos": "Passo 2: reaproveita M_dx = 72,7 kNm, já coberto e com referência própria em PFEIL-FCO-01 (72,8136). Passos 5 e 6: Z_y e M_d,res,y — flexão no eixo de menor inércia, FORA DO ESCOPO, sem regra congelada. Passo 7: equação de interação biaxial — BLQ-03, e ainda impressa sem o fator 8/9 (RM-10).",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_1_L1": "M_y = P*e_y = 800 * 0,02 = 16,000 kNm (momento de 1.ª ordem, não ponderado)",
+    "passo_3_FCO-05_Ne_L1": "N,e,y no plano do momento y = pi²*E*Iy/L_real² = pi²*20.000*7207/600² = 3951,680 kN (3950,335 kN com Iy = A*iy² = 7204,55 cm⁴). O livro imprime 3958 kN (+0,16 %), por arredondar (Kl/i)_y para 86,0.",
+    "passo_4_FCO-05_B1_L1": "C,m = 1,0 (adotado pelo autor); B1 = 1,0/(1 - 1120/3951,680) = 1,395525 (1,395713 pela variante); M_y,Sd = 1,4*16,0*B1 = 31,2598 kNm (livro 31,2)",
+    "N_d_res_herdado": "2275,865 kN, NÃO 2309 kN — ver A2-RM-14.",
+    "interacao_biaxial": "EXCLUÍDA — BLQ-03. Nem 0,81 (impresso, sem 8/9) nem 0,773701 (recalculado) podem ser produzidos pelo código desta versão."
+   },
+   "desvio_esperado_vs_livro": "< 0,3 % nos passos 1, 3 e 4.",
+   "tolerancia": "±0,5 % contra N,e,y = 3951,680 kN e B1 = 1,395525.",
+   "instrucoes_para_o_A7": [
+    "TESTE POSITIVO (o único): ne_plano_flexao_b1(E, I_plano=Iy=7207 cm⁴, L_real=600 cm) -> 3951,680 kN e coeficiente_b1(cm=1,0, n_sd1_compressao=1120 kN, ne_plano_flexao=3951,680 kN) -> 1,395525. Valor de B1 sensivelmente maior que o do PFEIL-FCO-01 (1,040), o que faz deste par um bom teste de SENSIBILIDADE de B1 ao N,e: mesma barra, mesmo N, planos diferentes.",
+    "TESTE NEGATIVO OBRIGATÓRIO, e é a razão de ser deste exemplo: taxa_de_interacao(n_sd=1120, n_rd=2275,561, m_x_sd=72,8136, m_x_rd=..., m_y_sd=31,2656, m_y_rd=None) deve LEVANTAR ErroDeDimensionamento citando BLQ-03. Assertar a exceção E a menção a BLQ-03 na mensagem.",
+    "TESTE DE FRONTEIRA associado: com m_y_sd = 0,0 a mesma chamada NÃO pode levantar exceção; com m_y_sd logo acima de TOLERANCIA_DE_MY_NULO (1,0e-6) deve levantar. Protege contra um limiar implementado com o sinal ou a ordem trocados.",
+    "PROIBIDO assertar 0,81, 0,773701, 163,6 kNm ou 720 cm³. Nenhum deles tem regra congelada nesta versão.",
+    "PROIBIDO assertar 0,81, 0,7737, 163,6 kNm ou 720 cm³. Nenhum deles tem regra congelada nesta versão."
+   ],
+   "cobertura_declarada": [
+    "FCO-05 (B1 e N,e em outro plano)",
+    "BLQ-03 (teste negativo)"
+   ],
+   "nao_cobre": [
+    "FCO-01 biaxial",
+    "flexão no eixo de menor inércia (fora do escopo)"
+   ]
+  },
+  {
+   "id": "PFEIL-FCO-04",
+   "referencia": "Probl. 7.6.4",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo_muito_restrito",
+   "veredito_detalhado": "O exemplo com mais erros do capítulo (três achados novos do A2: A2-RM-15 e A2-RM-16) e o mais bloqueado por escopo — mas é também o ÚNICO do acervo que exercita C,m com força transversal, e o único que exercita a fronteira lambda_0 = 1,5 da curva chi. Sobrevive por esses dois motivos.",
+   "motivo": "Três bloqueios independentes de escopo, qualquer um deles bastando: (1) BLQ-07 — o perfil é um DUPLO I soldado, isto é, barra composta (5.3.6, explicitamente fora do escopo) e o autor o trata como 'seção celular', figura tubular também fora do escopo; (2) BLQ-05 — o Z_x não existe em catálogo para a família I e o próprio livro teve de aproximá-lo por Z ≅ 1,12*W, aproximação que não tem regra congelada; (3) o i_y = 7,51 cm é composto (sqrt(i_y1² + (b_f/2)²)), fórmula de barra composta igualmente não congelada.",
+   "passos_usaveis": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    8
+   ],
+   "passos_excluidos": [
+    1,
+    7,
+    9,
+    10,
+    11
+   ],
+   "motivo_dos_excluidos": "Passo 1: (Kl/i)_y = 133 de perfil composto (i_y composto sem regra congelada) e (Kl/i)_x = 132 com arredondamento que o passo 5 depois contradiz. Passo 7: M_d,res 'de seção celular' sem FLT — BLQ-07, e com Z aproximado. Passos 9 e 10: f_c = 100 MPa e N_d,res = 1465 kN, ambos com erro de +2,1 % (A2-RM-15) — a GRANDEZA é excluída, mas o RAMO da curva vira teste próprio (ver instruções). Passo 11: interação sem o fator 8/9 (RM-10) e consumindo M_d,res bloqueado.",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_2_L1": "N,Sd = 1,3 * 320 = 416,000 kN",
+    "passo_3_L1": "g = 1,0 + 2*0,633 = 2,2660 kN/m (livro 2,27)",
+    "passo_4_L1": "M,nt = 1,3 * 2,2660 * 20²/8 = 147,290 kNm. O livro IMPRIME 147 no passo 4 mas USA 147,6 no passo 6 — inconsistência interna de arredondamento, sem gravidade; usar 147,290 como referência.",
+    "passo_5_FCO-05_Ne_L1": "N,e NO PLANO DO MOMENTO, com o COMPRIMENTO REAL: pi²*E*A*ix²/L_real² = pi²*20.000*161,2*15,2²/2000² = 1837,900 kN. O LIVRO IMPRIME 1799 kN, obtido com (Kl/i)_y = 133 (eixo FRACO, comprimento DESTRAVADO de 10 m) num N,e rotulado 'x'. Ver A2-RM-16 — é o achado mais importante desta rodada. O valor 1799 kN fica PROIBIDO.",
+    "passo_6_FCO-05_L1": "C,m = 1,0 (há forças transversais entre as extremidades: regra FCO-05, 'conservadoramente C,m = 1,0'). B1 = 1,0/(1 - 416/1837,900) = 1,292566. M,Sd = 1,292566 * 147,290 = 190,383 kNm (livro 192,0, com o N,e errado).",
+    "passo_8_COM-04_L1": "lambda_0 = 1,496776 — MENOR que 1,5, logo ramo 5.3.3.1 INELÁSTICO (chi = 0,658^(lambda_0²)). O livro declara 'região elástica'. Ver A2-RM-15.",
+    "chi_e_N_Rd_informativos": "chi = 0,391530; f_c = 97,882 MPa; N,Rd = 1434,422 kN. NÃO são referência de aprovação (o perfil está bloqueado por BLQ-07), apenas o valor correto caso alguém reabra o exemplo.",
+    "interacao": "EXCLUÍDA — BLQ-07 e RM-10."
+   },
+   "desvio_esperado_vs_livro": "Passos 2 a 4: < 0,4 %. Passo 5 (N,e): +2,16 %, por erro conceitual do livro. Passo 6 (B1/M,Sd): -0,8 %, propagado do passo 5. chi/N,Rd: -2,1 %, por arredondamento do livro.",
+   "tolerancia": "±0,5 % contra N,e = 1837,900 kN, B1 = 1,292566 e M,Sd = 190,383 kNm. Teste BOOLEANO (sem tolerância) para o ramo da curva chi e para o disparo de BLQ-07.",
+   "instrucoes_para_o_A7": [
+    "TESTE 1 — C,m com força transversal: coeficiente_cm(..., ha_forcas_transversais=True) deve devolver 1,0 SEM consultar M1/M2. É o único exemplo do acervo que exercita esse ramo de FCO-05; em todos os outros há apenas momentos de extremidade. Assertar também que a função NÃO usa os momentos quando esse sinalizador está ligado.",
+    "TESTE 2 — N,e e a distinção COM-07 x FCO-05, em duas metades OBRIGATÓRIAS. (a) ne_plano_flexao_b1(E, I_plano=A*ix², L_real=20.000 mm) -> 1837,900 kN. (b) Regressão: calcular também com o comprimento destravado de 10 m e o eixo y, e assertar que o resultado DIFERE de (a). Se coincidirem, o código está cometendo o mesmo erro do livro (A2-RM-16), que é o achado ACH-02 do ruleset materializado em bibliografia publicada. Este é o teste de maior valor do exemplo inteiro.",
+    "TESTE 3 — fronteira da curva chi: fator_de_reducao_chi(1,496776) deve usar o ramo 0,658^(lambda_0²) e devolver 0,391530. Acrescentar a bateria de fronteira: lambda_0 = 1,4999, 1,5 (inclusive, ramo inelástico pela regra COM-03 'para lambda_0 <= 1,5') e 1,5001 (elástico), e assertar CONTINUIDADE na junção (os dois ramos diferem por menos de 0,1 % em lambda_0 = 1,5). Nenhum outro exemplo do acervo chega perto dessa fronteira.",
+    "TESTE NEGATIVO OBRIGATÓRIO: a seção duplo I soldado deve ser RECUSADA por BLQ-07 (barra composta / seção celular). Assertar a recusa e a citação do id.",
+    "PROIBIDO assertar 1799 kN (A2-RM-16), 100 MPa e 1465 kN (A2-RM-15), 496,4 kNm (BLQ-07) e 0,66 (RM-10).",
+    "Registrar no relatório que este exemplo, embora quase todo bloqueado, é a melhor evidência bibliográfica de que a distinção COM-07 x FCO-05 congelada pelo A2 não era preciosismo: um livro-texto consagrado a errou."
+   ],
+   "cobertura_declarada": [
+    "FCO-05 (C,m com força transversal; N,e no plano do momento)",
+    "COM-03 (fronteira lambda_0 = 1,5)",
+    "BLQ-07 (teste negativo)"
+   ],
+   "nao_cobre": [
+    "FCO-01",
+    "FLE-02 (Z aproximado, seção celular)",
+    "COM-02 (barra composta)"
+   ]
+  },
+  {
+   "id": "PFEIL-FCO-05",
+   "referencia": "Probl. 7.6.5",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "usar_com_recalculo_parcial",
+   "veredito_detalhado": "O exemplo mais rico do acervo inteiro e, ao mesmo tempo, um caso que o software é OBRIGADO a recusar. Único exemplo com B2, único com classificação de deslocabilidade, único com imperfeição geométrica global, único que aplica a Eq. (7.17a) corretamente — e todos esses méritos convivem com o fato de a estrutura ser de MÉDIA deslocabilidade, fora do envelope da Fase 0 (A2-ESC-02). Serve como banco de funções e como o melhor teste negativo do projeto; não serve como validação ponta a ponta.",
+   "motivo": "Ver decisao_9. Três bloqueios: BLQ-06 (B2 = 1,2366 > 1,10 — média deslocabilidade, declarada pelo próprio livro no passo 1); BLQ-01 (M_d,res vem de interpolação de FLM em regime semicompacto, lambda = 12 > lambda_p = 11); e a análise com rigidez reduzida a 80 % (4.10.7.1.2), que a emenda v1.1.0 da FCO-03 proíbe ligar na Fase 0.",
+   "passos_usaveis": [
+    1,
+    2,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    16,
+    17
+   ],
+   "passos_excluidos": [
+    3,
+    7,
+    12,
+    13,
+    14,
+    15
+   ],
+   "motivo_dos_excluidos": "Passo 3: N_cr com E reduzido a 0,80E — só aplicável a estrutura NÃO de pequena deslocabilidade; utilizável apenas em camada L2, com o E reduzido passado explicitamente (ver instruções). Passo 7: classificação semicompacta para flexão, que é o que aciona o BLQ-01. Passos 12 a 15: M_n por FLM semicompacta (RM-12), l_bp errado (A2-RM-18), M_n por FLT e M_d,res = 393,3 kNm — todo o bloco de flexão fora do patamar de plastificação, BLQ-01. Ver decisao_10 para por que a escolha entre 432,6 e 432,2 ficou prejudicada.",
+   "valores_de_referencia_recalculados_2024": {
+    "passo_1_FCO-03_L1": "B2 = 1,236562 -> razão de deslocabilidade entre 1,10 e 1,40 -> MÉDIA deslocabilidade (4.10.4.8). Coincide com a classificação do livro. Na Fase 0 isso significa RECUSA por BLQ-06.",
+    "passo_2_FCO-05_Cm_L1": "curvatura REVERSA (momentos de extremidade da estrutura nt em sentidos opostos): M1/M2 = +51,7/57,6 = +0,897569; C,m = 0,60 - 0,40*0,897569 = 0,240972 (livro 0,24)",
+    "passo_4_FCO-05_B1_L1": "B1 bruto = 0,240972/(1 - (960,9+37,4)/37.302,92) = 0,247598; PISO da Eq. C.2.2 -> B1 = 1,000000. O livro imprime '0,25 > 1,0' (RM-11: símbolo trocado; o valor 0,25 está certo).",
+    "passo_5_FCO-06_B2_L1": "B2 = 1/(1 - (1/0,85)*(1,49/370)*(3190/79,0)) = 1,236562. O LIVRO IMPRIME 1,23 (truncado). Ver A2-RM-17 — o valor 1,23 fica PROIBIDO.",
+    "passo_6_FCO-06_composicao_L1": "N,Sd = 960,9 + 1,236562*37,4 = 1007,147 kN; M,Sd = 1,0*57,6 + 1,236562*54,1 = 124,498 kNm. Camada L2 (reprodução do livro, com B2 = 1,23 e N_lt = 37,3): 1006,78 kN e 124,143 kNm.",
+    "passo_8_9_COM_L1": "(Kl/i)_x = 21,637; (Kl/i)_y = 51,893; lambda_0,y = 0,584030; chi = 0,866969; N,Rd = 2179,245 kN (livro 2172 kN, +0,33 %)",
+    "passo_10_11_L1": "M_p = Z*fy = 446,750 kNm (livro 446,7); M_r = W*fy*(1-0,3) = 282,975 kNm (livro 283,0)",
+    "passo_16_FCO-01_ramo_L1": "N,Sd/N,Rd = 1007,147/2179,245 = 0,462154 >= 0,2 -> ramo 5.5.1.2-a), com o fator 8/9. Com os valores do livro: 1007/2172 = 0,463628. A CONCLUSÃO DE RAMO é a mesma e é o que interessa.",
+    "passo_17_FCO-01_L2": "Reproduzindo o livro (N,Rd = 2172 kN, M,Rd = 393,3 kNm, N,Sd = 1007 kN, M,Sd = 124,1 kNm): taxa = 0,463628 + (8/9)*0,315535 = 0,744104. O livro imprime 0,74. ESTA É A ÚNICA VALIDAÇÃO BIBLIOGRÁFICA DIRETA DA FORMA ALGÉBRICA DA REGRA FCO-01 NO ACERVO INTEIRO.",
+    "teste_discriminante_do_8_9": "Sem o fator 8/9 a taxa seria 0,779163 (imprimiria 0,78). O valor impresso só é reproduzível COM o fator. Ver decisao_9."
+   },
+   "desvio_esperado_vs_livro": "C,m, B1, N,Rd, M_p, M_r: < 0,4 %. B2: +0,53 % (truncamento do livro). Taxa de interação em L2: +0,55 % (truncamento do livro).",
+   "tolerancia": "B2: ±0,1 % contra 1,236562 (fórmula fechada, cinco entradas exatas). C,m e B1: ±0,5 %. N,Rd: ±0,5 %. Taxa de interação em L2: ±0,5 % contra 0,744104. Os valores 1,23 e 0,74 ficam PROIBIDOS como alvo de assert.",
+   "instrucoes_para_o_A7": [
+    "TESTE 1 — FCO-06/B2, o mais importante: coeficiente_b2(r_s=0,85, delta_h=14,9 mm, h_andar=3700 mm, soma_n_sd=3190 kN, soma_h_sd=79,0 kN) -> 1,236562. É o ÚNICO exemplo do acervo que calcula B2; sem ele a regra FCO-06 fica sem nenhuma validação bibliográfica. PROIBIDO assertar 1,23 (A2-RM-17): um teste a ±0,5 % contra 1,23 reprovaria o código correto.",
+    "TESTE 2 — FCO-05/C,m em curvatura REVERSA, e é o par simétrico do PFEIL-FCO-01. Passar os momentos de extremidade da estrutura nt com sinais OPOSTOS (magnitudes 51,7 e 57,6 kNm): razao_m1_m2 -> +0,897569 e coeficiente_cm(ha_forcas_transversais=False) -> 0,240972. Juntos, PFEIL-FCO-01 (curvatura simples, C,m = 1,0) e este (curvatura reversa, C,m = 0,241) cobrem os DOIS sinais da convenção congelada em FCO-05 — que é exatamente o teste que a decisão de auditoria daquela regra exige, e que até esta rodada não tinha nenhum exemplo de livro.",
+    "TESTE 3 — PISO de B1, também único no acervo: coeficiente_b1(cm=0,240972, n_sd1_compressao=998,3 kN, ne_plano_flexao=37.302,92 kN) -> B1 = 1,0, com o valor bruto 0,247598 registrado no rastro. Uma implementação que esquecesse o piso 'B1 >= 1,0' devolveria 0,2476 e passaria despercebida em TODOS os outros exemplos, onde o bruto já é > 1.",
+    "TESTE 4 — N,e do passo 3 em camada L2: ne_plano_flexao_b1(E=0,80*200.000 MPa, I_plano=32.339 cm⁴, L_real=3700 mm) -> 37.302,92 kN. Passar o E reduzido EXPLICITAMENTE e comentar no teste que a redução de 4.10.7.1.2 vale por ser média deslocabilidade e que a Fase 0 NÃO a aplica (emenda v1.1.0 da FCO-03). Não deixar o código escolher.",
+    "TESTE 5 — FCO-01 em camada L2: taxa_de_interacao(n_sd=1007 kN, n_rd=2172 kN, m_x_sd=124,1 kNm, m_x_rd=393,3 kNm) -> 0,744104 e ramo '5.5.1.2-a)'. Alimentar com os valores INTERMEDIÁRIOS do livro é legítimo e necessário aqui: isola a FÓRMULA de interação (que é o que se quer validar) do N,Rd e do M,Rd, que estão bloqueados por escopo. Acrescentar o assert discriminante: o resultado tem de ser diferente de 0,779163 (a soma simples).",
+    "TESTE NEGATIVO 1, o de maior valor do acervo — BLQ-06: alimentar a classificação de deslocabilidade com a razão 1,236562 e assertar que classificar(1,236562, considera_imperfeicoes_de_material=False) devolve 'média' e que o resultado da combinação é RECUSADO citando BLQ-06. Assertar também que o par relaxado 1,13/1,55 NÃO é usado (o sinalizador de imperfeições de material não pode ser ligado na Fase 0).",
+    "TESTE NEGATIVO 2 — BLQ-01: a seção CVS400x87 em flexão, com lambda_FLM = 12 > lambda_p = 11, deve ser RECUSADA. Nenhum M_d,res numérico pode ser devolvido. Ver decisao_10.",
+    "NÃO tentar montar este exemplo ponta a ponta por verificar_analise(): a estrutura é de média deslocabilidade e a orquestração deve recusá-la. Se ela devolver uma taxa de utilização, isso é BUG GRAVE, não sucesso.",
+    "FCO-07 NÃO é validado por este exemplo: o livro usa o método (a), desaprumo h/333, e a Fase 0 implementa apenas o método (b), força nocional de 0,3 % (DEC-10). São normativamente equivalentes mas numericamente distintos, e o exemplo não publica a força nocional correspondente. Registrar como lacuna de COBERTURA, não de edição."
+   ],
+   "cobertura_declarada": [
+    "FCO-01 (forma algébrica, camada L2 — única do acervo)",
+    "FCO-03 (classificação, teste negativo)",
+    "FCO-05 (C,m reverso, piso de B1, N,e)",
+    "FCO-06 (B2 — única do acervo)",
+    "COM-02",
+    "COM-03",
+    "COM-04",
+    "BLQ-01 e BLQ-06 (testes negativos)"
+   ],
+   "nao_cobre": [
+    "FCO-07 (método de imperfeição divergente)",
+    "FLE-02 fora do patamar (BLQ-01)",
+    "validação ponta a ponta (BLQ-06)"
+   ]
+  },
+  {
+   "id": "PFEIL-FCO-06",
+   "referencia": "Probl. 7.6.6",
+   "rodada_de_adjudicacao": 2,
+   "veredito": "nao_usar",
+   "veredito_detalhado": "PRIMEIRO EXEMPLO DESCARTADO POR INTEIRO EM DUAS RODADAS DE ADJUDICAÇÃO. Não é descarte por má qualidade: o A2 refez os dez passos e todos fecham (ver decisao_11.conferencia_aritmetica_feita_mesmo_assim). É descarte por AUSÊNCIA DE REGRA CORRESPONDENTE no ruleset v1.1.0.",
+   "motivo": "Trata do dimensionamento de barras de CONTRAVENTAMENTO por força e rigidez de contenção de colunas (item 7.5 do livro, Eqs. 7.21a e 7.22a). Nenhuma das 46 regras congeladas cobre o assunto. A matéria correspondente na NBR 8800:2024 é o item 4.10.3.3, que a regra FCO-07 lista em 'nao_confundir_com' como FORA do escopo da Fase 0. Afirmação do A1 CONFIRMADA por varredura independente do ruleset.",
+   "passos_usaveis": [],
+   "passos_excluidos": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "valores_de_referencia_recalculados_2024": {
+    "nao_aplicavel": "Não existe regra congelada da qual recalcular. A conferência aritmética feita pelo A2 está em decisao_11 e é registro de integridade da transcrição, NÃO referência de validação."
+   },
+   "tolerancia": "não se aplica (exemplo inteiro fora do contrato)",
+   "instrucoes_para_o_A7": [
+    "NÃO ESCREVER NENHUM TESTE com este exemplo nesta rodada. Não há regra a validar.",
+    "Não confundir com FCO-07: a força nocional de 0,3 % (4.10.7.1.1, imperfeição GLOBAL do pórtico) e a força de contenção de 1,0 %/0,4 % deste exemplo (contenção LATERAL de coluna) são grandezas distintas que a própria FCO-07 adverte não se substituírem. Usar este exemplo para validar FCO-07 seria erro normativo grave.",
+    "Registrar no relatório do GATE 3, na lista de exemplos não utilizados e por quê — silêncio aqui reapareceria, em rodada futura, como 'temos um exemplo de contraventamento' sem a ressalva de edição."
+   ],
+   "registro_como_materia_prima_futura": {
+    "aceito": "SIM, com a ressalva grave de decisao_11.ressalva_grave_sobre_o_uso_futuro.",
+    "resumo_da_ressalva": "As fórmulas do exemplo (F_br = 0,010*N_d e 0,004*N_d) são a abordagem de FORÇA prescrita da edição 2008/AISC. A NBR 8800:2024 trata contraventamento por IMPERFEIÇÃO GEOMÉTRICA (4.10.3.3: L/500 global, L/1000 local, com alpha_red = sqrt(0,5*(1 + 1/m))). Uma regra futura DEVE vir de extração do 4.10.3.3 pelo A1, jamais deste exemplo. O papel máximo do exemplo será aferição de ORDEM DE GRANDEZA, estatuto de camada L3.",
+    "risco_que_a_ressalva_previne": "Congelar 0,010 e 0,004 direto do livro seria congelar a edição 2008 — o mesmo erro que a decisão de auditoria da COM-02 já teve de barrar uma vez, no caso do fator Q."
+   },
+   "cobertura_declarada": [],
+   "nao_cobre": [
+    "FCO-01 a FCO-07",
+    "qualquer outra regra do ruleset v1.1.0"
+   ]
+  },
+  {
+   "id": "PFEIL-FLT-01",
+   "referencia": "Probl. 6.5.7 (págs. impressas 192-193 / PDF 213-214)",
+   "rodada_de_adjudicacao": 3,
+   "veredito": "usar_com_recalculo_parcial",
+   "veredito_detalhado": "O livro classifica 'viga longa' (elástico, Mn = Cb·Mcr) com l_br SEM Cb. Pela 2024, lambda = 176,99 < lambda_r(Cb) = 180,39: o trecho é INELÁSTICO, e o M_d,res impresso (14 598 kN.cm) e o P = 82,5 kN ficam PROIBIDOS. São usáveis: Cb (L1 e L3), Mcr com Cb = 1 e com Cb = 1,55 (L3, com o E do livro só nesse teste), beta1 (L3) e o recálculo integral 2024 (L1). O exemplo vira ainda o melhor detector do mutante 'lambda_r sem Cb', porque muda o TRECHO.",
+   "dados_de_entrada": {
+    "conjunto_P_do_problema": "Wx = 870 cm3, Zx = 970,6 cm3, Iy = 1267 cm4, J = 14,6 cm4, ry = 4,52 cm, d = 400 mm, tf = 9,5 mm (RM-19). Cw NÃO é entrada: o código calcula Iy(d - tf)²/4 = 483 012,9 cm6 (FLE-07, decisão 3).",
+    "aco_e_ponderacao": "MR250 pela API (aco('NBR_7007_MR_250'): fy 250, E 200 000 de MAT-01); gamma_a1 = 1,10 pela API (normais). O E = 20.500 do livro entra SÓ em PFLT-T4.",
+    "funcao_sob_teste": "calc_core.dimensionamento.flexao.momento_resistente_flt_eixo_maior (FLT pura: D.2.1 + D.2.8-a), válida para I/H duplamente simétrica de QUALQUER processo, FLE-07 'aplicabilidade') e fator_cb_5_4_2_3_a (FLE-08). O VS é SOLDADO: pelo caminho de projeto (verificar_flexao), a resposta correta é BLQ-01 (a), testada em PFLT-T10.",
+    "politica_de_Cb_DEC_16": "6.5.7: carga 'pela alma ou pela mesa inferior', isto é, na semialtura ou abaixo dela, com o trecho 1-2 como vão. O Cb pelo diagrama é admissível. 6.5.8: o trecho 1-B não tem forças transversais internas, porque as cargas estão nos pontos contidos. O Cb pelo diagrama também é admissível. Nos testes da FLT pura, Cb é argumento."
+   },
+   "passos_usaveis": [
+    2,
+    4,
+    5,
+    8,
+    9
+   ],
+   "passos_excluidos": [
+    1,
+    3,
+    6,
+    7,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+   ],
+   "motivo_dos_excluidos": "1: classificação local por remissão (FLM de soldado fora da FLE-07). 3: Cw = 483 188, erro aritmético (RM-14); o código usa a fórmula. 6: l_br = 617 não fecha nem com a própria expressão impressa (RM-13); a L1 usa 622,944 cm. 7: 'viga longa' é classificação 2008 e é FALSA em 2024 (vira teste negativo). 10: 14 598 kN.cm é Cb·Mcr/gamma_a1 do trecho elástico, PROIBIDO (negativo). 11-13: P deriva do M_d,res proibido. 14-15: ELS, fora da FLE-07, e derivam do P proibido. Passo 2 (J = 14,6): é dado de entrada (conjunto P); a fórmula das placas dá 14,607 (informativo).",
+   "valores_de_referencia_recalculados_2024": {
+    "Cb_L1": "fator_cb(0,17; 0,085; 0,17; 0,004) = 2,125/1,372 = 1,5488338192. Com o diagrama exato da viga contínua: 1,547231 (A2-RM-19, informativo)",
+    "lambda": "800/4,52 = 176,991150",
+    "lambda_p": "1,76*sqrt(200 000/250) = 49,780317 (l_bp = 225,007 cm)",
+    "lambda_r_Cb_1_5488": "180,388088 (l_br(Cb) = 815,354 cm)",
+    "lambda_r_Cb_1_55": "180,475076",
+    "lambda_r_Cb_1": "137,819459 -> l_br(Cb = 1) = lambda_r*ry = 622,944 cm (o livro imprime 617: -0,954 %, EXCLUÍDO)",
+    "trecho": "INELÁSTICO (lambda_p < 176,99 <= lambda_r(Cb)), com margem de 1,9 % para lambda_r",
+    "Mpl_Mr": "Mpl = 970,6 x 25 = 24 265 kN.cm; Mr = 870 x 17,5 = 15 225 kN.cm; Mpl/gamma_a1 = 220,590909 kN.m",
+    "beta1": "0,00521404 1/mm = 0,0521404 1/cm (livro 0,0521)",
+    "M_x_Rd_FLT_Cb_1_5488": "140,546532 kN.m",
+    "M_x_Rd_FLT_Cb_1_55": "140,599809 kN.m",
+    "Mcr_Cb_1_Lb_800_E_200000": "10 106,24 kN.cm (Mcr/gamma_a1 = 91,8749 kN.m)",
+    "Mcr_para_L3_E_205000": "Cb = 1: 10 358,898 kN.cm (livro 10 360: -0,0106 %); Cb = 1,55: 16 056,292 kN.cm (livro 16 058: -0,0106 %)"
+   },
+   "valores_do_livro_PROIBIDOS": {
+    "14 598 kN.cm (145,98 kN.m)": "Cb·Mcr/gamma_a1 com E = 20.500 no trecho elástico da classificação 2008. Em 2024 o trecho é inelástico.",
+    "forma 2008 com E 200 000": "142,2990 kN.m (Cb 1,5488) / 142,4061 (Cb 1,55): lambda_r sem Cb -> elástico -> Cb·Mcr. Está 1,25 % ACIMA do valor 2024. É o valor que o mutante 'lambda_r sem Cb' devolve.",
+    "Cb·reta": "217,6832 kN.m (mutante 'Cb multiplica a reta').",
+    "P = 82,5 kN": "deriva do M_d,res proibido.",
+    "617 cm": "RM-13, só informativo."
+   },
+   "desvio_esperado_vs_livro": "M_d,res: 140,55 contra 145,98 impressos (-3,7 %). Duas causas: a edição (lambda_r com Cb reclassifica o trecho como inelástico: 140,55 contra 142,30, -1,23 %) e o E = 20.500 com o Cb arredondado do livro (142,30 contra 145,98, -2,5 %). Mcr: -0,011 % (Cw do livro, RM-14). l_br: +0,95 % (RM-13).",
+   "tolerancia": "L1: rel 1e-9 contra o recálculo DENTRO do teste; pinos do A2 com rel 1e-5 (M) e abs 1e-3 (lambda_r). Trecho: igualdade exata. L3: Mcr com rel 1e-3 (desvio medido de 0,011 %); Cb com round(Cb, 2) == 1,55; beta1 com round(beta1 [1/cm], 4) == 0,0521.",
+   "cobertura_declarada": [
+    "FLE-07 (FLT, trecho inelástico com Cb > 1, perto de lambda_r)",
+    "FLE-08 (fórmula de Cb)",
+    "DEC-14 (Cb só em lambda_r e em Mcr)"
+   ],
+   "nao_cobre": [
+    "FLM/FLA de soldados (BLQ-01 (a))",
+    "M,x,Rd completo (só a FLT pura)",
+    "ELS"
+   ]
+  },
+  {
+   "id": "PFEIL-FLT-02",
+   "referencia": "Probl. 6.5.8 (págs. impressas 193-194 / PDF 214-215)",
+   "rodada_de_adjudicacao": 3,
+   "veredito": "usar_com_recalculo_parcial",
+   "veredito_detalhado": "O livro aplica a Eq. (6.20) da 2008 (Cb·reta = 337,5 kN.m > Mp) e corta em Mp: M_d,res = 220,5 kN.m = Mpl/gamma_a1 EXATO (220,5909). Pela 2024 (DEC-14), a reta não tem Cb, e o M,Rd = 197,7583 kN.m (-10,35 %). O 220,5, o 337,5 e a conclusão 'atingiria o momento de plastificação total' ficam PROIBIDOS e viram testes NEGATIVOS. São usáveis: Cb (L1 e L3), Mr e Mp (L3 exatos), a classificação 'intermediária' (coincide com a 2024) e o recálculo integral 2024 (L1).",
+   "dados_de_entrada": {
+    "conjunto_P_do_problema": "Wx = 870 cm3, Zx = 970,6 cm3, Iy = 1267 cm4, J = 14,6 cm4, ry = 4,52 cm, d = 400 mm, tf = 9,5 mm (RM-19). Cw NÃO é entrada: o código calcula Iy(d - tf)²/4 = 483 012,9 cm6 (FLE-07, decisão 3).",
+    "aco_e_ponderacao": "MR250 pela API (aco('NBR_7007_MR_250'): fy 250, E 200 000 de MAT-01); gamma_a1 = 1,10 pela API (normais). O E = 20.500 do livro entra SÓ em PFLT-T4.",
+    "funcao_sob_teste": "calc_core.dimensionamento.flexao.momento_resistente_flt_eixo_maior (FLT pura: D.2.1 + D.2.8-a), válida para I/H duplamente simétrica de QUALQUER processo, FLE-07 'aplicabilidade') e fator_cb_5_4_2_3_a (FLE-08). O VS é SOLDADO: pelo caminho de projeto (verificar_flexao), a resposta correta é BLQ-01 (a), testada em PFLT-T10.",
+    "politica_de_Cb_DEC_16": "6.5.7: carga 'pela alma ou pela mesa inferior', isto é, na semialtura ou abaixo dela, com o trecho 1-2 como vão. O Cb pelo diagrama é admissível. 6.5.8: o trecho 1-B não tem forças transversais internas, porque as cargas estão nos pontos contidos. O Cb pelo diagrama também é admissível. Nos testes da FLT pura, Cb é argumento."
+   },
+   "passos_usaveis": [
+    1,
+    3,
+    4,
+    7,
+    8,
+    9
+   ],
+   "passos_excluidos": [
+    2,
+    5,
+    6,
+    10,
+    11,
+    12
+   ],
+   "motivo_dos_excluidos": "2: escolha do trecho (texto). 5: l_bp = 224 (RM-16); a L1 é 225,007 cm. 6: l_br = 617 herdado (RM-13). 10: Mn = 337,5 é Cb·reta, forma 2008 PROIBIDA (negativo). 11: 220,5 é o corte em Mp da Eq. (6.20), PROIBIDO (negativo). 12: 'plastificação total' é FALSO em 2024, porque 197,76 < 220,59.",
+   "valores_de_referencia_recalculados_2024": {
+    "Cb_L1": "fator_cb(0,17; 0,0425; 0,085; 0,1275) = 5/3 = 1,6666666667 (diagrama linear: independe de Mmáx e é exato)",
+    "lambda": "400/4,52 = 88,495575",
+    "lambda_p": "49,780317",
+    "lambda_r_Cb_5_3": "189,128812",
+    "lambda_r_Cb_1_67": "189,374741",
+    "trecho": "INELÁSTICO, o que coincide com a 'intermediária' do livro",
+    "M_x_Rd_FLT_Cb_5_3": "197,758296 kN.m",
+    "M_x_Rd_FLT_Cb_1_67": "197,798521 kN.m",
+    "Mr_Mpl": "Mr = 15 225 kN.cm e Mpl = 24 265 kN.cm, exatos e iguais aos impressos"
+   },
+   "valores_do_livro_PROIBIDOS": {
+    "220,5 kN.m": "= Mpl/gamma_a1 = 220,5909, produzido pelo corte '< Mp' da Eq. (6.20) de 2008. Mesmo padrão do ACH-16/ACH-17: nenhum teste pode aceitá-lo como aprovação.",
+    "337,5 kN.m": "Cb·reta de 2008 (com E 200 000 e l_br 622,94 sai 338,2 nominal). O mutante 'Cb·reta sem corte' devolve 329,5972 kN.m de M,Rd.",
+    "184,4514 kN.m": "O que devolve o mutante 'lambda_r sem Cb' (reta sem Cb com lambda_r(1)).",
+    "224 cm / 617 cm": "RM-16 / RM-13, só informativos."
+   },
+   "desvio_esperado_vs_livro": "M,Rd: 197,76 contra 220,5 impressos (-10,3 %), por mudança de EDIÇÃO (DEC-14), e não por erro de nenhum lado.",
+   "tolerancia": "Como em PFEIL-FLT-01. Negativos com margens explícitas: M,Rd < 0,95 x 220,5; |M,Rd - 220,5909| > 20 kN.m; |M,Rd/184,4514 - 1| > 5 %.",
+   "cobertura_declarada": [
+    "FLE-07 (FLT, trecho inelástico com Cb > 1, perto de lambda_p)",
+    "FLE-08",
+    "DEC-14 (negativo da forma 2008)"
+   ],
+   "nao_cobre": [
+    "FLM/FLA de soldados",
+    "M,x,Rd completo"
+   ]
+  }
+ ],
+ "resumo_da_adjudicacao": {
+  "usar_direto": {
+   "quantidade": 3,
+   "ids": [
+    "PFEIL-TRAC-01",
+    "PFEIL-TRAC-03",
+    "PFEIL-CIS-02"
+   ]
+  },
+  "usar_com_recalculo": {
+   "quantidade": 10,
+   "ids": [
+    "PFEIL-TRAC-02",
+    "PFEIL-TRAC-04",
+    "PFEIL-COMP-01",
+    "PFEIL-COMP-02",
+    "PFEIL-COMP-03",
+    "PFEIL-FLEX-01",
+    "PFEIL-FLEX-02",
+    "PFEIL-FLEX-03",
+    "PFEIL-CIS-01",
+    "PFEIL-CIS-03"
+   ]
+  },
+  "nao_usar": {
+   "quantidade": 0,
+   "ids": [],
+   "observacao": "NENHUM exemplo foi descartado por inteiro. Todos os descartes foram no nível do PASSO, preservando o resto do problema — conforme a decisão 4."
+  },
+  "total": 13,
+  "passos_excluidos_no_total": 27,
+  "cobertura_por_regra_do_ruleset": {
+   "TRA-02": [
+    "TRAC-01",
+    "TRAC-02",
+    "TRAC-03",
+    "TRAC-04"
+   ],
+   "TRA-03": [
+    "TRAC-02",
+    "TRAC-03",
+    "TRAC-04"
+   ],
+   "TRA-04": [
+    "TRAC-02",
+    "TRAC-03",
+    "TRAC-04"
+   ],
+   "TRA-05": [
+    "TRAC-04 (Ct = 1 - ec/lc e piso Ac/Ag)",
+    "TRAC-02 e TRAC-03 (Ct = 1,00 por 5.2.5-a)"
+   ],
+   "COM-02": [
+    "COMP-01",
+    "COMP-02",
+    "COMP-03 (caso a)"
+   ],
+   "COM-03": [
+    "COMP-01 (ramo 0,658^)",
+    "COMP-02 (ramos 0,658^ E 0,877/lambda_0², único do conjunto)",
+    "COMP-03"
+   ],
+   "COM-04": [
+    "COMP-01",
+    "COMP-02",
+    "COMP-03"
+   ],
+   "COM-05": [
+    "COMP-01 (Aef = Ag verificado)",
+    "COMP-03 (Aef = Ag demonstrado pelo A2)"
+   ],
+   "COM-06": [
+    "NENHUM — nenhum exemplo do conjunto tem elemento esbelto. Lacuna de cobertura REAL do GATE 3 (ver pendências)."
+   ],
+   "COM-07": [
+    "COMP-01",
+    "COMP-02 (só flexão; Ne,z não é exercitado por nenhum exemplo)"
+   ],
+   "FLE-02": [
+    "FLEX-01",
+    "FLEX-02",
+    "FLEX-03 (só passo 7)",
+    "CIS-01",
+    "CIS-02"
+   ],
+   "FLE-03": [
+    "FLEX-01",
+    "FLEX-02 (o único em fy = 345 MPa)",
+    "CIS-02"
+   ],
+   "FLE-04": [
+    "NENHUM — o limite 1,50*W*fy/gamma_a1 não é ativado em nenhum exemplo. O A7 deve confirmar a não ativação em todos, mas não pode validar o limite em si."
+   ],
+   "FLE-05": [
+    "NENHUM — nenhum exemplo tem furos na mesa tracionada."
+   ],
+   "CIS-01": [
+    "CIS-02 (plastificação)",
+    "CIS-01 (inelástico)",
+    "CIS-03 (elástico + kv com enrijecedores)",
+    "FLEX-02 (plastificação em fy = 345)"
+   ],
+   "CIS-02": [
+    "CIS-01",
+    "CIS-02",
+    "CIS-03 (este último como caso de regressão do erro Aw = h0*tw)"
+   ],
+   "CIS-03": [
+    "NENHUM — flexão no eixo de menor inércia não aparece."
+   ],
+   "ELS-01_a_ELS-06": [
+    "FLEX-02 (vigas de piso, L/350, com REPROVAÇÃO)",
+    "CIS-01 (L/350, critério governante em L/h = 20)"
+   ],
+   "ACO-01_a_ACO-05": [
+    "APENAS TRAC-01 (gamma_q = 1,5). Todos os demais são incompatíveis — ver A2-COMB-01."
+   ],
+   "FCO-01_a_FCO-07": [
+    "NENHUM — flexo-compressão, B1/B2 e imperfeição geométrica global não são exercitados por nenhum exemplo (RM-09 do A1)."
+   ]
+  }
+ },
+ "pendencias_geradas_por_esta_adjudicacao": [
+  {
+   "para": "A1",
+   "item": "Extrair o item 5.3.6 (barras compostas) da NBR 8800:2024, para reabilitar o Probl. 5.8.3 caso b)."
+  },
+  {
+   "para": "A1",
+   "item": "Extrair, do Anexo A do livro, a Tabela A6.1 (dimensões do perfil H 152 x 40,9), para substituir a demonstração indireta do A2 por conferência direta de bf/(2tf) e hw/tw."
+  },
+  {
+   "para": "A1",
+   "item": "Extrair os Probl. 5.8.6 e seguintes (compressão com flambagem local ATIVA). É a maior lacuna de cobertura do GATE 3: COM-06 (largura efetiva) continua SEM NENHUMA validação bibliográfica, e é justamente a regra em que 2008 e 2024 mais divergem. Nota de cautela: nesses exemplos o livro usa o fator Q, de modo que só a geometria será reaproveitável."
+  },
+  {
+   "para": "A1",
+   "item": "Extrair o item 6.3.6 (dimensões de furos), para levantar o bloqueio BLQ-04 e permitir que os exemplos de tração validem também a dimensão de furo."
+  },
+  {
+   "para": "A7",
+   "item": "Ao fechar o GATE 3, declarar explicitamente que COM-06, FLE-04, FLE-05, CIS-03 e toda a família FCO-* permanecem SEM validação bibliográfica independente. O conjunto Pfeil amplia a cobertura, não a completa."
+  },
+  {
+   "para": "A7",
+   "item": "Não converter nenhum dos desvios documentados (0,04 % a 2,9 %) em alteração da tolerância padrão do projeto (esforço ±1 %, deslocamento ±5 %, D/C ±2 %). Cada desvio tem causa identificada neste arquivo e é tratado por substituição da referência, não por relaxamento."
+  }
+ ],
+ "assinatura": {
+  "agente": "A2 — Verificador Normativo",
+  "data": "2026-09-20",
+  "declaracao": "As seis ambiguidades levantadas pelo A1 na 6.ª rodada foram decididas. Nenhuma decisão foi tomada por confiança na fonte: cada afirmação verificável do A1 foi recalculada de forma independente pelo A2 (limites de esbeltez de 2024, Aef = Ag dos dois perfis comprimidos, regime de cisalhamento sob kv = 5,34, piso Ac/Ag do Ct, módulo plástico do VS 500 x 86 e toda a aritmética dos 13 exemplos). Três inconsistências adicionais do livro (RM-10, RM-11, RM-12) e uma incompatibilidade de escopo (A2-COMB-01) foram encontradas nesse processo e ficam registradas. O ruleset.yaml NÃO foi alterado e permanece congelado em v1.1.0."
+ },
+ "historico_de_rodadas": [
+  {
+   "rodada": 1,
+   "data": "2026-09-20",
+   "insumo": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 6.ª rodada)",
+   "escopo": "13 exemplos: tração, compressão, flexão, cisalhamento, ELS.",
+   "titulo_original_deste_arquivo": "'Adjudicação A2 dos 13 exemplos de Pfeil & Pfeil (8.ª ed., 2009) para uso pelo A7' — substituído nesta 2.ª rodada apenas para deixar de subdimensionar o conteúdo; NENHUMA adjudicação da 1.ª rodada foi alterada."
+  },
+  {
+   "rodada": 2,
+   "data": "2026-09-21",
+   "insumo": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 7.ª rodada, commit 617796b)",
+   "escopo": "7 exemplos novos: PFEIL-COM06-01 (largura efetiva/Classe 4) e PFEIL-FCO-01 a 06 (capítulo 7 inteiro).",
+   "contrato_normativo_de_referencia": "ruleset.yaml v1.1.0-congelado — NÃO alterado nesta rodada."
+  },
+  {
+   "rodada": 3,
+   "data": "2026-09-24",
+   "insumo": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 11.ª rodada, commit 71fc5e3)",
+   "escopo": "2 exemplos novos: PFEIL-FLT-01 (Probl. 6.5.7) e PFEIL-FLT-02 (Probl. 6.5.8), FLT do eixo maior do VS 400 x 49, recalculados pela NBR 8800:2024 (FLE-07/FLE-08). Mais: veredito sobre RM-13 a RM-21, correção do ACH-16 (A6-50) e errata RM-20 em PFEIL-FCO-02.",
+   "contrato_normativo_de_referencia": "ruleset.yaml v1.3.0-congelado — SEM nova versão. Houve só errata descritiva de ACH-16/ACH-17 (ver o changelog do ruleset).",
+   "titulo_anterior_deste_arquivo": "Adjudicação A2 dos exemplos de Pfeil & Pfeil (8.ª ed., 2009) para uso pelo A7 — 13 exemplos na 1.ª rodada de adjudicação (2026-09-20) + 7 exemplos na 2.ª rodada (2026-09-21, COM-06 e capítulo 7 de flexo-compressão). Total 20.",
+   "nota": "O título foi trocado só para refletir o total. NENHUMA adjudicação das rodadas 1 e 2 mudou de veredito. A única edição em entrada antiga é a errata textual RM-20 em PFEIL-FCO-02, com o texto original preservado no próprio campo 'errata_RM_20_3a_rodada'."
+  }
+ ],
+ "decisao_7_COM06_largura_efetiva_2008_x_2024": {
+  "pergunta_do_A1": "A fórmula de 2008 (fator Q multiplicativo, largura efetiva iterativa com a tensão sigma) tem estrutura diferente da regra COM-06 de 2024 (área efetiva acoplada a chi). O PFEIL-COM06-01 serve para recálculo pela edição 2024, ou só para geometria/limiares/conclusão qualitativa?",
+  "decisao": "VEREDITO DIVIDIDO POR ELEMENTO E POR REGRA — nem 'usar_com_recalculo' pleno nem 'só qualitativo'. O A2 recalculou o exemplo inteiro pela edição 2024 e o resultado obriga a separar quatro destinos distintos, que a formulação binária da pergunta do A1 não comporta.",
+  "recalculo_integral_do_A2_pela_edicao_2024": {
+   "geometria": "Ag = 80,00 cm²; Ix = 24.242,35 cm⁴; ix = 17,40774 cm; KL/ix = 56,2975 — coincidem com o livro (80 / 24.242 / 17,4 / 56,3).",
+   "cadeia_2024": "Ne = pi²*E*Ix/L² = 4982,56 kN; lambda_0 = sqrt(Ag*fy/Ne) = 0,633562 (COM-04, com Ag BRUTA); chi = 0,658^(lambda_0²) = 0,845349 (COM-03).",
+   "limiares_tabela_4": "(b/t)lim alma (AA grupo 2) = 1,49*sqrt(E/fy) = 42,14356. (b/t)lim mesa (AL grupo 5) = 0,64*sqrt(E/(fy/kc)) = 13,61484, com kc = 4/sqrt(h/tw) = 0,565685 (dentro de [0,35; 0,76]).",
+   "criterio_5_3_4_2": "(b/t)lim/sqrt(chi): alma 45,8367 < 50 -> ESBELTA; mesa 14,8081 < 18,75 -> ESBELTA. Os DOIS elementos são Classe 4 também pela edição 2024.",
+   "larguras_efetivas_2024": "ALMA (c1=0,18; c2=1,31): sigma_el = 304,7931 MPa; bef = 37,65293 cm de b = 40 cm. MESA, meia-largura (c1=0,22; c2=1,49): sigma_el = 292,6438 MPa; bef = 13,0815 cm de b = 15 cm.",
+   "resultado_final_2024": "Aef = 4*13,0815*0,8 + 37,65293*0,8 = 71,983 cm² (Aef/Ag = 0,8998); Nc,Rd = chi*Aef*fy/gamma_a1 = 1383,0 kN.",
+   "contra_o_livro_2008": "N_d,res = 1284 kN. Divergência = +7,71 %. FORA de qualquer tolerância do projeto. CONFIRMA a ressalva do A1: a saída final NÃO é comparável."
+  },
+  "demonstracao_algebrica_da_convergencia": {
+   "por_que_foi_feita": "O A1 afirmou que as duas fórmulas são 'estruturalmente diferentes'. Isso é verdade para a SEÇÃO (o Q de 2008 é um fator de TENSÃO aplicado à seção inteira; o Aef de 2024 é uma redução de ÁREA por elemento), mas o A2 verificou se é verdade também para o ELEMENTO ENRIJECIDO isolado — e NÃO é.",
+   "forma_2008_eq_5_13": "be/b = 1,92*rho*(1 - 0,34*rho), com rho = sqrt(E/sigma)/(b/t).  ->  be/b = 1,92*rho - 0,6528*rho²",
+   "forma_2024_tabela_5_AA": "bef/b = lambda'*(1 - 0,18*lambda'), com lambda' = sqrt(sigma_el/(chi*fy)). Substituindo sigma_el = [1,31*1,49*sqrt(E/fy)/(b/t)]²*fy, resulta lambda' = 1,95189*sqrt(E/(chi*fy))/(b/t).  ->  bef/b = 1,95189*rho' - 0,68584*rho'², com rho' = sqrt(E/(chi*fy))/(b/t)",
+   "conclusao": "As DUAS são a MESMA curva de Winter, reparametrizada: coeficiente linear 1,92 x 1,95189 (+1,7 %) e coeficiente quadrático 0,6528 x 0,68584 (+5,1 %). A diferença conceitual real é QUAL tensão entra em rho: a tensão de trabalho sigma (2008, iterativa) contra chi*fy (2024, fechada). No Probl. 5.8.10 o autor ADOTOU sigma = f_c com Q=1 = 211 MPa, e chi*fy = 0,845349*250 = 211,34 MPa — ou seja, a hipótese do autor no passo 13 coincide numericamente com a tensão que a edição 2024 prescreve. Por isso, e SÓ por isso, os dois bef praticamente coincidem: 37,65293 cm (2024) contra 37,4 cm (livro), +0,68 %.",
+   "consequencia": "Para o elemento ALMA, e apenas para ele, existe camada L3 legítima. Para a MESA não existe: em 2008 a mesa é tratada por Qs (redução de TENSÃO da seção inteira, 0,839), em 2024 por largura efetiva (redução de ÁREA só da mesa, fator 0,87210). Não são reparametrizações uma da outra e não há o que convergir.",
+   "alerta_de_metodo": "Esta coincidência é uma propriedade DESTE exemplo (a hipótese sigma = f_c(Q=1) do autor), não uma propriedade geral das duas edições. É proibido generalizá-la para outros exemplos sem refazer a demonstração."
+  },
+  "achado_de_escopo_do_A2": {
+   "id": "A2-ESC-01",
+   "descricao": "calc_core/dimensionamento/compressao.py::bt_limite RECUSA explicitamente o grupo 'AL_grupo_5' (mesas de seções I/H/T/U SOLDADAS), levantando ErroDeDimensionamento, porque a Fase 0 é declaradamente restrita a perfis W/HP LAMINADOS. O perfil do Probl. 5.8.10 é um H SOLDADO: a mesa cai exatamente nesse grupo.",
+   "consequencia": "O caminho de produção da MESA deste exemplo não é executável. Isso NÃO é um defeito: é a fronteira de escopo funcionando. Mas muda o destino do exemplo — a mesa vira teste NEGATIVO (o código deve recusar), não teste numérico.",
+   "distincao_obrigatoria_para_o_memorial": "A ENTRADA do ruleset para o grupo 5 (coeficiente 0,64 e a definição de kc) fica VALIDADA BIBLIOGRAFICAMENTE por este exemplo — o livro imprime 13,5 e kc = 0,56, e a fórmula de 2024 dá 13,61484 com kc = 0,565685. O que não é executável é o CAMINHO DE CÓDIGO, por decisão de escopo da Fase 0. Registrar as duas coisas separadamente; confundi-las produziria ou um falso 'sem validação' ou um falso 'implementado'."
+  },
+  "achado_bibliografico_forte_do_A2": {
+   "id": "A2-COM06-01",
+   "descricao": "O limite de esbeltez que o livro imprime para a ALMA — 42,1 — é EXATAMENTE 1,49*sqrt(E/fy) = 42,14356, isto é, o coeficiente do grupo AA-2 da Tabela 4 da NBR 8800:2024. E o limite impresso para a MESA — 13,5 — é 0,64*sqrt(E/(fy/kc)) com o kc arredondado do próprio livro (0,56), isto é, o coeficiente do grupo AL-5 da mesma Tabela 4.",
+   "por_que_importa": "Os COEFICIENTES da Tabela 4 (1,49 e 0,64) e a definição de kc NÃO mudaram entre 2008 e 2024 — só mudou o que se faz depois de ultrapassá-los. Logo este exemplo é validação bibliográfica DIRETA (usar_direto, sem ressalva de edição) dos dois coeficientes e do kc, que até esta rodada não tinham nenhuma segunda fonte no acervo. É o ganho mais sólido de toda a adjudicação de COM-06 — e o A1 não o identificou, porque tratou o exemplo como bloco único sob a ressalva de edição."
+  }
+ },
+ "decisao_8_RM10_sanity_check_do_fator_8_9": {
+  "alegacao_do_A1": "Os Probl. 7.6.1 a 7.6.4 imprimem a equação de interação sem o fator 8/9, apesar de N_d/N_d,res >= 0,2 nos quatro casos; 'a conclusão de nenhum dos quatro muda (todos continuam < 1,0 recalculados com 8/9)'.",
+  "o_que_o_A2_fez": "NÃO aceitou a alegação. Refez o sanity check numérico nos quatro exemplos, pelos dois ramos da regra FCO-01 (5.5.1.2-a e -b), partindo dos N_d/N_d,res e M_d/M_d,res impressos.",
+  "tabela_do_sanity_check": [
+   {
+    "exemplo": "PFEIL-FCO-01",
+    "N_d_sobre_N_res": 0.350575,
+    "ramo_correto": "5.5.1.2-a) (>= 0,2, com 8/9)",
+    "soma_dos_termos_de_momento": 0.122882,
+    "soma_simples_impressa": 0.473457,
+    "valor_impresso_no_livro": 0.47,
+    "Eq_7_17a_correta": 0.460124,
+    "margem_ate_1_0": 0.539876,
+    "conclusao_muda": "NÃO"
+   },
+   {
+    "exemplo": "PFEIL-FCO-02",
+    "N_d_sobre_N_res": 0.485058,
+    "ramo_correto": "5.5.1.2-a)",
+    "soma_dos_termos_de_momento": 0.13448,
+    "soma_simples_impressa": 0.619538,
+    "valor_impresso_no_livro": 0.62,
+    "Eq_7_17a_correta": 0.604595,
+    "margem_ate_1_0": 0.395405,
+    "conclusao_muda": "NÃO"
+   },
+   {
+    "exemplo": "PFEIL-FCO-03",
+    "N_d_sobre_N_res": 0.485058,
+    "ramo_correto": "5.5.1.2-a)",
+    "soma_dos_termos_de_momento": 0.324724,
+    "soma_simples_impressa": 0.809782,
+    "valor_impresso_no_livro": 0.81,
+    "Eq_7_17a_correta": 0.773701,
+    "margem_ate_1_0": 0.226299,
+    "conclusao_muda": "NÃO"
+   },
+   {
+    "exemplo": "PFEIL-FCO-04",
+    "N_d_sobre_N_res": 0.283959,
+    "ramo_correto": "5.5.1.2-a)",
+    "soma_dos_termos_de_momento": 0.386784,
+    "soma_simples_impressa": 0.670743,
+    "valor_impresso_no_livro": 0.66,
+    "Eq_7_17a_correta": 0.627767,
+    "margem_ate_1_0": 0.372233,
+    "conclusao_muda": "NÃO"
+   }
+  ],
+  "veredito_sobre_a_alegacao_do_A1": "CONFIRMADA. Nos quatro casos a Eq. (7.17a) correta produz valor MENOR que a soma simples impressa, e os quatro permanecem muito abaixo de 1,0 (menor margem: 0,226, no PFEIL-FCO-03). A conclusão qualitativa impressa ('atende') está certa nos quatro.",
+  "o_que_o_A1_NAO_observou_e_o_A2_acrescenta": {
+   "id": "A2-RM-19",
+   "observacao": "A omissão do fator 8/9 é sistematicamente CONTRA o resultado do livro, nunca a favor: como 8/9 < 1 e o termo axial N_d/N_d,res não é afetado, a soma simples é SEMPRE maior ou igual à Eq. (7.17a). O erro do livro é, portanto, CONSERVADOR.",
+   "por_que_isso_importa": "(1) Explica por que o erro sobreviveu a oito edições: nunca reprovou um perfil que deveria passar. (2) Autoriza um uso que a mera 'conclusão não muda' não autorizaria: os quatro valores impressos são LIMITES SUPERIORES válidos da taxa correta. O A7 pode assertar taxa_calculada <= valor_impresso como verificação de sanidade unilateral, além da comparação com o valor recalculado. (3) Proíbe o inverso: nenhum dos quatro pode ser usado para demonstrar que o código NÃO é conservador demais.",
+   "limite_desse_uso": "O limite superior só vale porque os dois lados usam os MESMOS N_Rd e M_Rd. Onde o A2 substituiu N_Rd ou M_Rd por valor recalculado (A2-RM-13 e A2-RM-14), a comparação unilateral deve ser refeita com os valores substituídos, nunca com os impressos."
+  },
+  "decisao_final": "RM-10 NÃO invalida os quatro exemplos, mas RESTRINGE seu uso: o valor final impresso da equação de interação (0,47 / 0,62 / 0,81 / 0,66) está PROIBIDO como referência numérica de FCO-01. A referência é sempre o valor recalculado pela regra congelada. A validação bibliográfica DIRETA da forma algébrica da Eq. 5.5.1.2-a) (o fator 8/9 e o limiar 0,2) fica restrita a PFEIL-FCO-05, como o A1 propôs — e essa afirmação do A1 foi VERIFICADA pelo A2, não aceita: ver 'decisao_9'."
+ },
+ "decisao_9_verificacao_independente_da_afirmacao_do_A1_sobre_PFEIL_FCO_05": {
+  "afirmacao_do_A1": "'Só PFEIL-FCO-05 (7.6.5, o pórtico completo) aplicou a equação corretamente.'",
+  "instrucao_recebida": "Verificar essa afirmação antes de aceitá-la.",
+  "verificacao_do_A2": {
+   "passo_16_do_exemplo": "N_d/N_d,res = 1007/2172 = 0,463628 >= 0,2 -> o livro DECLARA explicitamente que se aplica a Eq. (7.17a) 'com o fator 8/9'. É o único lugar do capítulo onde essa checagem de ramo é escrita.",
+   "passo_17_recalculado_pelo_A2": "0,463628 + (8/9)*(124,1/393,3) = 0,463628 + 0,280476 = 0,744104. O livro imprime 0,74.",
+   "teste_discriminante": "Se o livro tivesse usado a soma simples (sem 8/9), o resultado seria 0,463628 + 0,315535 = 0,779163, que imprimiria como 0,78 e não 0,74. O valor impresso SÓ é reproduzível COM o fator 8/9.",
+   "veredito": "AFIRMAÇÃO DO A1 CONFIRMADA, por teste discriminante e não por leitura. PFEIL-FCO-05 é o único exemplo do acervo que aplica a Eq. (7.17a) na forma congelada em FCO-01."
+  },
+  "porem_achado_grave_do_A2_que_o_A1_NAO_registrou": {
+   "id": "A2-ESC-02",
+   "descricao": "PFEIL-FCO-05 está FORA DO ENVELOPE DA FASE 0. O passo 1 do próprio exemplo classifica a estrutura como de MÉDIA DESLOCABILIDADE, e o B2 calculado (1,2366) excede 1,10. Pela regra FCO-03 ('A Fase 0 só é válida para PEQUENA deslocabilidade') e pelo bloqueio BLQ-06 ('Recusar o resultado daquela combinação — e não apenas alertar'), o software DEVE RECUSAR esta estrutura.",
+   "consequencia_direta": "O único exemplo do acervo que aplica corretamente a equação de interação da FCO-01 é, ao mesmo tempo, um exemplo que o software se recusa a dimensionar. A validação ponta a ponta de FCO-01 por este exemplo é IMPOSSÍVEL por construção; só resta a validação NO NÍVEL DAS FUNÇÕES.",
+   "agravante_independente": "O passo 3 calcula N_cr com rigidez reduzida a 80 % (E -> 0,8E), exigida por 4.10.7.1.2 justamente porque a estrutura NÃO é de pequena deslocabilidade. A emenda v1.1.0 da regra FCO-03 congela o oposto para a Fase 0: 'O sinalizador considera_imperfeicoes_de_material de A4 NÃO pode ser ligado na Fase 0.' Portanto nem mesmo o N,e do B1 deste exemplo é produzível pelo caminho normal do código.",
+   "segundo_agravante": "O M_d,res do passo 15 vem da interpolação de flambagem local da mesa em regime SEMICOMPACTO (lambda = 12, entre lambda_p = 11 e lambda_r = 22,3). O bloqueio BLQ-01 recusa exatamente isso ('Viga com lambda > lambda_p em qualquer um dos estados-limite FLT, FLM ou FLA'). M_d,res = 393,3 kNm não é produzível pelo código.",
+   "o_lado_bom": "Isso converte PFEIL-FCO-05 no MELHOR caso de teste NEGATIVO do acervo inteiro: um exemplo real, de livro-texto, com todos os números publicados, que o software deve RECUSAR por BLQ-06 (deslocabilidade) e por BLQ-01 (FLM semicompacta). Testes de recusa valem tanto quanto testes de aprovação no GATE 3 — uma recusa que não dispara é um resultado errado emitido com aparência de certo.",
+   "efeito_colateral_sobre_RM_12": "A dúvida levantada pelo A1 em RM-12 (usar 432,6 impresso ou 432,2 recalculado como M_n da flambagem local da mesa) fica PREJUDICADA e SEM EFEITO: o passo inteiro está fora do ruleset por BLQ-01. Não se escolhe entre dois números quando nenhum dos dois pode ser produzido pelo código. Ver 'decisao_10'."
+  }
+ },
+ "decisao_10_RM11_RM12_e_a_colisao_de_identificadores": {
+  "RM_11_revisao_do_A2": {
+   "alegacao_do_A1": "O livro imprime 'B1 = 0,24 x 1,0/[1-(960,9+37,4)/37.303] = 0,25 > 1,0 :. B1 = 1,0'; o '>' está trocado, a conclusão B1 = 1,0 está certa.",
+   "recalculo_do_A2": "C_m = 0,6 - 0,4*(51,7/57,6) = 0,240972. N_cr = pi²*0,80*20.000*32.339/370² = 37.302,92 kN. B1 bruto = 0,240972/(1 - 998,3/37.302,92) = 0,247598.",
+   "veredito": "CONFIRMADO, com uma precisão a mais: o valor 0,25 impresso está CORRETO (0,247598 arredonda para 0,25) e é apenas o SÍMBOLO de comparação que está trocado. A conclusão B1 = 1,0 não vem do teste impresso e sim do PISO 'B1 >= 1,0' da própria Eq. (7.9) — que é exatamente o piso congelado na regra FCO-05 ('B1 = C,m/(1 - N,Sd1/N,e) >= 1,0'). Erro tipográfico puro, sem propagação numérica.",
+   "uso_autorizado": "Este passo é, ao contrário do que a palavra 'erro' sugere, um dos MELHORES casos de teste do acervo para FCO-05: é o único exemplo em que o piso B1 >= 1,0 fica ATIVO (C_m baixo, 0,24, por curvatura reversa acentuada). Uma implementação que esquecesse o piso devolveria 0,2476 e passaria despercebida em todos os outros exemplos, onde B1 bruto já é > 1. O A7 DEVE ter este caso."
+  },
+  "RM_12_revisao_do_A2": {
+   "alegacao_do_A1": "'M_n = 446,7 - [(12-11)/(22,3+11)]*(446,7-283,0) = 432,6 kNm'; com o denominador impresso (33,3) dá 441,8; com o denominador padrão (lambda_r - lambda_p = 11,3) dá 432,2, que bate com o impresso. O A1 pediu ao A7 que decidisse entre 432,6 e 432,2.",
+   "recalculo_do_A2": "Confirmado: denominador 33,3 -> 441,784; denominador 11,3 -> 432,213; impresso 432,6 (diferença de +0,09 % sobre 432,213, compatível com arredondamento dos intermediários). O '+' impresso é erro tipográfico e o RESULTADO impresso é o da fórmula correta.",
+   "veredito": "CONFIRMADO COMO ERRO DO LIVRO — mas a PERGUNTA do A1 está mal colocada e a resposta correta não é nenhuma das duas opções oferecidas.",
+   "decisao": "A ESCOLHA NÃO EXISTE. A interpolação de flambagem local da mesa em regime SEMICOMPACTO está FORA do ruleset v1.1.0: o escopo congelado admite 'flexão simples, apenas patamar de plastificação' e o BLQ-01 manda RECUSAR qualquer barra com lambda > lambda_p em FLT, FLM ou FLA. Com lambda = 12 > lambda_p = 11, esta viga-coluna é recusada. PASSO EXCLUÍDO — junto com o passo 15 (M_d,res = 393,3 kNm), que o consome.",
+   "precedente_aplicado": "Idêntico ao RM-03 da 1.ª rodada, em que os passos de alma semicompacta do PFEIL-FLEX-03 foram excluídos pela mesma razão. Coerência preservada: o A2 não abre exceção para um exemplo só porque ele é o mais rico do acervo.",
+   "tolerancia": "não se aplica (excluído)",
+   "instrucao_ao_A7": "Em vez de reproduzir 432,6 ou 432,2, assertar que o código RECUSA (BLQ-01) a seção CVS400x87 em flexão com lambda_FLM = 12 > lambda_p = 11, e que a recusa cita BLQ-01. Um M_d,res numérico devolvido aqui é BUG, não acerto."
+  },
+  "terceira_inconsistencia_da_mesma_pagina": {
+   "descricao": "O A1 registrou, dentro do RM-12, que o M_n por FLT do passo 13/14 recalculado literalmente dá 985,1 kNm contra 950,5 impresso (~3,5 %), e observou que ambos excedem M_p e não afetam a conclusão.",
+   "recalculo_do_A2": "Confirmado: 2,22*[446,7 - (11/591)*163,7] = 984,9 kNm. A observação do A1 procede.",
+   "achado_adicional_do_A2": "A causa está um passo ANTES, e o A1 não a identificou: o l_bp impresso (359 cm) está errado. 'l_bp = 7,13 x 1,76 x sqrt(20.000/25)' = 7,13*1,76*28,28427 = 354,9337 cm, não 359. Ver A2-RM-18. Com 354,93 em vez de 359 o numerador (L - l_bp) muda de 11 para 15,07 cm, o que responde por parte da divergência.",
+   "efeito": "NENHUM sobre a validação: todo o ramo de FLT deste exemplo está excluído por BLQ-01, pelo mesmo motivo do passo 12. Registrado apenas para que ninguém reabra a questão."
+  },
+  "colisao_de_identificadores_RM": {
+   "id_do_achado": "A2-META-01",
+   "descricao": "OS IDENTIFICADORES RM-10, RM-11 E RM-12 ESTÃO DUPLICADOS, COM CONTEÚDOS COMPLETAMENTE DIFERENTES, EM DOIS ARQUIVOS DO MESMO DIRETÓRIO kb/livros/.",
+   "ocorrencia_1": "kb/livros/pfeil_adjudicacao_a2.json, bloco 'novos_achados_do_A2_nao_registrados_pelo_A1' (A2, 1.ª rodada, 2026-09-20): RM-10 = PFEIL-FLEX-02 passo 5; RM-11 = PFEIL-CIS-03 passo 1 (h_0/t_0 = 157,7); RM-12 = PFEIL-TRAC-02 passo 2 (A_n = 44,04 cm²).",
+   "ocorrencia_2": "kb/livros/pfeil_exemplos_resolvidos.json, bloco 'revisar_manualmente' (A1, 7.ª rodada, 2026-09-21): RM-10 = fator 8/9 ausente nos Probl. 7.6.1-7.6.4; RM-11 = '0,25 > 1,0' do Probl. 7.6.5; RM-12 = denominador '22,3+11' do Probl. 7.6.5.",
+   "causa": "A numeração RM- é sequencial dentro de cada arquivo e os dois agentes a continuaram independentemente a partir de RM-09, sem espaço de nomes. Não é erro de conteúdo de nenhum dos dois — é um defeito de RASTREABILIDADE, e rastreabilidade é o produto deste projeto.",
+   "gravidade": "ALTA para auditoria. Qualquer referência futura a 'RM-11' em um memorial, relatório do A7 ou revisão do A6 é AMBÍGUA e resolve para dois achados diferentes conforme o arquivo que o leitor abrir.",
+   "decisao_de_convencao": [
+    "1. A1 é o dono do espaço 'RM-nn' e ele permanece em kb/livros/pfeil_exemplos_resolvidos.json. Os RM-10/11/12 do A1 (7.ª rodada) ficam como estão.",
+    "2. O A2 passa a usar o prefixo 'A2-RM-nn' para seus próprios achados, a partir desta rodada e para sempre. A numeração do A2 continua de onde parou (o A2 já tinha ido até 12), logo os novos começam em A2-RM-13.",
+    "3. As TRÊS entradas antigas do A2 (RM-10, RM-11, RM-12 da 1.ª rodada) NÃO são renomeadas — a regra do projeto é não reescrever registro antigo. Elas ganham, em vez disso, o apelido canônico A2-RM-10, A2-RM-11 e A2-RM-12 declarado AQUI, e é esse apelido que deve ser usado em qualquer citação futura.",
+    "4. Toda citação a um RM em memorial, teste ou relatório DEVE nomear o arquivo de origem."
+   ],
+   "tabela_de_desambiguacao": {
+    "RM-10 (A1, 7.ª rodada)": "fator 8/9 ausente — Probl. 7.6.1 a 7.6.4",
+    "A2-RM-10 (A2, 1.ª rodada; gravado como 'RM-10')": "PFEIL-FLEX-02 passo 5 — M_d = 218,2 kNm / Z > 685,7 cm³",
+    "RM-11 (A1, 7.ª rodada)": "'0,25 > 1,0' — Probl. 7.6.5 passo 4",
+    "A2-RM-11 (A2, 1.ª rodada; gravado como 'RM-11')": "PFEIL-CIS-03 passo 1 — h_0/t_0 = 157,7",
+    "RM-12 (A1, 7.ª rodada)": "denominador '22,3+11' — Probl. 7.6.5 passo 12",
+    "A2-RM-12 (A2, 1.ª rodada; gravado como 'RM-12')": "PFEIL-TRAC-02 passo 2 — A_n = 44,04 cm²"
+   },
+   "pendencia_gerada": "A1: na próxima rodada, acrescentar em 'revisar_manualmente' uma nota de desambiguação apontando para este bloco, para que quem abrir apenas o arquivo de exemplos também saiba da colisão."
+  }
+ },
+ "novos_achados_do_A2_2a_rodada": [
+  {
+   "id": "A2-RM-13",
+   "tipo": "erro aritmético do livro (NOVO — não detectado pelo A1)",
+   "onde": "PFEIL-FCO-01 (Probl. 7.6.1), passo 11 — 'M_d,res = Z*f_y/gamma_a1 = 2629 x 25/1,10 = 591,7 kNm'",
+   "descricao": "2629 x 25 = 65.725 kNcm; 65.725/1,10 = 59.750 kNcm = 597,50 kNm. O livro imprime 591,7 kNm — desvio de +0,98 % sobre o valor correto, com toda a aparência de transposição de dígitos (597,5 -> 591,7).",
+   "prova_interna": "O PRÓPRIO LIVRO imprime, no Probl. 7.6.2 passo 6, 'M_p = Z_x*f_y = 2629 x 25 = 65.725 kNcm = 657,3 kNm', para o MESMO perfil e o MESMO Z. Dividindo esse M_p pelo gamma_a1 = 1,10 que o próprio passo 11 declara, obtém-se 597,5 kNm. O livro contradiz a si mesmo entre dois problemas consecutivos; não há ambiguidade a resolver.",
+   "gravidade": "O desvio (0,98 %) fica MILIMETRICAMENTE dentro da tolerância de ±1 % do projeto. Usado sem recálculo, este número passaria no teste e contaminaria a referência de FLE-02 com um erro tipográfico — exatamente o modo de falha que a decisão DEC-08 existe para impedir.",
+   "decisao_do_A2": "SUBSTITUIR A REFERÊNCIA. M_d,res = 597,500 kNm (recalculado). O valor 591,7 fica PROIBIDO como referência.",
+   "tolerancia": "±0,1 % contra 597,500 kNm — mais rigorosa que o padrão do projeto, porque a grandeza é um produto exato de três entradas exatas e não admite dispersão.",
+   "instrucao_ao_A7": "Chamar momento_resistente_de_plastificacao(z, fy, gamma_a1) com Z = 2629 cm³ e conferir contra 597,500 kNm. Registrar no relatório que o livro imprime 591,7 e que isso é erratum, com a prova interna acima."
+  },
+  {
+   "id": "A2-RM-14",
+   "tipo": "inconsistência do livro entre lambda_0 e chi (NOVA)",
+   "onde": "PFEIL-FCO-02 (Probl. 7.6.2), passo 2 — 'N_d,res = 148,3 x 0,685 x 25/1,10 = 2309 kN'",
+   "descricao": "(Kl/i)_y = 600/6,97 = 86,0832 -> lambda_0 = 0,968777 -> chi = 0,658^(lambda_0²) = 0,675149. O livro usa chi = 0,685, que corresponderia a lambda_0 = 0,9507, isto é, a (Kl/i)_y = 84,48 — um perfil que não é o do problema. Desvio de -1,44 % em chi e em N_d,res.",
+   "descarte_de_hipoteses_alternativas": "(a) NÃO é diferença de edição: a curva chi = 0,658^(lambda_0²) para lambda_0 <= 1,5 é idêntica em 2008 e 2024 (regra COM-03) e o próprio livro a reproduz corretamente no Probl. 7.6.1 (chi = 0,947 contra 0,947871 recalculado, +0,09 %) e no Probl. 7.6.5 (0,864 contra 0,866969, +0,34 %). (b) NÃO é o arredondamento do atalho '0,0113' do livro: com ele lambda_0 = 0,9718 e chi = 0,673, ainda mais distante de 0,685. (c) Sobra leitura errada de tabela de chi, numa linha adjacente.",
+   "gravidade": "1,44 % excede a tolerância de ±1 % do projeto. Se o A7 usasse 2309 kN como referência, um código CORRETO seria REPROVADO.",
+   "decisao_do_A2": "SUBSTITUIR A REFERÊNCIA. chi = 0,675149 e N_d,res = 2275,561 kN (recalculados). Os valores 0,685 e 2309 kN ficam PROIBIDOS como referência.",
+   "tolerancia": "±0,5 % contra 2275,561 kN.",
+   "nota": "Este achado propaga-se ao PFEIL-FCO-03, que reaproveita N_d,res = 2309 kN do Probl. 7.6.2. Lá também a referência é 2275,561 kN."
+  },
+  {
+   "id": "A2-RM-15",
+   "tipo": "ramo de fórmula declarado errado + arredondamento fora de tolerância (NOVO)",
+   "onde": "PFEIL-FCO-04 (Probl. 7.6.4), passos 8 a 10",
+   "descricao": "Duas coisas distintas no mesmo trecho. (1) O passo 9 declara 'lambda_0 > 1,5, região elástica — Eq. 5.9b', mas o lambda_0 do passo 8 é 1,49 (recalculado: 1,496776), que é MENOR que 1,5 e portanto cai no ramo INELÁSTICO. O livro anuncia o ramo errado. (2) O f_c adotado, 100 MPa, é arredondado a partir de 97,88 MPa — desvio de +2,12 %, que propaga integralmente para N_d,res = 1465 kN contra 1434,422 kN recalculado (+2,09 %).",
+   "circunstancia_atenuante_do_item_1": "Sem efeito numérico: em lambda_0 = 1,496776 os dois ramos praticamente coincidem, por construção da curva (ramo inelástico 97,882 MPa; ramo elástico 97,863 MPa; diferença 0,02 %). A curva é contínua em lambda_0 = 1,5 e o ponto está a 0,2 % dessa junção. O erro é de CLASSIFICAÇÃO declarada, não de valor.",
+   "por_que_registrar_mesmo_assim": "Porque o item (1) é justamente o tipo de caso-limite que um validador precisa exercitar de propósito: um código que implemente a comparação como 'lambda_0 >= 1,5' ou que troque os ramos NÃO é detectável por nenhum outro exemplo do acervo, e é detectável aqui — desde que o A7 saiba que o ramo CORRETO é o inelástico e não copie a declaração do livro.",
+   "gravidade_do_item_2": "2,09 % excede a tolerância de ±1 % do projeto.",
+   "decisao_do_A2": "(1) O ramo correto é 5.3.3.1 lambda_0 <= 1,5, chi = 0,658^(lambda_0²). A declaração impressa fica PROIBIDA como referência de ramo. (2) SUBSTITUIR a referência: chi = 0,391530; f_c = 97,882 MPa; N_d,res = 1434,422 kN. Os valores 100 MPa e 1465 kN ficam PROIBIDOS.",
+   "tolerancia": "±0,5 % contra 1434,422 kN; teste booleano (sem tolerância) para o ramo."
+  },
+  {
+   "id": "A2-RM-16",
+   "tipo": "erro conceitual do livro na identificação de N,e (NOVO — e é o achado mais importante desta rodada)",
+   "onde": "PFEIL-FCO-04 (Probl. 7.6.4), passo 5 — 'N_cr,x = pi²*E*A/(Kl/i)_x²  =  161,2 x pi² x 20.000/133²  =  1799 kN'",
+   "descricao": "A fórmula está rotulada com o índice x, mas o valor SUBSTITUÍDO, 133, é o (Kl/i)_y do passo 1 (1000/7,51 = 133,16), calculado com o eixo FRACO e com o comprimento DESTRAVADO de 10 m. O (Kl/i)_x do mesmo passo 1 é 132 (2000/15,2 = 131,58), com o comprimento REAL de 20 m. O N_cr assim obtido é usado no passo 6 para amplificar M_dx, que é um momento no plano x.",
+   "recalculo_do_A2": "Com (Kl/i)_x = 131,579: N,e = pi²*E*A/(Kl/i)_x² = 1837,900 kN, contra os 1799 kN impressos (+2,16 %). B1 = 1/(1 - 416/1837,900) = 1,29258, contra 1,30081 com o valor do livro; M_dx = 190,72 kNm contra 191,93 kNm.",
+   "por_que_e_o_achado_mais_importante": "Este é, num livro-texto publicado, EXATAMENTE o erro que a regra COM-07 do ruleset isola em sua 'decisoes_auditoria' e que o código marca como achado ACH-02 no docstring de ne_plano_flexao_b1: confundir o Ne de 5.3.5 (mínimo entre os três modos, comprimentos destravados) com o N,e do Anexo C C.2.2 (flambagem POR FLEXÃO no plano do momento, COMPRIMENTO REAL). O A2 congelou essa distinção em v1.0.0 como o risco de implementação de maior gravidade da auditoria; encontrá-la materializada em Pfeil & Pfeil é a melhor confirmação possível de que o alerta não era teórico.",
+   "sentido_do_erro": "No caso deste exemplo o erro é CONSERVADOR (N,e menor -> B1 maior -> momento maior), mas isso é acidente da geometria: basta o eixo fraco ser mais esbelto que o plano do momento, como aqui. Com outra relação de comprimentos destravados o mesmo erro seria CONTRA a segurança. Não se deve tirar nenhum conforto do sinal observado.",
+   "decisao_do_A2": "N,e de referência = 1837,900 kN. O valor 1799 kN fica PROIBIDO como referência de FCO-05. O passo permanece USÁVEL — e passa a ser obrigatório — como teste de REGRESSÃO da distinção COM-07 x FCO-05.",
+   "tolerancia": "±0,5 % contra 1837,900 kN.",
+   "instrucao_ao_A7": "Teste em duas metades, ambas obrigatórias. (a) ne_plano_flexao_b1(E, I_plano = A*i_x², L_real = 20.000 mm) deve devolver 1837,900 kN — NUNCA 1799 kN. (b) Teste de regressão explícito: alimentar o mesmo caso com o comprimento destravado de 10 m e o i_y e assertar que o resultado DIFERE do de (a); se coincidir, o código está confundindo as duas grandezas."
+  },
+  {
+   "id": "A2-RM-17",
+   "tipo": "truncamento do livro fora de tolerância (NOVO)",
+   "onde": "PFEIL-FCO-05 (Probl. 7.6.5), passo 5 — 'B2 = 1/(1-(1,49x3190)/(370x79,0x0,85)) = 1,23'",
+   "descricao": "Reproduzindo literalmente a substituição impressa: (1/0,85)*(1,49/370)*(3190/79,0) = 0,191307; B2 = 1/(1-0,191307) = 1,236562. O livro imprime 1,23 — truncamento, não arredondamento (1,236562 arredonda para 1,24). Desvio de -0,53 %.",
+   "gravidade": "B2 é O alvo de validação bibliográfica da regra FCO-06, e este é o ÚNICO exemplo do acervo inteiro que calcula B2. Um teste com tolerância de ±0,5 % contra 1,23 REPROVARIA uma implementação correta. O erro é pequeno em valor e grande em consequência.",
+   "decisao_do_A2": "SUBSTITUIR A REFERÊNCIA. B2 = 1,236562 (recalculado a partir das MESMAS entradas impressas: R_s = 0,85; Delta_h = 1,49 cm; h = 370 cm; SOMA N_Sd = 3190 kN; SOMA H_Sd = 79,0 kN). O valor 1,23 fica PROIBIDO como referência.",
+   "tolerancia": "±0,1 % contra 1,236562 — a fórmula é fechada e todas as cinco entradas são exatas; não há fonte legítima de dispersão.",
+   "consequencia_em_cadeia": "Os esforços amplificados do passo 6 também mudam: com B2 = 1,236562 e N_lt = 37,4 kN, N_d = 1007,147 kN (livro 1007) e M_d = 124,498 kNm (livro 124,1, que usa B2 = 1,23 e N_lt = 37,3). Para a camada L2 (reprodução do livro) o A7 deve usar B2 = 1,23 e reproduzir 124,1; para a camada L1 (referência de aprovação) deve usar 1,236562 e 124,498. NÃO misturar as duas."
+  },
+  {
+   "id": "A2-RM-18",
+   "tipo": "erro aritmético do livro (NOVO)",
+   "onde": "PFEIL-FCO-05 (Probl. 7.6.5), passo 13 — 'l_bp = 7,13 x 1,76 x sqrt(20.000/25) = 359 cm'",
+   "descricao": "7,13 * 1,76 * sqrt(800) = 7,13 * 1,76 * 28,284271 = 354,934 cm, não 359 cm (-1,13 %). Para chegar a 359 seria preciso i_y = 7,21 cm, e o i_y do enunciado é 7,13 cm.",
+   "efeito": "Propaga para o numerador (L - l_bp) da interpolação de FLT do passo 14 e é parte da causa da divergência de ~3,5 % que o A1 observou ali (985 recalculado contra 950,5 impresso).",
+   "decisao_do_A2": "REGISTRADO SEM EFEITO PRÁTICO. Todo o ramo de FLT deste exemplo está EXCLUÍDO por BLQ-01 (ver decisao_10), portanto nem 359 nem 354,934 chegam a ser referência de nada. Registrado para fechar a questão aberta pelo A1 e evitar que alguém a reabra.",
+   "tolerancia": "não se aplica (excluído)"
+  }
+ ],
+ "decisao_11_destino_do_PFEIL_FCO_06": {
+  "afirmacao_do_A1": "'Este exemplo NÃO mapeia para nenhuma regra FCO-01 a FCO-07 do ruleset atual. Extraído por completude do capítulo 7 e como matéria-prima para uma eventual regra futura.'",
+  "verificacao_do_A2": "CONFIRMADA, e por dois caminhos independentes. (1) Varredura das 46 regras congeladas do ruleset v1.1.0: nenhuma trata de força ou rigidez de contenção lateral de colunas. (2) A própria regra FCO-07 já antecipa e SEPARA o assunto em seu bloco 'nao_confundir_com', que lista 4.10.3.3 (imperfeição das contenções laterais individuais) e 4.10.3.4 (diafragmas) como itens FORA DO ESCOPO DA FASE 0 e adverte que os três itens 'falam em força nocional e têm valores numericamente próximos (0,3 %, 0,5 %, L/500, L/1000, h/333)' mas 'são grandezas DISTINTAS e NÃO se substituem'. O Probl. 7.6.6 é matéria do 4.10.3.3, não do 4.10.7.1.1.",
+  "veredito": "INUTILIZÁVEL PARA VALIDAR QUALQUER REGRA DO RULESET v1.1.0. Veredito formal: 'nao_usar'. Registrado explicitamente, não descartado em silêncio.",
+  "ressalva_grave_sobre_o_uso_futuro": {
+   "descricao": "O A1 classificou o exemplo como 'matéria-prima para uma regra futura'. O A2 aceita o registro, mas com uma ressalva que o A1 não fez e que é decisiva: as fórmulas deste exemplo NÃO são as da NBR 8800:2024.",
+   "o_que_o_livro_usa": "Eqs. (7.21a) e (7.22a): força de contenção F_br = 0,010*N_d (nodal) e F_br = 0,004*N_d (relativa) — abordagem de FORÇA prescrita, de linhagem AISC/edição 2008.",
+   "o_que_a_norma_de_2024_usa": "Item 4.10.3.3, conforme já transcrito no bloco 'nao_confundir_com' da regra FCO-07: imperfeição GEOMÉTRICA das contenções, L/500 (global) ou L/1000 (local), com L = comprimento DESTRAVADO e o redutor alpha_red = sqrt(0,5*(1 + 1/m)). É um método estruturalmente diferente — imperfeição imposta, não força prescrita.",
+   "consequencia_obrigatoria": "Se uma regra futura (FCO-08 ou família própria) for congelada para contraventamento, ela DEVE vir de uma extração do item 4.10.3.3 da NBR 8800:2024 feita pelo A1, e NÃO deste exemplo. O papel deste exemplo numa rodada futura será, no máximo, o de aferição de ORDEM DE GRANDEZA (as duas abordagens devem produzir áreas de diagonal comparáveis) — o mesmo estatuto da camada L3, e nunca o de referência numérica.",
+   "risco_que_esta_ressalva_previne": "Sem ela, a existência de um exemplo resolvido, numericamente íntegro e rastreável cria uma tentação concreta de congelar 0,010 e 0,004 direto do livro. Isso seria congelar a edição 2008 — exatamente o que a regra do agente A2 proíbe em letras maiúsculas e o que a decisão de auditoria da COM-02 já teve de barrar uma vez, no caso do fator Q."
+  },
+  "conferencia_aritmetica_feita_mesmo_assim": "O A2 refez os 10 passos: N_d = 558,900 kN; k_nec = 670,680 kN/m; l_diagonal = 1006,231 cm; A_d(rigidez) = 0,42143 cm²; F_br = 5,5890 kN; F = 6,2452 kN; A_d(contenção) = 0,27456 cm² (livro 0,28, arredondado para cima); A_d(vento) = 0,44741 cm² (livro 0,45); A_d(total) = 0,73 cm². TODOS coincidem com o impresso dentro de 2 %, com os dois desvios maiores sendo arredondamentos conservadores do autor. O exemplo é aritmeticamente íntegro — o problema é de COBERTURA e de EDIÇÃO, não de qualidade.",
+  "observacao_sobre_os_coeficientes_de_ponderacao": "O passo 1 usa gamma_g = 1,35 e gamma_q = 1,5. Ambos EXISTEM na Tabela 1 congelada (ACO-02 'peso_proprio_moldadas_in_loco_e_empuxos' e 'diretas_agrupadas' = 1,35; ACO-03 'demais_acoes_variaveis' = 1,5), mas o livro não declara a categoria, e o mesmo livro usa 1,4 no Probl. 7.6.1 e 1,3 no Probl. 7.6.4 para ações igualmente descritas como 'permanentes'. Recai integralmente no achado A2-COMB-01 da 1.ª rodada: os gammas do livro não são rastreáveis a uma linha da Tabela 1 e NÃO servem para validar ACO-02/ACO-03. Nenhum passo deste exemplo altera esse quadro."
+ },
+ "decisao_12_revisao_adversarial_da_recomendacao_do_A1_para_FLE05_e_CIS03": {
+  "o_que_o_A1_recomendou": "Em docs/validacao/gaps-bibliograficos-pendentes.md: 'A7: para FLE-05 e CIS-03, não esperar por um livro-texto novo antes de fechar o GATE 3 nessas duas regras — desenhar os testes de equilíbrio/invariância descritos acima, que independem de bibliografia.' Para CIS-03, o teste proposto é 'verificar que a fórmula produz o MESMO resultado que a verificação padrão de cisalhamento (CIS-01/02) quando se troca h0<->bf e t0<->tf na entrada (a peça deitada é uma peça em pé com os eixos trocados)', com apoio adicional em Timoshenko/Gere.",
+  "veredito_global": "PARCIALMENTE PROCEDENTE. A DIREÇÃO está certa e o A2 a endossa: não faz sentido manter o GATE 3 refém de um livro-texto que ninguém tem. Mas o TESTE ESPECÍFICO proposto para CIS-03 é normativamente ERRADO e não pode ser implementado como está; e a promessa feita para FLE-05 é MAIOR do que qualquer teste de invariância pode cumprir. As duas coisas precisam ser corrigidas antes de o A7 escrever uma linha.",
+  "objecao_1_o_teste_de_invariancia_de_CIS_03_esta_errado": {
+   "gravidade": "ALTA — o teste, como redigido, REPROVARIA uma implementação correta e PREMIARIA a implementação errada que ele deveria caçar.",
+   "texto_congelado_que_o_A1_nao_confrontou": "Regra CIS-03 (NBR 8800:2024, item 5.4.3.5): 'aplica-se o mesmo procedimento de 5.4.3.1.1 com kv = 1,2; h = bf/2 (seções I e H) ou bf (seções U); tw = tf (espessura média das mesas); Aw = 2*bf*tf'.",
+   "tres_razoes_independentes": [
+    "(a) kv NÃO é invariante. CIS-01 congela kv = 5,34 para alma sem enrijecedores; CIS-03 congela kv = 1,2. Como lambda_p = 1,10*sqrt(kv*E/fy) e lambda_r = 1,37*sqrt(kv*E/fy), os limiares escalam com sqrt(kv): a razão sqrt(5,34/1,2) = 2,11. As duas verificações NÃO são a mesma função dos mesmos argumentos, e nenhuma troca de eixos as iguala. Pior: a ÚNICA forma de o teste do A1 passar é a implementação reaproveitar indevidamente kv = 5,34 em CIS-03 — que é precisamente o bug de maior probabilidade nesta regra. O teste tem o sinal invertido.",
+    "(b) Aw NÃO é invariante, e por um fator exato de 2. CIS-02 congela Aw = d*tw: UM retângulo. CIS-03 congela Aw = 2*bf*tf: DOIS retângulos (as duas mesas). Sob a troca h0<->bf e t0<->tf proposta, CIS-01/02 devolveria Aw = bf*tf, metade do valor de CIS-03. A 'invariância' é falsa por construção.",
+    "(c) A relação entre h e a dimensão de Aw NÃO é invariante. Em CIS-03, h = bf/2 (I e H) enquanto Aw usa bf INTEIRO; em CIS-01/02 a assimetria é outra (Aw usa a altura TOTAL d, lambda usa a altura da ALMA h) — a assimetria já resolvida na 1.ª rodada como RM-07/A2-RM-07. Duas assimetrias diferentes não se convertem uma na outra por troca de rótulos de eixo."
+   ],
+   "diagnostico_da_origem_do_erro": "A intuição física do A1 ('a peça deitada é uma peça em pé com os eixos trocados') vale para a MECÂNICA, não para a NORMA. A norma não é invariante por rotação: ela aplica ao cisalhamento das mesas um kv muito menor (1,2 contra 5,34) porque as mesas são placas com uma borda LIVRE, e não uma alma com duas bordas apoiadas. O teste do A1 nega exatamente a informação normativa que CIS-03 carrega."
+  },
+  "contraproposta_do_A2_para_CIS_03": {
+   "principio": "O que precisa ser protegido em CIS-03 não é um valor numérico — é a SUBSTITUIÇÃO correta de quatro grandezas em um núcleo de cálculo já validado. Os testes têm de mirar nisso.",
+   "T1_fidelidade_de_transcricao_bloqueante": "Assertar, LENDO DO RULESET e nunca de constante escrita no teste, que o caminho de CIS-03 usa kv = 1,2 (e não 5,34), h = bf/2 para I e H, h = bf para U, tw = tf, Aw = 2*bf*tf. Quatro asserts booleanos. É o teste de maior retorno: pega o bug real (reaproveitar os parâmetros da alma) com custo próximo de zero.",
+   "T2_nucleo_compartilhado_bloqueante": "A versão CORRETA da ideia do A1. Assertar que CIS-03 produz o MESMO resultado que forca_cortante_resistente avaliada com os argumentos SUBSTITUÍDOS (kv=1,2; h=bf/2; tw=tf; Aw=2*bf*tf) — isto é, que as duas verificações compartilham o núcleo de 5.4.3.1.1 e diferem SOMENTE nos argumentos. O invariante legítimo é 'mesmo núcleo, argumentos diferentes', jamais 'mesmo resultado sob troca de eixos'.",
+   "T3_continuidade_nos_limiares_bloqueante": "Assertar que V_Rd é CONTÍNUA em lambda = lambda_p e em lambda = lambda_r (os três trechos de 5.4.3.1.1 têm de se emendar), com kv = 1,2. Uma descontinuidade é prova de erro algébrico e não depende de bibliografia nenhuma. Vale também, e deveria já valer, para CIS-01.",
+   "T4_limites_fisicos_bloqueante": "V_Rd <= Vpl/gamma_a1 sempre; V_Rd monotonicamente não crescente em lambda; V_Rd > 0 para toda entrada válida.",
+   "T5_plausibilidade_mecanica_informativa": "No trecho de plastificação, V_Rd = 0,60*Aw*fy/gamma_a1 pode ser confrontada com o critério de escoamento por cisalhamento (tau_y = fy/sqrt(3) = 0,577*fy). O coeficiente 0,60 da norma é esse 0,577 arredondado para cima. É verificação de ORDEM DE GRANDEZA e deve constar como INFORMATIVA.",
+   "ressalva_sobre_a_sugestao_de_Timoshenko_Gere": "A sugestão do A1 de confrontar o trecho ELÁSTICO com a solução de placa de Timoshenko/Gere é aceitável apenas como plausibilidade. O trecho elástico da norma traz um coeficiente empírico embutido (via 1,37² na definição de lambda_r) que nenhuma solução fechada de placa reproduz. Usá-lo como assert numérico com tolerância apertada produziria falha espúria. INFORMATIVO, nunca bloqueante."
+  },
+  "objecao_2_a_promessa_feita_para_FLE_05_e_maior_do_que_o_metodo_entrega": {
+   "gravidade": "MÉDIA — não induz teste errado, mas induz registro FALSO de cobertura no GATE 3.",
+   "o_problema": "O conteúdo congelado de FLE-05 é (i) a desigualdade de dispensa fu*Afn >= Yt*fy*Afg e (ii) a definição de dois patamares de Yt (1,0 para fy/fu <= 0,8; 1,10 se fy/fu > 0,8). Não há curva, não há continuidade, não há equilíbrio a conservar. Teste de invariância pode validar a LÓGICA da desigualdade e o COMPORTAMENTO DE RECUSA — nunca pode validar os DOIS NÚMEROS TRANSCRITOS (o patamar 0,8 e o valor 1,10). Esses são transcrição pura e só uma segunda fonte documental os valida.",
+   "consequencia": "Se o A7 fechar FLE-05 alegando 'validada por testes de invariância', o GATE 3 registrará uma cobertura que não existe. O registro honesto é: 'FLE-05 validada quanto à LÓGICA e à RECUSA; os valores 0,8 e 1,10 permanecem sem segunda fonte.'"
+  },
+  "contraproposta_do_A2_para_FLE_05": {
+   "T1_fronteira_inclusiva_bloqueante": "fy/fu EXATAMENTE 0,8 deve dar Yt = 1,0 (a condição congelada é '<=', inclusiva); fy/fu imediatamente acima deve dar 1,10. O erro de fronteira é o modo de falha dominante numa regra de dois patamares e é o único que um teste pode realmente pegar aqui.",
+   "T2_varredura_dos_acos_de_MAT_02_bloqueante": "Para CADA aço de MAT-02, calcular fy/fu a partir do ruleset e assertar o Yt resultante — com o patamar lido do ruleset, nunca escrito no teste. Protege contra alguém trocar 0,8 por 0,85 no ruleset sem que nenhum teste caia.",
+   "T3_monotonicidade_bloqueante": "Este é o teste de invariância que o A1 NÃO propôs e que de fato existe aqui: a dispensa é monótona não decrescente em Afn e em fu, e monótona não crescente em fy. Aumentar a área líquida ou a resistência à ruptura nunca pode fazer uma viga sair de 'dispensada' para 'recusada'. Uma inversão de sinal na desigualdade é apanhada imediatamente.",
+   "T4_disparo_do_BLQ_02_bloqueante_e_o_mais_importante": "Quando a desigualdade NÃO é atendida, verificar_flexao tem de RECUSAR citando BLQ-02, e NÃO devolver um M_Rd reduzido. A equação de M,Rd de 5.4.2.6 foi deliberadamente deixada fora do ruleset (DEC-03, por ambiguidade de gamma_a1/gamma_a2, com 23 % de efeito CONTRA a segurança). Emitir qualquer número aqui é o pior defeito possível desta regra. Este teste vale mais que todos os outros somados.",
+   "T5_ausencia_de_furos": "Sem furos declarados, FLE-05 não pode alterar nem bloquear nada — a viga segue por FLE-02/FLE-04 com a seção bruta. Protege contra a regra 'vazar' para o caso comum."
+  },
+  "resposta_formal_a_pergunta_do_usuario": {
+   "a_recomendacao_do_A1_e_normativamente_solida": "NÃO INTEGRALMENTE. Concordo com a estratégia (fechar por comportamento em vez de esperar bibliografia) e a endosso. Discordo de duas coisas concretas: (1) o teste de invariância por troca de eixos proposto para CIS-03 é normativamente errado, pelas três razões acima, e implementá-lo como redigido seria pior que não testar; (2) a formulação para FLE-05 promete uma cobertura que o método não entrega, e precisa ser reescrita para separar 'lógica validada' de 'constante transcrita sem segunda fonte'.",
+   "o_que_falta_de_checagem_e_que_o_A1_nao_viu": "Um ponto que nenhum dos dois lados da recomendação menciona: CIS-03 é, na Fase 0, CÓDIGO INALCANÇÁVEL. A regra só é acionada por cortante fora do plano da alma, o que exige carregamento fora do plano (Fase 1), e o momento correspondente M,y,Rd está bloqueado por BLQ-03. Nenhuma combinação da Fase 0 chega lá. Isso não é motivo para não testar — é motivo para o GATE 3 registrar a natureza do que foi validado: CIS-03 fica validada como CONTRATO (transcrição fiel e núcleo compartilhado), não como COMPORTAMENTO DE ENGENHARIA exercitado por um caso real. A distinção tem de constar do memorial; sem ela, um leitor futuro suporá que a regra foi exercitada em serviço.",
+   "decisao_operacional": "O A7 está AUTORIZADO a fechar FLE-05 e CIS-03 sem bibliografia nova, desde que use as baterias T1-T5 desta decisão (e NÃO o teste de troca de eixos), e desde que o relatório do GATE 3 registre, com estas palavras: 'FLE-05 e CIS-03 validadas por contrato e comportamento; sem segunda fonte documental. Constantes 0,8 / 1,10 (FLE-05) e kv = 1,2 (CIS-03) permanecem apoiadas em transcrição única, conferida visualmente pelo A1.'"
+  }
+ },
+ "resumo_da_adjudicacao_2a_rodada": {
+  "escopo": "7 exemplos novos (PFEIL-COM06-01 e PFEIL-FCO-01 a 06). As 13 adjudicações da 1.ª rodada permanecem intactas e válidas.",
+  "usar_com_recalculo": {
+   "quantidade": 1,
+   "ids": [
+    "PFEIL-FCO-01"
+   ],
+   "observacao": "Único exemplo da família FCO-* inteiramente DENTRO do envelope da Fase 0."
+  },
+  "usar_com_recalculo_parcial": {
+   "quantidade": 3,
+   "ids": [
+    "PFEIL-COM06-01",
+    "PFEIL-FCO-02",
+    "PFEIL-FCO-05"
+   ],
+   "observacao": "Parte do exemplo valida regras; parte está fora do escopo e vira teste negativo."
+  },
+  "usar_com_recalculo_muito_restrito": {
+   "quantidade": 2,
+   "ids": [
+    "PFEIL-FCO-03",
+    "PFEIL-FCO-04"
+   ],
+   "observacao": "Sobrevivem por um ou dois passos de alto valor cada (B1 em outro plano; C,m com força transversal e fronteira lambda_0 = 1,5), com o resto bloqueado."
+  },
+  "nao_usar": {
+   "quantidade": 1,
+   "ids": [
+    "PFEIL-FCO-06"
+   ],
+   "observacao": "PRIMEIRO descarte integral em duas rodadas. Motivo: ausência de regra correspondente no ruleset, NÃO má qualidade — a aritmética do exemplo fecha nos dez passos. Documentado em decisao_11, nunca descartado em silêncio."
+  },
+  "total_2a_rodada": 7,
+  "total_acumulado": 20,
+  "achado_estrutural_da_rodada": {
+   "titulo": "CINCO DOS SEIS EXEMPLOS DE FLEXO-COMPRESSÃO ESTÃO, TOTAL OU PARCIALMENTE, FORA DO ENVELOPE DA FASE 0",
+   "detalhe": "PFEIL-FCO-02 -> BLQ-01 (FLT fora do patamar de plastificação); PFEIL-FCO-03 -> BLQ-03 (M,y,Sd != 0); PFEIL-FCO-04 -> BLQ-07 (barra composta/seção celular) e BLQ-05 (Z aproximado); PFEIL-FCO-05 -> BLQ-06 (média deslocabilidade) e BLQ-01 (FLM semicompacta); PFEIL-FCO-06 -> sem regra correspondente. Só PFEIL-FCO-01 passa inteiro.",
+   "leitura_do_A2": "Isso NÃO é defeito do acervo nem do software. É a constatação de que um capítulo de livro-texto sobre vigas-colunas naturalmente explora os casos RICOS (sem contenção, biaxial, seção composta, pórtico deslocável) — que são exatamente os que um MVP declaradamente restrito exclui. O envelope da Fase 0 é estreito por decisão consciente e documentada, e a bibliografia acaba de medir essa estreiteza com precisão.",
+   "consequencia_pratica_positiva": "A rodada produz uma bateria de TESTES NEGATIVOS de qualidade rara: cinco casos reais, publicados, com todos os números, que o software DEVE recusar — BLQ-01, BLQ-03, BLQ-06 e BLQ-07, cada um com um exemplo de livro-texto por trás. Até esta rodada os bloqueios eram testados apenas com entradas sintéticas. Uma recusa que não dispara é um resultado errado emitido com aparência de certo, e agora há como provar que elas disparam.",
+   "consequencia_pratica_negativa": "A validação BIBLIOGRÁFICA da família FCO-* fica mais fina do que a extração do A1 sugeria: a equação de interação de FCO-01 tem UMA validação direta da forma algébrica (PFEIL-FCO-05, camada L2) e UMA validação ponta a ponta (PFEIL-FCO-01, recalculada). FCO-06 (B2) tem exatamente UM exemplo. FCO-07 continua SEM NENHUM, por incompatibilidade de método (h/333 x força nocional)."
+  },
+  "cobertura_por_regra_acrescentada_nesta_rodada": {
+   "COM-02": [
+    "PFEIL-COM06-01 (caso Aef=Ag apenas)",
+    "PFEIL-FCO-01",
+    "PFEIL-FCO-02",
+    "PFEIL-FCO-05"
+   ],
+   "COM-03": [
+    "PFEIL-COM06-01",
+    "PFEIL-FCO-01",
+    "PFEIL-FCO-02",
+    "PFEIL-FCO-04 (fronteira lambda_0=1,5)",
+    "PFEIL-FCO-05"
+   ],
+   "COM-04": [
+    "PFEIL-COM06-01",
+    "PFEIL-FCO-01",
+    "PFEIL-FCO-02",
+    "PFEIL-FCO-05"
+   ],
+   "COM-05": [
+    "PFEIL-COM06-01 (validação DIRETA dos coeficientes 1,49 e 0,64 e do kc)"
+   ],
+   "COM-06": [
+    "PFEIL-COM06-01 (somente elemento AA/alma; mesa fora do escopo do código)"
+   ],
+   "COM-07": [
+    "PFEIL-COM06-01",
+    "PFEIL-FCO-01"
+   ],
+   "FLE-02": [
+    "PFEIL-FCO-01"
+   ],
+   "FCO-01": [
+    "PFEIL-FCO-01 (ponta a ponta, recalculado)",
+    "PFEIL-FCO-05 (forma algébrica, L2)"
+   ],
+   "FCO-03": [
+    "PFEIL-FCO-05 (classificação + recusa por BLQ-06)"
+   ],
+   "FCO-05": [
+    "PFEIL-FCO-01 (C,m curvatura simples)",
+    "PFEIL-FCO-03 (B1 em outro plano)",
+    "PFEIL-FCO-04 (C,m com força transversal; N,e no plano do momento)",
+    "PFEIL-FCO-05 (C,m curvatura reversa; piso B1>=1,0)"
+   ],
+   "FCO-06": [
+    "PFEIL-FCO-05 (único exemplo de B2 do acervo)"
+   ],
+   "FCO-07": [
+    "NENHUM — lacuna mantida, por incompatibilidade de método, não por falta de exemplo"
+   ],
+   "FCO-02": [
+    "NENHUM — nenhum exemplo do capítulo 7 verifica cortante"
+   ],
+   "FCO-04": [
+    "NENHUM — nenhum exemplo publica a checagem N,Sd <= 0,50*Ag*fy"
+   ],
+   "bloqueios_com_teste_negativo_bibliografico": [
+    "BLQ-01 (PFEIL-FCO-02, PFEIL-FCO-05)",
+    "BLQ-03 (PFEIL-FCO-03)",
+    "BLQ-06 (PFEIL-FCO-05)",
+    "BLQ-07 (PFEIL-FCO-04)",
+    "escopo AL_grupo_5 (PFEIL-COM06-01)"
+   ]
+  },
+  "valores_impressos_do_livro_PROIBIDOS_como_referencia": [
+   "PFEIL-FCO-01: M_d,res = 591,7 kNm (A2-RM-13) e interação = 0,47 (RM-10)",
+   "PFEIL-FCO-02: chi = 0,685 e N_d,res = 2309 kN (A2-RM-14); interação = 0,62 (RM-10)",
+   "PFEIL-FCO-03: N_d,res = 2309 kN (herdado); interação = 0,81 (RM-10 + BLQ-03)",
+   "PFEIL-FCO-04: N_cr = 1799 kN (A2-RM-16), f_c = 100 MPa e N_d,res = 1465 kN (A2-RM-15), interação = 0,66 (RM-10)",
+   "PFEIL-FCO-05: B2 = 1,23 (A2-RM-17), l_bp = 359 cm (A2-RM-18), M_n = 432,6 kNm e M_d,res = 393,3 kNm como valores de APROVAÇÃO (BLQ-01; admitidos apenas como entrada de camada L2)",
+   "PFEIL-COM06-01: N_d,res = 1284 kN e tudo que derive de Q, Qa ou Qs (mudança de edição)"
+  ]
+ },
+ "pendencias_geradas_pela_2a_rodada": [
+  {
+   "para": "A1",
+   "prioridade": "alta",
+   "item": "Acrescentar em 'revisar_manualmente' de kb/livros/pfeil_exemplos_resolvidos.json uma nota de desambiguação dos identificadores RM-10, RM-11 e RM-12, apontando para 'decisao_10.colisao_de_identificadores_RM' deste arquivo. A colisão é de RASTREABILIDADE e rastreabilidade é o produto deste projeto."
+  },
+  {
+   "para": "A1",
+   "prioridade": "alta",
+   "item": "Registrar em pfeil_exemplos_resolvidos.json os seis achados novos do A2 desta rodada (A2-RM-13 a A2-RM-18), para que o arquivo de extração não continue afirmando implicitamente que 591,7 kNm, 0,685, 1465 kN, 1799 kN, 1,23 e 359 cm são valores íntegros do livro."
+  },
+  {
+   "para": "A1",
+   "prioridade": "média",
+   "item": "Extrair o item 4.10.3.3 da NBR 8800:2024 (imperfeição das contenções laterais: L/500, L/1000, alpha_red) se e quando o contraventamento entrar em escopo. O PFEIL-FCO-06 NÃO serve de base para essa regra — ver decisao_11."
+  },
+  {
+   "para": "A1",
+   "prioridade": "média",
+   "item": "Extrair a linha da Tabela D.1 correspondente à flexão no eixo de MENOR inércia (M,y,Rd), hoje bloqueada por BLQ-03. O acervo já possui um exemplo biaxial completo e resolvido (PFEIL-FCO-03) esperando por essa extração — é o argumento mais concreto de priorização que o projeto tem."
+  },
+  {
+   "para": "A2 (rodada futura)",
+   "prioridade": "média",
+   "item": "Avaliar emenda ADITIVA da regra FCO-07 para aceitar também o método (a), desaprumo h/333, normativamente equivalente ao método (b) já congelado. Isso abriria o PFEIL-FCO-05 para validar FCO-07, hoje sem nenhum exemplo. ATENÇÃO: pela regra 5 do CLAUDE.md, alterar o ruleset.yaml INVALIDA as aprovações vigentes de A6 e A7 e exige nova rodada completa. NÃO fazer sem demanda explícita do usuário e sem aceitar esse custo."
+  },
+  {
+   "para": "A7",
+   "prioridade": "alta",
+   "item": "Usar as baterias T1-T5 de decisao_12 para FLE-05 e CIS-03. NÃO implementar o teste de invariância por troca de eixos proposto pelo A1 para CIS-03 — ele reprovaria um código correto e premiaria o bug que deveria caçar. Registrar no GATE 3 a fórmula exata de cobertura acordada em decisao_12.resposta_formal_a_pergunta_do_usuario."
+  },
+  {
+   "para": "A7",
+   "prioridade": "alta",
+   "item": "Registrar no relatório do GATE 3 a lista de 'valores_impressos_do_livro_PROIBIDOS_como_referencia' deste resumo. Seis dos sete exemplos novos têm ao menos um número impresso que não pode virar assert."
+  }
+ ],
+ "assinatura_2a_rodada": {
+  "agente": "A2 — Verificador Normativo",
+  "data": "2026-09-21",
+  "insumo": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 7.ª rodada, commit 617796b) — 7 exemplos novos",
+  "declaracao": "Os 7 exemplos novos foram adjudicados. Nenhuma afirmação do A1 foi aceita por cortesia: o sanity check do fator 8/9 (RM-10) foi refeito nos quatro exemplos afetados e CONFIRMA a alegação do A1; a afirmação de que só o Probl. 7.6.5 aplica a Eq. (7.17a) corretamente foi CONFIRMADA por teste discriminante (sem o fator 8/9 o resultado imprimiria 0,78 e não 0,74); RM-11 e RM-12 foram CONFIRMADOS como erros tipográficos do livro; e a afirmação de que o Probl. 7.6.6 não mapeia para nenhuma regra foi CONFIRMADA por varredura das 46 regras congeladas. Em compensação, a auditoria aritmética completa dos 7 exemplos produziu SEIS achados novos que o A1 não registrou (A2-RM-13 a A2-RM-18), quatro deles com desvio SUPERIOR à tolerância do projeto, e DOIS achados de escopo (A2-ESC-01 e A2-ESC-02) que mudam materialmente o que pode ser validado: cinco dos seis exemplos de flexo-compressão estão, total ou parcialmente, fora do envelope da Fase 0. Foi ainda detectada uma colisão de identificadores RM entre os dois arquivos de kb/livros/ (A2-META-01) e fixada a convenção de espaço de nomes. A recomendação do A1 para FLE-05 e CIS-03 foi revista adversarialmente e ACEITA APENAS EM PARTE: o teste de invariância proposto para CIS-03 é normativamente errado e foi substituído por uma bateria própria.",
+  "ruleset": "NÃO ALTERADO. Permanece congelado em v1.1.0-congelado. Nenhuma inconsistência normativa REAL foi encontrada nesta rodada — as divergências apuradas são erros do LIVRO ou fronteiras de ESCOPO já declaradas, e nenhuma delas exige correção do contrato. A única emenda concebível (estender FCO-07 ao método h/333) ficou registrada como pendência, não executada, porque invalidaria as aprovações vigentes de A6 e A7 (regra 5 do CLAUDE.md) sem demanda do usuário.",
+  "gate_3": "Continua ABERTO. Esta rodada entrega ao A7 a matéria-prima para fechar a família FCO-*, COM-05 e COM-06, com as ressalvas e os valores de referência acima. FCO-02, FCO-04 e FCO-07 permanecem sem validação bibliográfica."
+ },
+ "decisao_13_nomenclatura_das_camadas_na_3a_rodada": {
+  "problema": "O pedido e o ACH-17 chamam de 'L3' a corroboração onde as duas edições coincidem, e de 'L2' a autoverificação do trecho inelástico com Cb > 1. No método congelado deste arquivo, porém, L2 é 'reprodução controlada com os intermediários impressos' e L3 é 'convergência inter-edição, informativa e nunca assert'. Para não misturar os sentidos, a 3.ª rodada usa quatro rótulos, definidos aqui.",
+  "L1": "Recálculo integral pela NBR 8800:2024 (FLE-07/FLE-08) a partir dos dados do enunciado. BLOQUEANTE. O esperado é recalculado dentro do teste (R1), e os pinos do A2 só conferem esse recálculo.",
+  "L3": "Corroboração pelo número IMPRESSO no livro, SÓ quando a fórmula é LITERALMENTE a mesma nas duas edições (Mcr, Cb, beta1, Mr, Mp). Vira assert só se a tolerância sair do arredondamento impresso (round) ou de desvio documentado e medido <= 0,1 %. É o precedente do FLE06-T10. É PROIBIDO usá-la para salvar número excluído (regra de ouro). O Mcr com E = 20.500 é, no sentido do método congelado, uma reprodução controlada (L2): os intermediários do livro entram no código. Fica com o rótulo L3 por coerência com o ACH-17.",
+  "AV": "Autoverificação 2024: propriedades que a própria norma impõe (continuidade e salto em lambda_r(Cb), reta sem Cb, monotonia em Cb, proporcionalidade do elástico em Cb). É a 'camada L2' do pedido, rotulada AV para não colidir com a L2 do método congelado. Rótulo no teste: 'autoverificação — mesma transcrição da 2024; não é validação bibliográfica' (precedente do FLE06-T8).",
+  "INFORMATIVO": "Número impresso com erro do livro ou de outra edição: vai ao relatório com o desvio medido e NUNCA vira assert. São eles: 617, 224, 483 188, 14 598, 82,5, 337,5 e 220,5."
+ },
+ "decisao_14_ACH16_A6_50_correcao_da_atribuicao": {
+  "pedido": "Corrigir a justificativa do ACH-16 (A6-50) de modo a não atribuir a divergência a sigma_r = 115 MPa, e registrar a causa como não determinada.",
+  "verificacao_do_A2": [
+   "O A2 recalculou as quatro variantes do l_br do 7.6.2 com referência própria (CVS 450 x 116, Cw pela fórmula = 3 393 704 cm6): E 200 000 e sigma_r 0,30fy -> 1089,45 cm; E 205 000 -> 1108,86; sigma_r 115 MPa -> 1318,84; os dois juntos -> 1343,91 cm (+0,14 % do impresso). O A6 está certo: a frase 'nenhuma variação plausível reproduz 1342' era falsa.",
+   "O A1 também está certo: a página PDF 242, relida pelo A2, imprime só 'Com a Eq. (6.19), obtém-se lbr = 1342 cm', sem beta1, sem sigma_r e sem E, e o Mr do mesmo problema usa '(25 − 7,5)', isto é, 0,30fy. O sigma_r = 115 MPa só aparece impresso na legenda da Fig. 6.15 (pág. 170), também relida pelo A2, e nos Probl. 6.5.7/6.5.8 o livro usa 0,30fy nos dois passos (páginas PDF 213 e 215, relidas).",
+   "Portanto a frase do A6, 'o livro usa sigma_r = 115 MPa no beta1 do l_br', afirma como fato o que é inferência. A reprodução a 0,14 % é hipótese compatível, e cada um dos dois valores aparece impresso em outro lugar do livro (E 20.500 no Mcr do 6.5.7, sigma_r 115 na Fig. 6.15). Mas o livro erra o l_br mesmo onde imprime todos os insumos: no 6.5.7, a expressão impressa dá 623,28 cm contra 617 (RM-13), e nenhuma variante plausível fecha. Uma coincidência de 0,14 % não prova a causa.",
+   "Ressalva sobre o pedido do orquestrador: o RM-13 é do Probl. 6.5.7, e não do 7.6.2. No 7.6.2 nem existe 'recálculo literal', porque o livro não imprime os insumos do l_br. O RM-13 entra aqui como evidência de que o livro erra o l_br por outras vias, e não como recálculo do 7.6.2.",
+   "O M_d,res = 540,6 do 7.6.2 é reproduzido (540,642) com l_br = 1342 e l_bp = 348 impressos. Isso só confere a aritmética do passo seguinte, e não a origem do 1342."
+  ],
+  "decisao": "A causa do l_br = 1342 cm fica NÃO DETERMINADA. A divergência NÃO é atribuída a sigma_r = 115 MPa nem ao Probl. 6.5.8. A decisão do ACH-16 (PROIBIDO como referência; na FLT pura, usar 1089,45 cm e 521,18 kN.m) não muda.",
+  "onde_foi_corrigido": "ruleset.yaml, ACH-16: 'descricao' e 'resolucao' reescritas, com a redação original preservada em 'descricao_original_v1_3_0' e 'resolucao_original_v1_3_0'. Foi errata descritiva DENTRO da v1.3.0-congelado, sem nova versão (ver 'por_que_nao_ha_nova_versao' no changelog). Registro também em docs/decisoes.md.",
+  "pendencia_para_A5_A7": "O docstring de test_pfeil_7_6_2_l_br_do_livro_nao_e_reproduzido_ach16 repete a frase falsa e deve ser corrigido pelo dono. Opcional: acrescentar a asserção de que o software, com E e sigma_r de MAT-01/D.2.8-e), não cai em 1343,9 cm."
+ },
+ "decisao_15_RM13_a_RM21_da_11a_rodada_do_A1": {
+  "principio": "Cada RM foi verificado pelo A2 com conta própria ou releitura da página (PDF 191, 213, 214, 215 e 242, a 110 dpi). Os 15 hashes de trecho e os de página da 11.ª rodada conferem (pdftotext 24.02.0), e o SHA-256 do PDF confere.",
+  "RM-13": "CONFIRMADO. A expressão impressa, com beta1 = 0,0521 e Cw = 483 188, dá 623,28 cm. Com beta1 exato e o Cw da fórmula, dá 622,94 cm, que é o lambda_r(Cb = 1)*ry de 2024. O livro imprime 617 (-0,95 %). Nenhuma variante plausível (Iy 1267/1267,46; J 14,6/14,607/15; Cw 483 188/483 013; W 870/869,65/970,6; E 20 000/20 500; sigma_r 7,5/11,5 kN/cm2; 1,38/1,378) chega a 617: a mais próxima dá 622,14. É erro do livro, de causa não determinada, e NÃO é 'arredondamento' (errata do ACH-17 (3)). Decisão: o 617 fica EXCLUÍDO de assert e só vai ao relatório. A referência L1 é 622,944 cm.",
+  "RM-14": "CONFIRMADO. Iy(h − tf)²/4 = 1267 x 39,05²/4 = 483 012,9 cm6, e o livro imprime 483 188 (+0,036 %). Efeito no Mcr-base: -0,0103 %. A FLE-07 usa a fórmula (decisão 3), e o 483 188 fica EXCLUÍDO.",
+  "RM-15": "CONFIRMADO, e decidido. E = 20.500 kN/cm2 no Mcr do 6.5.7 é INCONSISTÊNCIA DO LIVRO, e não convenção. No mesmo problema o livro usa 20.000 no beta1 e 2,0 x 10^8 kN/m2 no ELS, e 200.000 MPa no l_bp do 6.5.8; o valor-padrão declarado do livro é E = 20.000 kN/cm2. Ele NÃO invalida a corroboração: com 0,039 fixo, o Mcr de D.2.8-a) é exatamente linear em E (Mcr(205 000)/Mcr(200 000) = 1,025000000000), de modo que a estrutura da fórmula é corroborada, e o E só a escala. Uso: E = 205 000 SÓ na chamada de corroboração do Mcr (PFLT-T4), nunca no caminho de projeto e nunca em L1. A hipótese de ser resíduo de edição anterior da norma NÃO é verificável no acervo (só a NBR 8800:2024 está em kb/fontes_originais/normas/), e o A2 não a usa.",
+  "RM-16": "CONFIRMADO. 1,76 x 4,52 x sqrt(800) = 225,007 cm, e o livro imprime 224 (-0,45 %). O atalho '50 iy' do livro daria 226. O 224 fica EXCLUÍDO de assert. Não muda a classificação.",
+  "RM-17": "CONFIRMADO, tipográfico ('ℓb/3' impresso). O trecho 1-B tem diagrama linear de 0 a Mmáx, e os quartos 0,25/0,5/0,75 dão Cb = 12,5/7,5 = 5/3 exato, para qualquer Mmáx. O Cb = 1,67 não é afetado.",
+  "RM-18": "Registro, sem efeito. A classificação local do VS 400 x 49 também não entra: a FLM de soldados (kc) está fora da FLE-07.",
+  "RM-19": "Decidido. O conjunto de propriedades da comparação é o do PROBLEMA (conjunto P: Wx 870, Zx 970,6, Iy 1267, J 14,6, ry 4,52, d 400, tf 9,5). Sensibilidade medida pelo A2: com as propriedades das placas (Iy 1267,46, J 14,607, Zx 970,58, Wx 869,65, ry 4,5213), +0,0017 % no M,Rd dos dois problemas; com J 15 e Z 971 da Tabela A8.3, +0,30 % (6.5.7) e +0,10 % (6.5.8). Por isso o teste TEM de usar o conjunto P exato.",
+  "RM-20": "Ver a errata em PFEIL-FCO-02 ('errata_RM_20_3a_rodada'). É só texto, sem efeito numérico, e sem pedido de reabertura ao A1.",
+  "RM-21": "CONFIRMADO pela releitura das páginas PDF 191, 213, 215 e 242. Consequência: decisao_14 e errata do ACH-16.",
+  "achado_novo_do_A2_A2_RM_19": "Diagrama de momentos do 6.5.7. Pela equação dos três momentos (4 vãos iguais, P no meio de cada vão), M_apoio2 = -9/56 Pl = -0,160714 (impresso 0,161) e Mmáx = 19/112 Pl = 0,169643 (impresso 0,170). Os quartos exatos do trecho 1-2 são 0,084821, 0,169643 e 0,004464 (impressos 0,085, 0,17 e 0,004), o que dá Cb = 1,547231 contra 1,548834 dos quartos impressos (-0,10 %) e M,Rd = 140,47 contra 140,55 kN.m (-0,05 %). Não é erro do livro, é arredondamento dos coeficientes a 3 casas. Decisão: a referência usa os QUARTOS IMPRESSOS (o dado que o livro de fato passa à fórmula), e o diagrama exato fica só no relatório. O identificador segue a convenção A2-RM-xx da decisão 10 (A2-META-01). O último A2-RM era o 18, e este é o A2-RM-19."
+ },
+ "especificacao_de_testes_PFLT_para_o_A7": {
+  "arquivo_sugerido": "tests/exemplos_resolvidos/test_a7_validacao_bibliografica_pfeil_flt.py (dono: A7)",
+  "prototipo_executavel_do_A2": "docs/validacao/a2-adjudicacao-pfeil-flt-6-5-7-6-5-8.py — a função bateria() é o protótipo de PFLT-T1 a T9 e o bloco T10 o do PFLT-T10. Rodado em 2026-09-24 (HEAD 71fc5e3): referência pristina 0 falhas; calc_core REAL 0 falhas; mutantes em processo 23 de 25 mortos (2 equivalentes declarados); mutantes textuais no calc_core real 20 de 20 mortos.",
+  "regras_comuns": [
+   "R1: o esperado é RECALCULADO dentro do teste com constantes digitadas (1,76; 1,38; 27; 0,039; 0,30; 12,5/2,5/3/4/3), cada uma amarrada por exigir_no_texto_da_regra('FLE-07'/'FLE-08', ...) como em test_flexao_eixo_maior_fle07.py. Os pinos abaixo só CONFEREM o recálculo. Snapshot da saída do código é proibido.",
+   "R2: nunca avaliar exatamente em lambda_p ou lambda_r; usar Lb = lambda_b*ry*(1 ± 1e-9).",
+   "Dados: conjunto P (RM-19), fy e E pela API aco('NBR_7007_MR_250'), gamma_a1 pela API. O E = 205 000 aparece SÓ no PFLT-T4.",
+   "Cada teste leva no nome ou no docstring o rótulo da camada (L1, L3, AV ou NEGATIVO) e o id do exemplo.",
+   "Proibido: qualquer assert que aceite 220,5, 337,5, 14 598, 145,98, 82,5, 617 ou 224 como valor de aprovação. Proibido alargar tolerância para acomodar número do livro (regra de ouro)."
+  ],
+  "PFLT-T1": {
+   "camada": "L1 + L3",
+   "o_que": "Cb de FLE-08 pelos quartos impressos",
+   "asserts": [
+    "fator_cb_5_4_2_3_a(0.17, 0.085, 0.17, 0.004) == 2.125/1.372 (rel 1e-12); round(.., 2) == 1.55 (L3)",
+    "fator_cb_5_4_2_3_a(0.17, 0.0425, 0.085, 0.1275) == 5/3 (rel 1e-12); round(.., 2) == 1.67 (L3)",
+    "fator_cb_5_4_2_3_a(1.0, 0.0, 0.0, 0.0) == 5.0 e fator_cb_5_4_2_3_a(1.0, 0.1, 0.1, 0.1) == 12.5/3.5 (rel 1e-12): a 2024 NÃO tem o 'Cb <= 3,0' da Eq. (6.17a) do livro (DEC-14). ACHADO: o mutante 'min(3,0, Cb)' dentro de fator_cb SOBREVIVE hoje à suíte inteira (768 passed); este assert o mata"
+   ],
+   "mata": "Cb com coeficientes trocados, sem 2,5·Mmax e com teto 3,0"
+  },
+  "PFLT-T2": {
+   "camada": "L1",
+   "o_que": "6.5.8 — Lb = 4000 mm",
+   "asserts": [
+    "Cb = 5/3: trecho == 'inelastico'; m_rd_flt == recálculo (rel 1e-9); lambda_r_flt == recálculo (rel 1e-9); lambda_flt == 4000/45,2 e lambda_p_flt == 1,76*sqrt(800) (rel 1e-12)",
+    "pinos: m_rd_flt = 197,758296 kN.m (rel 1e-5); lambda_r_flt = 189,128812 (abs 1e-3)",
+    "Cb = 1,67 (impresso): 197,798521 kN.m e 189,374741, com o mesmo trecho"
+   ],
+   "mata": "Cb·reta (1), Cb·reta com min(Mpl) (2), lambda_r sem Cb (3), Cb só em 1,38·Cb ou só em Cb² (E, E2), sigma_r = 0 (7), beta1 com Zx (6), 1,38 -> 1,378 (10), Cw com d em vez de d - tf, lambda_p com Cb, sem gamma_a1, Cb no Mr, rx no lugar de ry (8)"
+  },
+  "PFLT-T3": {
+   "camada": "L1",
+   "o_que": "6.5.7 — Lb = 8000 mm",
+   "asserts": [
+    "Cb = 2,125/1,372: trecho == 'inelastico' (NÃO 'elastico', que é a classificação do livro); m_rd_flt == recálculo (rel 1e-9); pino 140,546532 kN.m (rel 1e-5); lambda_r_flt pino 180,388088 (abs 1e-3)",
+    "Cb = 1,55 (impresso): 140,599809 kN.m; lambda_r 180,475076; inelástico"
+   ],
+   "mata": "lambda_r sem Cb, que aqui MUDA O TRECHO para elástico e devolve 142,2990 (+1,25 %). Por isso a tolerância do M,Rd não pode passar de ~0,5 %; a especificada é 1e-5"
+  },
+  "PFLT-T4": {
+   "camada": "L3 (fórmula de Mcr idêntica nas duas edições; E do livro SÓ aqui)",
+   "asserts": [
+    "E = 205 000, Lb = 8000, Cb = 1: mcr_flt/1e4 == 10 360 kN.cm (rel 1e-3; medido -0,0106 %)",
+    "E = 205 000, Lb = 8000, Cb = 1,55: mcr_flt/1e4 == 16 058 kN.cm (rel 1e-3; medido -0,0106 %)",
+    "mcr_flt(E 205 000)/mcr_flt(E 200 000) == 1,025 (rel 1e-12): linearidade em E com 0,039 fixo, que é a razão de o E = 20.500 do livro não invalidar a corroboração"
+   ],
+   "mata": "Mcr sem Cb (F), Mcr com Cb² (G), 0,039 -> 0,39 (11), Mcr com lambda no lugar de Lb (12), E = 205 000 embutido no código. Nos casos inelásticos de T2/T3 o Mcr não aparece no M,Rd, e por isso F e G só morrem aqui e no T9"
+  },
+  "PFLT-T5": {
+   "camada": "L3 (identidades exatas)",
+   "asserts": [
+    "mr_flt == 15 225 kN.cm (rel 1e-12) — Eq. (6.21) = Tabela D.1 + D.2.8-e)",
+    "mpl == 24 265 kN.cm (rel 1e-12)",
+    "round(beta1_flt*10, 4) == 0.0521 (1/mm -> 1/cm)",
+    "cw_empenamento == 1267e4*(400 - 9,5)²/4 (rel 1e-12) — NÃO 483 188 (RM-14)"
+   ]
+  },
+  "PFLT-T6": {
+   "camada": "L1",
+   "asserts": [
+    "Lb = 8000, Cb = 1: lambda_r_flt*ry = 622,944 cm (abs 0,01 cm), recalculado no teste",
+    "O 617 impresso vai só ao RELATÓRIO, com o desvio (-0,954 %) e a remissão ao RM-13. Nenhum assert usa 617"
+   ]
+  },
+  "PFLT-T7": {
+   "camada": "NEGATIVO (6.5.8)",
+   "asserts": [
+    "m_rd_flt/1e6 < 0,95 x 220,5",
+    "|m_rd_flt/1e6 - 220,5909| > 20 e |m_rd_flt/1e6 - 329,5972| > 100 (forma 2008 com corte; Cb·reta sem corte)",
+    "|m_rd_flt/1e6 / 184,4514 - 1| > 0,05 (lambda_r sem Cb)",
+    "m_rd_flt <= mpl/gamma_a1 x (1 + 1e-12)"
+   ]
+  },
+  "PFLT-T8": {
+   "camada": "NEGATIVO (6.5.7)",
+   "asserts": [
+    "trecho != 'elastico'",
+    "|m_rd_flt/1e6 - 145,98| > 4 (14 598 kN.cm do livro)",
+    "|m_rd_flt/(mcr_flt/gamma_a1) - 1| > 0,01 (o resultado NÃO é Cb·Mcr/gamma_a1, que é a forma 2008)",
+    "|m_rd_flt/1e6 - 217,6832| > 50 (Cb·reta)"
+   ]
+  },
+  "PFLT-T9": {
+   "camada": "AV — autoverificação 2024 do inelástico com Cb > 1, no VS 400 x 49",
+   "rotulo": "autoverificação — mesma transcrição da 2024; não é validação bibliográfica",
+   "asserts": [
+    "Para Cb em {1; 2,125/1,372; 5/3}, com lambda_r recalculado no teste: em Lb = lambda_r*ry*(1 - 1e-9), trecho inelástico e m_rd_flt*gamma_a1 == Mr (rel 1e-7); em Lb = lambda_r*ry*(1 + 1e-9), trecho elástico e m_rd_flt*gamma_a1/Mr == salto recalculado (rel 1e-7), com salto em (0,997; 1,0). Medidos: 0,9977943 (Cb 1), 0,9979610 (1,5488) e 0,9979921 (5/3), PARA BAIXO",
+    "Em Lb = lambda_p*ry*(1 + 1e-9): trecho inelástico e m_rd_flt*gamma_a1 == Mpl (rel 1e-8). A reta parte de Mpl e não de Cb·Mpl",
+    "Retidão: para Lb em {3000, 4000, 5000, 6000} no trecho inelástico, (Mpl - M·gamma_a1)/(lambda - lambda_p) == (Mpl - Mr)/(lambda_r - lambda_p) (rel 1e-9)",
+    "Prova P3 dentro do teste: com os coeficientes exatos pi²*sqrt(0,039/2) e 4/(pi⁴*0,039²), Mcr(lambda_r*ry) == Mr (rel 1e-12) para Cb 1,5488 e 5/3. Mostra, para Cb > 1 e nesta seção, que lambda_r(Cb) é a raiz de Cb·Mcr = Mr (DEC-14)",
+    "Monotonia em Cb: em Lb 4000 e 8000, M,Rd não decresce para Cb em {1; 1,2; 1,4; 1,5488; 5/3; 2; 2,5; 3; 3,5}, e todos ficam <= Mpl/gamma_a1",
+    "Elástico proporcional a Cb: em Lb = 20 000, os dois casos elásticos têm M(Cb 3,5)/M(Cb 3,0) == 3,5/3,0 (rel 1e-12). Mata um 'Cb <= 3,0' dentro da FLT"
+   ]
+  },
+  "PFLT-T10": {
+   "camada": "caminho de projeto",
+   "asserts": [
+    "verificar_flexao com o VS 400 x 49 como PropriedadesDaSecao (familia 'VS', processo 'soldado', conjunto P; Ag 62,0 cm2, Ix 17 393 cm4, Wy 127 cm3, rx 16,75 cm, bf 200, tw 6,3, h_alma 381 mm), com declarações válidas (semialtura, vão, sem contenção contínua, Cb declarado 1,5488 / 1,6667) e Lb 8000 e 4000: bloqueios == ('BLQ-01',), 'condição (a)' nos motivos, resistente None e taxa None. O software NUNCA devolve 140,55, 197,76 nem 220,5 para o VS pelo caminho de projeto"
+   ]
+  },
+  "equivalentes_declarados": {
+   "fronteira_estrita_em_lambda_r": "'<' no lugar de '<=' em lambda_r (o H do A6): só difere em lambda = lambda_r exato, que a R2 proíbe construir, e o efeito é de -0,2 % a favor da segurança num único ponto.",
+   "min_Mpl_inocuo": "min(M, Mpl) aplicado depois dos três trechos SEM Cb na reta: nunca ativa (teto implícito, DEC-14 P5). É forma proibida no código (FLE-07.implementacao.proibicoes), mas isso é matéria do teste AST do A5, e não destes testes numéricos."
+  },
+  "matriz_de_mutantes_no_calc_core_real": "20 mutantes textuais, todos mortos pela bateria: 01, 02, 03, 03b (livro 2008 completo), E, E2, F, G, 06, 07, 10, 11, 12, P1 (E 205 000 no Mcr), P2 (Cw com d), P3 (lambda_p com Cb), P4 (Cb <= 3 na FLT), P5 (sem gamma_a1), P6 (coeficientes de Cb trocados) e P7 (Cb <= 3 no fator). Contra a suíte ATUAL inteira, P7 sobrevive (768 passed). P1, P2, P3, P4 e F morrem por 1 teste só."
+ },
+ "resumo_da_adjudicacao_3a_rodada": {
+  "escopo": "PFEIL-FLT-01 e PFEIL-FLT-02 (VS 400 x 49, FLT do eixo maior).",
+  "usar_com_recalculo_parcial": [
+   "PFEIL-FLT-01",
+   "PFEIL-FLT-02"
+  ],
+  "total_3a_rodada": 2,
+  "total_acumulado": 22,
+  "achado_estrutural_da_rodada": "O 6.5.7 muda de TRECHO entre as edições: é elástico em 2008 (l_br sem Cb) e inelástico em 2024 (lambda_r com Cb). É o único exemplo do acervo em que a mudança de edição aparece na classificação, e não só no valor. Com isso, 'lambda_r sem Cb' é detectado pelo trecho, sem depender de tolerância.",
+  "valores_impressos_do_livro_PROIBIDOS_como_referencia": [
+   "PFEIL-FLT-01: M_d,res = 14 598 kN.cm, P = 82,5 kN, 'viga longa', l_br = 617 cm (RM-13), Cw = 483 188 cm6 (RM-14)",
+   "PFEIL-FLT-02: M_d,res = 220,5 kN.m, Mn = 337,5 kN.m, 'plastificação total', l_bp = 224 cm (RM-16), l_br = 617 cm"
+  ],
+  "cobertura_por_regra": "FLE-07 (FLT pura, inelástico com Cb > 1, dos dois lados do trecho) e FLE-08 (fórmula de Cb): corroboração BIBLIOGRÁFICA L3 de Mcr, Cb, beta1, Mr e Mp, com perfil SOLDADO e edição 2008, onde a fórmula é idêntica. O trecho inelástico com Cb > 1 continua SEM referência bibliográfica 2024: é validado por L1 (transcrição única) mais AV. A lacuna de FLT de W/HP LAMINADO (gaps, seção 6) continua aberta."
+ },
+ "pendencias_geradas_pela_3a_rodada": [
+  {
+   "para": "A7",
+   "item": "Implementar PFLT-T1 a PFLT-T10 (especificacao_de_testes_PFLT_para_o_A7) e rodar os 20 mutantes textuais do script do A2 de forma independente."
+  },
+  {
+   "para": "A5/A7",
+   "item": "Corrigir o docstring de test_pfeil_7_6_2_l_br_do_livro_nao_e_reproduzido_ach16 ('nenhuma variação plausível ...' é falso; causa não determinada, ver ACH-16 corrigido). Corrigir o '348,5' do docstring de test_a7_validacao_bibliografica_pfeil_fco.py:747 (RM-20). As duas correções são cosméticas."
+  },
+  {
+   "para": "A1 (BAIXA, opcional)",
+   "item": "Corrigir os passos 4 e 7 de PFEIL-FCO-02 para 348 e 13,4 impressos (RM-20). É edição textual, não reabertura de extração."
+  },
+  {
+   "para": "A7/A5",
+   "item": "O mutante 'Cb <= 3,0' em fator_cb_5_4_2_3_a sobrevive hoje à suíte inteira. O PFLT-T1 o mata, e não é preciso mexer no calc_core."
+  }
+ ],
+ "assinatura_3a_rodada": {
+  "agente": "A2 — Verificador Normativo",
+  "data": "2026-09-24",
+  "insumo": "kb/livros/pfeil_exemplos_resolvidos.json (A1, 11.ª rodada, commit 71fc5e3) — PFEIL-FLT-01/02 e RM-13 a RM-21",
+  "declaracao": "Parti do pressuposto de que o A1 e o A6 erraram. Recalculei os 15 hashes da 11.ª rodada, que conferem, e reli as páginas PDF 191, 213, 214, 215 e 242. A transcrição do A1 confere. Os dois exemplos foram recalculados pela NBR 8800:2024 com referência própria, sem usar números do A1, do A5 nem dos scripts anteriores. Achados: (1) o 6.5.7 é INELÁSTICO em 2024, e não elástico; (2) o 220,5 do 6.5.8 é exatamente Mpl/gamma_a1, o corte da Eq. (6.20), e fica proibido; (3) o l_br = 617 não fecha com a própria expressão impressa e NÃO é arredondamento, o que corrige o ACH-17 (3); (4) os números do ACH-17 tinham sido calculados com o Cw do livro, com diferença <= 0,03 %, e foram corrigidos por errata; (5) o A6 acertou no número do ACH-16 (1343,9 com E 205 000 e sigma_r 115 juntos), mas afirmou como fato uma inferência. A causa fica não determinada; (6) o RM-20 é só texto; (7) o mutante 'Cb <= 3,0' em fator_cb sobrevive hoje à suíte inteira.",
+  "ruleset": "v1.3.0-congelado MANTIDA. Errata descritiva em ACH-16 e ACH-17 e situação de uma pendência, sem nova versão: nenhuma regra, fórmula, valor ou bloqueio mudou. pytest tests -q: 768 passed, 1 skipped.",
+  "gate_3": "Com esta adjudicação, o A7 tem a especificação completa da corroboração bibliográfica da FLE-07/FLE-08 (PFLT-T1 a T10). O GATE 3 da FLE-07 continua ABERTO até o A7 implementar e rodar os testes."
+ }
+}

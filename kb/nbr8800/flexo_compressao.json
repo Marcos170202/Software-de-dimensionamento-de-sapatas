@@ -1,0 +1,342 @@
+{
+  "arquivo": "kb/nbr8800/flexo_compressao.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Barras prismáticas submetidas à combinação de esforços solicitantes (flexo-compressão e flexo-tração) — item 5.5, com os itens de análise (4.10.4, 4.10.7) e o Anexo C que fornecem M,Sd e N,Sd",
+  "item_normativo_raiz": "5.5",
+  "extraido_por": "Agente A1 - Bibliotecário (2ª rodada; ampliado na 5ª rodada)",
+  "data_extracao": "2026-09-14",
+  "atualizacoes": [
+    {
+      "rodada": 5,
+      "data": "2026-09-14",
+      "motivo": "Lacuna apontada pelo Agente A4: faltava a fórmula normativa da imperfeição geométrica GLOBAL usada na estabilidade de pórticos (2ª ordem aproximada, pequena e média deslocabilidade).",
+      "entradas_adicionadas": ["imperfeicao_geometrica_global_4_10_7_1_1", "distincao_4_10_3_3_vs_4_10_7_1_1"],
+      "paginas_conferidas_visualmente": "impressa 30 (PDF 47) — item 4.10.7.1.1; impressa 27 (PDF 44) — item 4.10.3.3; impressa 29 (PDF 46) — item 4.10.4.5"
+    }
+  ],
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "Páginas CONFERIDAS VISUALMENTE (pdftoppm) nesta extração: impressas 60, 61, 62 e 63 (PDF 77, 78, 79 e 80) — item 5.5 completo; impressas 28, 29 e 31 (PDF 45, 46 e 48) — itens 4.10.4 e 4.10.7/4.10.8; impressas 134, 135 e 136 (PDF 151, 152 e 153) — Anexo C completo.",
+    "ATENÇÃO — DIFERENÇA EM RELAÇÃO À EDIÇÃO 2008: a NBR 8800:2024 escreve as equações de interação de 5.5.1.2 em termos de N,Sd/N,Rd GENÉRICOS ('força axial solicitante/resistente de cálculo de TRAÇÃO OU DE COMPRESSÃO, a que for aplicável'), e não em termos de Nc,Sd/Nc,Rd. A mesma equação cobre flexo-compressão e flexo-tração. A forma algébrica (limiar 0,2, fator 8/9, denominador 2·N,Rd) foi transcrita da edição 2024 e conferida visualmente na página impressa 61.",
+    "As equações de 5.5.1.2 NÃO contêm fatores de amplificação. Os momentos M,x,Sd e M,y,Sd e a força N,Sd que nelas entram já devem incluir os efeitos de segunda ordem, obtidos conforme 4.10.7 (análise) — sendo o método da amplificação do Anexo C (B1 e B2) uma aproximação aceitável. Por isso o Anexo C está transcrito neste mesmo arquivo.",
+    "O Anexo C é INFORMATIVO (as demais entradas deste arquivo são de itens normativos). Isso está marcado em cada entrada.",
+    "Nada foi calculado; todas as fórmulas são transcrição literal da edição 2024."
+  ],
+  "entradas": [
+    {
+      "id": "flexocompressao_aplicabilidade",
+      "descricao": "Campo de aplicação da Subseção 5.5",
+      "texto_normativo": "Esta Subseção 5.5 é aplicável à verificação dos estados-limite últimos de barras prismáticas nas condições previstas em 5.4.1.1, sujeitas aos efeitos de momento fletor e força cortante, força axial e momento de torção. Nas seções I e H com apenas um eixo de simetria, situado no plano médio da alma, deve-se ter a razão entre o momento de inércia da seção T formada pela mesa comprimida e a parte comprimida da alma anexa em regime elástico, em relação ao eixo que passa pelo plano médio da alma e o momento de inércia da seção transversal completa em relação ao eixo que passa pelo plano médio da alma, situada entre 0,1 e 0,9 (fator a_y conforme o Anexo D). Adicionalmente, devem ser verificados todos os estados-limite de serviço aplicáveis, conforme esta Norma.",
+      "condicoes_aplicabilidade": "Barras prismáticas nas condições de 5.4.1.1. Restrição adicional para seções I e H monossimétricas: 0,1 <= a_y <= 0,9.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5", "pagina": "60-61", "pagina_pdf": "77-78"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "flexocompressao_organizacao_5_5_1",
+      "descricao": "Organização do item 5.5.1",
+      "texto_normativo": "5.5.1.1: Em 5.5.1.2, é apresentada a condição a ser atendida pelas barras submetidas aos efeitos combinados de força axial e momento fletor, carregadas de forma que não ocorra torção. Em 5.5.1.3, é apresentada a condição a ser atendida por essas barras para o efeito das forças cortantes.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.1.1", "pagina": 61, "pagina_pdf": 78},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "flexocompressao_interacao_forca_axial_e_momentos",
+      "descricao": "Equações de interação para atuação simultânea de força axial (tração ou compressão) e momentos fletores — VERIFICAÇÃO PRINCIPAL DE PILAR DE PÓRTICO COM MOMENTO",
+      "texto_normativo_introdutorio": "5.5.1.2: Para a atuação simultânea da força axial de tração ou de compressão e de momentos fletores, deve ser atendida a limitação fornecida pelas seguintes equações de interação:",
+      "formula": "a) para N,Sd/N,Rd >= 0,2:   N,Sd/N,Rd + (8/9)*( M,x,Sd/M,x,Rd + M,y,Sd/M,y,Rd ) <= 1,0   |   b) para N,Sd/N,Rd < 0,2:   N,Sd/(2*N,Rd) + ( M,x,Sd/M,x,Rd + M,y,Sd/M,y,Rd ) <= 1,0",
+      "regimes": [
+        {
+          "condicao": "N,Sd/N,Rd >= 0,2",
+          "alinea": "a)",
+          "equacao": "N,Sd/N,Rd + (8/9)*( M,x,Sd/M,x,Rd + M,y,Sd/M,y,Rd ) <= 1,0"
+        },
+        {
+          "condicao": "N,Sd/N,Rd < 0,2",
+          "alinea": "b)",
+          "equacao": "N,Sd/(2*N,Rd) + ( M,x,Sd/M,x,Rd + M,y,Sd/M,y,Rd ) <= 1,0"
+        }
+      ],
+      "variaveis": {
+        "N,Sd": "força axial solicitante de cálculo de tração ou de compressão, a que for aplicável",
+        "N,Rd": "força axial resistente de cálculo de tração ou de compressão, a que for aplicável, determinada, respectivamente, de acordo com 5.2 ou 5.3",
+        "M,x,Sd": "momento fletor solicitante de cálculo em relação ao eixo x da seção transversal",
+        "M,y,Sd": "momento fletor solicitante de cálculo em relação ao eixo y da seção transversal",
+        "M,x,Rd": "momento fletor resistente de cálculo em relação ao eixo x da seção transversal, determinado de acordo com 5.4",
+        "M,y,Rd": "momento fletor resistente de cálculo em relação ao eixo y da seção transversal, determinado de acordo com 5.4"
+      },
+      "remissoes": {
+        "N,Rd_tracao": "item 5.2 (ver kb/nbr8800/tracao.json)",
+        "N,Rd_compressao": "item 5.3 (ver kb/nbr8800/compressao_flambagem_global.json)",
+        "M,Rd": "item 5.4 (ver kb/nbr8800/flexao_simples.json)",
+        "M,Sd_e_N,Sd_com_efeitos_de_2a_ordem": "item 4.10.7; método aproximado no Anexo C (entradas anexo_c_* deste arquivo)"
+      },
+      "condicoes_aplicabilidade": "Barras prismáticas de 5.5 (condições de 5.4.1.1), carregadas de forma que não ocorra torção. Estados-limite últimos. Válida tanto para flexo-tração quanto para flexo-compressão — o que muda é qual N,Rd (5.2 ou 5.3) se usa.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.1.2", "pagina": 61, "pagina_pdf": 78},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "flexocompressao_forcas_cortantes",
+      "descricao": "Verificação das forças cortantes em barras sob esforços combinados",
+      "texto_normativo": "5.5.1.3: Para os casos de força cortante atuante na direção de um dos eixos centrais de inércia, a verificação da barra a esse esforço deve ser feita conforme 5.4.3. Para os casos de forças cortantes que atuam simultaneamente nas direções dos dois eixos centrais de inércia, podem ser utilizadas as especificações de 5.5.2.3-b) e 5.5.2.3-d).",
+      "remissoes": {"cortante_uniaxial": "5.4.3 (ver kb/nbr8800/cisalhamento.json)", "cortante_biaxial": "5.5.2.3-b) e 5.5.2.3-d) (entrada tensoes_secoes_quaisquer deste arquivo)"},
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.1.3", "pagina": 61, "pagina_pdf": 78},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "torcao_momento_resistente_tubulares_circulares",
+      "descricao": "Momento de torção resistente de cálculo de seções tubulares circulares (necessário para a interação de 5.5.2.2)",
+      "texto_normativo": "5.5.2.1.2: Nas seções tubulares circulares de diâmetro D e espessura t (ver 5.1.3), o momento de torção resistente de cálculo é igual ao maior dos valores a seguir:",
+      "formula": "T,Rd = (1/gamma_a1) * [ 1,23*W,T*E / ( (D/t)^(5/4) * sqrt(L/D) ) ]  <=  0,60*W,T*fy/gamma_a1   E   T,Rd = (1/gamma_a1) * [ 0,60*W,T*E / (D/t)^(3/2) ]  <=  0,60*W,T*fy/gamma_a1",
+      "formula_modulo_resistencia_torcao": "W,T = pi*(D - t)^2*t / 2",
+      "variaveis": {
+        "D": "diâmetro externo da seção transversal",
+        "t": "espessura da parede",
+        "L": "comprimento da barra",
+        "W,T": "módulo de resistência à torção",
+        "E": "módulo de elasticidade do aço",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Seções tubulares circulares submetidas exclusivamente à torção (5.5.2.1.1: T,Sd <= T,Rd). Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.2.1.2", "pagina": "61-62", "pagina_pdf": "78-79"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "torcao_momento_resistente_tubulares_retangulares",
+      "descricao": "Momento de torção resistente de cálculo de seções tubulares retangulares",
+      "texto_normativo": "5.5.2.1.3: Nas seções tubulares retangulares de lados h e b e espessura t (ver 5.1.3), o momento de torção resistente de cálculo é calculado pela seguinte equação:",
+      "formula": "para h/t <= 2,45*sqrt(E/fy):  T,Rd = 0,60*W,T*fy/gamma_a1   |   para 2,45*sqrt(E/fy) < h/t <= 3,07*sqrt(E/fy):  T,Rd = (1/gamma_a1) * [ 0,60*W,T*fy*( 2,45*sqrt(E/fy) ) / (h/t) ]   |   para 3,07*sqrt(E/fy) < h/t <= 260:  T,Rd = (1/gamma_a1) * [ 0,46*pi^2*W,T*E / (h/t)^2 ]",
+      "formula_modulo_resistencia_torcao": "W,T = 2*(b - t)*(h - t)*t - 4,5*(4 - pi)*t^3",
+      "variaveis": {
+        "h": "maior comprimento entre as partes planas dos lados da seção transversal",
+        "b": "menor lado da seção tubular retangular",
+        "t": "espessura da parede",
+        "W,T": "módulo de resistência à torção",
+        "E": "módulo de elasticidade do aço",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Seções tubulares retangulares submetidas exclusivamente à torção. Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.2.1.3", "pagina": 62, "pagina_pdf": 79},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "interacao_torcao_axial_flexao_cortante_tubulares",
+      "descricao": "Equação de interação para seções tubulares circulares e retangulares com momento de torção, força axial, momento fletor e força cortante",
+      "texto_normativo": "5.5.2.2: Quando o momento de torção solicitante de cálculo, T,Sd, for inferior ou igual a 20 % do momento de torção resistente de cálculo, T,Rd, o efeito da torção pode ser desprezado. Nesse caso, a interação entre os efeitos da força axial e do momento fletor e força cortante em relação a um dos eixos centrais de inércia da seção transversal deve ser determinada de acordo com 5.5.1. Quando T,Sd for superior a 20 % de T,Rd, deve ser utilizada a seguinte equação de interação:",
+      "formula_como_impressa_na_pagina": "( N,Sd/N,Rd + M,Sd/M,Rd ) + ( V,Sd/V,Rd + T,Sd/T,Rd )^2",
+      "formula_na_camada_de_texto_do_pdf": "( N,Sd/N,Rd + M,Sd/M,Rd ) + ( V,Sd/V,Rd + T,Sd/T,Rd )^2 <= 1,0",
+      "variaveis": {
+        "N,Sd": "força axial solicitante de cálculo de tração ou de compressão, a que for aplicável",
+        "N,Rd": "força axial resistente de cálculo de tração ou de compressão, a que for aplicável, determinada, respectivamente, de acordo com 5.2 ou 5.3",
+        "M,Sd": "momento fletor solicitante de cálculo",
+        "M,Rd": "momento fletor resistente de cálculo, determinado de acordo com 5.4.2",
+        "V,Sd": "força cortante solicitante de cálculo",
+        "V,Rd": "força cortante resistente de cálculo, determinada de acordo com 5.4.3",
+        "T,Sd": "momento de torção solicitante de cálculo",
+        "T,Rd": "momento de torção resistente de cálculo, determinado de acordo com 5.5.2.1"
+      },
+      "condicoes_aplicabilidade": "Seções tubulares circulares e retangulares, com T,Sd > 0,20*T,Rd. Se T,Sd <= 0,20*T,Rd, aplica-se 5.5.1 (torção desprezada). Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.2.2", "pagina": 62, "pagina_pdf": 79},
+      "conferido_visualmente": true,
+      "provavel_errata_tipografica": "Na página impressa 62 (PDF 79), a equação de interação de 5.5.2.2 aparece RENDERIZADA SEM O SEGUNDO MEMBRO: termina em '(V,Sd/V,Rd + T,Sd/T,Rd)^2', sem o '<= 1,0'. A camada de texto do mesmo PDF, porém, CONTÉM '≤ 1,0' nessa linha (verificado com pdftotext restrito à página 79). Ou seja, o '<= 1,0' existe no arquivo mas não é desenhado na página. O A1 NÃO corrigiu a equação — a decisão cabe ao Agente A2.",
+      "observacao": "Entrada marcada como REVISAR_MANUALMENTE exclusivamente por causa da provável errata acima. Todos os demais termos foram conferidos visualmente e estão corretos.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "tensoes_secoes_quaisquer",
+      "descricao": "Seções quaisquer submetidas a momento de torção, força axial, momentos fletores e forças cortantes — verificação em tensões",
+      "texto_normativo": "5.5.2.3: A tensão resistente de cálculo para os estados-limite últimos a seguir deve ser igual ou superior à tensão solicitante de cálculo, expressa em termos de tensão normal, sigma_Sd, ou de tensão de cisalhamento, tau_Sd, determinadas pela Teoria da Elasticidade, utilizando-se as combinações de ações de cálculo.",
+      "formula": "a) escoamento sob tensão normal:  sigma_Sd <= fy/gamma_a1   |   b) escoamento sob tensão de cisalhamento:  tau_Sd <= 0,60*fy/gamma_a1   |   c) instabilidade sob tensão normal:  sigma_Sd <= chi*fy/gamma_a1   |   d) instabilidade sob tensão de cisalhamento:  tau_Sd <= 0,60*chi*fy/gamma_a1",
+      "variaveis": {
+        "sigma_Sd": "tensão normal solicitante de cálculo (Teoria da Elasticidade)",
+        "tau_Sd": "tensão de cisalhamento solicitante de cálculo (Teoria da Elasticidade)",
+        "chi": "fator de redução associado à resistência à compressão, determinado de acordo com 5.3.3, considerando-se lambda_0 = sqrt(fy/sigma_e) para tensões normais e lambda_0 = sqrt(0,60*fy/tau_e) para tensões de cisalhamento",
+        "sigma_e": "tensão crítica normal para o estado-limite de instabilidade em questão",
+        "tau_e": "tensão crítica de cisalhamento para o estado-limite de instabilidade em questão",
+        "fy": "resistência ao escoamento do aço",
+        "gamma_a1": "coeficiente de ponderação da resistência do aço estrutural (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Seções quaisquer sob esforços combinados incluindo torção. Na determinação de chi deve ser considerada, quando necessário, a interação entre instabilidade global e instabilidade local. Fora do escopo da Fase 0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "5.5.2.3", "pagina": 63, "pagina_pdf": 80},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "classificacao_estrutura_deslocabilidade",
+      "descricao": "Classificação das estruturas quanto à sensibilidade a deslocamentos laterais (define se e como os efeitos de 2ª ordem entram em M,Sd e N,Sd)",
+      "criterios": {
+        "pequena_deslocabilidade": "4.10.4.2: relação entre o deslocamento lateral do andar relativo à base obtido na análise de SEGUNDA ordem e aquele obtido na análise de PRIMEIRA ordem, em todos os andares e em todas as combinações últimas de ações de 4.8.7.2, igual ou inferior a 1,10",
+        "media_deslocabilidade": "4.10.4.3: máxima relação superior a 1,10 e igual ou inferior a 1,40",
+        "grande_deslocabilidade": "4.10.4.4: máxima relação superior a 1,40"
+      },
+      "ajuste_dos_limites": "4.10.4.5: Os limites iguais a 1,10 e 1,40 são válidos quando os deslocamentos laterais dos andares forem obtidos sem a consideração das imperfeições iniciais de material. Se essas imperfeições forem consideradas de acordo com 4.10.3.3, esses limites devem ser alterados para 1,13 e 1,55, respectivamente.",
+      "observacoes_normativas": [
+        "4.10.4.6: A classificação deve ser obtida para as combinações últimas de 4.8.7.2 em que os deslocamentos horizontais provenientes das forças horizontais tenham os mesmos sentidos dos deslocamentos horizontais decorrentes das forças gravitacionais.",
+        "4.10.4.7: A classificação depende da combinação última considerada; por simplicidade pode ser feita uma única vez, com a combinação que fornecer, além de forças horizontais, a maior resultante de força gravitacional.",
+        "4.10.4.8: Essa relação pode ser aproximada de maneira aceitável pelo valor do coeficiente B2, calculado de acordo com o Anexo C."
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.10.4.1 a 4.10.4.8", "pagina": "28-29", "pagina_pdf": "45-46"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "esforcos_solicitantes_segunda_ordem",
+      "descricao": "Como obter M,Sd e N,Sd com efeitos de segunda ordem (entrada das equações de 5.5.1.2)",
+      "regras": {
+        "4.10.7.1.2 (reducao de rigidez)": "Devem ser consideradas na análise as imperfeições iniciais de material, reduzindo-se a rigidez à flexão e a rigidez axial das barras para 80 % dos valores originais. No caso de pilares mistos de aço e concreto (ver o Anexo M), a redução da rigidez à flexão deve ser ajustada para 64 % dos valores originais. Nas estruturas de pequena deslocabilidade, esses efeitos não precisam ser considerados na análise.",
+        "4.10.7.1.3": "Os esforços solicitantes devem ser obtidos considerando-se os efeitos globais e locais de segunda ordem. O método da amplificação dos esforços solicitantes, dado no Anexo C, pode ser considerado uma aproximação aceitável para análise de segunda ordem. Ao aplicar esse método a estruturas de média deslocabilidade, os coeficientes B1 e B2 devem ser calculados com as rigidezes reduzidas de acordo com 4.10.7.1.2.",
+        "4.10.7.1.4 (pequena deslocabilidade)": "Nas estruturas de pequena deslocabilidade, os efeitos GLOBAIS de segunda ordem podem ser desconsiderados, desde que sejam atendidos os seguintes requisitos: a) as forças axiais solicitantes de cálculo de todas as barras cuja rigidez à flexão contribua para a estabilidade lateral da estrutura, em cada uma das combinações últimas de ações estipuladas em 4.8.7.2, não sejam superiores a 50 % da força axial correspondente ao escoamento da seção transversal dessas barras; b) os efeitos das imperfeições geométricas iniciais sejam adicionados às respectivas combinações de ações, inclusive àquelas em que atuem forças horizontais decorrentes de ações variáveis. Os efeitos LOCAIS de segunda ordem devem ser considerados amplificando-se os momentos fletores pelo coeficiente B1, calculado de acordo com o Anexo C, mas com as grandezas que influem no seu valor obtidas da estrutura original, em todas as barras da estrutura.",
+        "4.10.7.2 (grande deslocabilidade)": "Deve ser feita uma análise rigorosa, considerando-se as não linearidades geométricas e de material, inclusive os efeitos das imperfeições geométricas iniciais e de materiais. Opcionalmente, a critério do responsável técnico, pode ser utilizado o procedimento de 4.10.7.1 (média deslocabilidade), desde que os efeitos das imperfeições iniciais sejam adicionados às combinações últimas de ações em que atuem ações variáveis horizontais."
+      },
+      "nota_fase_0": "A Fase 0 do projeto prevê análise elástica de PRIMEIRA ordem. Pelo item 4.10.7.1.4, isso só é admissível para estruturas de PEQUENA deslocabilidade e ainda assim os efeitos LOCAIS de 2ª ordem (coeficiente B1) continuam obrigatórios. Ponto de atenção para os Agentes A2/A4/A5.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.10.7.1.2 a 4.10.7.2", "pagina": "30-31", "pagina_pdf": "47-48"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_c_amplificacao_esforcos",
+      "descricao": "Método da amplificação dos esforços solicitantes — esforços de cálculo amplificados (Anexo C, INFORMATIVO)",
+      "carater_do_anexo": "informativo",
+      "texto_normativo": "C.2.1: Em cada andar das estruturas analisadas, o momento fletor e a força axial solicitantes de cálculo, M,Sd e N,Sd, devem ser determinados por (ver a Figura C.1):",
+      "formula": "M,Sd = B1*M,nt + B2*M,lt   |   N,Sd = N,nt + B2*N,lt",
+      "variaveis": {
+        "B1": "coeficiente dado em C.2.2 (efeito local P-delta)",
+        "B2": "coeficiente dado em C.2.3 (efeito global P-Delta)",
+        "M,nt e N,nt": "momento fletor e força axial solicitantes de cálculo, obtidos por análise elástica de primeira ordem, com os nós da estrutura impedidos de se deslocar horizontalmente (contenções horizontais fictícias em cada andar — Estrutura nt, Figura C.1-b)",
+        "M,lt e N,lt": "momento fletor e força axial solicitantes de cálculo, obtidos por análise elástica de primeira ordem, correspondente apenas ao efeito dos deslocamentos horizontais dos nós da estrutura (reações das contenções fictícias aplicadas em sentido contrário, nos mesmos pontos — Estrutura lt, Figura C.1-c)"
+      },
+      "premissa": "C.1.2: Ao se usar o método deste Anexo, deve-se fazer atuar na estrutura a combinação apropriada de ações de cálculo, determinada de acordo com 4.8.7.2, constituída por ações verticais e horizontais, quando existentes, considerando-se o efeito das imperfeições geométricas iniciais e das imperfeições iniciais de material conforme 4.10.7.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "C.1.1, C.1.2 e C.2.1", "pagina": 134, "pagina_pdf": 151},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_c_coeficiente_B1",
+      "descricao": "Coeficiente de amplificação B1 (efeito local P-delta) — Anexo C, INFORMATIVO",
+      "carater_do_anexo": "informativo",
+      "formula": "B1 = C,m / ( 1 - N,Sd1/N,e )  >= 1,0",
+      "variaveis": {
+        "N,e": "força axial que provoca a flambagem por flexão da barra no plano de atuação do momento fletor, calculada com o comprimento real da barra, considerando, se for o caso, a imperfeição inicial de material, conforme 4.10.7",
+        "N,Sd1": "força axial de compressão solicitante de cálculo na barra considerada, em análise de primeira ordem (N,Sd1 = N,nt + N,lt)",
+        "C,m": "coeficiente definido a seguir"
+      },
+      "formula_Cm": "se não houver forças transversais entre as extremidades da barra no plano de flexão:  C,m = 0,60 - 0,40*(M1/M2)",
+      "definicao_M1_M2": "M1/M2 é a relação entre o menor e o maior dos momentos fletores solicitantes de cálculo na estrutura nt no plano de flexão, nas extremidades apoiadas da barra, considerada como POSITIVA quando os momentos provocarem curvatura reversa e NEGATIVA quando provocarem curvatura simples (M1 = M,nt1; M2 = M,nt2).",
+      "Cm_com_forcas_transversais": "se houver forças transversais entre as extremidades da barra no plano de flexão, o valor de C,m deve ser determinado por análise racional ou ser considerado conservadoramente igual a 1,0",
+      "regra_adicional": "Se a força axial solicitante de cálculo na barra for de TRAÇÃO, deve-se considerar B1 igual a 1,0.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "C.2.2", "pagina": "134-135", "pagina_pdf": "151-152"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_c_coeficiente_B2",
+      "descricao": "Coeficiente de amplificação B2 (efeito global P-Delta) — Anexo C, INFORMATIVO",
+      "carater_do_anexo": "informativo",
+      "formula": "B2 = 1 / ( 1 - (1/R,s) * (Delta,h/h) * ( soma(N,Sd) / soma(H,Sd) ) )",
+      "variaveis": {
+        "soma(N,Sd)": "força gravitacional total, incluindo toda a estrutura acima do andar analisado, englobando as cargas atuantes nas subestruturas de contraventamento e nos elementos que não pertençam a essas subestruturas",
+        "R,s": "coeficiente de ajuste que leva em conta a influência do efeito local P-delta na amplificação de Delta,h, igual a 1,0 nos andares em que nenhuma subestrutura de contraventamento é um pórtico (subestrutura cuja estabilidade lateral é assegurada pela rigidez à flexão das barras e pela capacidade de transmissão de momentos das ligações) e, nos andares em que pelo menos uma subestrutura de contraventamento é um pórtico, dado por R,s = 1 - 0,15*( soma(N,pr)/soma(N,Sd) ), sendo soma(N,pr) a força gravitacional de cálculo que atua apenas nos pilares dos pórticos do andar considerado, incluindo as forças atuantes acima desse andar",
+        "Delta,h": "deslocamento horizontal relativo entre os níveis superior e inferior (deslocamento interpavimento) do andar considerado, obtido da análise de primeira ordem, na estrutura lt (Figura C.1-c). Se Delta,h possuir valores diferentes em um mesmo andar, deve ser considerado um valor ponderado para esse deslocamento, em função da proporção das cargas gravitacionais atuantes ou, de modo conservador, o maior valor",
+        "soma(H,Sd)": "força cortante no andar, produzida pelas forças horizontais de cálculo atuantes acima do andar analisado, usadas para determinar Delta,h e obtida na estrutura lt (Figura C.1-c)",
+        "h": "altura do andar (distância entre eixos de vigas de dois andares consecutivos ou entre eixos de vigas e a base, no caso do primeiro andar)"
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "C.2.3", "pagina": "135-136", "pagina_pdf": "152-153"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_c_forca_cortante_solicitante",
+      "descricao": "Força cortante solicitante de cálculo no método da amplificação — Anexo C, INFORMATIVO",
+      "carater_do_anexo": "informativo",
+      "texto_normativo": "C.2.4: A força cortante solicitante de cálculo pode ser considerada igual à da análise elástica de primeira ordem, ou seja, igual à da estrutura original ou igual a:",
+      "formula": "V,Sd = V,nt + V,lt",
+      "variaveis": {
+        "V,nt": "força cortante de cálculo na estrutura nt",
+        "V,lt": "força cortante de cálculo na estrutura lt"
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "C.2.4", "pagina": 136, "pagina_pdf": 153},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "imperfeicao_geometrica_global_4_10_7_1_1",
+      "descricao": "Imperfeições geométricas iniciais (e de material) para a ESTABILIDADE GLOBAL do pórtico — estruturas de pequena e média deslocabilidade. Lacuna apontada pelo Agente A4; extraída na 5ª rodada.",
+      "item_normativo": "4.10.7.1.1",
+      "carater": "normativo",
+      "escopo": "Estabilidade global da estrutura (pórtico como um todo), em estruturas classificadas como de PEQUENA ou MÉDIA deslocabilidade conforme 4.10.4. NÃO se aplica ao dimensionamento de contenções laterais individuais (isso é 4.10.3.3 — ver entrada distincao_4_10_3_3_vs_4_10_7_1_1).",
+      "texto_normativo": "4.10.7.1.1 Nas estruturas de pequena deslocabilidade e média deslocabilidade, os efeitos das imperfeições iniciais (geométricas e de material) devem ser incluídos diretamente na análise, por meio da consideração, em cada andar, de uma imperfeição geométrica equivalente correspondente a um deslocamento horizontal relativo entre os níveis inferior e superior (deslocamento interpavimento) de h/333, sendo h a altura do andar (distância entre eixos de vigas). Admite-se também que esses efeitos sejam considerados por meio da aplicação, em cada andar, de uma força horizontal equivalente, denominada, nesta Norma, força nocional, igual a 0,3 % do valor das forças gravitacionais de cálculo aplicadas em todos os pilares e outros elementos resistentes a forças verticais, no andar considerado. Não é necessário somá-las às reações horizontais de apoio. Os efeitos das imperfeições iniciais devem ser considerados independentemente em duas direções ortogonais em planta da estrutura. Além disso, esses efeitos podem ser entendidos como um carregamento lateral mínimo da estrutura (não precisam ser considerados em combinações últimas de ações em que atuem outras forças horizontais), exceto nas estruturas de pequena deslocabilidade, se for utilizada a condição prevista em 4.10.7.1.4.",
+      "metodos_equivalentes": [
+        {
+          "metodo": "deslocamento_interpavimento_equivalente",
+          "alternativa": "a) (forma principal — 'devem ser incluídos ... por meio da consideração')",
+          "formula": "delta_imperfeicao = h/333",
+          "aplicacao": "Imperfeição geométrica equivalente imposta EM CADA ANDAR, como deslocamento horizontal relativo entre os níveis inferior e superior do andar (deslocamento interpavimento).",
+          "variaveis": {
+            "h": "altura do andar (distância entre eixos de vigas)",
+            "delta_imperfeicao": "deslocamento horizontal relativo entre os níveis inferior e superior do andar (deslocamento interpavimento) a ser imposto como imperfeição"
+          },
+          "equivalente_angular_nao_normativo": "O texto da norma NÃO expressa a imperfeição como ângulo; expressa-a como deslocamento interpavimento h/333. Qualquer conversão para rotação (1/333) é interpretação de A2/A4, não do A1."
+        },
+        {
+          "metodo": "forca_horizontal_nocional_equivalente",
+          "alternativa": "b) ('Admite-se também que esses efeitos sejam considerados por meio da aplicação ...')",
+          "formula": "F,nocional = 0,003 * ( soma das forças gravitacionais de cálculo aplicadas em todos os pilares e outros elementos resistentes a forças verticais, no andar considerado )",
+          "formula_como_impressa": "força nocional igual a 0,3 % do valor das forças gravitacionais de cálculo aplicadas em todos os pilares e outros elementos resistentes a forças verticais, no andar considerado",
+          "aplicacao": "Força horizontal equivalente aplicada EM CADA ANDAR.",
+          "variaveis": {
+            "0,3 %": "coeficiente fixo da norma (= 0,003)",
+            "forcas_gravitacionais_de_calculo": "forças gravitacionais de cálculo aplicadas em TODOS os pilares e outros elementos resistentes a forças verticais, no andar considerado (não apenas os pilares das subestruturas de contraventamento)"
+          },
+          "nota_extracao": "ATENÇÃO — a norma NÃO imprime nenhuma equação simbólica com somatório neste item: o valor é dado em texto corrido ('igual a 0,3 % do valor das forças gravitacionais de cálculo ...'). A camada de texto do PDF e a página renderizada (300 dpi) coincidem integralmente. Portanto NÃO existe fórmula corrompida a recuperar aqui; a grafia com somatório acima é notação do A1 apenas para explicitar o significado de 'o valor das forças gravitacionais ... no andar considerado'."
+        }
+      ],
+      "condicoes_de_aplicacao": {
+        "duas_direcoes_ortogonais": "Os efeitos das imperfeições iniciais devem ser considerados INDEPENDENTEMENTE em duas direções ortogonais em planta da estrutura.",
+        "carregamento_lateral_minimo": "Esses efeitos PODEM ser entendidos como um carregamento lateral mínimo da estrutura, ou seja, não precisam ser considerados em combinações últimas de ações em que atuem outras forças horizontais.",
+        "excecao_que_interessa_a_fase_0": "EXCETO nas estruturas de PEQUENA deslocabilidade, se for utilizada a condição prevista em 4.10.7.1.4. Nesse caso a regra de 'carregamento lateral mínimo' NÃO vale e, por 4.10.7.1.4-b), 'os efeitos das imperfeições geométricas iniciais [devem ser] adicionados às respectivas combinações de ações, inclusive àquelas em que atuem forças horizontais decorrentes de ações variáveis'.",
+        "reacoes_horizontais_de_apoio": "Não é necessário somar as forças nocionais às reações horizontais de apoio.",
+        "imperfeicoes_de_material_media_deslocabilidade": "4.10.7.1.1 cobre imperfeições geométricas E de material apenas na medida em que 4.10.7.1.2 as trata separadamente (redução de rigidez para 80 %). Ver a entrada esforcos_solicitantes_segunda_ordem deste arquivo."
+      },
+      "nota_fase_0": "O ruleset.yaml da Fase 0 adotou a dispensa de efeitos globais de 2ª ordem de 4.10.7.1.4 (pequena deslocabilidade). Consequência direta deste item: a imperfeição geométrica global (h/333 OU força nocional de 0,3 %) TEM de ser somada a TODAS as combinações últimas, inclusive às que já contêm força horizontal variável (vento). A escolha entre os dois métodos equivalentes é decisão de A2/A4 — o A1 não decide.",
+      "remissoes": {
+        "classificacao_deslocabilidade": "4.10.4 (entrada classificacao_estrutura_deslocabilidade deste arquivo)",
+        "dispensa_efeitos_globais_2a_ordem": "4.10.7.1.4 (entrada esforcos_solicitantes_segunda_ordem deste arquivo)",
+        "reducao_de_rigidez_imperfeicoes_de_material": "4.10.7.1.2 (entrada esforcos_solicitantes_segunda_ordem deste arquivo)",
+        "combinacoes_ultimas": "4.8.7.2 (ver kb/nbr8800/combinacoes_acoes_nbr8681.json)"
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.10.7.1.1", "pagina": 30, "pagina_pdf": 47, "secao": "4.10.7.1 Estruturas de pequena deslocabilidade e média deslocabilidade"},
+      "conferido_visualmente": true,
+      "metodo_de_conferencia": "pdftoppm -r 300 -png, página PDF 47 (rodapé impresso '30'); recortes ampliados confirmaram literalmente 'de h/333, sendo h a altura do andar (distância entre eixos de vigas)' e 'força nocional, igual a 0,3 % do valor das forças gravitacionais de cálculo'. Texto renderizado idêntico à camada de texto (pdftotext).",
+      "status": "extraido"
+    },
+    {
+      "id": "distincao_4_10_3_3_vs_4_10_7_1_1",
+      "descricao": "NOTA DE DESAMBIGUAÇÃO — 4.10.3.3 e 4.10.7.1.1 tratam de imperfeições geométricas iniciais, mas para FINS DIFERENTES e com VALORES DIFERENTES. São frequentemente confundidos.",
+      "carater": "nota_do_bibliotecario_sobre_itens_normativos",
+      "item_4_10_3_3": {
+        "finalidade": "Projeto das CONTENÇÕES LATERAIS individuais (elementos projetados para conter lateralmente vigas e pilares em alguns pontos, definindo comprimentos destravados — ver 4.10.3.2 e os requisitos de resistência e rigidez de 4.12).",
+        "texto_normativo": "4.10.3.3 As imperfeições geométricas iniciais, mencionadas em 4.10.3.2, devem ser consideradas na forma de uma imperfeição equivalente global de L/500 ou local de L/1000, conforme o tipo de contenção adotado, em que L é o comprimento destravado do elemento. Se os elementos mencionados em 4.10.3.2 forem projetados para conter lateralmente mais de um pilar ou viga, devem ser considerados os efeitos das imperfeições de todos esses pilares ou vigas, porém multiplicados pelo fator de redução alpha_red, conforme a seguinte equação: [...] onde m é o número de pilares ou vigas a serem contidos lateralmente. Permite-se também que as imperfeições geométricas sejam representadas por forças equivalentes, denominadas forças nocionais, que provoquem, nas vigas e pilares a serem contidos lateralmente, efeitos equivalentes aos das referidas imperfeições, como exemplificado na Figura 1. Esses efeitos devem ser entendidos como valores mínimos para cálculo do sistema de travamento e não precisam ser adicionados aos efeitos das demais forças atuantes nele.",
+        "valores": "imperfeição equivalente GLOBAL de L/500 ou LOCAL de L/1000, com L = comprimento DESTRAVADO do elemento",
+        "fator_de_reducao": "alpha_red = sqrt( 0,5 * (1 + 1/m) ), com m = número de pilares ou vigas a serem contidos lateralmente",
+        "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.10.3.3", "pagina": 27, "pagina_pdf": 44},
+        "conferido_visualmente": true
+      },
+      "item_4_10_7_1_1": {
+        "finalidade": "ESTABILIDADE GLOBAL do pórtico como um todo (análise de 2ª ordem aproximada, pequena e média deslocabilidade).",
+        "valores": "deslocamento interpavimento de h/333 (h = altura do ANDAR) OU força nocional de 0,3 % das forças gravitacionais de cálculo do andar",
+        "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.10.7.1.1", "pagina": 30, "pagina_pdf": 47}
+      },
+      "resumo_da_distincao": "4.10.3.3 = imperfeição do ELEMENTO contido (L/500 ou L/1000, L = comprimento destravado), usada para DIMENSIONAR O TRAVAMENTO. 4.10.7.1.1 = imperfeição do ANDAR (h/333 ou 0,3 % de N gravitacional, h = altura do andar), usada para a ESTABILIDADE GLOBAL DO PÓRTICO. É esta última que a Fase 0 precisa. Ambos admitem a representação por 'força nocional', o que reforça a confusão — mas as forças nocionais de 4.10.3.3 e de 4.10.7.1.1 são grandezas distintas e não se substituem. Um terceiro valor próximo, também distinto, é o de 4.10.3.4 (diafragmas horizontais: 0,5 % das forças axiais solicitantes de cálculo dos pilares contraventados do andar, multiplicado por alpha_red).",
+      "possivel_errata_da_norma": "O item 4.10.4.5 (página impressa 29, PDF 46) diz que os limites 1,10 e 1,40 mudam para 1,13 e 1,55 'se essas imperfeições [iniciais DE MATERIAL] forem consideradas de acordo com 4.10.3.3'. Porém 4.10.3.3 trata de imperfeições GEOMÉTRICAS de contenções laterais, não de imperfeições de MATERIAL — estas são tratadas em 4.10.7.1.2 (redução de rigidez para 80 %). A remissão parece equivocada na edição 2024. O A1 transcreveu a remissão EXATAMENTE como está impressa e NÃO a corrigiu; a interpretação cabe a A2/A4.",
+      "status": "REVISAR_MANUALMENTE",
+      "motivo_do_status": "Exclusivamente pela possível errata de remissão em 4.10.4.5 descrita acima. Os valores de 4.10.3.3 e de 4.10.7.1.1 em si foram conferidos visualmente e estão corretos."
+    }
+  ]
+}

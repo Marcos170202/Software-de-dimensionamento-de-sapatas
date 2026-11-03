@@ -1,0 +1,217 @@
+{
+  "arquivo": "kb/nbr8800/ligacoes_parafusadas_simples.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Ligações parafusadas simples — resistências de cálculo dos parafusos e dos elementos de ligação",
+  "item_normativo_raiz": "6.3 (parafusos e barras redondas rosqueadas) e 6.5 (elementos de ligação)",
+  "extraido_por": "Agente A1 - Bibliotecário",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "status_global": "PARCIAL — REVISAR_MANUALMENTE",
+  "observacoes_gerais": [
+    "ATENÇÃO: esta extração é PARCIAL e deliberadamente limitada. A Seção 6 da NBR 8800:2024 (ligações) ocupa as páginas impressas 68 a 113 e é muito mais extensa do que o escopo da Fase 0 comporta em uma única rodada. Nesta rodada foram extraídos apenas os núcleos de resistência por parafuso (6.3.2, 6.3.3), as regras de espaçamento/bordas (6.3.9 a 6.3.12) e os dois estados-limite dos elementos de ligação mais usados em ligações simples (6.5.5 e 6.5.6).",
+    "NÃO foram extraídos: efeito de alavanca (6.3.5), ligações por atrito completas (6.3.4, inclui Tabela 13 de gamma_e e Tabela 14 de coeficientes de atrito), dimensões de furos e arruelas (6.3.6, Tabelas 15 e 17), critérios de rigidez/flexibilidade de ligações (6.1.2 a 6.1.7), tipologias de chapa de topo e de cantoneira (a norma não apresenta um 'modelo de ligação' fechado — o dimensionamento é a composição dos estados-limite), bases de pilares (6.7) e protensão/inspeção (6.8).",
+    "CONSEQUÊNCIA PRÁTICA: o Agente A2 NÃO deve congelar regras de ligação no ruleset.yaml a partir deste arquivo. Ligações ficam para uma rodada futura de extração do A1. As quatro verificações de barra (tração, compressão, flexão, cisalhamento) NÃO dependem deste arquivo e podem seguir adiante.",
+    "As resistências fub, fy e fu dos materiais (Anexo A, páginas impressas 127 a 130) NÃO foram extraídas nesta rodada — ficam para a rodada de catálogos/materiais."
+  ],
+  "entradas": [
+    {
+      "id": "parafuso_area_efetiva_pressao_contato",
+      "descricao": "Área efetiva para pressão de contato do parafuso",
+      "formula": "A_contato = db * t",
+      "variaveis": {
+        "db": "diâmetro do parafuso",
+        "t": "espessura da chapa considerada"
+      },
+      "condicoes_aplicabilidade": "Parafusos com cabeça escareada não são previstos nesta Norma.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.2.1", "pagina": 83, "pagina_pdf": 100},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_area_efetiva_tracao",
+      "descricao": "Área resistente (efetiva) de parafuso ou barra redonda rosqueada, para tração",
+      "formula": "Abe = 0,75 * Ab,  com  Ab = 0,25 * pi * db^2",
+      "variaveis": {
+        "Abe": "área efetiva (resistente) do parafuso ou barra redonda rosqueada para tração",
+        "Ab": "área bruta, baseada no diâmetro do parafuso ou da barra redonda rosqueada",
+        "db": "diâmetro do parafuso ou da barra rosqueada (para chumbadores, ver 6.7)"
+      },
+      "condicoes_aplicabilidade": "Parafusos e barras redondas rosqueadas tracionados.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.2.2", "pagina": "83-84", "pagina_pdf": "100-101"},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_tracao_resistente",
+      "descricao": "Força de tração resistente de cálculo de um parafuso ou barra redonda rosqueada tracionada",
+      "formula": "Ft,Rd = Abe * fub / gamma_a2",
+      "limite_adicional": "No caso de barras redondas rosqueadas, exceto chumbadores (ver 6.7), a força resistente de cálculo não pode ser superior a Ab * fy / gamma_a1.",
+      "variaveis": {
+        "fub": "resistência à ruptura do material do parafuso ou barra redonda rosqueada, especificada no Anexo A",
+        "Abe": "área efetiva, especificada em 6.3.2.2",
+        "gamma_a2": "coeficiente de ponderação da resistência do aço estrutural para ruptura (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "Ver também 6.3.5 (efeito de alavanca) — NÃO extraído nesta rodada.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.3.1", "pagina": 84, "pagina_pdf": 101},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_cisalhamento_resistente",
+      "descricao": "Força de cisalhamento resistente de cálculo de um parafuso ou barra redonda rosqueada, por plano de corte",
+      "formula_plano_na_rosca": "Fv,Rd = 0,45 * Ab * fub / gamma_a2",
+      "formula_plano_fora_da_rosca": "Fv,Rd = 0,56 * Ab * fub / gamma_a2",
+      "variaveis": {
+        "Ab": "área bruta, baseada no diâmetro do parafuso ou barra redonda rosqueada, db, dada em 6.3.2.2",
+        "fub": "resistência à ruptura do material do parafuso",
+        "gamma_a2": "coeficiente de ponderação da resistência do aço estrutural para ruptura (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "a) 0,45: para parafusos de alta resistência e barras redondas rosqueadas quando o plano de corte passa pela rosca, e para parafusos comuns em qualquer situação. b) 0,56: para parafusos de alta resistência e barras redondas rosqueadas quando o plano de corte NÃO passa pela rosca. Deve ser atendido também 6.3.3.3 (pressão de contato).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.3.2", "pagina": 84, "pagina_pdf": 101},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_pressao_contato_furo",
+      "descricao": "Força resistente de cálculo à pressão de contato na parede de um furo (já considerando o rasgamento entre dois furos consecutivos ou entre um furo extremo e a borda)",
+      "formula_deformacao_limitante": "Fc,Rd = 1,2 * lf * t * fu / gamma_a2  <=  2,4 * db * t * fu / gamma_a2",
+      "formula_deformacao_nao_limitante": "Fc,Rd = 1,5 * lf * t * fu / gamma_a2  <=  3,0 * db * t * fu / gamma_a2",
+      "formula_furos_muito_alongados_perpendicular": "Fc,Rd = 1,0 * lf * t * fu / gamma_a2  <=  2,0 * db * t * fu / gamma_a2",
+      "variaveis": {
+        "lf": "distância, na direção da força, entre a borda do furo e a borda do furo adjacente ou a borda livre",
+        "db": "diâmetro do parafuso",
+        "t": "espessura da parte ligada",
+        "fu": "resistência à ruptura do aço da parede do furo",
+        "gamma_a2": "coeficiente de ponderação da resistência do aço estrutural para ruptura (Tabela 3, item 4.9.2)"
+      },
+      "condicoes_aplicabilidade": "As duas primeiras equações aplicam-se a furos padrão, furos alargados, furos pouco alongados em qualquer direção e furos muito alongados na direção da força — a escolha depende de a deformação no furo para forças de serviço ser (1,2/2,4) ou não ser (1,5/3,0) uma limitação de projeto. A terceira aplica-se a furos muito alongados na direção perpendicular à da força. O uso de furos alargados e furos pouco ou muito alongados na direção da força é restrito a ligações por atrito (ver 6.3.4.2 e Tabela 15). A força resistente total é igual à soma das forças resistentes à pressão de contato calculadas para todos os furos.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.3.3", "pagina": "84-85", "pagina_pdf": "101-102"},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_tracao_cisalhamento_combinados",
+      "descricao": "Equação de interação para tração e cisalhamento combinados",
+      "formula": "(Ft,Sd / Ft,Rd)^2 + (Fv,Sd / Fv,Rd)^2 <= 1,0",
+      "variaveis": {
+        "Ft_Sd": "força de tração solicitante de cálculo por parafuso ou barra redonda rosqueada",
+        "Fv_Sd": "força de cisalhamento solicitante de cálculo no plano considerado do parafuso ou barra redonda rosqueada",
+        "Ft_Rd": "força de tração resistente de cálculo (6.3.3.1)",
+        "Fv_Rd": "força de cisalhamento resistente de cálculo (6.3.3.2)"
+      },
+      "alternativa": "Alternativamente ao uso da equação de interação, Ft,Sd deve atender aos requisitos da Tabela 12 (limitações do tipo Ft,Sd <= fub*Ab/gamma_a2 - 1,90*Fv,Sd ou - 1,50*Fv,Sd, conforme o grau do parafuso e a posição do plano de corte); nesse caso, adicionalmente, devem ser feitas verificações para as forças de tração e cisalhamento isoladas, conforme 6.3.3.1, 6.3.3.2 e 6.3.3.3.",
+      "tabela12_transcrita": [
+        {"meio_de_ligacao": "Parafusos ASTM A307", "limitacao": "Ft,Sd <= fub*Ab/gamma_a2 - 1,90*Fv,Sd"},
+        {"meio_de_ligacao": "Parafusos F3125/F3125M graus A325 e F1852", "limitacao": "Ft,Sd <= fub*Ab/gamma_a2 - 1,90*Fv,Sd (plano de corte passa pela rosca); Ft,Sd <= fub*Ab/gamma_a2 - 1,50*Fv,Sd (plano de corte não passa pela rosca)"},
+        {"meio_de_ligacao": "Parafusos F3125/F3125M graus A490 e F2280", "limitacao": "Ft,Sd <= fub*Ab/gamma_a2 - 1,90*Fv,Sd (plano de corte passa pela rosca); Ft,Sd <= fub*Ab/gamma_a2 - 1,50*Fv,Sd (plano de corte não passa pela rosca)"},
+        {"meio_de_ligacao": "Barras redondas rosqueadas em geral", "limitacao": "Ft,Sd <= fub*Ab/gamma_a2 - 1,90*Fv,Sd"}
+      ],
+      "condicoes_aplicabilidade": "Quando ocorrer ação simultânea de tração e cisalhamento no parafuso.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.3.4 e Tabela 12", "pagina": "85-86", "pagina_pdf": "102-103"},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_ligacao_por_atrito_elu",
+      "descricao": "Força resistente de cálculo ao deslizamento, quando o deslizamento é um estado-limite último",
+      "formula": "Ff,Rd = 1,13 * mu * Ch * FTb * ns / gamma_e * (1 - Ft,Sd / (1,13 * FTb))",
+      "variaveis": {
+        "FTb": "força de protensão mínima por parafuso, conforme 6.8.4.1",
+        "Ft_Sd": "força de tração solicitante de cálculo no parafuso que reduz a força de protensão, calculada com as combinações últimas de ações conforme 4.8.7.2",
+        "ns": "número de planos de deslizamento",
+        "gamma_e": "coeficiente de ponderação da resistência, dado na Tabela 13",
+        "mu": "coeficiente de atrito (valor não extraído nesta rodada)",
+        "Ch": "fator relacionado ao tipo de furo (valor não extraído nesta rodada)"
+      },
+      "condicoes_aplicabilidade": "Ligações com furos alargados, furos pouco alongados com alongamento paralelo à direção da força, ou muito alongados em qualquer direção (6.3.4.2).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.4.3", "pagina": 86, "pagina_pdf": 103},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "A transcrição da equação foi feita a partir de texto extraído com símbolos parcialmente corrompidos e NÃO foi conferida visualmente; os valores de mu, Ch, gamma_e (Tabela 13) e FTb (6.8.4.1) não foram extraídos. Ligações por atrito estão fora do escopo da Fase 0 (ligações parafusadas simples por contato). NÃO USAR sem nova extração."
+    },
+    {
+      "id": "elementos_ligacao_cisalhamento",
+      "descricao": "Força cortante resistente de cálculo de elementos de ligação (chapas, cantoneiras) submetidos a cisalhamento — menor dos dois valores",
+      "formula_escoamento": "F,Rd = 0,60 * fy * Ag / gamma_a1",
+      "formula_ruptura": "F,Rd = 0,60 * fu * Anv / gamma_a2",
+      "variaveis": {
+        "Ag": "área bruta sujeita a cisalhamento",
+        "Anv": "área líquida sujeita a cisalhamento",
+        "fy": "resistência ao escoamento do aço",
+        "fu": "resistência do aço à ruptura"
+      },
+      "condicoes_aplicabilidade": "Elementos de ligação submetidos a cisalhamento (chapa de nó, cantoneira de ligação, chapa de topo etc.).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.5.5", "pagina": 95, "pagina_pdf": 112},
+      "status": "extraido"
+    },
+    {
+      "id": "elementos_ligacao_colapso_por_rasgamento",
+      "descricao": "Força resistente de cálculo ao colapso por rasgamento (block shear)",
+      "formula": "Fr,Rd = (1/gamma_a2) * (0,60*fu*Anv + Cts*fu*Ant)  <=  (1/gamma_a2) * (0,60*fy*Agv + Cts*fu*Ant)",
+      "variaveis": {
+        "Agv": "área bruta sujeita a cisalhamento",
+        "Anv": "área líquida sujeita a cisalhamento",
+        "Ant": "área líquida sujeita à tração",
+        "Cts": "igual a 1,0 quando a tensão de tração na área líquida for uniforme, e igual a 0,5 quando for não uniforme (Figuras 16-b e 16-c)",
+        "fy": "resistência ao escoamento do aço",
+        "fu": "resistência do aço à ruptura"
+      },
+      "condicoes_aplicabilidade": "Deve ser verificado junto a ligações em extremidades de vigas com a mesa recortada para encaixe e em situações similares, como em barras tracionadas e chapas de nó.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.5.6", "pagina": 95, "pagina_pdf": 112},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_espacamento_minimo",
+      "descricao": "Espaçamento mínimo entre furos",
+      "regra": "A distância entre centros de furos padrão, alargados ou alongados não pode ser inferior a 2,7*db, de preferência 3*db. Além desse requisito, a distância livre entre as bordas de dois furos consecutivos não pode ser inferior a db.",
+      "variaveis": {"db": "diâmetro do parafuso ou da barra redonda rosqueada"},
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.9", "pagina": 91, "pagina_pdf": 108},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_espacamento_maximo",
+      "descricao": "Espaçamento máximo entre parafusos que ligam uma chapa a um perfil ou a outra chapa, em contato contínuo",
+      "regras_transcritas": [
+        "a) em elementos pintados ou elementos não pintados que não estejam sujeitos à corrosão, o espaçamento não pode exceder 24 vezes a espessura da parte ligada menos espessa, nem 300 mm;",
+        "b) em elementos sujeitos à corrosão atmosférica, executados com aços resistentes à corrosão, não pintados, o espaçamento não pode exceder 14 vezes a espessura da parte ligada menos espessa, nem 180 mm."
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.10", "pagina": 92, "pagina_pdf": 109},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_distancia_maxima_borda",
+      "descricao": "Distância máxima de um parafuso ou barra rosqueada às bordas",
+      "regra": "Para qualquer borda de uma parte ligada, a distância do centro do parafuso, ou barra redonda rosqueada, mais próximo até essa borda não pode exceder 12 vezes a espessura da parte ligada considerada, nem 150 mm.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "6.3.12", "pagina": 92, "pagina_pdf": 109},
+      "status": "extraido"
+    },
+    {
+      "id": "parafuso_distancia_minima_borda_tabela16",
+      "descricao": "Tabela 16 — Distância mínima do centro de um furo-padrão à borda",
+      "tabela_transcrita": [
+        {"diametro_pol": "1/2", "diametro_mm": null, "distancia_minima_mm": 19},
+        {"diametro_pol": "5/8", "diametro_mm": 16, "distancia_minima_mm": 22},
+        {"diametro_pol": "3/4", "diametro_mm": null, "distancia_minima_mm": 25},
+        {"diametro_pol": null, "diametro_mm": 20, "distancia_minima_mm": 26},
+        {"diametro_pol": "7/8", "diametro_mm": 22, "distancia_minima_mm": 28},
+        {"diametro_pol": null, "diametro_mm": 24, "distancia_minima_mm": 30},
+        {"diametro_pol": "1", "diametro_mm": null, "distancia_minima_mm": 32},
+        {"diametro_pol": null, "diametro_mm": 27, "distancia_minima_mm": 34},
+        {"diametro_pol": "1 1/8", "diametro_mm": 30, "distancia_minima_mm": 38},
+        {"diametro_pol": "1 1/4", "diametro_mm": null, "distancia_minima_mm": 41},
+        {"diametro_pol": "> 1 1/4", "diametro_mm": ">= 36", "distancia_minima_mm": "1,25 * db"}
+      ],
+      "notas_da_tabela": [
+        "São permitidas distâncias inferiores às desta Tabela, desde que a equação aplicável de 6.3.3.3 seja atendida.",
+        "Para furos alargados e alongados, ver a Tabela 17 (NÃO extraída nesta rodada)."
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela 16 (item 6.3.11.1)", "pagina": 92, "pagina_pdf": 109},
+      "status": "REVISAR_MANUALMENTE",
+      "observacao": "A Tabela 16 tem as colunas 'pol.' e 'mm' INTERCALADAS (linhas em que só uma das duas colunas está preenchida). A correspondência linha a linha acima foi lida do alinhamento vertical da página renderizada e tem risco real de deslocamento de linha. Conferir contra o PDF impresso antes de usar em código."
+    }
+  ],
+  "pendencias_para_proxima_rodada": [
+    "6.1.2 a 6.1.7 — classificação de rigidez das ligações (flexíveis/rígidas/semirrígidas) e requisitos de apoio",
+    "6.3.4 completo — ligações por atrito (Tabelas 13 e 14)",
+    "6.3.5 — efeito de alavanca",
+    "6.3.6 e Tabelas 15 e 17 — dimensões e uso de furos e arruelas",
+    "6.3.7 (pega longa) e 6.3.8 (ligações de grande comprimento)",
+    "6.5.1 a 6.5.4 — elementos de ligação tracionados e comprimidos",
+    "6.6 — pressão de contato; 6.7 — bases de pilares; 6.8 — protensão e inspeção",
+    "Anexo A (A.2 aços estruturais, A.3 parafusos) — valores de fy, fu e fub"
+  ]
+}

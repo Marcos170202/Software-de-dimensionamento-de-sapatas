@@ -1,0 +1,183 @@
+{
+  "arquivo": "kb/nbr8800/deslocamentos_limites.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Deslocamentos máximos (estado-limite de serviço) — Anexo B (normativo)",
+  "item_normativo_raiz": "Anexo B",
+  "extraido_por": "Agente A1 - Bibliotecário (2ª rodada)",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "observacoes_gerais": [
+    "Todas as páginas do Anexo B (impressas 131, 132 e 133 = PDF 148, 149 e 150) e a página impressa 15 (PDF 32, item 4.7.4) e 31 (PDF 48, item 4.10.8) foram CONFERIDAS VISUALMENTE na página renderizada (pdftoppm), não apenas no texto extraído.",
+    "A Tabela B.1 usa células de valor verticalmente mescladas por blocos. Nos blocos 'Galpões em geral e edificações de um pavimento' e 'Edificações de dois ou mais pavimentos' a correspondência linha-a-linha é inequívoca (H vs h, conforme a nota 'a', e as notas g/h fixam a linha da viga de rolamento). No bloco 'Vigas de rolamento' a correspondência NÃO é inequívoca — ver a entrada 'tabela_b1_vigas_de_rolamento', marcada como REVISAR_MANUALMENTE.",
+    "Nenhum valor foi calculado, convertido ou completado de memória. Os limites são transcritos exatamente como impressos (L/250, L/350, H/300 etc.).",
+    "O Anexo B fornece apenas os VALORES-LIMITE. O cálculo dos deslocamentos em si segue 4.10.8 e as combinações de serviço de 4.8.7.3 (ver kb/nbr8800/combinacoes_acoes_nbr8681.json, extraído na 1ª rodada)."
+  ],
+  "entradas": [
+    {
+      "id": "els_condicao_geral_de_seguranca",
+      "descricao": "Condição usual de segurança relativa aos estados-limite de serviço (ELS)",
+      "formula": "S,ser <= S,lim",
+      "variaveis": {
+        "S,ser": "valores dos efeitos estruturais de interesse, obtidos com base nas combinações de serviço das ações dadas em 4.8.7.3",
+        "S,lim": "valores-limite adotados para esses efeitos, fornecidos no Anexo B e no Anexo H (para estado-limite de fadiga)"
+      },
+      "condicoes_aplicabilidade": "Verificação de qualquer estado-limite de serviço. Para deslocamentos excessivos, S,lim é dado na Tabela B.1 e em B.3.4.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.7.4", "pagina": 15, "pagina_pdf": 32},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_generalidades",
+      "descricao": "Natureza dos valores do Anexo B",
+      "texto_normativo": "Neste Anexo, são apresentados os valores dos deslocamentos máximos requeridos para situações usuais nas edificações. Esses deslocamentos devem ser entendidos como valores práticos a serem utilizados para verificação do estado-limite de serviço de deslocamentos excessivos da estrutura.",
+      "observacao_projeto": "B.2.1: os valores de B.3 são empíricos e servem para comparação com os resultados da análise estrutural feita conforme B.2.2. Em alguns casos, limites mais rigorosos podem ter que ser adotados (uso da edificação, materiais de acabamento, funcionamento de equipamentos, questões econômicas, percepção de desconforto). Se necessários, devem estar claramente apresentados nas especificações de projeto.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.1 e B.2.1", "pagina": 131, "pagina_pdf": 148},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_calculo_dos_deslocamentos",
+      "descricao": "Como calcular os deslocamentos a comparar com os limites",
+      "texto_normativo": "B.2.2: Os deslocamentos devem ser calculados conforme 4.10.8, considerando a possibilidade de ocorrência de deformações plásticas no estado-limite de serviço. O efeito da rigidez à rotação das ligações, dependendo de avaliação do responsável técnico pelo projeto, pode ter que ser também considerado.",
+      "remissao_4_10_8": {
+        "4.10.8.1": "Para a determinação de respostas para estados-limite de serviço, devem ser utilizadas as combinações de serviço dadas em 4.8.7.3, não sendo necessário considerar as imperfeições iniciais geométricas e de material.",
+        "4.10.8.2": "Para as estruturas de pequena e média deslocabilidade, pode ser feita análise elástica de primeira ordem. Para as estruturas de grande deslocabilidade, devem ser considerados os efeitos globais e locais de segunda ordem.",
+        "fonte_4_10_8": {"item": "4.10.8.1 e 4.10.8.2", "pagina": 31, "pagina_pdf": 48, "conferido_visualmente": true}
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.2.2", "pagina": 131, "pagina_pdf": 148},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_estado_limite_reversivel_ou_nao",
+      "descricao": "Critério para classificar o deslocamento excessivo como estado-limite reversível ou irreversível",
+      "texto_normativo": "B.2.3: O responsável técnico pelo projeto deve analisar cada situação e decidir se determinado deslocamento pode ser considerado um estado-limite reversível ou não. Na falta de uma melhor avaliação, se um elemento estrutural suportar somente componentes não sujeitos à fissuração e se seu comportamento em serviço for elástico, pode-se considerar o deslocamento excessivo como um estado-limite reversível. Por outro lado, se o elemento estrutural suportar componentes sujeitos à fissuração ou se o seu deslocamento em serviço levar à ocorrência de deformações plásticas, deve-se entender seu deslocamento excessivo como um estado-limite irreversível.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.2.3", "pagina": 131, "pagina_pdf": 148},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_escolha_da_combinacao_de_servico",
+      "descricao": "Qual combinação de serviço usar em cada verificação de deslocamento",
+      "texto_normativo": "B.2.4: O responsável técnico pelo projeto deve decidir quais combinações de serviço devem ser usadas, conforme o elemento estrutural considerado, as funções previstas para a estrutura, as características dos materiais de acabamento vinculados à estrutura e a sequência de construção. Dependendo dos fatores mencionados, pode ser que se tenha de alterar uma combinação de serviço comumente utilizada. Por exemplo, o deslocamento delta_max (ver B.3.1) está normalmente relacionado ao aspecto da estrutura, devendo-se usar combinações quase permanentes, conforme 4.8.7.3.2. No entanto, nas situações em que esse deslocamento vier a afetar o funcionamento de equipamentos, a causar empoçamentos na cobertura ou mesmo danos permanentes a elementos não estruturais sujeitos à fissuração, como paredes divisórias e forros, colocados antes que as ações consideradas passem a atuar, deve-se então utilizar, no primeiro e segundo casos, combinação frequente e, no terceiro, rara.",
+      "resumo_operacional": {
+        "delta_max_aspecto_da_estrutura": "combinação quase permanente (4.8.7.3.2)",
+        "afeta_funcionamento_de_equipamentos": "combinação frequente",
+        "causa_empocamento_na_cobertura": "combinação frequente",
+        "danos_permanentes_a_elementos_nao_estruturais_sujeitos_a_fissuracao": "combinação rara"
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.2.4", "pagina": 131, "pagina_pdf": 148},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_definicao_das_parcelas_de_flecha",
+      "descricao": "Definição das parcelas de deslocamento vertical de referência (viga simplesmente apoiada — Figura B.1)",
+      "definicoes": {
+        "delta_0": "contraflecha da viga",
+        "delta_1": "deslocamento devido às ações permanentes, sem efeitos de longa duração",
+        "delta_2": "deslocamento devido aos efeitos de longa duração das ações permanentes (se houver)",
+        "delta_3": "deslocamento devido às ações variáveis, incluindo, se houver, os efeitos de longa duração devidos aos valores quase permanentes dessas ações",
+        "delta_max": "deslocamento máximo da viga no estágio final de carregamento considerando-se a contraflecha",
+        "delta_tot": "soma de delta_1, delta_2 e delta_3"
+      },
+      "observacao": "A consideração dos efeitos de longa duração deve ser feita conforme L.1.2.1 (Anexo L, não extraído nesta rodada). A Figura B.1 é um desenho esquemático e não foi transcrita.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.3.1 e Figura B.1", "pagina": 132, "pagina_pdf": 149},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_deducao_da_contraflecha",
+      "descricao": "Dedução da contraflecha no cálculo dos deslocamentos verticais",
+      "texto_normativo": "B.3.2: No cálculo dos deslocamentos verticais a serem comparados com os valores máximos dados na Tabela B.1, pode-se deduzir o valor da contraflecha da viga até o limite do valor da flecha proveniente das ações permanentes (delta_1 da Figura B.1).",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.3.2", "pagina": 132, "pagina_pdf": 149},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_qual_parcela_comparar",
+      "descricao": "Qual(is) parcela(s) de deslocamento comparar com os limites da Tabela B.1",
+      "texto_normativo": "B.3.3: Em cada situação, o responsável técnico pelo projeto deve decidir qual(is) deslocamento(s), dado(s) esquematicamente na Figura B.1, deve(m) ser comparado(s) com os valores máximos da Tabela B.1 e quais os carregamentos (ou parte desses) são considerados no cálculo, considerando-se a sequência de construção. Na maioria das vezes, apenas a parcela do deslocamento devida às ações variáveis (delta_3), somada à parcela (se houver) dos efeitos de longa duração das ações permanentes (delta_2), é responsável por causar danos aos elementos não estruturais. São comuns, entretanto, situações em que se deve somar também o deslocamento de parte das ações permanentes (aquela que passa a atuar somente após a construção do elemento não estrutural considerado) ou mesmo considerar o deslocamento máximo, delta_max (ver B.2.4). Deve-se também avaliar, em cada situação, a probabilidade de ocorrência simultânea de duas ou mais ações variáveis.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.3.3", "pagina": 132, "pagina_pdf": 149},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_b_limite_de_fissura_em_parede_de_alvenaria",
+      "descricao": "Limite adicional de deslocamento horizontal para galpões e edificações de um pavimento com paredes de alvenaria",
+      "texto_normativo": "B.3.4: Para galpões em geral e edificações de um pavimento com paredes de alvenaria, além do disposto em B.3.1, deve ser limitado o deslocamento horizontal (perpendicular à parede) da estrutura, de maneira que a abertura da fissura que possa ocorrer na base da parede não seja superior a 1,5 mm, entendida a parede como painel rígido (ver a Figura B.2).",
+      "valor_limite": "abertura de fissura na base da parede <= 1,5 mm",
+      "condicoes_aplicabilidade": "Galpões em geral e edificações de um pavimento com paredes de alvenaria. Limite ADICIONAL aos da Tabela B.1.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "B.3.4 e Figura B.2", "pagina": 132, "pagina_pdf": 149},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "tabela_b1_deslocamentos_maximos",
+      "descricao": "Tabela B.1 — Deslocamentos máximos (limites de δ por tipo de elemento/situação)",
+      "simbolo_da_coluna_de_valores": "δ (nota a)",
+      "valores": [
+        {"elemento": "Travessas de fechamento", "delta_limite": "L/250", "notas": ["b"]},
+        {"elemento": "Terças de cobertura", "delta_limite": "L/250", "notas": ["c", "d"]},
+        {"elemento": "Vigas de cobertura", "delta_limite": "L/250", "notas": ["d"]},
+        {"elemento": "Vigas de piso", "delta_limite": "L/350", "notas": ["e"]},
+        {"elemento": "Vigas que suportam pilares", "delta_limite": "L/500", "notas": ["e"]},
+        {"elemento": "Pilares de fechamento em relação a base", "delta_limite": "H/250", "notas": []},
+        {"elemento": "Pilares de fechamento entre os apoios", "delta_limite": "L/250", "notas": []},
+        {"elemento": "Galpões em geral e edificações de um pavimento — Deslocamento horizontal do topo dos pilares em relação à base", "delta_limite": "H/300", "notas": []},
+        {"elemento": "Galpões em geral e edificações de um pavimento — Deslocamento horizontal do nível da viga de rolamento em relação à base", "delta_limite": "H/500", "notas": ["g", "h"]},
+        {"elemento": "Edificações de dois ou mais pavimentos — Deslocamento horizontal do topo dos pilares em relação à base", "delta_limite": "H/400", "notas": []},
+        {"elemento": "Edificações de dois ou mais pavimentos — Deslocamento horizontal relativo entre dois pisos consecutivos", "delta_limite": "h/500", "notas": ["i"]},
+        {"elemento": "Lajes mistas", "delta_limite": "Ver Anexo N", "notas": []}
+      ],
+      "bloco_nao_transcrito_aqui": "O bloco 'Vigas de rolamento' da mesma Tabela B.1 está na entrada 'tabela_b1_vigas_de_rolamento' (REVISAR_MANUALMENTE).",
+      "notas_da_tabela": {
+        "a": "L é o vão teórico entre apoios ou o dobro do comprimento teórico do balanço, H é a altura total do pilar (distância do topo à base) ou a distância do nível da viga de rolamento à base, h é a altura do andar (distância entre centros das vigas de dois pisos consecutivos ou entre centros das vigas e a base no caso do primeiro andar).",
+        "b": "Considerar separadamente o deslocamento paralelo ao plano do fechamento (L é o vão da travessa ou o espaçamento entre linhas de tirantes, caso existam) e o perpendicular ao plano do fechamento.",
+        "c": "Considerar separadamente o deslocamento paralelo ao plano da cobertura (L é o vão da terça ou o espaçamento entre linha de tirantes, caso existam) e o perpendicular ao plano da cobertura.",
+        "d": "Deve-se também evitar a ocorrência de empoçamento, com atenção especial aos telhados de pequena declividade.",
+        "e": "Caso haja paredes de alvenaria sobre ou sob uma viga, solidarizadas com essa viga, o deslocamento vertical também não pode exceder 15 mm.",
+        "f": "Carregamento não majorado pelo coeficiente de impacto vertical.",
+        "g": "No caso de pontes rolantes com regime de trabalho severo, o deslocamento também não pode ser superior a 40 mm.",
+        "h": "O diferencial do deslocamento horizontal entre pilares do pórtico que suportam as vigas de rolamento não pode superar 15 mm.",
+        "i": "Considerar apenas o deslocamento provocado pelas forças cortantes (verticais e horizontais) no andar considerado, desprezando-se os deslocamentos de corpo rígido provocados pelas deformações axiais dos pilares e vigas.",
+        "j": "Conforme a NBR 8681:2003, Tabela 7."
+      },
+      "observacao_fase_0": "Para a Fase 0 (pórtico plano de galpão/edificação simples) os limites diretamente aplicáveis são: vigas de cobertura L/250, vigas de piso L/350, vigas que suportam pilares L/500, deslocamento horizontal do topo dos pilares H/300 (um pavimento) ou H/400 (dois ou mais pavimentos), deslocamento relativo entre pisos h/500, além do limite de 15 mm da nota 'e' quando houver alvenaria solidarizada à viga.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela B.1", "pagina": 133, "pagina_pdf": 150},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "tabela_b1_vigas_de_rolamento",
+      "descricao": "Tabela B.1 — bloco 'Vigas de rolamento (para pontes rolantes classificadas conforme o regime de trabalho)' (nota j)",
+      "rotulos_impressos_na_coluna_descricao_em_ordem": [
+        "Vigas de rolamento (para pontes rolantes classificadas conforme o regime de trabalho) j:",
+        "— Deslocamento vertical:",
+        "    — Leve ou de uso eventual e moderado",
+        "    — Pesado",
+        "    — Severo",
+        "— Deslocamento horizontal",
+        "    — Todos os regimes de trabalho, exceto o severo",
+        "    — Severo"
+      ],
+      "valores_impressos_na_coluna_delta_em_ordem": ["L/750 (nota f)", "L/1000 (nota f)", "L/1250 (nota f)", "L/500", "L/750"],
+      "problema": "A coluna de valores tem 5 valores e a coluna de descrição tem 5 itens-folha (3 regimes no deslocamento vertical + 2 no horizontal), mas o alinhamento vertical na página impressa NÃO coincide com essa correspondência: o primeiro valor (L/750) aparece na altura da linha de cabeçalho '— Deslocamento vertical:', o que deslocaria toda a associação em uma linha. A leitura sequencial (5 valores para os 5 itens-folha, na ordem) daria: leve/moderado = L/750, pesado = L/1000, severo = L/1250, horizontal todos exceto severo = L/500, horizontal severo = L/750. O A1 NÃO adota nenhuma das duas leituras como definitiva.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela B.1 (bloco vigas de rolamento)", "pagina": 133, "pagina_pdf": 150},
+      "conferido_visualmente": true,
+      "observacao": "Fora do escopo da Fase 0 (não há pontes rolantes no MVP). Conferir contra o PDF impresso antes de qualquer uso. Decisão de interpretação cabe ao Agente A2. A nota 'j' remete à NBR 8681:2003, Tabela 7 — edição superada (a norma de apoio deste projeto é a NBR 8681:2025); ver também a entrada 'inconsistencia_referencia_nbr8681_2003'.",
+      "status": "REVISAR_MANUALMENTE"
+    },
+    {
+      "id": "inconsistencia_referencia_nbr8681_2003",
+      "descricao": "Referência datada a edição superada da NBR 8681 dentro da Tabela B.1",
+      "constatacao": "A nota 'j' da Tabela B.1 da NBR 8800:2024 remete à 'NBR 8681:2003, Tabela 7' para a classificação do regime de trabalho das pontes rolantes. A lista de referências normativas da própria NBR 8800:2024 (Seção 2) cita 'ABNT NBR 8681, Ações e segurança nas estruturas – Procedimento' SEM data (referência não datada, isto é, vale a edição vigente). O PDF disponível em kb/fontes_originais/normas/ é a NBR 8681:2025.",
+      "impacto": "A Tabela 7 citada pode ter mudado de numeração/conteúdo entre as edições 2003 e 2025 da NBR 8681. O A1 não verificou a NBR 8681:2025 quanto a esse ponto nesta rodada.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "Tabela B.1, nota j; Seção 2 (Referências normativas)", "pagina": 133, "pagina_pdf": 150},
+      "conferido_visualmente": true,
+      "observacao": "Não é errata tipográfica; é uma remissão datada a edição superada. Fora do escopo da Fase 0. Decisão cabe ao Agente A2.",
+      "status": "REVISAR_MANUALMENTE"
+    }
+  ]
+}

@@ -1,0 +1,180 @@
+{
+  "arquivo": "kb/nbr8800/propriedades_materiais.json",
+  "norma": "ABNT NBR 8800:2024",
+  "arquivo_fonte": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf",
+  "titulo": "Aços estruturais e materiais de ligação — Anexo A (normativo) + propriedades mecânicas gerais do aço (4.6.2.9)",
+  "item_normativo_raiz": "Anexo A",
+  "extraido_por": "Agente A1 - Bibliotecário (2ª rodada)",
+  "data_extracao": "2026-09-14",
+  "convencao_paginacao": "'pagina' = número impresso no rodapé da norma; 'pagina_pdf' = índice da página dentro do arquivo PDF (offset: pagina_pdf = pagina + 17)",
+  "unidades": "fy, fu, fyb, fub e fw em MPa. Diâmetros de parafuso em mm e em polegadas, exatamente como na Tabela A.3.",
+  "observacoes_gerais": [
+    "Páginas CONFERIDAS VISUALMENTE (pdftoppm) nesta extração: impressas 128, 129 e 130 (PDF 145, 146 e 147) — Tabelas A.1, A.2, A.3 e A.4 — e impressa 13 (PDF 30) — item 4.6.2.9.",
+    "Os valores são os NOMINAIS MÍNIMOS, a menos que uma faixa seja mostrada (A.2.3 e A.2.4). Nenhum valor foi calculado, arredondado ou completado de memória.",
+    "Notação 'x/y' nas Tabelas A.1 (NBR 6649/6650 e NBR 5920/5921): corresponde a 'a frio / a quente', conforme o título de cada bloco da tabela. '---' indica ausência de valor para aquele processo, exatamente como impresso.",
+    "A norma NÃO relaciona aços com resistência ao escoamento inferior a 250 MPa (A.2.3).",
+    "Nos aços da ABNT NBR 7007 (aços para perfis): MR = média resistência mecânica; AR = alta resistência mecânica; COR = resistência à corrosão atmosférica (A.2.3).",
+    "Na Tabela A.2, as colunas 'Produto' e 'Grupo de perfil ou faixa de espessura disponível' são MERAMENTE INDICATIVAS (A.2.4); para informações mais precisas deve ser consultada a ASTM A6.",
+    "fub dos parafusos ASTM A325/A490 está de fato no Anexo A (Tabela A.3), e não na Seção 6 — confirma a suposição do escopo desta rodada. A Seção 6 usa esses valores (ver kb/nbr8800/ligacoes_parafusadas_simples.json, extraído na 1ª rodada e marcado como PARCIAL)."
+  ],
+  "entradas": [
+    {
+      "id": "propriedades_mecanicas_gerais_do_aco",
+      "descricao": "Propriedades mecânicas gerais a adotar para todos os aços relacionados na Norma",
+      "texto_normativo": "4.6.2.9: Para efeito de cálculo, devem ser adotados, para os aços relacionados nesta Norma, os seguintes valores de propriedades mecânicas:",
+      "valores": {
+        "E_modulo_de_elasticidade_MPa": "200 000",
+        "coeficiente_de_poisson_va": "0,3",
+        "G_modulo_de_elasticidade_transversal_MPa": "77 000",
+        "beta_a_coeficiente_de_dilatacao_termica": "1,2 x 10^-5 °C^-1",
+        "rho_a_massa_especifica_kg_por_m3": "7 850"
+      },
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "4.6.2.9", "pagina": 13, "pagina_pdf": 30},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "acos_estruturais_normas_brasileiras_tabela_a1",
+      "descricao": "Tabela A.1 — Aços especificados por Normas técnicas (ABNT) para uso estrutural (perfis e chapas)",
+      "nota_da_tabela": {"a": "Para limitações de espessura, ver a Norma correspondente indicada nesta Tabela."},
+      "acos": [
+        {"norma_produto": "ABNT NBR 7007", "descricao_do_bloco": "Aços-carbono e microligados para uso estrutural e geral", "denominacao": "MR 250", "fy_MPa": "250", "fu_MPa": "400-560"},
+        {"norma_produto": "ABNT NBR 7007", "descricao_do_bloco": "Aços-carbono e microligados para uso estrutural e geral", "denominacao": "AR 350", "fy_MPa": "350", "fu_MPa": "450"},
+        {"norma_produto": "ABNT NBR 7007", "descricao_do_bloco": "Aços-carbono e microligados para uso estrutural e geral", "denominacao": "AR 350 COR", "fy_MPa": "350", "fu_MPa": "485"},
+        {"norma_produto": "ABNT NBR 7007", "descricao_do_bloco": "Aços-carbono e microligados para uso estrutural e geral", "denominacao": "AR 415", "fy_MPa": "415", "fu_MPa": "520"},
+        {"norma_produto": "ABNT NBR 6648", "descricao_do_bloco": "Chapas grossas de aço-carbono para uso estrutural", "denominacao": "CG-26", "fy_MPa": "255", "fu_MPa": "410"},
+        {"norma_produto": "ABNT NBR 6648", "descricao_do_bloco": "Chapas grossas de aço-carbono para uso estrutural", "denominacao": "CG-28", "fy_MPa": "275", "fu_MPa": "440"},
+        {"norma_produto": "ABNT NBR 6649 / ABNT NBR 6650", "descricao_do_bloco": "Chapas finas (a frio/a quente) de aço-carbono para uso estrutural", "denominacao": "CF-26", "fy_MPa": "260/260", "fu_MPa": "400/410", "observacao": "valores no formato a frio/a quente"},
+        {"norma_produto": "ABNT NBR 6649 / ABNT NBR 6650", "descricao_do_bloco": "Chapas finas (a frio/a quente) de aço-carbono para uso estrutural", "denominacao": "CF-28", "fy_MPa": "280/280", "fu_MPa": "440/440", "observacao": "valores no formato a frio/a quente"},
+        {"norma_produto": "ABNT NBR 6649 / ABNT NBR 6650", "descricao_do_bloco": "Chapas finas (a frio/a quente) de aço-carbono para uso estrutural", "denominacao": "CF-30", "fy_MPa": "---/300", "fu_MPa": "---/490", "observacao": "valores no formato a frio/a quente; '---' impresso na coluna 'a frio'"},
+        {"norma_produto": "ABNT NBR 5000", "descricao_do_bloco": "Chapas grossas de aço de baixa liga e alta resistência mecânica", "denominacao": "G-30", "fy_MPa": "300", "fu_MPa": "415"},
+        {"norma_produto": "ABNT NBR 5000", "descricao_do_bloco": "Chapas grossas de aço de baixa liga e alta resistência mecânica", "denominacao": "G-35", "fy_MPa": "345", "fu_MPa": "450"},
+        {"norma_produto": "ABNT NBR 5000", "descricao_do_bloco": "Chapas grossas de aço de baixa liga e alta resistência mecânica", "denominacao": "G-42", "fy_MPa": "415", "fu_MPa": "520"},
+        {"norma_produto": "ABNT NBR 5000", "descricao_do_bloco": "Chapas grossas de aço de baixa liga e alta resistência mecânica", "denominacao": "G-45", "fy_MPa": "450", "fu_MPa": "550"},
+        {"norma_produto": "ABNT NBR 5004", "descricao_do_bloco": "Chapas finas de aço de baixa liga e alta resistência mecânica", "denominacao": "F-32/Q-32", "fy_MPa": "310", "fu_MPa": "410"},
+        {"norma_produto": "ABNT NBR 5004", "descricao_do_bloco": "Chapas finas de aço de baixa liga e alta resistência mecânica", "denominacao": "F-35/Q-35", "fy_MPa": "340", "fu_MPa": "450"},
+        {"norma_produto": "ABNT NBR 5004", "descricao_do_bloco": "Chapas finas de aço de baixa liga e alta resistência mecânica", "denominacao": "Q-40", "fy_MPa": "380", "fu_MPa": "480"},
+        {"norma_produto": "ABNT NBR 5004", "descricao_do_bloco": "Chapas finas de aço de baixa liga e alta resistência mecânica", "denominacao": "Q-42", "fy_MPa": "410", "fu_MPa": "520"},
+        {"norma_produto": "ABNT NBR 5004", "descricao_do_bloco": "Chapas finas de aço de baixa liga e alta resistência mecânica", "denominacao": "Q-45", "fy_MPa": "450", "fu_MPa": "550"},
+        {"norma_produto": "ABNT NBR 5008", "descricao_do_bloco": "Chapas grossas e bobinas grossas, de aço de baixa liga, resistentes à corrosão atmosférica, para uso estrutural", "denominacao": "CGR 400", "fy_MPa": "250", "fu_MPa": "380"},
+        {"norma_produto": "ABNT NBR 5008", "descricao_do_bloco": "Chapas grossas e bobinas grossas, de aço de baixa liga, resistentes à corrosão atmosférica, para uso estrutural", "denominacao": "CGR 500 e CGR 500A", "fy_MPa": "370", "fu_MPa": "490"},
+        {"norma_produto": "ABNT NBR 5920 / ABNT NBR 5921", "descricao_do_bloco": "Chapas finas e bobinas finas (a frio/a quente), de aço de baixa liga, resistentes à corrosão atmosférica, para uso estrutural", "denominacao": "CFR 400", "fy_MPa": "---/250", "fu_MPa": "---/380", "observacao": "valores no formato a frio/a quente"},
+        {"norma_produto": "ABNT NBR 5920 / ABNT NBR 5921", "descricao_do_bloco": "Chapas finas e bobinas finas (a frio/a quente), de aço de baixa liga, resistentes à corrosão atmosférica, para uso estrutural", "denominacao": "CFR 500", "fy_MPa": "310/370", "fu_MPa": "450/490", "observacao": "valores no formato a frio/a quente"},
+        {"norma_produto": "ABNT NBR 8261", "descricao_do_bloco": "Perfil tubular, de aço-carbono, formado a frio, com e sem costura, de seção circular ou retangular para usos estruturais", "denominacao": "B", "secao_circular": {"fy_MPa": "290", "fu_MPa": "400"}, "secoes_quadrada_e_retangular": {"fy_MPa": "317", "fu_MPa": "400"}},
+        {"norma_produto": "ABNT NBR 8261", "descricao_do_bloco": "Perfil tubular, de aço-carbono, formado a frio, com e sem costura, de seção circular ou retangular para usos estruturais", "denominacao": "C", "secao_circular": {"fy_MPa": "317", "fu_MPa": "427"}, "secoes_quadrada_e_retangular": {"fy_MPa": "345", "fu_MPa": "427"}}
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.2.3 e Tabela A.1", "pagina": "127-128", "pagina_pdf": "144-145"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "acos_estruturais_astm_tabela_a2",
+      "descricao": "Tabela A.2 — Aços de uso frequente especificados pela ASTM para uso estrutural",
+      "notas_da_tabela": {
+        "a": "Grupos de perfis laminados para efeito de propriedades mecânicas: Grupo 1 — Perfis com espessura de mesa inferior ou igual a 37,5 mm; Grupo 2 — Perfis com espessura de mesa superior a 37,5 mm e inferior ou igual a 50 mm; Grupo 3 — Perfis com espessura de mesa superior a 50 mm; Grupo 4 — Perfis tubulares.",
+        "b": "t corresponde à menor dimensão ou ao diâmetro da seção transversal da barra.",
+        "c": "Barras redondas, quadradas e chatas.",
+        "d": "a relação fu/fy não pode ser inferior a 1,15."
+      },
+      "acos": [
+        {"classificacao": "Aços-carbono", "denominacao": "A36", "produto": "Perfis", "grupo_ou_espessura": "1, 2 e 3", "grau": "-", "fy_MPa": "250", "fu_MPa": "400 a 550"},
+        {"classificacao": "Aços-carbono", "denominacao": "A36", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 200 mm", "grau": "-", "fy_MPa": "250", "fu_MPa": "400 a 550"},
+        {"classificacao": "Aços-carbono", "denominacao": "A500", "produto": "Perfis", "grupo_ou_espessura": "4", "grau": "A", "fy_MPa": "230", "fu_MPa": "310"},
+        {"classificacao": "Aços-carbono", "denominacao": "A500", "produto": "Perfis", "grupo_ou_espessura": "4", "grau": "B", "fy_MPa": "290", "fu_MPa": "400"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Perfis", "grupo_ou_espessura": "1, 2 e 3", "grau": "42", "fy_MPa": "290", "fu_MPa": "415"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Perfis", "grupo_ou_espessura": "1, 2 e 3", "grau": "50", "fy_MPa": "345", "fu_MPa": "450"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Perfis", "grupo_ou_espessura": "1, 2 e 3", "grau": "55", "fy_MPa": "380", "fu_MPa": "485"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "60", "fy_MPa": "415", "fu_MPa": "520"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "65", "fy_MPa": "450", "fu_MPa": "550"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 150 mm", "grau": "42", "fy_MPa": "290", "fu_MPa": "415"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 100 mm", "grau": "50", "fy_MPa": "345", "fu_MPa": "450"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 50 mm", "grau": "55", "fy_MPa": "380", "fu_MPa": "485"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 31,5 mm", "grau": "60", "fy_MPa": "415", "fu_MPa": "520"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A572", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 31,5 mm", "grau": "65", "fy_MPa": "450", "fu_MPa": "550"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica", "denominacao": "A992 (nota d)", "produto": "Perfis", "grupo_ou_espessura": "1, 2 e 3", "grau": "-", "fy_MPa": "345 a 450", "fu_MPa": "450"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Perfis", "grupo_ou_espessura": "1", "grau": "-", "fy_MPa": "345", "fu_MPa": "485"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Perfis", "grupo_ou_espessura": "2", "grau": "-", "fy_MPa": "315", "fu_MPa": "460"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Perfis", "grupo_ou_espessura": "3", "grau": "-", "fy_MPa": "290", "fu_MPa": "435"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 19 mm", "grau": "-", "fy_MPa": "345", "fu_MPa": "480"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "19 < t <= 37,5 mm", "grau": "-", "fy_MPa": "315", "fu_MPa": "460"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A242", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "37,5 < t <= 100 mm", "grau": "-", "fy_MPa": "290", "fu_MPa": "435"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A588", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "-", "fy_MPa": "345", "fu_MPa": "485"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A588", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "t <= 100 mm", "grau": "-", "fy_MPa": "345", "fu_MPa": "480"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A588", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "100 < t <= 125 mm", "grau": "-", "fy_MPa": "315", "fu_MPa": "460"},
+        {"classificacao": "Aços de baixa liga e alta resistência mecânica resistentes à corrosão atmosférica", "denominacao": "A588", "produto": "Chapas e barras (nota c)", "grupo_ou_espessura": "125 < t <= 200 mm", "grau": "-", "fy_MPa": "290", "fu_MPa": "435"},
+        {"classificacao": "Aços de baixa liga temperados e autorrevenidos", "denominacao": "A913", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "50", "fy_MPa": "345", "fu_MPa": "450"},
+        {"classificacao": "Aços de baixa liga temperados e autorrevenidos", "denominacao": "A913", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "60", "fy_MPa": "415", "fu_MPa": "520"},
+        {"classificacao": "Aços de baixa liga temperados e autorrevenidos", "denominacao": "A913", "produto": "Perfis", "grupo_ou_espessura": "1 e 2", "grau": "65", "fy_MPa": "450", "fu_MPa": "550"}
+      ],
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.2.4 e Tabela A.2", "pagina": "128-129", "pagina_pdf": "145-146"},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "parafusos_tabela_a3",
+      "descricao": "Tabela A.3 — Materiais usados em parafusos (fyb, fub e faixa de diâmetros)",
+      "notas_da_tabela": {
+        "a": "Disponíveis também com resistência à corrosão atmosférica comparável à dos aços AR 350 COR ou à dos aços ASTM A588.",
+        "b": "fyb e fub são, respectivamente, a resistência ao escoamento e a resistência à ruptura do aço dos parafusos."
+      },
+      "texto_normativo_a3": "A.3: Na Tabela A.3, são fornecidos os valores mínimos da resistência ao escoamento e da resistência à ruptura de parafusos, de acordo com suas respectivas normas ou especificações, bem como os diâmetros nos quais eles podem ser encontrados. Os parafusos ASTM F3125 graus A325 e F1852 podem receber revestimento galvanizado por meio mecânico ou revestimento de liga de zinco e alumínio, mas somente os parafusos grau A325 podem ser galvanizados a fogo. Os parafusos ASTM F3125 graus A490 e F2280 somente podem receber revestimento de liga de zinco e alumínio. Os parafusos ASTM A307 e ISO 4016 Classe 4.6 da ISO 898-1 podem receber qualquer tipo de revestimento. Para os demais parafusos ISO 4016, consultar as normas correspondentes.",
+      "parafusos": [
+        {"especificacao": "ASTM A307", "fyb_MPa": "-", "fub_MPa": "415", "diametro_db_mm": "-", "diametro_db_pol": "1/2 <= db <= 4", "notas": []},
+        {"especificacao": "ISO 4016 Classe 4.6 da ISO 898-1", "fyb_MPa": "235", "fub_MPa": "400", "diametro_db_mm": "12 <= db <= 36", "diametro_db_pol": "-", "notas": []},
+        {"especificacao": "ASTM F3125 A325 e F1852", "fyb_MPa": "635", "fub_MPa": "830", "diametro_db_mm": "16 <= db <= 36", "diametro_db_pol": "1/2 <= db <= 1 1/2", "notas": ["a"]},
+        {"especificacao": "ISO 4016 Classe 8.8 da ISO 898-1", "fyb_MPa": "640", "fub_MPa": "800", "diametro_db_mm": "12 <= db <= 36", "diametro_db_pol": "-", "notas": []},
+        {"especificacao": "ASTM F3125 A490 e F2280", "fyb_MPa": "895", "fub_MPa": "1 040", "diametro_db_mm": "16 <= db <= 36", "diametro_db_pol": "1/2 <= db <= 1 1/2", "notas": ["a"]},
+        {"especificacao": "ISO 4016 Classe 10.9 da ISO 898-1", "fyb_MPa": "900", "fub_MPa": "1 000", "diametro_db_mm": "12 <= db <= 36", "diametro_db_pol": "-", "notas": []}
+      ],
+      "observacao_para_a_secao_6": "Estes são os fub que alimentam as verificações de parafuso da Seção 6 (Ft,Rd = Abe*fub/gamma_a2; Fv,Rd = 0,45*Ab*fub/gamma_a2 ou 0,56*Ab*fub/gamma_a2) — ver kb/nbr8800/ligacoes_parafusadas_simples.json. Atenção: na edição 2024 a designação do A325/A490 é 'ASTM F3125 grau A325' e 'ASTM F3125 grau A490'.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.3 e Tabela A.3", "pagina": 130, "pagina_pdf": 147},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "metal_da_solda_tabela_a4",
+      "descricao": "Tabela A.4 — Resistência nominal à tração do metal da solda (fw)",
+      "texto_normativo": "A.4: A resistência mínima à tração dos metais de soldas, fw, mencionados na Tabela 8, conforme as Normas ou especificações das soldas citadas nessa tabela, é fornecida na Tabela A.4.",
+      "metais_de_solda": [
+        {"metal_da_solda": "Todos os eletrodos com classe de resistência 6 ou 60", "fw_MPa": "415"},
+        {"metal_da_solda": "Todos os eletrodos com classe de resistência 7 ou 70", "fw_MPa": "485"},
+        {"metal_da_solda": "Todos os eletrodos com classe de resistência 8 ou 80", "fw_MPa": "550"}
+      ],
+      "observacao": "A Tabela 8 da Seção 6 (metal-base/metal da solda compatíveis) NÃO foi extraída — ligações soldadas são Fase 1.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.4 e Tabela A.4", "pagina": 130, "pagina_pdf": 147},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "conectores_de_cisalhamento_pino_com_cabeca",
+      "descricao": "Aço dos conectores de cisalhamento tipo pino com cabeça (estruturas mistas)",
+      "texto_normativo": "A.5.1: Os conectores de cisalhamento tipo pino com cabeça, usados nos elementos mistos de aço e concreto, devem ter dimensões e ser soldados aos perfis de aço de acordo com a AWS D1.1. A.5.2: O aço estrutural utilizado para conectores pino com cabeça de diâmetro até 22,2 mm deve ser o ASTM A29/A29M, Graus 1010 a 1020, devendo ser especificado com resistência ao escoamento de 350 MPa, resistência à ruptura de 420 MPa, alongamento mínimo em 50 mm de 20 % e redução mínima de área de 50 %.",
+      "valores": {
+        "especificacao": "ASTM A29/A29M, Graus 1010 a 1020",
+        "diametro_maximo_mm": "22,2",
+        "fy_MPa": "350",
+        "fu_MPa": "420",
+        "alongamento_minimo_em_50_mm": "20 %",
+        "reducao_minima_de_area": "50 %"
+      },
+      "observacao": "Fora do escopo da Fase 0 (estruturas mistas). Transcrito por completude do Anexo A.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.5.1 e A.5.2", "pagina": 130, "pagina_pdf": 147},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    },
+    {
+      "id": "anexo_a_grau_de_corrosao_da_superficie",
+      "descricao": "Grau de corrosão aceitável da superfície do aço estrutural (requisito de especificação)",
+      "graus": {
+        "A": "substrato de aço sem corrosão, com carepa de laminação ainda intacta",
+        "B": "substrato de aço com início de corrosão e destacamento da carepa de laminação",
+        "C": "substrato de aço onde a carepa de laminação foi eliminada pela corrosão ou que possa ser removida por raspagem, com pouca formação de cavidades visíveis (pites)",
+        "D": "substrato de aço onde a carepa de laminação foi eliminada pela corrosão e com grande formação de cavidades visíveis (pites)"
+      },
+      "restricao": "Aços estruturais com grau de corrosão D devem ser evitados, podendo ser utilizados somente em condições especiais, a critério do responsável técnico, considerando-se as medidas necessárias para eliminar substâncias nocivas que possam estar presentes nos pites. Para especificações mais detalhadas sobre aparência e acabamento de superfícies, deve ser consultada a ISO 8501-1.",
+      "fonte": {"arquivo": "NBR 8800 - 2024 -  Projeto de Estruturas de Aço e de Estruturas Mistas de Aço e Concreto de Edifícios.pdf", "item": "A.2.1", "pagina": 127, "pagina_pdf": 144},
+      "conferido_visualmente": true,
+      "status": "extraido"
+    }
+  ]
+}
