@@ -1,0 +1,522 @@
+meta:
+  gerado_por: a1-bibliotecario
+  aviso: Casos de teste da bibliografia. Valores esperados sao os DO AUTOR, com as hipoteses DO AUTOR; divergencia com a norma
+    nao e erro do software (ver hipoteses_do_autor).
+  excluidos:
+  - Bastos Ex. 2 (mesma sapata do Ex. 1 pelo metodo das bielas -- candidato para A5 depois)
+  - 'Bastos Ex. 3-9 (momento, flexao obliqua, flexivel, corrida, divisa, associada: fora do escopo)'
+  - 'Cintra Cap. 2 Ex. 2 (argila mole/areia fofa: ruptura por puncionamento/local com c* e phi* reduzidos -- fora do escopo
+    minimo)'
+  - 'Cintra Cap. 2 Ex. 3+ (NA variavel, dupla camada: fora do escopo)'
+  - Cintra Cap. 4 Ex. 1-2 (tensao admissivel por prova de carga em placa, dependem da leitura de curvas da Fig. 2.17/2.18
+    -- nao extraidos)
+  - 'Cintra Cap. 4 Ex. 3 (perfil estratificado: fora do escopo)'
+exemplos:
+- id: BASTOS-2023-EX1
+  fonte: Bastos, P. S. (2023). Sapatas de Fundação. Notas de aula 2133 - Estruturas de Concreto III, UNESP Bauru, out/2023.
+    Item 1.6.5.4, Exemplo 1 - Sapata Isolada Rígida Sob Carga Centrada
+  arquivo: refs/Sapatas.pdf
+  sha256_pdf: 1dc47a92a90639cc573bbc66327fdcbe4e9af1c52b87e57de6d38351bdf68869
+  pagina:
+  - 31
+  - 32
+  - 33
+  - 34
+  - 35
+  - 36
+  pagina_pdf:
+  - 35
+  - 36
+  - 37
+  - 38
+  - 39
+  - 40
+  enunciado_literal: 'Dimensionar uma sapata de fundação rasa para um pilar com seção transversal 20 x 80 cm, que transfere
+    à sapata uma carga vertical centrada total de 1.250 kN (Nk = valor característico), com armadura vertical no pilar composta
+    por barras de 16 mm (φℓ,pil), tensão admissível do solo (Padm) de 0,26 MPa (2,6 kgf/cm2) e: - momentos fletores solicitantes
+    externos inexistentes (Mx = My = 0); - coeficientes de ponderação: γc = γf = 1,4 ; γs = 1,15; - materiais: concreto C25,
+    aço CA-50 (fyd = 43,48 kN/cm2); - cobrimento de concreto: c = 4,0 cm.'
+  hash_trecho: sha256:50a077532f710b130c5b2059564e3701c63637da65489e2ccfe985d98e9ad747
+  hash_metodo: sha256 do enunciado_literal apos NFC + colapso de espacos
+  extracao: texto do enunciado pela camada de texto (Word) conferido visualmente; equacoes e valores numericos SO por leitura
+    visual (camada de texto das equacoes e fragmentada), pagina a 200 dpi; aritmetica do autor reproduzida pelo A1 com os
+    valores transcritos -- confere
+  status: EXTRAIDO
+  escopo:
+    geotecnico_A4: parte a) Dimensoes da sapata (area, B, A)
+    estrutural_A5: partes a) altura/rigidez, b) momentos e armaduras, c) diagonal comprimida, d) detalhamento -- NBR 6118,
+      fora do escopo do A4
+  normas_citadas_pelo_autor:
+  - NBR 6118/2023
+  - NBR 6122/2021 (assim citada na Apresentacao do texto; a versao no acervo e NBR 6122:2022)
+  - CEB-70
+  - ACI 318
+  hipoteses_do_autor:
+  - 'Kmaj = 1,1 aplicado a Nk "a fim de levar em conta o peso próprio da sapata e do solo sobre a sapata" (Eq. 1.6: Ssap =
+    Kmaj·Nk/Padm). DIVERGE da forma da NBR 6122:2022 5.6 ("peso próprio de blocos de coroamento ou sapatas, ou no mínimo 5
+    % da carga vertical permanente"): o autor usa 10 % da carga TOTAL e inclui o solo.'
+  - Padm = 0,26 MPa e dado de entrada (nao derivado de ensaio); verificacao em valores admissiveis com Nk caracteristico.
+  - 'Balanços iguais cA = cB (Eq. 1.5: A - B = ap - bp) e menor lado pela Eq. 1.9: B = 1/2 (bp - ap) + sqrt(1/4 (bp - ap)^2
+    + Ssap) [transcrito da substituicao na p.32].'
+  - Dimensões arredondadas para múltiplos de 5 cm (B = 201,9 -> 205 cm).
+  - A area adotada (54.325 cm2) e comparada com a area estimada (52.885 cm2); a tensao no solo com o peso proprio real NAO
+    e recalculada.
+  - Sapata rigida pelo criterio h >= (A - ap)/3 (Eq. 1.1, atribuido pelo autor a NBR 6118); verificado so na direcao A porque
+    cA = cB.
+  - h = 70 cm adotado (decisao do autor, acima do minimo 61,7 cm).
+  - d = h - (c + 1,0 cm) = h - 5 cm.
+  - Comprimento de ancoragem da armadura do pilar lb = 42 cm pela Tabela A-7 do autor (boa aderencia, C25, phi 16 mm, com
+    gancho); exige d > lb.
+  - ho >= max(h/3; 15 cm) (Eq. 1.3) e angulo da face inclinada alpha <= 30 graus (tg alpha = (h - ho)/cA).
+  - Pressao de calculo pd = Nd/(A·B) com Nd = 1,4·Nk, SEM peso proprio da sapata e do solo ("não necessitam ser consideradas
+    no cálculo do momento fletor"); pressao "fictícia", nao comparavel a Padm.
+  - 'Metodo CEB-70: secao de referencia S1 a 0,15·ap (ou 0,15·bp) para dentro da face do pilar; limite de aplicacao h/2 <=
+    cA <= 2h (Eq. 1.25); M1 = pd·x^2/2·(largura) (Eq. 1.27).'
+  - 'As = M1d/(0,85·d·fyd) (Eq. 1.28): braco de alavanca 0,85·d; fyd = 50/1,15 = 43,48 kN/cm2.'
+  - Sem armadura minima de flexao (autor argumenta que a NBR 6118 nao a define para sapatas).
+  - Armadura distribuida uniformemente apesar de ap + 2h = 220 cm > B = 205 cm (autor dispensa a concentracao do CEB-70 porque
+    A/B = 1,29).
+  - Sapata rigida -> sem verificacao de puncao; so diagonal comprimida no contorno C (u0 = perimetro do pilar); FSd = gamma_f·N
+    sem reducao pela reacao do solo.
+  - tau_Rd2 = 0,27·alpha_v·fcd com alpha_v = (1 - fck/250), fck em MPa (Eq. 1.17 do autor, transcrita da substituicao) --
+    NAO conferido contra a NBR 6118 pelo A1.
+  - 'Gancho das barras de flexao: vertical ho - 10 = 15 cm + inclinado lb - 15 = 23 -> 25 cm (lb = 38 cm, phi 10, sem gancho,
+    Tabela A-7).'
+  entrada:
+    N_k:
+      valor: 1250
+      unidade: kN
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    pilar_ap:
+      valor: 80
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    pilar_bp:
+      valor: 20
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    M_x:
+      valor: 0
+      unidade: kN.cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    M_y:
+      valor: 0
+      unidade: kN.cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    sigma_adm:
+      valor: 0.26
+      unidade: MPa
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    fck:
+      valor: 25
+      unidade: MPa
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    aco: CA-50
+    fyd:
+      valor: 43.48
+      unidade: kN/cm2
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    gamma_c:
+      valor: 1.4
+      unidade: '-'
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    gamma_f:
+      valor: 1.4
+      unidade: '-'
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    gamma_s:
+      valor: 1.15
+      unidade: '-'
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    cobrimento:
+      valor: 4.0
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    phi_pilar:
+      valor: 16
+      unidade: mm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    K_maj_autor:
+      valor: 1.1
+      unidade: '-'
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: hipotese do autor, nao dado do problema
+  esperado:
+    S_sap_estimada:
+      valor: 52885
+      unidade: cm2
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    B_calculado:
+      valor: 201.9
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    B:
+      valor: 205
+      unidade: cm
+      tol_abs: 5
+      tol_origem: tabela de tolerancias do a7-validador
+    A:
+      valor: 265
+      unidade: cm
+      tol_abs: 5
+      tol_origem: tabela de tolerancias do a7-validador
+      observacao: lado maior (L na nomenclatura B x L)
+    S_sap_adotada:
+      valor: 54325
+      unidade: cm2
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    c_A:
+      valor: 92.5
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    c_B:
+      valor: 92.5
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    h_min_rigida:
+      valor: 61.7
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    h_adotado:
+      valor: 70
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: decisao do autor
+    d:
+      valor: 65
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    h_o_min:
+      valor: 23.3
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    h_o:
+      valor: 25
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    alpha_face:
+      valor: 25.9
+      unidade: grau
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    p_d:
+      valor: 0.03221
+      unidade: kN/cm2
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: pressao de calculo ficticia, sem peso proprio
+    x_A:
+      valor: 104.5
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    x_B:
+      valor: 95.5
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    M_1A_d:
+      valor: 36053
+      unidade: kN.cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    M_1B_d:
+      valor: 38924
+      unidade: kN.cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    As_A:
+      valor: 15.01
+      unidade: cm2
+      tol_rel: 0.05
+      tol_origem: tabela de tolerancias do a7-validador
+    As_B:
+      valor: 16.2
+      unidade: cm2
+      tol_rel: 0.05
+      tol_origem: tabela de tolerancias do a7-validador
+    as_A_por_metro:
+      valor: 7.32
+      unidade: cm2/m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: As_A distribuida em B = 2,05 m (nota 29 do autor)
+    as_B_por_metro:
+      valor: 6.11
+      unidade: cm2/m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: As_B distribuida em A = 2,65 m
+    armadura_A: 'phi 10 mm c/10 cm (8,00 cm2/m) -- N1: 20 phi 10, C = 337 cm'
+    armadura_B: 'phi 10 mm c/13 cm (6,15 cm2/m) -- N2: 20 phi 10, C = 277 cm'
+    u_0:
+      valor: 200
+      unidade: cm
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    F_Sd:
+      valor: 1750
+      unidade: kN
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    tau_Sd:
+      valor: 1.35
+      unidade: MPa
+      tol_rel: 0.02
+      tol_origem: tabela de tolerancias do a7-validador
+    tau_Rd2:
+      valor: 4.34
+      unidade: MPa
+      tol_rel: 0.02
+      tol_origem: tabela de tolerancias do a7-validador
+  criticidade: null
+  criticidade_nota: A1 nao classifica criticidade; definir no A7. Parte geotecnica (B, A) e a unica do escopo minimo do A4.
+- id: CINTRA-2011-CAP2-EX1
+  fonte: 'Cintra, J. C. A.; Aoki, N.; Albiero, J. H. (2011). Fundações diretas: projeto geotécnico. São Paulo: Oficina de
+    Textos. Cap. 2 Capacidade de carga, Exercícios resolvidos, exercício 1'
+  arquivo: refs/Fundacoes_Diretas_Projeto_Geotecnico_Jos.pdf
+  sha256_pdf: 3b31b86ac8352568ed561c02fef8baf5242172c9031e47eef0f3dbf4cf68368e
+  pagina:
+  - 49
+  - 50
+  - 51
+  pagina_pdf:
+  - 49
+  - 50
+  - 51
+  hash_imagens_pagina:
+    pdf_49: sha256:ff5457f1fd6f994994f1a697005f48d359395d84d7528133c1edc7f600dbcd51
+    pdf_50: sha256:9492fb03600ce1ce7ab01ed8c8350ad4f73899c9ba972ca11659e619b7f46ba8
+    pdf_51: sha256:9585192c14b0b94004e64d9be5a3a101e8ccf02f53f98acda2b23f4278da21ec
+  hash_imagens_metodo: sha256 do stream bruto da imagem embutida (PDF digitalizado, sem camada de texto)
+  enunciado_literal: '1) Estimar a capacidade de carga de um elemento de fundação por sapata (indicado na figura), com as
+    seguintes condições de solo e valores médios no bulbo de tensões: a) argila rija com Nspt = 15 b) areia compacta com Nspt
+    = 30 c) areia argilosa com φ = 25° e c = 50 kPa (valores não drenados). [figura: cota 0 no terreno; base da sapata e NA
+    na cota -1; B = 2 m L = 3 m]'
+  hash_trecho: sha256:9b85d1b1955e68b18abf487fa51f1e862d175e4057cedb0f97c8ec358849c4c8
+  hash_metodo: sha256 do enunciado_literal (transcricao visual) apos NFC + colapso de espacos
+  extracao: PDF digitalizado (~100 dpi, sombra de encadernacao na margem esquerda da p.49/51); leitura so por visao, duas
+    passadas (folha de contato 45 dpi para localizar + recorte 220 dpi para ler); aritmetica do autor reproduzida pelo A1
+    -- confere nos tres casos
+  status: EXTRAIDO
+  escopo:
+    geotecnico_A4: capacidade de carga (tensao de ruptura) por metodo teorico -- NBR 6122:2022 7.3.2
+  normas_citadas_pelo_autor:
+  - NBR 6122:2010 (o livro e anterior a NBR 6122:2022)
+  hipoteses_do_autor:
+  - Equacao de Terzaghi com a proposicao de Vesic; fatores de capacidade de carga da Tab. 2.2 e fatores de forma da Tab. 2.3
+    DO LIVRO (nao normativos; a NBR 6122:2022 nao fornece estas tabelas).
+  - Solo representado por "valores médios no bulbo de tensões" -> tratado como homogeneo.
+  - 'Correlacoes do autor: argila c = 10·NSPT (kPa); areia phi = 28 graus + 0,4·NSPT.'
+  - 'Pesos especificos por tabelas do livro: Tab. 2.4 (argila rija gamma = 19 kN/m3); Tab. 2.5 (areia compacta gamma = 18,
+    gamma_sat = 21 kN/m3); areia argilosa: gamma = 18 e gamma_sat = 21 "atribuímos".'
+  - 'Modo de ruptura escolhido pelo autor: ruptura geral nos tres casos (caso c pela Fig. 2.21, regiao III).'
+  - 'NA na cota de apoio (-1 m): sobrecarga q = gamma·h com gamma natural; termo de peso com gamma'' = gamma_sat - 10 (gamma_w
+    = 10 kN/m3).'
+  - 'Caso a: phi = 0 (argila, analise nao drenada); a equacao usada omite o termo de peso (1/2 gamma B N_gamma S_gamma).'
+  - 'Fatores de forma na substituicao literal: Sc = 1 + (2/3)·(Nq/Nc); Sq = 1 + (2/3)·tg phi; S_gamma = 1 - 0,4·(2/3), com
+    2/3 = B/L.'
+  - q = gamma·h com h = 1 m, sem sobrecarga adicional.
+  - Resultado e a tensao de ruptura sigma_r; o exercicio NAO aplica fator de seguranca nem calcula tensao admissivel.
+  - 'Arredondamentos: fatores com 2 casas; resultados com "≅".'
+  nota_A1: Pela NBR 6122:2022 Tabela 1, metodo analitico -> FSg = 3,00 / gamma_m = 2,15. Esta ligacao e observacao do A1,
+    nao do autor; qualquer sigma_adm derivado deste exemplo NAO tem valor esperado na fonte.
+  entrada_comum:
+    B:
+      valor: 2.0
+      unidade: m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    L:
+      valor: 3.0
+      unidade: m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    h_apoio:
+      valor: 1.0
+      unidade: m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    cota_NA:
+      valor: -1.0
+      unidade: m
+      tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: na cota de apoio, conforme figura
+  casos:
+  - id: CINTRA-2011-CAP2-EX1a
+    descricao: argila rija, NSPT = 15 -> ruptura geral
+    equacao_do_autor_literal: σr = c · Nc · Sc + q · Nq · Sq
+    entrada:
+      solo: argila rija
+      N_SPT: 15
+    intermediarios_do_autor:
+      phi:
+        valor: 0
+        unidade: grau
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_c:
+        valor: 5.14
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_q:
+        valor: 1.0
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_q_sobre_N_c:
+        valor: 0.2
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      tg_phi:
+        valor: 0
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      S_c:
+        valor: 1.13
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: Sc = 1 + (2/3)·0,20 = 1,13
+      S_q:
+        valor: 1.0
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      c:
+        valor: 150
+        unidade: kPa
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: c = 10·15 = 150 kPa
+      gamma:
+        valor: 19
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      q:
+        valor: 19
+        unidade: kPa
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: q = 19·1 = 19 kPa
+    esperado:
+      sigma_r:
+        valor: 890
+        unidade: kPa
+        tol_rel: 0.05
+        tol_origem: sugestao A1 por analogia a sigma_adm na tabela do A7 (sigma_r nao consta da tabela) -- confirmar no A7
+        literal: σr = 150·5,14·1,13 + 19·1,00·1,00 ≅ 890 kPa = 0,89 MPa
+  - id: CINTRA-2011-CAP2-EX1b
+    descricao: areia compacta, NSPT = 30 -> ruptura geral
+    equacao_do_autor_literal: σr = q · Nq · Sq + 1/2 γ · B · Nγ · Sγ
+    entrada:
+      solo: areia compacta
+      N_SPT: 30
+    intermediarios_do_autor:
+      phi:
+        valor: 40
+        unidade: grau
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: φ = 28° + 0,4·30 = 40°
+      N_q:
+        valor: 64.2
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_gamma:
+        valor: 109.41
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      tg_phi:
+        valor: 0.84
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      S_q:
+        valor: 1.56
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: Sq = 1 + (2/3)·0,84 = 1,56
+      S_gamma:
+        valor: 0.73
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: Sγ = 1 − 0,4·(2/3) = 0,73
+      gamma:
+        valor: 18
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      gamma_sat:
+        valor: 21
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      q:
+        valor: 18
+        unidade: kPa
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      gamma_sub:
+        valor: 11
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: γ' = 21 − 10 = 11 kN/m3
+    esperado:
+      sigma_r:
+        valor: 2681
+        unidade: kPa
+        tol_rel: 0.05
+        tol_origem: sugestao A1 por analogia a sigma_adm na tabela do A7 (sigma_r nao consta da tabela) -- confirmar no A7
+        literal: σr = 18·64,20·1,56 + 1/2·11·2·109,41·0,73 ≅ 2.681 kPa ≅ 2,68 MPa
+  - id: CINTRA-2011-CAP2-EX1c
+    descricao: areia argilosa, phi = 25 graus, c = 50 kPa (valores nao drenados) -> ruptura geral (Fig. 2.21, regiao III)
+    equacao_do_autor_literal: σr = c Nc Sc + q Nq Sq + 1/2 γ B Nγ Sγ
+    entrada:
+      solo: areia argilosa
+      phi:
+        valor: 25
+        unidade: grau
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      c:
+        valor: 50
+        unidade: kPa
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      observacao: valores não drenados
+    intermediarios_do_autor:
+      N_c:
+        valor: 20.72
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_q:
+        valor: 10.66
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_gamma:
+        valor: 10.88
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      N_q_sobre_N_c:
+        valor: 0.51
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      tg_phi:
+        valor: 0.47
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      S_c:
+        valor: 1.34
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: Sc = 1 + (2/3)·0,51 = 1,34
+      S_q:
+        valor: 1.31
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+        literal: Sq = 1 + (2/3)·0,47 = 1,31
+      S_gamma:
+        valor: 0.73
+        unidade: '-'
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      gamma:
+        valor: 18
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      gamma_sat:
+        valor: 21
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      q:
+        valor: 18
+        unidade: kPa
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+      gamma_sub:
+        valor: 11
+        unidade: kN/m3
+        tol_origem: nao definida (tabela do A7 nao cobre esta grandeza)
+    esperado:
+      sigma_r:
+        valor: 1727
+        unidade: kPa
+        tol_rel: 0.05
+        tol_origem: sugestao A1 por analogia a sigma_adm na tabela do A7 (sigma_r nao consta da tabela) -- confirmar no A7
+        literal: σr = 50·20,72·1,34 + 18·10,66·1,31 + 1/2·11·2·10,88·0,73 ≅ 1.727 kPa ≅ 1,73 MPa
+  criticidade: null
+  criticidade_nota: A1 nao classifica criticidade; definir no A7. Depende de o ruleset aprovar algum metodo teorico (a NBR
+    6122 nao fornece a formula).

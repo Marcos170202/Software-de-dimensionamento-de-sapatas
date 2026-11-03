@@ -1,0 +1,22 @@
+# GATE 1 -- ruleset congelado pelo a2-verificador. Nao editar a mao.
+# Qualquer alteracao em ruleset.yaml muda este hash e INVALIDA as aprovacoes de A6 e A7.
+arquivo: ruleset.yaml
+sha256: 30ace52819dcb1fa7fe79242b4197e217c4a77069337f8a78487ef2f06268737
+versao: 0.1.0
+rotulo: v0-geotecnico-minimo
+data: '2026-09-29'
+congelado_por: a2-verificador
+regras_aprovadas: 18
+regras_pendentes: 0
+liberado_para: [a3-interface, a4-geotecnico]
+nao_liberado_para: [a5-estrutural]
+verificado_com:
+  ferramenta: tools/checar_dimensoes.py
+  sha256_ferramenta: 83482c82a79e1091e207e4521b4ebf67fddbe6429e1ffe48169a66ab2e688274
+  comando: python tools/checar_dimensoes.py ruleset.yaml --sanity
+  resultado: 0 falhas dimensionais, 0 falhas no sanity check
+base_kb:
+  commit: a903ce7
+  kb/clausulas.jsonl: 958b2c1274e15df6f23a2d9033b4867833fbb4588d86e80461205b1fbf3c0307
+  kb/formulas.yaml: d1ca6f9fc8444e7ea68bc08de47c7edd96bc64c5910cdc5bbfe1621df1828d20
+  kb/exemplos.yaml: 000d98662b10b07b5f34383fa600f901b5de30f61964d3b455147f9712c08f1a
